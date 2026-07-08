@@ -1,0 +1,5 @@
+.env
+open_trades.json
+bot.log
+__pycache__/
+*.pyc

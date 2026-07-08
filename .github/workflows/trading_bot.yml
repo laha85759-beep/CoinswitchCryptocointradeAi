@@ -1,0 +1,59 @@
+name: CoinSwitch AI Trading Bot
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # Every 15 minutes, 24/7
+  workflow_dispatch:           # Manual trigger from GitHub UI
+
+jobs:
+  trade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ── Restore open_trades.json from cache (persists between runs) ────────
+      - name: Restore trade state
+        id: cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: open_trades.json
+          key: cs-trade-state-${{ runner.os }}
+          restore-keys: |
+            cs-trade-state-
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run bot
+        env:
+          CS_API_KEY:       ${{ secrets.CS_API_KEY }}
+          CS_API_SECRET:    ${{ secrets.CS_API_SECRET }}
+          TELEGRAM_TOKEN:   ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python main.py
+
+      # ── Save updated trade state ────────────────────────────────────────────
+      - name: Save trade state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: open_trades.json
+          key: cs-trade-state-${{ runner.os }}-${{ github.run_id }}
+
+      # ── Upload logs ─────────────────────────────────────────────────────────
+      - name: Upload bot log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bot-log-${{ github.run_number }}
+          path: bot.log
+          retention-days: 7

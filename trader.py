@@ -1,0 +1,210 @@
+"""
+Trade Executor + Trailing Stop Monitor  (CoinSwitch Spot v2)
+"""
+
+import json, logging, os
+from datetime import datetime, timezone
+
+from coinswitch_client import CoinSwitchClient
+from notifier import TelegramNotifier
+
+log = logging.getLogger(__name__)
+STATE_FILE = "open_trades.json"
+
+SLIP_PCT = 0.5  # aggressive limit price offset to simulate market order
+
+
+class TradeExecutor:
+    def __init__(self, config: dict, client: CoinSwitchClient, notifier: TelegramNotifier):
+        self.cfg      = config
+        self.client   = client
+        self.notifier = notifier
+
+    def open_trade(self, signal: dict):
+        symbol = signal["symbol"]
+        coin   = symbol.split("/")[0]
+        score  = signal["pump_score"]
+        price  = signal["price"]
+
+        log.info(f"  📈 BUY signal: {symbol} | score={score}")
+        trades = self._load()
+
+        if len(trades) >= self.cfg["max_open_trades"]:
+            log.warning(f"  ⚠️  Max trades reached. Skip {symbol}.")
+            return
+        if any(t["symbol"] == symbol for t in trades):
+            log.info(f"  ⏭️  Already holding {symbol}. Skip.")
+            return
+
+        try:
+            usdt_free = self._usdt_balance()
+        except Exception as e:
+            log.error(f"  Balance fetch failed: {e}")
+            return
+
+        if usdt_free < 10:
+            log.warning("  ⚠️  USDT < $10. Skip.")
+            return
+
+        usdt_to_use = usdt_free * (self.cfg["max_capital_pct"] / 100.0)
+        qty         = round(usdt_to_use / price, 6)
+        hard_sl     = round(price * (1 - self.cfg["hard_sl_pct"] / 100), 8)
+        buy_price   = round(price * (1 + SLIP_PCT / 100), 8)
+
+        try:
+            order = self.client.place_order(symbol, "buy", "limit", qty, price=buy_price)
+            buy_id = order.get("order_id", "N/A")
+            log.info(f"  ✅ BUY placed: {buy_id}")
+
+            trade = {
+                "symbol":             symbol,
+                "coin":               coin,
+                "qty":                qty,
+                "entry_price":        price,
+                "peak_price":         price,
+                "hard_sl":            hard_sl,
+                "trail_active":       False,
+                "trailing_stop":      None,
+                "buy_id":             buy_id,
+                "opened_at":          datetime.now(timezone.utc).isoformat(),
+                "usdt_used":          round(usdt_to_use, 2),
+                "score":              score,
+                "highest_profit_pct": 0.0,
+            }
+            trades.append(trade)
+            self._save(trades)
+
+            self.notifier.send(
+                f"🚀 *TRADE OPENED — CoinSwitch*\n"
+                f"📊 `{symbol}` — BUY\n"
+                f"🎯 Score      : *{score}/100*\n"
+                f"💵 Entry      : `{price}`\n"
+                f"🛑 Hard SL    : `{hard_sl}`  (-{self.cfg['hard_sl_pct']}%)\n"
+                f"📈 Trail stop : activates at +{self.cfg['trail_activation_pct']}% profit\n"
+                f"              trails {self.cfg['trail_pct']}% below peak\n"
+                f"💰 Capital    : `${usdt_to_use:.2f}` USDT (max)\n"
+                f"📦 Qty        : `{qty} {coin}`\n"
+                f"⏰ {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"
+            )
+        except Exception as e:
+            log.error(f"  ❌ Trade failed for {symbol}: {e}")
+
+    def monitor(self):
+        trades = self._load()
+        if not trades:
+            log.info("  📭 No open trades to monitor.")
+            return
+
+        remaining = []
+        for t in trades:
+            symbol     = t["symbol"]
+            entry      = t["entry_price"]
+            peak       = t["peak_price"]
+            hard_sl    = t["hard_sl"]
+            qty        = t["qty"]
+            trail_on   = t["trail_active"]
+            trail_stop = t["trailing_stop"]
+
+            try:
+                current    = self.client.get_ticker_price(symbol)
+                profit_pct = (current - entry) / entry * 100
+
+                log.info(
+                    f"  👀 {symbol} | current={current} | P&L={profit_pct:+.2f}% | "
+                    f"peak={peak} | trail={'ON' if trail_on else 'OFF'} | "
+                    f"stop={trail_stop or hard_sl}"
+                )
+
+                if current > peak:
+                    t["peak_price"] = current
+                    peak = current
+
+                if profit_pct > t["highest_profit_pct"]:
+                    t["highest_profit_pct"] = round(profit_pct, 2)
+
+                if not trail_on and profit_pct >= self.cfg["trail_activation_pct"]:
+                    t["trail_active"]  = True
+                    trail_on           = True
+                    trail_stop         = round(peak * (1 - self.cfg["trail_pct"] / 100), 8)
+                    t["trailing_stop"] = trail_stop
+                    log.info(f"  🎯 Trail ACTIVATED for {symbol}: stop={trail_stop}")
+                    self.notifier.send(
+                        f"🎯 *TRAILING STOP ACTIVATED*\n"
+                        f"📊 `{symbol}` | Profit so far: +{profit_pct:.2f}%\n"
+                        f"📈 Peak       : `{peak}`\n"
+                        f"🔒 Trail stop : `{trail_stop}` ({self.cfg['trail_pct']}% below peak)\n"
+                        f"↗️  Riding the trend — stop rises as price rises!"
+                    )
+
+                if trail_on:
+                    new_stop = round(peak * (1 - self.cfg["trail_pct"] / 100), 8)
+                    if new_stop > (t["trailing_stop"] or 0):
+                        t["trailing_stop"] = new_stop
+                        trail_stop = new_stop
+                        log.info(f"  ⬆️  Trail stop raised -> {trail_stop}")
+
+                if trail_on and current <= trail_stop:
+                    log.warning(f"  📉 TRAIL STOP HIT: {symbol} @ {current} (stop={trail_stop})")
+                    self._exit(t, current, "TRAILING STOP", round(profit_pct, 2))
+                    continue
+
+                if current <= hard_sl:
+                    log.warning(f"  🛑 HARD SL HIT: {symbol} @ {current}")
+                    self._exit(t, current, "HARD STOP LOSS", round(profit_pct, 2))
+                    continue
+
+                remaining.append(t)
+
+            except Exception as e:
+                log.error(f"  ❌ Monitor error {symbol}: {e}")
+                remaining.append(t)
+
+        self._save(remaining)
+
+    def _exit(self, trade: dict, current: float, reason: str, pnl_pct: float):
+        symbol   = trade["symbol"]
+        qty      = trade["qty"]
+        entry    = trade["entry_price"]
+        usdt     = trade["usdt_used"]
+        pnl_usdt = round(usdt * pnl_pct / 100, 2)
+        sell_price = round(current * (1 - SLIP_PCT / 100), 8)
+
+        try:
+            self.client.place_order(symbol, "sell", "limit", qty, price=sell_price)
+            log.info(f"  📤 SELL placed: {symbol}")
+        except Exception as e:
+            log.error(f"  ❌ SELL failed {symbol}: {e}")
+
+        try:
+            opened = datetime.fromisoformat(trade["opened_at"])
+            mins   = int((datetime.now(timezone.utc) - opened).total_seconds() / 60)
+            held   = f"\n⏱️  Held: {mins} min"
+        except Exception:
+            held = ""
+
+        emoji = "💰" if pnl_pct > 0 else "📉"
+        self.notifier.send(
+            f"{emoji} *TRADE CLOSED — {reason}*\n"
+            f"📊 `{symbol}`\n"
+            f"💵 Entry   : `{entry}`\n"
+            f"💵 Exit    : `{current}`\n"
+            f"📈 Peak    : `{trade['peak_price']}` (+{trade['highest_profit_pct']}% best)\n"
+            f"{'✅' if pnl_pct > 0 else '🔴'} P&L    : `{pnl_pct:+.2f}%`  (`${pnl_usdt:+.2f}`)\n"
+            f"🎯 Score   : {trade['score']}/100"
+            f"{held}"
+        )
+
+    def _usdt_balance(self) -> float:
+        for item in self.client.get_portfolio():
+            if item.get("currency", "").upper() == "USDT":
+                return float(item.get("main_balance", 0))
+        return 0.0
+
+    @staticmethod
+    def _load() -> list:
+        return json.load(open(STATE_FILE)) if os.path.exists(STATE_FILE) else []
+
+    @staticmethod
+    def _save(data: list):
+        with open(STATE_FILE, "w") as f:
+            json.dump(data, f, indent=2)
