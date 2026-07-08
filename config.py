@@ -32,7 +32,7 @@ CONFIG = {
     "blacklist": ["USDC/USDT", "BUSD/USDT", "TUSD/USDT", "FDUSD/USDT"],
 
     # ── Signal thresholds ────────────────────────────────────────────────────
-    "pump_score_min":  72,
+    "pump_score_min":  65,
     "dump_score_min":  70,
     "max_signals":     2,
 

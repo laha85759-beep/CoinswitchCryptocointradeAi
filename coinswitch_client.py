@@ -77,6 +77,26 @@ class CoinSwitchClient:
         )
         return data.get("data", {})
 
+    def get_all_tickers_multi(self, exchanges: list[str] = None) -> dict:
+        """Merge tickers from multiple exchanges."""
+        if exchanges is None:
+            exchanges = ["c2c1", "c2c2"]
+        merged = {}
+        for ex in exchanges:
+            try:
+                tickers = self.get_all_tickers(ex)
+                for sym, data in tickers.items():
+                    if sym not in merged:
+                        merged[sym] = data
+                    else:
+                        v1 = float(merged[sym].get("quoteVolume", 0) or 0)
+                        v2 = float(data.get("quoteVolume", 0) or 0)
+                        if v2 > v1:
+                            merged[sym] = data
+            except Exception as e:
+                log.warning(f"Ticker fetch failed for {ex}: {e}")
+        return merged
+
     def get_ticker(self, symbol: str, exchange: str = EXCHANGE_USDT) -> dict:
         """24h stats for a specific symbol."""
         data = self._request(

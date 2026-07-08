@@ -143,11 +143,12 @@ class MarketScanner:
         return m.get(tf, 5)
 
     def _top_symbols(self) -> list[str]:
-        tickers = self.client.get_all_tickers()
+        tickers = self.client.get_all_tickers_multi()
 
         pairs = []
         for sym, data in tickers.items():
-            vol = float(data.get("quoteVolume", 0))
+            raw_vol = data.get("quoteVolume", 0)
+            vol = float(raw_vol) if raw_vol else 0.0
             if (
                 sym.endswith(f"/{self.cfg['quote_currency']}")
                 and vol >= self.cfg["min_volume_usdt"]
