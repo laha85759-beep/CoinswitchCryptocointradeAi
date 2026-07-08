@@ -72,9 +72,19 @@ def run():
             )
         executor.exit_on_dump(dump_signals)
 
-    # ── Step 4: Open new trades ───────────────────────────────────────────────
-    for signal in pump_signals:
-        executor.open_trade(signal)
+    # ── Step 4: Weekend check — no new trades on Sat/Sun ─────────────────────
+    weekday = datetime.now(timezone.utc).weekday()
+    if weekday in (5, 6):
+        log.info("🌙 Weekend — no new trades opened. Existing positions still monitored.")
+        if pump_signals:
+            notifier.send(
+                f"🌙 *WEEKEND — SKIPPING NEW TRADES*\n"
+                f"📊 `{len(pump_signals)}` pump signal(s) found but markets are closed for new entries.\n"
+                f"⏰ Resuming Monday."
+            )
+    else:
+        for signal in pump_signals:
+            executor.open_trade(signal)
 
     log.info("✅ Cycle complete.\n")
 

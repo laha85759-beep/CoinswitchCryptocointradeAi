@@ -37,7 +37,7 @@ CONFIG = {
     "max_signals":     2,
 
     # ── Capital ──────────────────────────────────────────────────────────────
-    "max_capital_pct":  95,
+    "max_capital_pct":  50,
     "max_open_trades":  2,
 
     # ── Exit Strategy: Trailing Stop ─────────────────────────────────────────
