@@ -75,16 +75,20 @@ class TradeExecutor:
             self._save(trades)
 
             self.notifier.send(
-                f"🚀 *TRADE OPENED — CoinSwitch*\n"
-                f"📊 `{symbol}` — BUY\n"
-                f"🎯 Score      : *{score}/100*\n"
-                f"💵 Entry      : `{price}`\n"
-                f"🛑 Hard SL    : `{hard_sl}`  (-{self.cfg['hard_sl_pct']}%)\n"
-                f"📈 Trail stop : activates at +{self.cfg['trail_activation_pct']}% profit\n"
-                f"              trails {self.cfg['trail_pct']}% below peak\n"
-                f"💰 Capital    : `${usdt_to_use:.2f}` USDT (max)\n"
-                f"📦 Qty        : `{qty} {coin}`\n"
-                f"⏰ {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"
+                f"🚀 *BUY SIGNAL — TRADE OPENED*\n"
+                f"━━━━━━━━━━━━━━━━━━━━━\n"
+                f"📊 *Symbol*     : `{symbol}`\n"
+                f"🎯 *Score*      : `{score}/100`\n"
+                f"💵 *Entry*      : `{price}`\n"
+                f"📦 *Qty*        : `{qty} {coin}`\n"
+                f"💰 *Capital*    : `${usdt_to_use:.2f}` USDT\n"
+                f"🛑 *Hard SL*    : `{hard_sl}` (-{self.cfg['hard_sl_pct']}%)\n"
+                f"━━━━━━━━━━━━━━━━━━━━━\n"
+                f"📈 *Exit Strategy:*\n"
+                f"  ▸ Trail activates at +{self.cfg['trail_activation_pct']}% profit\n"
+                f"  ▸ Trails {self.cfg['trail_pct']}% below peak\n"
+                f"━━━━━━━━━━━━━━━━━━━━━\n"
+                f"⏰ `{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}`"
             )
         except Exception as e:
             log.error(f"  ❌ Trade failed for {symbol}: {e}")
@@ -130,10 +134,13 @@ class TradeExecutor:
                     log.info(f"  🎯 Trail ACTIVATED for {symbol}: stop={trail_stop}")
                     self.notifier.send(
                         f"🎯 *TRAILING STOP ACTIVATED*\n"
-                        f"📊 `{symbol}` | Profit so far: +{profit_pct:.2f}%\n"
-                        f"📈 Peak       : `{peak}`\n"
-                        f"🔒 Trail stop : `{trail_stop}` ({self.cfg['trail_pct']}% below peak)\n"
-                        f"↗️  Riding the trend — stop rises as price rises!"
+                        f"━━━━━━━━━━━━━━━━━━━━━\n"
+                        f"📊 *Symbol*     : `{symbol}`\n"
+                        f"💰 *Profit*     : `+{profit_pct:.2f}%` ✅\n"
+                        f"📈 *Peak*       : `{peak}`\n"
+                        f"🔒 *Trail Stop* : `{trail_stop}`\n"
+                        f"━━━━━━━━━━━━━━━━━━━━━\n"
+                        f"↗️ Stop rises as price rises — locking profits!"
                     )
 
                 if trail_on:
@@ -182,16 +189,21 @@ class TradeExecutor:
         except Exception:
             held = ""
 
-        emoji = "💰" if pnl_pct > 0 else "📉"
+        icon = "💰" if pnl_pct > 0 else "📉"
+        label = "✅ PROFIT" if pnl_pct > 0 else "🔴 LOSS"
         self.notifier.send(
-            f"{emoji} *TRADE CLOSED — {reason}*\n"
-            f"📊 `{symbol}`\n"
-            f"💵 Entry   : `{entry}`\n"
-            f"💵 Exit    : `{current}`\n"
-            f"📈 Peak    : `{trade['peak_price']}` (+{trade['highest_profit_pct']}% best)\n"
-            f"{'✅' if pnl_pct > 0 else '🔴'} P&L    : `{pnl_pct:+.2f}%`  (`${pnl_usdt:+.2f}`)\n"
-            f"🎯 Score   : {trade['score']}/100"
-            f"{held}"
+            f"{icon} *TRADE CLOSED — {reason}*\n"
+            f"━━━━━━━━━━━━━━━━━━━━━\n"
+            f"📊 *Symbol*     : `{symbol}`\n"
+            f"💵 *Entry*      : `{entry}`\n"
+            f"💵 *Exit*       : `{current}`\n"
+            f"📈 *Peak*       : `{trade['peak_price']}`\n"
+            f"━━━━━━━━━━━━━━━━━━━━━\n"
+            f"{label} *P&L* : `{pnl_pct:+.2f}%`  (`${pnl_usdt:+.2f}`)\n"
+            f"🏆 *Best*       : +{trade['highest_profit_pct']}%\n"
+            f"🎯 *Score*      : `{trade['score']}/100`"
+            f"{held}\n"
+            f"━━━━━━━━━━━━━━━━━━━━━"
         )
 
     def _usdt_balance(self) -> float:
