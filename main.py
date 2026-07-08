@@ -50,7 +50,7 @@ def run():
 
     # ── Step 2: Scan for new signals ─────────────────────────────────────────
     log.info("🔍 Scanning market for new signals…")
-    pump_signals, _ = scanner.scan()  # spot = only BUY on pump
+    pump_signals, dump_signals = scanner.scan()
 
     if not pump_signals:
         log.info("😴 No high-probability pump signals this cycle.")
@@ -62,7 +62,17 @@ def run():
                 f"rsi={signal['rsi']} | vol×{signal['vol_ratio']} | roc={signal['roc5']}%"
             )
 
-    # ── Step 3: Open new trades ───────────────────────────────────────────────
+    # ── Step 3: Exit positions on dump signals ───────────────────────────────
+    if dump_signals:
+        log.info(f"⚠️  Found {len(dump_signals)} dump signal(s) — checking open trades…")
+        for signal in dump_signals:
+            log.info(
+                f"  → {signal['symbol']} | dump={signal['dump_score']} | "
+                f"rsi={signal['rsi']} | vol×{signal['vol_ratio']} | roc={signal['roc5']}%"
+            )
+        executor.exit_on_dump(dump_signals)
+
+    # ── Step 4: Open new trades ───────────────────────────────────────────────
     for signal in pump_signals:
         executor.open_trade(signal)
 

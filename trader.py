@@ -168,6 +168,24 @@ class TradeExecutor:
 
         self._save(remaining)
 
+    def exit_on_dump(self, dump_signals: list[dict]):
+        trades = self._load()
+        dump_symbols = {s["symbol"] for s in dump_signals}
+        remaining = []
+        for t in trades:
+            if t["symbol"] in dump_symbols:
+                try:
+                    current = self.client.get_ticker_price(t["symbol"])
+                    profit_pct = (current - t["entry_price"]) / t["entry_price"] * 100
+                    log.warning(f"  ⚠️ DUMP SIGNAL for {t['symbol']} — exiting early")
+                    self._exit(t, current, "DUMP SIGNAL ⚠️", round(profit_pct, 2))
+                except Exception as e:
+                    log.error(f"  ❌ Dump exit error {t['symbol']}: {e}")
+                    remaining.append(t)
+            else:
+                remaining.append(t)
+        self._save(remaining)
+
     def _exit(self, trade: dict, current: float, reason: str, pnl_pct: float):
         symbol   = trade["symbol"]
         qty      = trade["qty"]
