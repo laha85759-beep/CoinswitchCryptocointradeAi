@@ -2,7 +2,7 @@
 Trade Executor + Trailing Stop Monitor  (CoinSwitch Spot v2)
 """
 
-import json, logging, os
+import json, logging, os, time
 from datetime import datetime, timezone
 
 from coinswitch_client import CoinSwitchClient
@@ -53,8 +53,30 @@ class TradeExecutor:
 
         try:
             order = self.client.place_order(symbol, "buy", "limit", qty, price=buy_price)
-            buy_id = order.get("order_id", "N/A")
+            buy_id = order.get("order_id") or order.get("id") or "N/A"
             log.info(f"  ✅ BUY placed: {buy_id}")
+
+            if buy_id != "N/A":
+                filled = False
+                filled_qty = 0.0
+                for _ in range(3):
+                    try:
+                        order_status = self.client.get_order(buy_id)
+                        filled, filled_qty = self.client.order_fill_status(order_status)
+                        if filled:
+                            break
+                    except Exception as exc:
+                        log.debug(f"  Order status check failed for {buy_id}: {exc}")
+                    time.sleep(2)
+
+                if not filled:
+                    log.warning(f"  ⏳ BUY order {buy_id} is still pending; skipping trade state.")
+                    return
+
+                qty = round(filled_qty or qty, 6)
+            else:
+                log.warning("  ⚠️  Order ID missing; skipping trade state until fill is confirmed.")
+                return
 
             trade = {
                 "symbol":             symbol,
@@ -225,10 +247,7 @@ class TradeExecutor:
         )
 
     def _usdt_balance(self) -> float:
-        for item in self.client.get_portfolio():
-            if item.get("currency", "").upper() == "USDT":
-                return float(item.get("main_balance", 0))
-        return 0.0
+        return self.client.get_usdt_balance()
 
     @staticmethod
     def _load() -> list:

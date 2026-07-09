@@ -25,6 +25,7 @@ CONFIG = {
 
     # ── Scanner ──────────────────────────────────────────────────────────────
     "quote_currency":   "USDT",
+    "request_delay_seconds": 1.0,
     "top_n_by_volume":  80,
     "timeframe":        "5m",
     "candle_limit":     100,

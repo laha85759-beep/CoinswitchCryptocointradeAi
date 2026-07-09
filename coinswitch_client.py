@@ -20,12 +20,14 @@ EXCHANGE_USDT = "c2c1"
 
 
 class CoinSwitchClient:
-    def __init__(self, api_key: str, api_secret: str):
+    def __init__(self, api_key: str, api_secret: str, rate_limit_delay: float = 1.0):
         self.api_key = api_key
         self.secret = ed25519.Ed25519PrivateKey.from_private_bytes(
             bytes.fromhex(api_secret)
         )
         self.session = requests.Session()
+        self.rate_limit_delay = rate_limit_delay
+        self._last_request_at = 0.0
 
     def _sign(self, method: str, path: str, params: dict = None) -> tuple:
         method = method.upper()
@@ -45,9 +47,18 @@ class CoinSwitchClient:
         }
         return headers, decoded
 
+    def _throttle_request(self) -> None:
+        if self.rate_limit_delay <= 0:
+            return
+        elapsed = time.time() - self._last_request_at
+        if elapsed < self.rate_limit_delay:
+            time.sleep(self.rate_limit_delay - elapsed)
+        self._last_request_at = time.time()
+
     def _request(
         self, method: str, path: str, params: dict = None, body: dict = None
     ) -> dict:
+        self._throttle_request()
         headers, decoded_path = self._sign(method, path, params)
         url = BASE_URL + decoded_path
         try:
@@ -133,6 +144,53 @@ class CoinSwitchClient:
         )
         return data.get("data", [])
 
+    @staticmethod
+    def _portfolio_balance(item: dict) -> tuple[float, float, float]:
+        def _coerce(value) -> float:
+            try:
+                return float(value) if value is not None else 0.0
+            except (TypeError, ValueError):
+                return 0.0
+
+        main = item.get("main_balance")
+        if main is None:
+            main = item.get("available_balance")
+        if main is None:
+            main = item.get("available")
+        if main is None:
+            main = item.get("balance")
+        if main is None:
+            main = item.get("free")
+
+        locked = item.get("locked_balance")
+        if locked is None:
+            locked = item.get("locked")
+        if locked is None:
+            locked = item.get("freeze")
+        if locked is None:
+            locked = item.get("lock")
+
+        available = _coerce(main)
+        locked_val = _coerce(locked)
+        if item.get("main_balance") is not None and locked is not None and available >= locked_val:
+            available = available - locked_val
+        return available, locked_val, available + locked_val
+
+    @staticmethod
+    def order_fill_status(order: dict) -> tuple[bool, float]:
+        status = str(order.get("status", "")).lower()
+        if status in {"filled", "completed", "closed", "fully_filled"}:
+            return True, 0.0
+        if status in {"partially_filled", "partial", "partially filled"}:
+            for key in ("filled_quantity", "executed_qty", "filledQty", "quantity_filled"):
+                if key in order and order.get(key) is not None:
+                    try:
+                        return True, float(order.get(key))
+                    except (TypeError, ValueError):
+                        continue
+            return True, 0.0
+        return False, 0.0
+
     def get_portfolio(self) -> list:
         data = self._request("GET", "/trade/api/v2/user/portfolio")
         return data.get("data", [])
@@ -140,13 +198,15 @@ class CoinSwitchClient:
     def get_usdt_balance(self) -> float:
         for item in self.get_portfolio():
             if item.get("currency", "").upper() == "USDT":
-                return float(item.get("main_balance", 0))
+                available, _, _ = self._portfolio_balance(item)
+                return available
         return 0.0
 
     def get_coin_balance(self, coin: str) -> float:
         for item in self.get_portfolio():
             if item.get("currency", "").upper() == coin.upper():
-                return float(item.get("main_balance", 0))
+                available, _, _ = self._portfolio_balance(item)
+                return available
         return 0.0
 
     def place_order(
