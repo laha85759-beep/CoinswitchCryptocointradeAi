@@ -166,8 +166,11 @@ class MarketScanner:
             if not candles or len(candles) < 50:
                 return None
             df = pd.DataFrame(candles)
-            df.columns = ["ts", "open", "high", "low", "close", "volume"]
-            df = df.astype({"open": float, "high": float, "low": float, "close": float, "volume": float})
+            df["open"] = df["o"].astype(float)
+            df["high"] = df["h"].astype(float)
+            df["low"]  = df["l"].astype(float)
+            df["close"] = df["c"].astype(float)
+            df["volume"] = df["volume"].astype(float)
             return df
         except Exception as e:
             log.debug(f"OHLCV error {symbol}: {e}")
