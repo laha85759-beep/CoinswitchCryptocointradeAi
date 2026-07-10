@@ -1,0 +1,600 @@
+"""
+Multi-agent pump/dump pipeline for CoinSwitch.
+
+The agents exchange plain dictionaries so every cycle can be audited and
+tested without coupling detection, risk, and execution.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import logging
+import math
+import os
+import time
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from coinswitch_client import CoinSwitchClient
+from notifier import TelegramNotifier
+from scanner import MarketScanner, SignalEngine
+
+log = logging.getLogger(__name__)
+
+
+OPEN_TRADES_FILE = Path("open_trades.json")
+AUDIT_LOG_FILE = Path("agent_audit.jsonl")
+PROCESSED_SIGNALS_FILE = Path("processed_signals.json")
+DAILY_PNL_FILE = Path("daily_pnl.json")
+
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def utc_iso() -> str:
+    return utc_now().isoformat()
+
+
+def load_json(path: Path, default: Any) -> Any:
+    if not path.exists():
+        return default
+    try:
+        with path.open("r", encoding="utf-8") as handle:
+            return json.load(handle)
+    except Exception as exc:
+        log.warning("Could not read %s: %s", path, exc)
+        return default
+
+
+def save_json(path: Path, data: Any) -> None:
+    with path.open("w", encoding="utf-8") as handle:
+        json.dump(data, handle, indent=2, sort_keys=True)
+
+
+class AuditLogger:
+    def __init__(self, path: Path = AUDIT_LOG_FILE):
+        self.path = path
+
+    def write(self, agent: str, payload: dict) -> None:
+        row = {
+            "timestamp": utc_iso(),
+            "agent": agent,
+            "payload": payload,
+        }
+        with self.path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(row, sort_keys=True, default=str) + "\n")
+
+
+@dataclass
+class CircuitBreaker:
+    cfg: dict
+    audit: AuditLogger
+    path: Path = Path("circuit_breaker.json")
+
+    def load(self) -> dict:
+        return load_json(self.path, {"consecutive_errors": 0, "execution_halted": False})
+
+    def record_success(self) -> None:
+        save_json(self.path, {"consecutive_errors": 0, "execution_halted": False})
+
+    def record_error(self, reason: str) -> dict:
+        state = self.load()
+        state["consecutive_errors"] = int(state.get("consecutive_errors", 0)) + 1
+        state["last_error"] = reason
+        state["last_error_at"] = utc_iso()
+        if state["consecutive_errors"] >= self.cfg["circuit_breaker_error_limit"]:
+            state["execution_halted"] = True
+        save_json(self.path, state)
+        self.audit.write("CircuitBreaker", state)
+        return state
+
+    def is_halted(self) -> bool:
+        return bool(self.load().get("execution_halted"))
+
+
+class DataCollectorAgent:
+    def __init__(self, cfg: dict, client: CoinSwitchClient, audit: AuditLogger):
+        self.cfg = cfg
+        self.client = client
+        self.audit = audit
+        self.scanner = MarketScanner(cfg, client)
+
+    def symbols(self) -> list[str]:
+        watchlist = [s.strip().upper() for s in self.cfg.get("watchlist", []) if s.strip()]
+        if watchlist:
+            return [s if "/" in s else f"{s}/{self.cfg['quote_currency']}" for s in watchlist]
+        return self.scanner._top_symbols()
+
+    def collect(self) -> list[dict]:
+        out = []
+        symbols = self.symbols()
+        try:
+            tickers = self.client.get_all_tickers_multi()
+        except Exception as exc:
+            log.warning("Ticker snapshot failed, using candle-derived liquidity: %s", exc)
+            tickers = {}
+        log.info("Data Collector: collecting %s symbols", len(symbols))
+        for symbol in symbols:
+            try:
+                df = self.scanner._ohlcv(symbol)
+                if df is None or len(df) < 50:
+                    out.append({"symbol": symbol, "error": "insufficient_ohlcv", "timestamp": utc_iso()})
+                    continue
+
+                close = df["close"].astype(float)
+                volume = df["volume"].astype(float)
+                price = float(close.iloc[-1])
+                change_5m = pct_change(close.iloc[-1], close.iloc[-2])
+                change_1h = pct_change(close.iloc[-1], close.iloc[-13]) if len(close) >= 13 else 0.0
+                change_24h = pct_change(close.iloc[-1], close.iloc[-1 - min(len(close) - 1, 288)])
+
+                vol_window = volume.tail(min(len(volume), 84))
+                vol_mean = float(vol_window.mean() or 0)
+                vol_std = float(vol_window.std() or 0)
+                volume_zscore = 0.0 if vol_std <= 0 else float((volume.iloc[-1] - vol_mean) / vol_std)
+                rolling_avg = float(volume.tail(20).mean() or 0)
+                volume_ratio = 1.0 if rolling_avg <= 0 else float(volume.iloc[-1] / rolling_avg)
+
+                orderbook_imbalance = synthetic_imbalance(change_5m, volume_ratio)
+                trade_freq_5m = int(max(1, round(volume_ratio * 100)))
+
+                ticker = tickers.get(symbol, {})
+                quote_volume = safe_float(ticker.get("quoteVolume"))
+                if quote_volume <= 0:
+                    quote_volume = float(volume.tail(min(len(volume), 288)).sum()) * price
+
+                item = {
+                    "symbol": symbol,
+                    "price": price,
+                    "change_5m": round(change_5m, 4),
+                    "change_1h": round(change_1h, 4),
+                    "change_24h": round(change_24h, 4),
+                    "volume_24h": round(quote_volume, 4),
+                    "volume_zscore": round(volume_zscore, 4),
+                    "orderbook_imbalance": round(orderbook_imbalance, 4),
+                    "trade_freq_5m": trade_freq_5m,
+                    "trade_freq_ratio": round(volume_ratio, 4),
+                    "timestamp": utc_iso(),
+                    "data_notes": ["orderbook_imbalance_and_trade_frequency_are_ohlcv_proxies"],
+                }
+                out.append(item)
+            except Exception as exc:
+                out.append({"symbol": symbol, "error": str(exc), "timestamp": utc_iso()})
+
+        self.audit.write("DataCollector", {"count": len(out), "items": out})
+        return out
+
+
+class SignalDetectorAgent:
+    def __init__(self, cfg: dict, audit: AuditLogger):
+        self.cfg = cfg
+        self.audit = audit
+        self.legacy_engine = SignalEngine(cfg["weights"])
+
+    def classify(self, items: list[dict]) -> list[dict]:
+        signals = []
+        for item in items:
+            symbol = item.get("symbol", "")
+            if item.get("error"):
+                signals.append(self._signal(symbol, "insufficient_data", 0.0, "incomplete_market_data", item))
+                continue
+
+            up_move = item["change_5m"] > self.cfg["pump_change_5m_pct"] or item["change_1h"] > self.cfg["pump_change_1h_pct"]
+            down_move = item["change_5m"] < -self.cfg["dump_change_5m_pct"] or item["change_1h"] < -self.cfg["dump_change_1h_pct"]
+            high_volume = item["volume_zscore"] > self.cfg["volume_zscore_min"]
+            buy_dominance = item["orderbook_imbalance"] > self.cfg["buy_imbalance_min"]
+            sell_dominance = item["orderbook_imbalance"] < (1 - self.cfg["sell_imbalance_min"])
+            trade_spike = item.get("trade_freq_ratio", 0) >= self.cfg["trade_frequency_spike_ratio"]
+
+            pump_conditions = [up_move, high_volume, buy_dominance, trade_spike]
+            dump_conditions = [down_move, high_volume, sell_dominance, trade_spike]
+            pump_count = sum(bool(x) for x in pump_conditions)
+            dump_count = sum(bool(x) for x in dump_conditions)
+
+            signal = "normal"
+            if pump_count == 4:
+                signal = "pump"
+            elif dump_count == 4:
+                signal = "dump"
+            elif max(pump_count, dump_count) >= self.cfg["watch_condition_count"]:
+                signal = "watch"
+
+            confidence = confidence_score(item, pump_count if signal != "dump" else dump_count)
+            cause = suspected_cause(item, high_volume, trade_spike)
+            signals.append(self._signal(symbol, signal, confidence, cause, item))
+
+        self.audit.write("SignalDetector", {"count": len(signals), "signals": signals})
+        return signals
+
+    def _signal(self, symbol: str, signal: str, confidence: float, cause: str, supporting: dict) -> dict:
+        basis = f"{symbol}:{signal}:{supporting.get('timestamp', utc_iso())[:16]}"
+        signal_id = hashlib.sha256(basis.encode("utf-8")).hexdigest()[:20]
+        return {
+            "signal_id": signal_id,
+            "symbol": symbol,
+            "signal": signal,
+            "confidence": round(float(confidence), 4),
+            "suspected_cause": cause,
+            "supporting_data": supporting,
+            "timestamp": utc_iso(),
+        }
+
+
+class RiskManagerAgent:
+    def __init__(self, cfg: dict, client: CoinSwitchClient, audit: AuditLogger):
+        self.cfg = cfg
+        self.client = client
+        self.audit = audit
+
+    def evaluate(self, signals: list[dict], execution_halted: bool = False) -> list[dict]:
+        approvals = []
+        for signal in signals:
+            approvals.append(self._evaluate_one(signal, execution_halted))
+        self.audit.write("RiskManager", {"count": len(approvals), "approvals": approvals})
+        return approvals
+
+    def _evaluate_one(self, signal: dict, execution_halted: bool) -> dict:
+        symbol = signal["symbol"]
+        if execution_halted:
+            return risk_reject(signal, "circuit_breaker_halted_execution")
+        if signal["signal"] != "pump":
+            return risk_reject(signal, f"signal_is_{signal['signal']}")
+        if signal["confidence"] < self.cfg["min_confidence"]:
+            return risk_reject(signal, "confidence_below_minimum")
+
+        supporting = signal.get("supporting_data", {})
+        if float(supporting.get("volume_24h", 0) or 0) < self.cfg["min_liquidity_usd"]:
+            return risk_reject(signal, "liquidity_below_minimum")
+
+        trades = load_json(OPEN_TRADES_FILE, [])
+        if any(t.get("symbol") == symbol for t in trades):
+            return risk_reject(signal, "symbol_already_open")
+
+        processed = load_json(PROCESSED_SIGNALS_FILE, [])
+        if signal["signal_id"] in processed:
+            return risk_reject(signal, "duplicate_signal_id")
+
+        if trades_this_hour(trades) >= self.cfg["max_trades_per_hour"]:
+            return risk_reject(signal, "max_trades_per_hour_reached")
+
+        portfolio_usdt = self._portfolio_usdt()
+        total_exposure = sum(float(t.get("usdt_used", 0) or 0) for t in trades)
+        max_total = portfolio_usdt * self.cfg["max_total_exposure_pct"] / 100.0
+        if total_exposure >= max_total:
+            return risk_reject(signal, "max_total_exposure_reached")
+
+        pnl = load_json(DAILY_PNL_FILE, {})
+        today = utc_now().date().isoformat()
+        day_loss = float(pnl.get(today, {}).get("realized_pnl_usdt", 0) or 0)
+        if day_loss < -(portfolio_usdt * self.cfg["daily_max_drawdown_pct"] / 100.0):
+            return risk_reject(signal, "daily_drawdown_limit_reached")
+
+        max_position = portfolio_usdt * self.cfg["max_position_pct"] / 100.0
+        remaining_exposure = max(0.0, max_total - total_exposure)
+        position_size = min(max_position, remaining_exposure)
+        if position_size < self.cfg["min_order_usdt"]:
+            return risk_reject(signal, "position_size_below_min_order")
+
+        return {
+            "signal_id": signal["signal_id"],
+            "symbol": symbol,
+            "approved": True,
+            "reason": "approved",
+            "position_size_usd": round(position_size, 2),
+            "stop_loss_pct": self.cfg["stop_loss_pct"],
+            "take_profit_pct": self.cfg["take_profit_pct"],
+            "order_type": self.cfg["risk_order_type"],
+            "direction": "long",
+            "approval_token": hashlib.sha256(f"{signal['signal_id']}:{utc_iso()}".encode("utf-8")).hexdigest()[:24],
+            "signal": signal,
+            "timestamp": utc_iso(),
+        }
+
+    def _portfolio_usdt(self) -> float:
+        if self.cfg["paper_trading_mode"]:
+            return float(self.cfg["paper_portfolio_usdt"])
+        try:
+            return max(float(self.client.get_usdt_balance()), 0.0)
+        except Exception as exc:
+            log.warning("USDT balance failed, rejecting risk sizing: %s", exc)
+            return 0.0
+
+
+class ExecutionAgent:
+    def __init__(self, cfg: dict, client: CoinSwitchClient, audit: AuditLogger):
+        self.cfg = cfg
+        self.client = client
+        self.audit = audit
+
+    def execute(self, approvals: list[dict]) -> list[dict]:
+        results = []
+        for approval in approvals:
+            if approval.get("approved") is not True:
+                continue
+            results.append(self._execute_one(approval))
+        self.audit.write("ExecutionAgent", {"count": len(results), "results": results})
+        return results
+
+    def _execute_one(self, approval: dict) -> dict:
+        signal = approval["signal"]
+        symbol = approval["symbol"]
+        price_at_signal = float(signal["supporting_data"]["price"])
+        current_price = float(self.client.get_ticker_price(symbol))
+        slippage = abs(pct_change(current_price, price_at_signal))
+        if slippage > self.cfg["slippage_tolerance_pct"]:
+            return execution_result(symbol, "rejected", "stale_signal", signal, approval)
+
+        qty = round(float(approval["position_size_usd"]) / current_price, 6)
+        if qty <= 0:
+            return execution_result(symbol, "rejected", "zero_quantity", signal, approval)
+
+        if self.cfg["paper_trading_mode"]:
+            order_id = f"PAPER-{approval['signal_id']}"
+            result = execution_result(
+                symbol,
+                "filled",
+                "paper_trade_filled",
+                signal,
+                approval,
+                order_id=order_id,
+                filled_price=current_price,
+                filled_qty=qty,
+            )
+            self._record_open_trade(approval, result)
+            return result
+
+        last_error = None
+        for attempt in range(1, self.cfg["max_retries"] + 1):
+            try:
+                limit_price = round(current_price * (1 + self.cfg["limit_slippage_offset_pct"] / 100.0), 8)
+                order = self.client.place_order(symbol, "buy", approval["order_type"], qty, price=limit_price)
+                order_id = order.get("order_id") or order.get("id")
+                if not order_id:
+                    return execution_result(symbol, "error", "missing_order_id", signal, approval)
+
+                filled, filled_qty = False, 0.0
+                for _ in range(3):
+                    status = self.client.get_order(order_id)
+                    filled, filled_qty = self.client.order_fill_status(status)
+                    if filled:
+                        break
+                    time.sleep(2)
+                if not filled:
+                    return execution_result(symbol, "partial", "order_pending", signal, approval, order_id=order_id)
+
+                result = execution_result(
+                    symbol,
+                    "filled",
+                    "live_trade_filled",
+                    signal,
+                    approval,
+                    order_id=order_id,
+                    filled_price=current_price,
+                    filled_qty=round(filled_qty or qty, 6),
+                )
+                self._record_open_trade(approval, result)
+                return result
+            except Exception as exc:
+                last_error = str(exc)
+                log.warning("Execution attempt %s failed for %s: %s", attempt, symbol, exc)
+        return execution_result(symbol, "error", last_error or "execution_failed", signal, approval)
+
+    def _record_open_trade(self, approval: dict, result: dict) -> None:
+        signal = approval["signal"]
+        price = float(result["filled_price"])
+        stop_loss = round(price * (1 - approval["stop_loss_pct"] / 100.0), 8)
+        take_profit = round(price * (1 + approval["take_profit_pct"] / 100.0), 8)
+        trade = {
+            "symbol": approval["symbol"],
+            "coin": approval["symbol"].split("/")[0],
+            "qty": result["filled_qty"],
+            "entry_price": price,
+            "peak_price": price,
+            "hard_sl": stop_loss,
+            "take_profit": take_profit,
+            "trail_active": False,
+            "trailing_stop": None,
+            "buy_id": result["order_id"],
+            "opened_at": utc_iso(),
+            "usdt_used": approval["position_size_usd"],
+            "score": round(signal["confidence"] * 100, 2),
+            "highest_profit_pct": 0.0,
+            "paper": self.cfg["paper_trading_mode"],
+            "signal_id": approval["signal_id"],
+            "approval_token": approval["approval_token"],
+        }
+        trades = load_json(OPEN_TRADES_FILE, [])
+        trades.append(trade)
+        save_json(OPEN_TRADES_FILE, trades)
+        processed = load_json(PROCESSED_SIGNALS_FILE, [])
+        processed.append(approval["signal_id"])
+        save_json(PROCESSED_SIGNALS_FILE, sorted(set(processed))[-500:])
+
+
+class MonitorReporterAgent:
+    def __init__(self, cfg: dict, client: CoinSwitchClient, notifier: TelegramNotifier, audit: AuditLogger):
+        self.cfg = cfg
+        self.client = client
+        self.notifier = notifier
+        self.audit = audit
+
+    def monitor(self) -> dict:
+        trades = load_json(OPEN_TRADES_FILE, [])
+        if not trades:
+            report = {"open_positions": 0, "closed": [], "timestamp": utc_iso()}
+            self.audit.write("MonitorReporter", report)
+            log.info("Monitor: no open positions")
+            return report
+
+        remaining = []
+        closed = []
+        for trade in trades:
+            try:
+                current = float(self.client.get_ticker_price(trade["symbol"]))
+                pnl_pct = pct_change(current, float(trade["entry_price"]))
+                trade["highest_profit_pct"] = round(max(float(trade.get("highest_profit_pct", 0)), pnl_pct), 4)
+                if current > float(trade.get("peak_price", trade["entry_price"])):
+                    trade["peak_price"] = current
+
+                if not trade.get("trail_active") and pnl_pct >= self.cfg["trail_activation_pct"]:
+                    trade["trail_active"] = True
+                if trade.get("trail_active"):
+                    new_stop = round(float(trade["peak_price"]) * (1 - self.cfg["trail_pct"] / 100.0), 8)
+                    trade["trailing_stop"] = max(float(trade.get("trailing_stop") or 0), new_stop)
+
+                stop = float(trade.get("trailing_stop") or trade["hard_sl"])
+                reason = None
+                if current <= stop:
+                    reason = "trailing_stop" if trade.get("trail_active") else "stop_loss"
+                elif current >= float(trade.get("take_profit", math.inf)):
+                    reason = "take_profit"
+
+                if reason:
+                    closed.append(self._close_trade(trade, current, pnl_pct, reason))
+                else:
+                    remaining.append(trade)
+            except Exception as exc:
+                log.warning("Monitor failed for %s: %s", trade.get("symbol"), exc)
+                trade["last_monitor_error"] = str(exc)
+                remaining.append(trade)
+
+        save_json(OPEN_TRADES_FILE, remaining)
+        report = {
+            "open_positions": len(remaining),
+            "closed": closed,
+            "timestamp": utc_iso(),
+            "paper_trading_mode": self.cfg["paper_trading_mode"],
+        }
+        self.audit.write("MonitorReporter", report)
+        return report
+
+    def _close_trade(self, trade: dict, current: float, pnl_pct: float, reason: str) -> dict:
+        pnl_usdt = round(float(trade["usdt_used"]) * pnl_pct / 100.0, 2)
+        if not trade.get("paper"):
+            sell_price = round(current * (1 - self.cfg["limit_slippage_offset_pct"] / 100.0), 8)
+            self.client.place_order(trade["symbol"], "sell", self.cfg["risk_order_type"], float(trade["qty"]), price=sell_price)
+
+        today = utc_now().date().isoformat()
+        pnl = load_json(DAILY_PNL_FILE, {})
+        pnl.setdefault(today, {"realized_pnl_usdt": 0.0, "closed_trades": 0})
+        pnl[today]["realized_pnl_usdt"] = round(float(pnl[today]["realized_pnl_usdt"]) + pnl_usdt, 2)
+        pnl[today]["closed_trades"] = int(pnl[today]["closed_trades"]) + 1
+        save_json(DAILY_PNL_FILE, pnl)
+
+        msg = {
+            "symbol": trade["symbol"],
+            "reason": reason,
+            "entry": trade["entry_price"],
+            "exit": current,
+            "pnl_pct": round(pnl_pct, 4),
+            "pnl_usdt": pnl_usdt,
+            "paper": bool(trade.get("paper")),
+        }
+        self.notifier.send(
+            f"*TRADE CLOSED* `{trade['symbol']}`\n"
+            f"Reason: `{reason}`\n"
+            f"P&L: `{pnl_pct:+.2f}%` (`{pnl_usdt:+.2f}` USDT)\n"
+            f"Mode: `{'paper' if trade.get('paper') else 'live'}`"
+        )
+        return msg
+
+
+def pct_change(new: float, old: float) -> float:
+    old = float(old)
+    if old == 0:
+        return 0.0
+    return (float(new) - old) / old * 100.0
+
+
+def safe_float(value: Any, default: float = 0.0) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def synthetic_imbalance(change_5m: float, volume_ratio: float) -> float:
+    directional = max(-0.3, min(0.3, change_5m / 12.0))
+    volume_boost = max(0.0, min(0.1, (volume_ratio - 1.0) / 20.0))
+    return max(0.0, min(1.0, 0.5 + directional + (volume_boost if change_5m >= 0 else -volume_boost)))
+
+
+def confidence_score(item: dict, matched_conditions: int) -> float:
+    move_strength = max(abs(float(item.get("change_5m", 0))) / 10.0, abs(float(item.get("change_1h", 0))) / 20.0)
+    volume_strength = max(0.0, float(item.get("volume_zscore", 0)) / 6.0)
+    condition_strength = matched_conditions / 4.0
+    return min(1.0, max(0.0, 0.35 * move_strength + 0.35 * volume_strength + 0.30 * condition_strength))
+
+
+def suspected_cause(item: dict, high_volume: bool, trade_spike: bool) -> str:
+    if high_volume and trade_spike and abs(float(item.get("change_5m", 0))) > 5:
+        return "coordinated_volume_spike"
+    if high_volume:
+        return "whale_wallet_activity"
+    if trade_spike:
+        return "social_hype"
+    return "unknown"
+
+
+def risk_reject(signal: dict, reason: str) -> dict:
+    return {
+        "signal_id": signal.get("signal_id"),
+        "symbol": signal.get("symbol"),
+        "approved": False,
+        "reason": reason,
+        "position_size_usd": 0.0,
+        "stop_loss_pct": 0.0,
+        "take_profit_pct": 0.0,
+        "order_type": "none",
+        "direction": "none",
+        "signal": signal,
+        "timestamp": utc_iso(),
+    }
+
+
+def trades_this_hour(trades: list[dict]) -> int:
+    now = utc_now()
+    count = 0
+    for trade in trades:
+        opened = trade.get("opened_at")
+        if not opened:
+            continue
+        try:
+            dt = datetime.fromisoformat(opened)
+            if (now - dt).total_seconds() <= 3600:
+                count += 1
+        except Exception:
+            continue
+    return count
+
+
+def execution_result(
+    symbol: str,
+    status: str,
+    reason: str,
+    signal: dict,
+    approval: dict,
+    order_id: str | None = None,
+    filled_price: float = 0.0,
+    filled_qty: float = 0.0,
+) -> dict:
+    return {
+        "symbol": symbol,
+        "order_id": order_id or "",
+        "status": status,
+        "reason": reason,
+        "filled_price": round(float(filled_price), 8),
+        "filled_qty": round(float(filled_qty), 8),
+        "stop_loss_order_id": "",
+        "take_profit_order_id": "",
+        "approval_token": approval.get("approval_token", ""),
+        "signal_id": signal.get("signal_id", ""),
+        "timestamp": utc_iso(),
+    }

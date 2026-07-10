@@ -14,6 +14,32 @@ if os.path.isfile(_dotenv):
                 _k, _v = _line.split("=", 1)
                 os.environ.setdefault(_k.strip(), _v.strip())
 
+
+def _bool_env(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _float_env(name: str, default: float) -> float:
+    try:
+        return float(os.getenv(name, default))
+    except (TypeError, ValueError):
+        return default
+
+
+def _int_env(name: str, default: int) -> int:
+    try:
+        return int(os.getenv(name, default))
+    except (TypeError, ValueError):
+        return default
+
+
+def _watchlist_env() -> list[str]:
+    raw = os.getenv("WATCHLIST", "").strip()
+    return [x.strip().upper() for x in raw.split(",") if x.strip()]
+
 CONFIG = {
     # ── CoinSwitch Pro credentials ───────────────────────────────────────────
     "api_key":    os.getenv("CS_API_KEY",    ""),
@@ -72,4 +98,40 @@ CONFIG = {
         "momentum":     15,
         "bb_squeeze":   10,
     },
+
+    # Multi-agent app settings from the prompt spec. Paper trading defaults to
+    # true; set PAPER_TRADING_MODE=false only after deliberate live validation.
+    "watchlist": _watchlist_env(),
+    "poll_interval_sec": _int_env("POLL_INTERVAL_SEC", 900),
+    "paper_trading_mode": _bool_env("PAPER_TRADING_MODE", True),
+    "paper_portfolio_usdt": _float_env("PAPER_PORTFOLIO_USDT", 1000.0),
+
+    # Data Collector / Signal Detector thresholds.
+    "pump_change_5m_pct": _float_env("PUMP_CHANGE_5M_PCT", 5.0),
+    "pump_change_1h_pct": _float_env("PUMP_CHANGE_1H_PCT", 10.0),
+    "dump_change_5m_pct": _float_env("DUMP_CHANGE_5M_PCT", 5.0),
+    "dump_change_1h_pct": _float_env("DUMP_CHANGE_1H_PCT", 10.0),
+    "volume_zscore_min": _float_env("VOLUME_ZSCORE_MIN", 3.0),
+    "buy_imbalance_min": _float_env("BUY_IMBALANCE_MIN", 0.65),
+    "sell_imbalance_min": _float_env("SELL_IMBALANCE_MIN", 0.65),
+    "trade_frequency_spike_ratio": _float_env("TRADE_FREQ_SPIKE_RATIO", 2.0),
+    "watch_condition_count": _int_env("WATCH_CONDITION_COUNT", 2),
+
+    # Risk Manager hard limits.
+    "max_position_pct": _float_env("MAX_POSITION_PCT", 2.0),
+    "max_total_exposure_pct": _float_env("MAX_TOTAL_EXPOSURE_PCT", 15.0),
+    "max_trades_per_hour": _int_env("MAX_TRADES_PER_HOUR", 2),
+    "min_confidence": _float_env("MIN_CONFIDENCE", 0.7),
+    "stop_loss_pct": _float_env("STOP_LOSS_PCT", 3.0),
+    "take_profit_pct": _float_env("TAKE_PROFIT_PCT", 6.0),
+    "daily_max_drawdown_pct": _float_env("DAILY_MAX_DRAWDOWN_PCT", 5.0),
+    "min_liquidity_usd": _float_env("MIN_LIQUIDITY_USD", 1_000_000.0),
+    "min_order_usdt": _float_env("MIN_ORDER_USDT", 10.0),
+    "risk_order_type": os.getenv("RISK_ORDER_TYPE", "limit"),
+
+    # Execution Agent / orchestration controls.
+    "slippage_tolerance_pct": _float_env("SLIPPAGE_TOLERANCE_PCT", 1.0),
+    "limit_slippage_offset_pct": _float_env("LIMIT_SLIPPAGE_OFFSET_PCT", 0.5),
+    "max_retries": _int_env("MAX_RETRIES", 2),
+    "circuit_breaker_error_limit": _int_env("CIRCUIT_BREAKER_ERROR_LIMIT", 3),
 }

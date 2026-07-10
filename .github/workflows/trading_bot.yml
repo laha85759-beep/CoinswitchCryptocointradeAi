@@ -19,7 +19,11 @@ jobs:
         id: cache-restore
         uses: actions/cache/restore@v4
         with:
-          path: open_trades.json
+          path: |
+            open_trades.json
+            processed_signals.json
+            daily_pnl.json
+            circuit_breaker.json
           key: cs-trade-state-${{ runner.os }}
           restore-keys: |
             cs-trade-state-
@@ -39,6 +43,8 @@ jobs:
           CS_API_SECRET:    ${{ secrets.CS_API_SECRET }}
           TELEGRAM_TOKEN:   ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PAPER_TRADING_MODE: ${{ vars.PAPER_TRADING_MODE || 'true' }}
+          WATCHLIST:        ${{ vars.WATCHLIST }}
         run: python main.py
 
       # ── Save updated trade state ────────────────────────────────────────────
@@ -46,7 +52,11 @@ jobs:
         if: always()
         uses: actions/cache/save@v4
         with:
-          path: open_trades.json
+          path: |
+            open_trades.json
+            processed_signals.json
+            daily_pnl.json
+            circuit_breaker.json
           key: cs-trade-state-${{ runner.os }}-${{ github.run_id }}
 
       # ── Upload logs ─────────────────────────────────────────────────────────
@@ -55,5 +65,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: bot-log-${{ github.run_number }}
-          path: bot.log
+          path: |
+            bot.log
+            agent_audit.jsonl
           retention-days: 7

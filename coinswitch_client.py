@@ -68,7 +68,8 @@ class CoinSwitchClient:
             resp.raise_for_status()
             return resp.json()
         except requests.HTTPError as e:
-            log.error(f"HTTP {resp.status_code} on {method} {path}: {resp.text}")
+            body = resp.text[:500] + ("..." if len(resp.text) > 500 else "")
+            log.error(f"HTTP {resp.status_code} on {method} {path}: {body}")
             raise
         except Exception as e:
             log.error(f"Request error on {method} {path}: {e}")

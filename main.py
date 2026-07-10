@@ -1,11 +1,8 @@
 """
-AI Crypto Auto-Trader — CoinSwitch Pro
-Entry point called by GitHub Actions every 15 minutes.
+CoinSwitch multi-agent pump/dump bot.
 
-Each cycle:
-  1. Monitor existing open trades (check SL hit / TP filled)
-  2. Scan market for new pump signals
-  3. Execute new BUY trades if found
+GitHub Actions runs one cycle every 15 minutes:
+Monitor -> Data Collector -> Signal Detector -> Risk Manager -> Execution.
 """
 
 import logging
@@ -13,11 +10,18 @@ import os
 import sys
 from datetime import datetime, timezone
 
+from agents import (
+    AuditLogger,
+    CircuitBreaker,
+    DataCollectorAgent,
+    ExecutionAgent,
+    MonitorReporterAgent,
+    RiskManagerAgent,
+    SignalDetectorAgent,
+)
 from coinswitch_client import CoinSwitchClient
-from scanner import MarketScanner
-from trader import TradeExecutor
-from notifier import TelegramNotifier
 from config import CONFIG
+from notifier import TelegramNotifier
 
 logging.basicConfig(
     level=logging.INFO,
@@ -29,6 +33,7 @@ logging.basicConfig(
 )
 logging.getLogger().handlers[0].stream.reconfigure(encoding="utf-8", errors="replace")
 log = logging.getLogger(__name__)
+
 MONDAY_NOTICE_FILE = "last_monday_notice.txt"
 
 
@@ -42,86 +47,113 @@ def _send_monday_resumption_notice(notifier: TelegramNotifier) -> None:
 
     if last_date != today:
         notifier.send(
-            "📅 *WEEKEND RESUMPTION*\n"
-            "━━━━━━━━━━━━━━━━━━━━━\n"
-            "🔄 Markets are open again and the bot is back online."
+            "*WEEKEND RESUMPTION*\n"
+            "Markets are open again and the bot is back online."
         )
         with open(MONDAY_NOTICE_FILE, "w", encoding="utf-8") as handle:
             handle.write(today)
 
 
-def run():
+def _is_weekend_utc() -> bool:
+    return datetime.now(timezone.utc).weekday() in (5, 6)
+
+
+def run() -> None:
     log.info("=" * 60)
-    log.info(f"🤖 CoinSwitch AI Bot — {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
+    log.info("CoinSwitch Multi-Agent Bot - %s", datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"))
     log.info("=" * 60)
 
     if not CONFIG["api_key"] or not CONFIG["api_secret"]:
-        log.error("❌ CoinSwitch API credentials not set. Check GitHub Secrets.")
+        log.error("CoinSwitch API credentials not set. Check GitHub Secrets.")
         sys.exit(1)
 
-    client   = CoinSwitchClient(
+    client = CoinSwitchClient(
         CONFIG["api_key"],
         CONFIG["api_secret"],
         rate_limit_delay=CONFIG.get("request_delay_seconds", 1.0),
     )
     notifier = TelegramNotifier(CONFIG["telegram_token"], CONFIG["telegram_chat_id"])
-    scanner  = MarketScanner(CONFIG, client)
-    executor = TradeExecutor(CONFIG, client, notifier)
+    audit = AuditLogger()
+    circuit_breaker = CircuitBreaker(CONFIG, audit)
 
-    # ── Step 1: Monitor existing positions ────────────────────────────────────
-    log.info("🔍 Monitoring open trades…")
-    executor.monitor()
+    monitor = MonitorReporterAgent(CONFIG, client, notifier, audit)
+    collector = DataCollectorAgent(CONFIG, client, audit)
+    detector = SignalDetectorAgent(CONFIG, audit)
+    risk_manager = RiskManagerAgent(CONFIG, client, audit)
+    executor = ExecutionAgent(CONFIG, client, audit)
 
-    # ── Step 2: Scan for new signals ─────────────────────────────────────────
-    log.info("🔍 Scanning market for new signals…")
-    pump_signals, dump_signals = scanner.scan()
+    log.info("Mode: %s", "PAPER" if CONFIG["paper_trading_mode"] else "LIVE")
 
-    if not pump_signals and not dump_signals:
-        log.info("😴 No high-probability pump signals this cycle.")
-        notifier.send(
-            f"💓 *HEARTBEAT — NO SIGNALS FOUND*\n"
-            f"━━━━━━━━━━━━━━━━━━━━━\n"
-            f"🧠 Bot cycle completed without new pump or dump signals.\n"
-            f"⏰ {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"
-        )
-    elif not pump_signals:
-        log.info("😴 No high-probability pump signals this cycle.")
+    # Agent 5 is intentionally run before new entries so existing positions are
+    # protected before the cycle considers fresh trades.
+    log.info("Monitor/Reporter: checking open positions")
+    monitor_report = monitor.monitor()
+    log.info("Monitor/Reporter: open_positions=%s", monitor_report["open_positions"])
+
+    log.info("Data Collector: fetching market data")
+    market_data = collector.collect()
+    errors = [item for item in market_data if item.get("error")]
+    if market_data and len(errors) == len(market_data):
+        state = circuit_breaker.record_error("all_collector_items_failed")
+        log.error("Circuit breaker state: %s", state)
     else:
-        log.info(f"✅ Found {len(pump_signals)} pump signal(s).")
-        for signal in pump_signals:
-            log.info(
-                f"  → {signal['symbol']} | pump={signal['pump_score']} | "
-                f"rsi={signal['rsi']} | vol×{signal['vol_ratio']} | roc={signal['roc5']}%"
-            )
+        circuit_breaker.record_success()
 
-    # ── Step 3: Exit positions on dump signals ───────────────────────────────
-    if dump_signals:
-        log.info(f"⚠️  Found {len(dump_signals)} dump signal(s) — checking open trades…")
-        for signal in dump_signals:
-            log.info(
-                f"  → {signal['symbol']} | dump={signal['dump_score']} | "
-                f"rsi={signal['rsi']} | vol×{signal['vol_ratio']} | roc={signal['roc5']}%"
-            )
-        executor.exit_on_dump(dump_signals)
+    log.info("Signal Detector: classifying symbols")
+    signals = detector.classify(market_data)
+    pump_signals = [s for s in signals if s["signal"] == "pump"]
+    dump_signals = [s for s in signals if s["signal"] == "dump"]
+    watch_signals = [s for s in signals if s["signal"] == "watch"]
+    other_count = len(signals) - len(pump_signals) - len(dump_signals) - len(watch_signals)
 
-    # ── Step 4: Weekend check — no new trades on Sat/Sun ─────────────────────
+    log.info(
+        "Signals: pump=%s dump=%s watch=%s normal_or_other=%s",
+        len(pump_signals),
+        len(dump_signals),
+        len(watch_signals),
+        other_count,
+    )
+    for signal in sorted(pump_signals + dump_signals + watch_signals, key=lambda x: x["confidence"], reverse=True)[:10]:
+        log.info(
+            "  %s | %s | confidence=%.2f | cause=%s",
+            signal["symbol"],
+            signal["signal"],
+            signal["confidence"],
+            signal["suspected_cause"],
+        )
+
     weekday = datetime.now(timezone.utc).weekday()
     if weekday == 0:
         _send_monday_resumption_notice(notifier)
 
-    if weekday in (5, 6):
-        log.info("🌙 Weekend — no new trades opened. Existing positions still monitored.")
+    if _is_weekend_utc():
+        log.info("Weekend: no new trades opened. Existing positions still monitored.")
         if pump_signals:
             notifier.send(
-                f"🌙 *WEEKEND — SKIPPING NEW TRADES*\n"
-                f"📊 `{len(pump_signals)}` pump signal(s) found but markets are closed for new entries.\n"
-                f"⏰ Resuming Monday."
+                "*WEEKEND - SKIPPING NEW TRADES*\n"
+                f"`{len(pump_signals)}` pump signal(s) found but new entries are blocked.\n"
+                "Resuming Monday."
             )
     else:
-        for signal in pump_signals:
-            executor.open_trade(signal)
+        log.info("Risk Manager: evaluating all signals")
+        approvals = risk_manager.evaluate(signals, execution_halted=circuit_breaker.is_halted())
+        approved = [a for a in approvals if a["approved"]]
+        log.info("Risk Manager: approved=%s rejected=%s", len(approved), len(approvals) - len(approved))
 
-    log.info("✅ Cycle complete.\n")
+        log.info("Execution Agent: executing approved trades")
+        results = executor.execute(approved)
+        filled = [r for r in results if r["status"] == "filled"]
+        log.info("Execution Agent: filled=%s attempted=%s", len(filled), len(results))
+
+    if not pump_signals:
+        notifier.send(
+            "*HEARTBEAT - NO PUMP SIGNALS FOUND*\n"
+            f"Watch signals: `{len(watch_signals)}`\n"
+            f"Mode: `{'paper' if CONFIG['paper_trading_mode'] else 'live'}`\n"
+            f"{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"
+        )
+
+    log.info("Cycle complete.\n")
 
 
 if __name__ == "__main__":
