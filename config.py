@@ -99,11 +99,11 @@ CONFIG = {
         "bb_squeeze":   10,
     },
 
-    # Multi-agent app settings from the prompt spec. Paper trading defaults to
-    # true; set PAPER_TRADING_MODE=false only after deliberate live validation.
+    # Multi-agent app settings from the prompt spec. Live trading is the default
+    # for this deployment; set PAPER_TRADING_MODE=true only for simulation.
     "watchlist": _watchlist_env(),
     "poll_interval_sec": _int_env("POLL_INTERVAL_SEC", 900),
-    "paper_trading_mode": _bool_env("PAPER_TRADING_MODE", True),
+    "paper_trading_mode": _bool_env("PAPER_TRADING_MODE", False),
     "paper_portfolio_usdt": _float_env("PAPER_PORTFOLIO_USDT", 1000.0),
 
     # Data Collector / Signal Detector thresholds.

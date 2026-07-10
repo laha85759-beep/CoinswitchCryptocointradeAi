@@ -43,7 +43,7 @@ jobs:
           CS_API_SECRET:    ${{ secrets.CS_API_SECRET }}
           TELEGRAM_TOKEN:   ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          PAPER_TRADING_MODE: ${{ vars.PAPER_TRADING_MODE || 'true' }}
+          PAPER_TRADING_MODE: ${{ vars.PAPER_TRADING_MODE || 'false' }}
           WATCHLIST:        ${{ vars.WATCHLIST }}
         run: python main.py
 

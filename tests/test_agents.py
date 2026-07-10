@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 
 from agents import AuditLogger, ExecutionAgent, RiskManagerAgent, load_json
+from config import CONFIG
 
 
 class FakeClient:
@@ -96,6 +97,9 @@ class AgentSafetyTests(unittest.TestCase):
         trades = load_json(Path("open_trades.json"), [])
         self.assertEqual(len(trades), 1)
         self.assertTrue(trades[0]["paper"])
+
+    def test_production_default_is_live_trading(self):
+        self.assertFalse(CONFIG["paper_trading_mode"])
 
 
 if __name__ == "__main__":
