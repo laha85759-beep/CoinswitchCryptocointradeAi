@@ -162,7 +162,11 @@ class DataCollectorAgent:
                 trade_freq_5m = int(max(1, round(volume_ratio * 100)))
 
                 ticker = tickers.get(symbol, {})
+                # c2c2 has empty quoteVolume — compute from baseVolume * price
                 quote_volume = safe_float(ticker.get("quoteVolume"))
+                if quote_volume <= 0:
+                    base_vol = safe_float(ticker.get("baseVolume"))
+                    quote_volume = base_vol * price if base_vol > 0 else 0.0
                 if quote_volume <= 0:
                     quote_volume = float(volume.tail(min(len(volume), 288)).sum()) * price
 
@@ -299,7 +303,7 @@ class RiskManagerAgent:
         if signal["signal"] != "pump":
             return risk_reject(signal, f"signal_is_{signal['signal']}")
         if signal["confidence"] < self.cfg["min_confidence"]:
-            return risk_reject(signal, f"confidence_{signal['confidence']:.3f}_below_{self.cfg['min_confidence']}")
+            return risk_reject(signal, "confidence_below_minimum")
 
         supporting = signal.get("supporting_data", {})
         vol_24h = float(supporting.get("volume_24h", 0) or 0)
@@ -322,7 +326,8 @@ class RiskManagerAgent:
         if trades_this_hour(trades) >= self.cfg["max_trades_per_hour"]:
             return risk_reject(signal, "max_trades_per_hour_reached")
 
-        if len([t for t in trades if not t.get("paper", False) == self.cfg["paper_trading_mode"]]) >= self.cfg["max_open_trades"]:
+        max_open_trades = int(self.cfg.get("max_open_trades", 1))
+        if len([t for t in trades if not t.get("paper", False) == self.cfg["paper_trading_mode"]]) >= max_open_trades:
             return risk_reject(signal, "max_open_trades_reached")
 
         portfolio_usdt = self._portfolio_usdt()

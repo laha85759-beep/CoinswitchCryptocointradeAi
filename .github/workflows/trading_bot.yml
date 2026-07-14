@@ -31,6 +31,7 @@ jobs:
             open_trades_delta.json
             processed_signals.json
             daily_pnl.json
+            last_daily_report.txt
             circuit_breaker.json
           key: trade-state-${{ runner.os }}-${{ github.run_id }}
           restore-keys: |
@@ -69,6 +70,7 @@ jobs:
             open_trades_delta.json
             processed_signals.json
             daily_pnl.json
+            last_daily_report.txt
             circuit_breaker.json
           key: trade-state-${{ runner.os }}-${{ github.run_id }}
 

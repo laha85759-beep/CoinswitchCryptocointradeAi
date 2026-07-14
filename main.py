@@ -14,7 +14,8 @@ Same signal → same trade → two exchanges → doubled exposure, same strategy
 import logging
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 from agents import (
     AuditLogger,
@@ -22,6 +23,7 @@ from agents import (
     DataCollectorAgent,
     RiskManagerAgent,
     SignalDetectorAgent,
+    load_json,
 )
 from coinswitch_client import CoinSwitchClient
 from config import CONFIG
@@ -44,6 +46,8 @@ except AttributeError:
 log = logging.getLogger(__name__)
 
 MONDAY_NOTICE_FILE = "last_monday_notice.txt"
+DAILY_REPORT_FILE = Path("last_daily_report.txt")
+IST = timezone(timedelta(hours=5, minutes=30))
 
 
 def _send_monday_resumption_notice(notifier: TelegramNotifier) -> None:
@@ -63,6 +67,42 @@ def _send_monday_resumption_notice(notifier: TelegramNotifier) -> None:
 
 def _is_weekend_utc() -> bool:
     return datetime.now(timezone.utc).weekday() in (5, 6)
+
+
+def _send_daily_report_if_due(
+    notifier: TelegramNotifier,
+    mode_str: str,
+    delta_enabled: bool,
+    monitor_report: dict,
+) -> None:
+    now_ist = datetime.now(IST)
+    if now_ist.hour < 23:
+        return
+
+    today_ist = now_ist.date().isoformat()
+    last_sent = DAILY_REPORT_FILE.read_text(encoding="utf-8").strip() if DAILY_REPORT_FILE.exists() else ""
+    if last_sent == today_ist:
+        return
+
+    pnl_by_day = load_json(Path("daily_pnl.json"), {})
+    today_pnl = pnl_by_day.get(datetime.now(timezone.utc).date().isoformat(), {})
+    realized = float(today_pnl.get("realized_pnl_usdt", 0.0) or 0.0)
+    closed_trades = int(today_pnl.get("closed_trades", 0) or 0)
+    cs_open = len(load_json(Path("open_trades_cs.json"), []))
+    delta_open = len(load_json(Path("open_trades_delta.json"), []))
+    closed_this_cycle = len(monitor_report.get("closed", []))
+
+    notifier.send(
+        f"*DAILY BOT REPORT* `{today_ist}`\n"
+        f"Mode: `{mode_str}`\n"
+        f"Status: `running 24/7 via GitHub Actions`\n"
+        f"Exchanges: `CoinSwitch ON | Delta India {'ON' if delta_enabled else 'OFF'}`\n"
+        f"Open positions: `CS {cs_open} | Delta {delta_open}`\n"
+        f"Closed today: `{closed_trades}` | This cycle: `{closed_this_cycle}`\n"
+        f"Realized P&L: `{realized:+.2f} USDT`\n"
+        f"Report time: `{now_ist.strftime('%Y-%m-%d %H:%M IST')}`"
+    )
+    DAILY_REPORT_FILE.write_text(today_ist, encoding="utf-8")
 
 
 def run() -> None:
@@ -182,6 +222,8 @@ def run() -> None:
             f"Exchanges: CoinSwitch ✓ | Delta India {'✓' if delta_enabled else '✗'}\n"
             f"`{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}`"
         )
+
+    _send_daily_report_if_due(notifier, mode_str, delta_enabled, monitor_report)
 
     log.info("Cycle complete.\n")
 
