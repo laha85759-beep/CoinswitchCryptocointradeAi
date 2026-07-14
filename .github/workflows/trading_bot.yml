@@ -27,7 +27,8 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: |
-            open_trades.json
+            open_trades_cs.json
+            open_trades_delta.json
             processed_signals.json
             daily_pnl.json
             circuit_breaker.json
@@ -48,6 +49,8 @@ jobs:
         env:
           CS_API_KEY:           ${{ secrets.CS_API_KEY }}
           CS_API_SECRET:        ${{ secrets.CS_API_SECRET }}
+          DELTA_API_KEY:        ${{ secrets.DELTA_API_KEY }}
+          DELTA_API_SECRET:     ${{ secrets.DELTA_API_SECRET }}
           TELEGRAM_TOKEN:       ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID:     ${{ secrets.TELEGRAM_CHAT_ID }}
           PAPER_TRADING_MODE:   ${{ vars.PAPER_TRADING_MODE || 'false' }}
@@ -62,7 +65,8 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: |
-            open_trades.json
+            open_trades_cs.json
+            open_trades_delta.json
             processed_signals.json
             daily_pnl.json
             circuit_breaker.json

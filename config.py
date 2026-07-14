@@ -54,6 +54,10 @@ CONFIG = {
     "api_key":    os.getenv("CS_API_KEY",    ""),
     "api_secret": os.getenv("CS_API_SECRET", ""),
 
+    # ── Delta Exchange India credentials ─────────────────────────────────────
+    "delta_api_key":    os.getenv("DELTA_API_KEY",    ""),
+    "delta_api_secret": os.getenv("DELTA_API_SECRET", ""),
+
     # ── Telegram ─────────────────────────────────────────────────────────────
     "telegram_token":   os.getenv("TELEGRAM_TOKEN",   ""),
     "telegram_chat_id": os.getenv("TELEGRAM_CHAT_ID", ""),
