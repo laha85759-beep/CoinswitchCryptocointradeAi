@@ -65,10 +65,10 @@ CONFIG = {
     # ── Scanner ──────────────────────────────────────────────────────────────
     "quote_currency":        "USDT",
     "request_delay_seconds": 1.0,
-    "top_n_by_volume":       60,       # focus on top 60 liquid pairs
+    "top_n_by_volume":       80,       # c2c2 has ~85 USDT pairs total
     "timeframe":             "5m",
     "candle_limit":          120,      # more candles = better indicator accuracy
-    "min_volume_usdt":       500_000,  # lowered: ₹1000 trades fine in 500K vol pairs
+    "min_volume_usdt":       50_000,   # c2c2 pairs are lower volume than c2c1
     "blacklist": ["USDC/USDT", "BUSD/USDT", "TUSD/USDT", "FDUSD/USDT"],
 
     # ── Legacy scanner thresholds (used by scanner.py SignalEngine) ───────────
@@ -146,8 +146,8 @@ CONFIG = {
     "take_profit_pct":          _float_env("TAKE_PROFIT_PCT",            4.0),
     # daily_max_drawdown=4%: on ₹1000 that's ₹40 max daily loss before halt
     "daily_max_drawdown_pct":   _float_env("DAILY_MAX_DRAWDOWN_PCT",     4.0),
-    # min_liquidity: ₹1000 trades safely in any pair with ₹500K+ 24h volume
-    "min_liquidity_usd":        _float_env("MIN_LIQUIDITY_USD",     500_000.0),
+    # min_liquidity: c2c2 pairs have lower 24h volume — set floor at 100K
+    "min_liquidity_usd":        _float_env("MIN_LIQUIDITY_USD",     100_000.0),
     "min_order_usdt":           _float_env("MIN_ORDER_USDT",             10.0),
     "risk_order_type":          os.getenv("RISK_ORDER_TYPE",           "limit"),
 

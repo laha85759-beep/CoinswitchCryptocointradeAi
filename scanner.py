@@ -143,7 +143,8 @@ class MarketScanner:
         return m.get(tf, 5)
 
     def _top_symbols(self) -> list[str]:
-        tickers = self.client.get_all_tickers_multi()
+        # Use c2c2 exchange — this is where candle data is available
+        tickers = self.client.get_all_tickers("c2c2")
 
         pairs = []
         for sym, data in tickers.items():

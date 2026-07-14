@@ -116,9 +116,10 @@ class DataCollectorAgent:
         out = []
         symbols = self.symbols()
         try:
-            tickers = self.client.get_all_tickers_multi()
+            # Use c2c2 — the exchange that has candle data on CoinSwitch
+            tickers = self.client.get_all_tickers("c2c2")
         except Exception as exc:
-            log.warning("Ticker snapshot failed, using candle-derived liquidity: %s", exc)
+            log.warning("Ticker snapshot failed: %s", exc)
             tickers = {}
         log.info("Data Collector: collecting %s symbols", len(symbols))
         for symbol in symbols:
