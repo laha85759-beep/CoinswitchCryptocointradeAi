@@ -2,4 +2,4 @@ pandas>=2.2,<3
 numpy>=1.26,<2
 requests>=2.32,<3
 cryptography>=42,<47
-delta-rest-client>=2.1.0
+delta-rest-client>=1.0.14
