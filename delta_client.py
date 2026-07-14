@@ -132,21 +132,31 @@ class DeltaClient:
     def symbol_to_product_id(self, symbol: str) -> int | None:
         """
         Convert a CoinSwitch-style symbol (e.g. 'BTC/USDT') to
-        Delta product_id.  Tries both 'BTCUSDT' and 'BTCUSD' forms.
+        Delta product_id for perpetual futures.
+
+        Delta India uses 'BTCUSD' (not BTCUSDT) for perpetual futures.
+        Priority: perpetual_futures > spot > others.
         """
         self._build_product_cache()
-        # Normalise CoinSwitch "BTC/USDT" → "BTCUSDT"
-        delta_sym = symbol.replace("/", "").upper()
-        # Try direct match first
-        product = self._product_cache.get(delta_sym)
-        # Fallback: strip T from USDT → BTCUSD
-        if product is None:
-            alt = delta_sym.replace("USDT", "USD")
-            product = self._product_cache.get(alt)
-        if product is None:
-            log.debug("No Delta product found for %s", symbol)
+        # Normalise: BTC/USDT → BTCUSD (Delta India convention)
+        base = symbol.split("/")[0].upper()
+        delta_sym = f"{base}USD"
+
+        # Search cache for this symbol, prefer perpetual_futures
+        best = None
+        for key, product in self._product_cache.items():
+            if key == delta_sym or key == delta_sym + "T":
+                ctype = product.get("contract_type", "")
+                if ctype == "perpetual_futures":
+                    best = product
+                    break
+                elif best is None:
+                    best = product
+
+        if best is None:
+            log.debug("No Delta product found for %s (tried %s)", symbol, delta_sym)
             return None
-        return int(product["id"])
+        return int(best["id"])
 
     def get_product_info(self, symbol: str) -> dict | None:
         self._build_product_cache()
@@ -161,17 +171,26 @@ class DeltaClient:
     def get_ticker(self, symbol: str) -> dict:
         """
         Get 24h ticker for a symbol.
-        Delta symbol format: 'BTCUSDT' (no slash).
+        Delta India symbol format: 'BTCUSD' (base + USD, no slash, no T).
         """
-        delta_sym = symbol.replace("/", "").upper()
+        base = symbol.split("/")[0].upper()
+        delta_sym = f"{base}USD"
         data = self._request(
             "GET", f"/v2/tickers/{delta_sym}", auth=False, use_cdn=True
         )
-        return data.get("result", {})
+        result = data.get("result")
+        if result is None:
+            # Try all tickers and find by symbol
+            all_t = self.get_all_tickers()
+            return all_t.get(delta_sym, {})
+        return result
 
     def get_ticker_price(self, symbol: str) -> float:
         ticker = self.get_ticker(symbol)
-        price = ticker.get("close") or ticker.get("mark_price") or 0
+        if not ticker:
+            return 0.0
+        # Delta returns close or mark_price
+        price = ticker.get("close") or ticker.get("mark_price") or ticker.get("spot_price") or 0
         return float(price)
 
     def get_all_tickers(self) -> dict:
@@ -191,10 +210,10 @@ class DeltaClient:
         limit: int = 120,
     ) -> list[dict]:
         """
-        Fetch OHLCV candles.
-        Returns list of dicts with keys: o, h, l, c, v, t (timestamp).
+        Fetch OHLCV candles. Delta India uses 'BTCUSD' symbol format.
         """
-        delta_sym = symbol.replace("/", "").upper()
+        base = symbol.split("/")[0].upper()
+        delta_sym = f"{base}USD"
         resolution = RESOLUTION_MAP.get(interval_minutes, "5m")
         end = int(time.time())
         start = end - (limit * interval_minutes * 60)
@@ -253,9 +272,7 @@ class DeltaClient:
     ) -> dict:
         """
         Place a buy or sell order on Delta Exchange India.
-
-        quantity is in base-asset units (same as CoinSwitch).
-        Returns the order dict from Delta API.
+        Delta India trades perpetual futures — quantity is contract size (integer).
         """
         product_id = self.symbol_to_product_id(symbol)
         if product_id is None:

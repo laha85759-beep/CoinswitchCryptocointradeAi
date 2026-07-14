@@ -118,15 +118,26 @@ class CoinSwitchClient:
         return data.get("data", {}).get(symbol, {})
 
     def get_ticker_price(self, symbol: str) -> float:
-        ticker = self.get_ticker(symbol)
-        return float(ticker.get("lastPrice", 0))
+        """Get last price. Uses multi-ticker snapshot for reliability."""
+        # Single ticker endpoint is unreliable — use multi-ticker
+        try:
+            tickers = self.get_all_tickers("c2c2")
+            price = float(tickers.get(symbol, {}).get("lastPrice", 0) or 0)
+            if price > 0:
+                return price
+            # fallback to c2c1
+            tickers = self.get_all_tickers("c2c1")
+            return float(tickers.get(symbol, {}).get("lastPrice", 0) or 0)
+        except Exception:
+            ticker = self.get_ticker(symbol)
+            return float(ticker.get("lastPrice", 0) or 0)
 
     def get_ohlcv(
         self,
         symbol: str,
         interval_minutes: int = 5,
         limit: int = 100,
-        exchange: str = EXCHANGE_USDT,
+        exchange: str = "c2c2",   # candles only available on c2c2
     ) -> list:
         """Historical OHLCV candles.
         interval_minutes: 1, 5, 15, 60, 1440
