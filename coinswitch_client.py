@@ -17,6 +17,7 @@ log = logging.getLogger(__name__)
 
 BASE_URL = "https://coinswitch.co"
 EXCHANGE_USDT = "c2c1"
+EXCHANGE_INR  = "c2c1"
 
 
 class CoinSwitchClient:
@@ -119,25 +120,23 @@ class CoinSwitchClient:
 
     def get_ticker_price(self, symbol: str) -> float:
         """Get last price. Uses multi-ticker snapshot for reliability."""
-        # Single ticker endpoint is unreliable — use multi-ticker
-        try:
-            tickers = self.get_all_tickers("c2c2")
-            price = float(tickers.get(symbol, {}).get("lastPrice", 0) or 0)
-            if price > 0:
-                return price
-            # fallback to c2c1
-            tickers = self.get_all_tickers("c2c1")
-            return float(tickers.get(symbol, {}).get("lastPrice", 0) or 0)
-        except Exception:
-            ticker = self.get_ticker(symbol)
-            return float(ticker.get("lastPrice", 0) or 0)
+        # INR pairs on c2c1; fallback to c2c2
+        for ex in ("c2c1", "c2c2"):
+            try:
+                tickers = self.get_all_tickers(ex)
+                price = float(tickers.get(symbol, {}).get("lastPrice", 0) or 0)
+                if price > 0:
+                    return price
+            except Exception:
+                continue
+        return 0.0
 
     def get_ohlcv(
         self,
         symbol: str,
         interval_minutes: int = 5,
         limit: int = 100,
-        exchange: str = "c2c2",   # candles only available on c2c2
+        exchange: str = "c2c1",   # INR pairs on c2c1
     ) -> list:
         """Historical OHLCV candles.
         interval_minutes: 1, 5, 15, 60, 1440
@@ -226,6 +225,22 @@ class CoinSwitchClient:
             if portfolio:
                 currencies = [item.get("currency", "?") for item in portfolio[:10]]
                 log.info("No USDT in portfolio (exchange=%s). Currencies: %s", ex, currencies)
+        return 0.0
+
+    def get_inr_balance(self) -> float:
+        """Get INR balance from CoinSwitch portfolio."""
+        # Try c2c1 first (INR exchange), then unfiltered
+        for ex in ("c2c1", "c2c2", None):
+            portfolio = self.get_portfolio(exchange=ex)
+            for item in portfolio:
+                currency = item.get("currency", "").upper()
+                if currency == "INR":
+                    available, locked, total = self._portfolio_balance(item)
+                    log.info("INR balance (exchange=%s): available=%.2f locked=%.2f total=%.2f", ex, available, locked, total)
+                    return available
+            if portfolio:
+                currencies = [item.get("currency", "?") for item in portfolio[:10]]
+                log.info("No INR in portfolio (exchange=%s). Currencies: %s", ex, currencies)
         return 0.0
 
     def get_coin_balance(self, coin: str) -> float:

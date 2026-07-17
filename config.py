@@ -63,13 +63,14 @@ CONFIG = {
     "telegram_chat_id": os.getenv("TELEGRAM_CHAT_ID", ""),
 
     # ── Scanner ──────────────────────────────────────────────────────────────
-    "quote_currency":        "USDT",
+    "quote_currency":        "INR",
+    "exchange":              "c2c1",    # CoinSwitch c2c1 = INR spot pairs
     "request_delay_seconds": 1.0,
-    "top_n_by_volume":       80,       # c2c2 has ~85 USDT pairs total
+    "top_n_by_volume":       80,
     "timeframe":             "5m",
     "candle_limit":          120,      # more candles = better indicator accuracy
-    "min_volume_usdt":       50_000,   # c2c2 pairs are lower volume than c2c1
-    "blacklist": ["USDC/USDT", "BUSD/USDT", "TUSD/USDT", "FDUSD/USDT"],
+    "min_volume_inr":        500_000,  # 5 lakh INR 24h volume minimum
+    "blacklist": ["USDC/INR", "USDT/INR", "BUSD/INR"],
 
     # ── Legacy scanner thresholds (used by scanner.py SignalEngine) ───────────
     "pump_score_min": 62,
@@ -146,8 +147,9 @@ CONFIG = {
     "take_profit_pct":          _float_env("TAKE_PROFIT_PCT",            4.0),
     # daily_max_drawdown=4%: on ₹1000 that's ₹40 max daily loss before halt
     "daily_max_drawdown_pct":   _float_env("DAILY_MAX_DRAWDOWN_PCT",     4.0),
-    # min_liquidity: c2c2 pairs have lower 24h volume — set floor at 100K
-    "min_liquidity_usd":        _float_env("MIN_LIQUIDITY_USD",     100_000.0),
+    # min_liquidity: INR pairs have higher 24h volume — set floor at ₹5 lakh
+    "min_liquidity_inr":        _float_env("MIN_LIQUIDITY_INR",     500_000.0),
+    "min_order_inr":            _float_env("MIN_ORDER_INR",             100.0),
     "min_order_usdt":           _float_env("MIN_ORDER_USDT",             10.0),
     "risk_order_type":          os.getenv("RISK_ORDER_TYPE",           "limit"),
 

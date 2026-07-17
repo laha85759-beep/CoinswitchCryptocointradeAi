@@ -87,7 +87,7 @@ def _send_daily_report_if_due(
 
     pnl_by_day = load_json(Path("daily_pnl.json"), {})
     today_pnl = pnl_by_day.get(datetime.now(timezone.utc).date().isoformat(), {})
-    realized = float(today_pnl.get("realized_pnl_usdt", 0.0) or 0.0)
+    realized = float(today_pnl.get("realized_pnl_inr", today_pnl.get("realized_pnl_usdt", 0.0)) or 0.0)
     closed_trades = int(today_pnl.get("closed_trades", 0) or 0)
     cs_open = len(load_json(Path("open_trades_cs.json"), []))
     delta_open = len(load_json(Path("open_trades_delta.json"), []))
@@ -97,10 +97,10 @@ def _send_daily_report_if_due(
         f"*DAILY BOT REPORT* `{today_ist}`\n"
         f"Mode: `{mode_str}`\n"
         f"Status: `running 24/7 via GitHub Actions`\n"
-        f"Exchanges: `CoinSwitch ON | Delta India {'ON' if delta_enabled else 'OFF'}`\n"
+        f"Exchanges: `CoinSwitch INR ✓ | Delta India {'ON' if delta_enabled else 'OFF'}`\n"
         f"Open positions: `CS {cs_open} | Delta {delta_open}`\n"
         f"Closed today: `{closed_trades}` | This cycle: `{closed_this_cycle}`\n"
-        f"Realized P&L: `{realized:+.2f} USDT`\n"
+        f"Realized P&L: `{realized:+.2f} INR`\n"
         f"Report time: `{now_ist.strftime('%Y-%m-%d %H:%M IST')}`"
     )
     DAILY_REPORT_FILE.write_text(today_ist, encoding="utf-8")

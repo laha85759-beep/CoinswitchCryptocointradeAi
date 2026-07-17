@@ -117,11 +117,11 @@ class DataCollectorAgent:
         symbols = self.symbols()
         log.info("Data Collector: collecting %s symbols", len(symbols))
         if not symbols:
-            log.warning("Data Collector: 0 symbols returned from scanner. Check CoinSwitch API / c2c2 tickers.")
+            log.warning("Data Collector: 0 symbols returned from scanner. Check CoinSwitch API / c2c1 INR tickers.")
             self.audit.write("DataCollector", {"count": 0, "items": [], "error": "zero_symbols_from_scanner"})
             return out
         try:
-            tickers = self.client.get_all_tickers("c2c2")
+            tickers = self.client.get_all_tickers(self.cfg.get("exchange", "c2c1"))
         except Exception as exc:
             log.warning("Ticker snapshot failed: %s", exc)
             tickers = {}
@@ -317,7 +317,7 @@ class RiskManagerAgent:
 
         supporting = signal.get("supporting_data", {})
         vol_24h = float(supporting.get("volume_24h", 0) or 0)
-        if vol_24h < self.cfg["min_liquidity_usd"]:
+        if vol_24h < self.cfg.get("min_liquidity_inr", 500_000):
             return risk_reject(signal, f"liquidity_{vol_24h:.0f}_below_min")
 
         # Skip high-volatility pairs (ATR > 5% means too risky for small capital)
@@ -340,25 +340,25 @@ class RiskManagerAgent:
         if len([t for t in trades if t.get("paper", False) == self.cfg["paper_trading_mode"]]) >= max_open_trades:
             return risk_reject(signal, "max_open_trades_reached")
 
-        portfolio_usdt = self._portfolio_usdt()
-        if portfolio_usdt <= 0:
+        portfolio_inr = self._portfolio_inr()
+        if portfolio_inr <= 0:
             return risk_reject(signal, "zero_portfolio_balance")
 
-        total_exposure = sum(float(t.get("usdt_used", 0) or 0) for t in trades)
-        max_total = portfolio_usdt * self.cfg["max_total_exposure_pct"] / 100.0
+        total_exposure = sum(float(t.get("inr_used", 0) or 0) for t in trades)
+        max_total = portfolio_inr * self.cfg["max_total_exposure_pct"] / 100.0
         if total_exposure >= max_total:
             return risk_reject(signal, "max_total_exposure_reached")
 
         pnl = load_json(DAILY_PNL_FILE, {})
         today = utc_now().date().isoformat()
-        day_loss = float(pnl.get(today, {}).get("realized_pnl_usdt", 0) or 0)
-        if day_loss < -(portfolio_usdt * self.cfg["daily_max_drawdown_pct"] / 100.0):
+        day_loss = float(pnl.get(today, {}).get("realized_pnl_inr", 0) or 0)
+        if day_loss < -(portfolio_inr * self.cfg["daily_max_drawdown_pct"] / 100.0):
             return risk_reject(signal, "daily_drawdown_limit_reached")
 
-        max_position = portfolio_usdt * self.cfg["max_position_pct"] / 100.0
+        max_position = portfolio_inr * self.cfg["max_position_pct"] / 100.0
         remaining_exposure = max(0.0, max_total - total_exposure)
         position_size = min(max_position, remaining_exposure)
-        if position_size < self.cfg["min_order_usdt"]:
+        if position_size < self.cfg.get("min_order_inr", 100.0):
             return risk_reject(signal, f"position_{position_size:.2f}_below_min_order")
 
         return {
@@ -367,6 +367,7 @@ class RiskManagerAgent:
             "approved": True,
             "reason": "approved",
             "position_size_usd": round(position_size, 2),
+            "position_size_inr": round(position_size, 2),
             "stop_loss_pct": self.cfg["stop_loss_pct"],
             "take_profit_pct": self.cfg["take_profit_pct"],
             "order_type": self.cfg["risk_order_type"],
@@ -378,13 +379,13 @@ class RiskManagerAgent:
             "timestamp": utc_iso(),
         }
 
-    def _portfolio_usdt(self) -> float:
+    def _portfolio_inr(self) -> float:
         if self.cfg["paper_trading_mode"]:
-            return float(self.cfg["paper_portfolio_usdt"])
+            return float(self.cfg.get("paper_portfolio_inr", self.cfg.get("paper_portfolio_usdt", 1000.0)))
         try:
-            return max(float(self.client.get_usdt_balance()), 0.0)
+            return max(float(self.client.get_inr_balance()), 0.0)
         except Exception as exc:
-            log.warning("USDT balance failed: %s", exc)
+            log.warning("INR balance failed: %s", exc)
             return 0.0
 
 
@@ -421,7 +422,7 @@ class ExecutionAgent:
             log.warning("Stale signal %s: slippage=%.2f%%", symbol, slippage)
             return execution_result(symbol, "rejected", f"stale_signal_slippage_{slippage:.2f}pct", signal, approval)
 
-        qty = round(float(approval["position_size_usd"]) / current_price, 6)
+        qty = round(float(approval.get("position_size_inr", approval["position_size_usd"])) / current_price, 6)
         if qty <= 0:
             return execution_result(symbol, "rejected", "zero_quantity", signal, approval)
 
@@ -477,11 +478,11 @@ class ExecutionAgent:
         # notifier not injected into ExecutionAgent — use audit log only
         # (MonitorReporter sends trade-closed notifications)
         log.info(
-            "TRADE OPENED %s | qty=%.6f | price=%.8f | size=$%.2f | sl=%.1f%% | tp=%.1f%%",
+            "TRADE OPENED %s | qty=%.6f | price=%.8f | size=₹%.2f | sl=%.1f%% | tp=%.1f%%",
             approval["symbol"],
             result["filled_qty"],
             price,
-            approval["position_size_usd"],
+            approval.get("position_size_inr", approval["position_size_usd"]),
             approval["stop_loss_pct"],
             approval["take_profit_pct"],
         )
@@ -503,7 +504,8 @@ class ExecutionAgent:
             "trailing_stop": None,
             "buy_id": result["order_id"],
             "opened_at": utc_iso(),
-            "usdt_used": approval["position_size_usd"],
+            "usdt_used": approval.get("position_size_inr", approval["position_size_usd"]),
+            "inr_used": approval.get("position_size_inr", approval["position_size_usd"]),
             "score": round(signal["confidence"] * 100, 2),
             "highest_profit_pct": 0.0,
             "paper": self.cfg["paper_trading_mode"],
@@ -600,7 +602,7 @@ class MonitorReporterAgent:
         return report
 
     def _close_trade(self, trade: dict, current: float, pnl_pct: float, reason: str) -> dict:
-        pnl_usdt = round(float(trade["usdt_used"]) * pnl_pct / 100.0, 2)
+        pnl_inr = round(float(trade.get("inr_used", trade.get("usdt_used", 0))) * pnl_pct / 100.0, 2)
 
         if not trade.get("paper"):
             sell_price = round(current * (1 - self.cfg["limit_slippage_offset_pct"] / 100.0), 8)
@@ -614,8 +616,8 @@ class MonitorReporterAgent:
 
         today = utc_now().date().isoformat()
         pnl = load_json(DAILY_PNL_FILE, {})
-        pnl.setdefault(today, {"realized_pnl_usdt": 0.0, "closed_trades": 0})
-        pnl[today]["realized_pnl_usdt"] = round(float(pnl[today]["realized_pnl_usdt"]) + pnl_usdt, 2)
+        pnl.setdefault(today, {"realized_pnl_inr": 0.0, "closed_trades": 0})
+        pnl[today]["realized_pnl_inr"] = round(float(pnl[today]["realized_pnl_inr"]) + pnl_inr, 2)
         pnl[today]["closed_trades"] = int(pnl[today]["closed_trades"]) + 1
         save_json(DAILY_PNL_FILE, pnl)
 
@@ -633,13 +635,13 @@ class MonitorReporterAgent:
             f"Entry  : `{trade['entry_price']}`\n"
             f"Exit   : `{current}`\n"
             f"Peak   : `{trade['peak_price']}`\n"
-            f"P&L    : `{pnl_pct:+.2f}%`  (`{pnl_usdt:+.2f}` USDT)\n"
+            f"P&L    : `{pnl_pct:+.2f}%`  (`{pnl_inr:+.2f}` INR)\n"
             f"Best   : `+{trade.get('highest_profit_pct', 0):.2f}%`\n"
             f"Mode   : `{'paper' if trade.get('paper') else 'LIVE'}`"
         )
         log.info(
-            "CLOSED %s | reason=%s | pnl=%.2f%% | pnl_usdt=%.2f",
-            trade["symbol"], reason, pnl_pct, pnl_usdt,
+            "CLOSED %s | reason=%s | pnl=%.2f%% | pnl_inr=%.2f",
+            trade["symbol"], reason, pnl_pct, pnl_inr,
         )
         return {
             "symbol": trade["symbol"],
@@ -732,6 +734,7 @@ def risk_reject(signal: dict, reason: str) -> dict:
         "approved": False,
         "reason": reason,
         "position_size_usd": 0.0,
+        "position_size_inr": 0.0,
         "stop_loss_pct": 0.0,
         "take_profit_pct": 0.0,
         "order_type": "none",
