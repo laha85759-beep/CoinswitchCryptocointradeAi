@@ -205,13 +205,21 @@ class CoinSwitchClient:
 
     def get_portfolio(self) -> list:
         data = self._request("GET", "/trade/api/v2/user/portfolio")
-        return data.get("data", [])
+        result = data.get("data", [])
+        if not result:
+            log.warning("Portfolio empty or unexpected format. Raw response keys: %s", list(data.keys()))
+        return result
 
     def get_usdt_balance(self) -> float:
-        for item in self.get_portfolio():
-            if item.get("currency", "").upper() == "USDT":
-                available, _, _ = self._portfolio_balance(item)
+        portfolio = self.get_portfolio()
+        for item in portfolio:
+            currency = item.get("currency", "").upper()
+            if currency == "USDT":
+                available, locked, total = self._portfolio_balance(item)
+                log.info("USDT balance: available=%.4f locked=%.4f total=%.4f", available, locked, total)
                 return available
+        if portfolio:
+            log.warning("USDT not found in portfolio. Currencies: %s", [item.get("currency", "?") for item in portfolio[:10]])
         return 0.0
 
     def get_coin_balance(self, coin: str) -> float:
