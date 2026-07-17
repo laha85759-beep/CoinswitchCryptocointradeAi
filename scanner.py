@@ -143,28 +143,43 @@ class MarketScanner:
         return m.get(tf, 5)
 
     def _top_symbols(self) -> list[str]:
-        # Use c2c2 exchange — this is where candle data is available
-        tickers = self.client.get_all_tickers("c2c2")
+        quote = self.cfg["quote_currency"]
+        min_vol = self.cfg["min_volume_usdt"]
 
-        pairs = []
-        for sym, data in tickers.items():
-            # c2c2 has empty quoteVolume — compute from baseVolume * lastPrice
-            raw_quote = data.get("quoteVolume")
-            vol = float(raw_quote) if raw_quote else 0.0
-            if vol <= 0:
-                base_vol = float(data.get("baseVolume", 0) or 0)
-                last_price = float(data.get("lastPrice", 0) or 0)
-                vol = base_vol * last_price
+        # Try c2c2 first (has candle data), fallback to c2c1
+        for exchange in ("c2c2", "c2c1"):
+            tickers = self.client.get_all_tickers(exchange)
+            log.info("Scanner: got %s tickers from %s", len(tickers), exchange)
+            if not tickers:
+                continue
 
-            if (
-                sym.endswith(f"/{self.cfg['quote_currency']}")
-                and vol >= self.cfg["min_volume_usdt"]
-                and sym not in self.cfg["blacklist"]
-            ):
-                pairs.append((sym, vol))
+            pairs = []
+            for sym, data in tickers.items():
+                raw_quote = data.get("quoteVolume")
+                vol = float(raw_quote) if raw_quote else 0.0
+                if vol <= 0:
+                    base_vol = float(data.get("baseVolume", 0) or 0)
+                    last_price = float(data.get("lastPrice", 0) or 0)
+                    vol = base_vol * last_price
 
-        pairs.sort(key=lambda x: x[1], reverse=True)
-        return [p[0] for p in pairs[: self.cfg["top_n_by_volume"]]]
+                if sym.endswith(f"/{quote}") and vol >= min_vol and sym not in self.cfg["blacklist"]:
+                    pairs.append((sym, vol))
+
+            if pairs:
+                pairs.sort(key=lambda x: x[1], reverse=True)
+                result = [p[0] for p in pairs[: self.cfg["top_n_by_volume"]]]
+                log.info("Scanner: found %s %s pairs with vol >= %s", len(result), exchange, min_vol)
+                return result
+            else:
+                sample = list(tickers.items())[:5]
+                log.warning(
+                    "Scanner: 0 %s pairs matched (quote=%s min_vol=%s). Sample: %s",
+                    exchange, quote, min_vol,
+                    [(s, {k: v for k, v in d.items() if k in ("lastPrice", "baseVolume", "quoteVolume")}) for s, d in sample],
+                )
+
+        log.error("Scanner: no symbols found on ANY exchange")
+        return []
 
     def _ohlcv(self, symbol: str) -> pd.DataFrame | None:
         try:

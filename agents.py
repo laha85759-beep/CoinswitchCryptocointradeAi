@@ -115,13 +115,16 @@ class DataCollectorAgent:
     def collect(self) -> list[dict]:
         out = []
         symbols = self.symbols()
+        log.info("Data Collector: collecting %s symbols", len(symbols))
+        if not symbols:
+            log.warning("Data Collector: 0 symbols returned from scanner. Check CoinSwitch API / c2c2 tickers.")
+            self.audit.write("DataCollector", {"count": 0, "items": [], "error": "zero_symbols_from_scanner"})
+            return out
         try:
-            # Use c2c2 — the exchange that has candle data on CoinSwitch
             tickers = self.client.get_all_tickers("c2c2")
         except Exception as exc:
             log.warning("Ticker snapshot failed: %s", exc)
             tickers = {}
-        log.info("Data Collector: collecting %s symbols", len(symbols))
         for symbol in symbols:
             try:
                 df = self.scanner._ohlcv(symbol)
