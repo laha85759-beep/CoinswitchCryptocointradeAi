@@ -249,15 +249,17 @@ class SignalDetectorAgent:
             dump_count = sum(bool(x) for x in dump_conditions)
 
             signal = "normal"
-            # Require 3/4 conditions for pump/dump (was 4/4 — too strict)
-            if pump_count >= 3 and trend_up:
+            # Relaxed pump/dump detection:
+            #   3/4 conditions (any trend) → pump/dump
+            #   2/4 conditions + aligned 4h trend → pump/dump
+            #   2/4 conditions (no trend) → watch
+            if pump_count >= 3:
                 signal = "pump"
-            elif pump_count == 4:
-                # All 4 conditions even without 4h trend — still fire
+            elif pump_count >= 2 and trend_up:
                 signal = "pump"
-            elif dump_count >= 3 and trend_down:
+            elif dump_count >= 3:
                 signal = "dump"
-            elif dump_count == 4:
+            elif dump_count >= 2 and trend_down:
                 signal = "dump"
             elif max(pump_count, dump_count) >= self.cfg["watch_condition_count"]:
                 signal = "watch"
@@ -300,7 +302,12 @@ class RiskManagerAgent:
         symbol = signal["symbol"]
         if execution_halted:
             return risk_reject(signal, "circuit_breaker_halted_execution")
-        if signal["signal"] != "pump":
+        # Accept pump signals and high-confidence watch signals
+        if signal["signal"] == "pump":
+            pass  # continue to evaluation
+        elif signal["signal"] == "watch" and signal["confidence"] >= 0.50:
+            pass  # high-confidence watch = tradeable
+        else:
             return risk_reject(signal, f"signal_is_{signal['signal']}")
         if signal["confidence"] < self.cfg["min_confidence"]:
             return risk_reject(signal, "confidence_below_minimum")
@@ -327,7 +334,7 @@ class RiskManagerAgent:
             return risk_reject(signal, "max_trades_per_hour_reached")
 
         max_open_trades = int(self.cfg.get("max_open_trades", 1))
-        if len([t for t in trades if not t.get("paper", False) == self.cfg["paper_trading_mode"]]) >= max_open_trades:
+        if len([t for t in trades if t.get("paper", False) == self.cfg["paper_trading_mode"]]) >= max_open_trades:
             return risk_reject(signal, "max_open_trades_reached")
 
         portfolio_usdt = self._portfolio_usdt()
@@ -684,10 +691,10 @@ def confidence_score(item: dict, matched_conditions: int, trend_aligned: bool = 
       4/4 conditions + strong volume   → ~0.65–0.80
     """
     move_strength = min(1.0, max(
-        abs(float(item.get("change_5m", 0))) / 5.0,
-        abs(float(item.get("change_1h", 0))) / 10.0,
+        abs(float(item.get("change_5m", 0))) / 3.0,
+        abs(float(item.get("change_1h", 0))) / 5.0,
     ))
-    volume_strength = min(1.0, max(0.0, float(item.get("volume_zscore", 0)) / 5.0))
+    volume_strength = min(1.0, max(0.0, float(item.get("volume_zscore", 0)) / 3.0))
     condition_strength = matched_conditions / 4.0
     trend_bonus = 0.10 if trend_aligned else 0.0
     raw = (

@@ -118,19 +118,19 @@ CONFIG = {
     "paper_portfolio_usdt": _float_env("PAPER_PORTFOLIO_USDT", 1000.0),
 
     # ── Signal detector thresholds ────────────────────────────────────────────
-    # Realistic 5m move thresholds: 1.0% is a genuine momentum candle
-    # 1h threshold of 2.5% means coin is in a real uptrend
-    "pump_change_5m_pct":          _float_env("PUMP_CHANGE_5M_PCT",        1.0),
-    "pump_change_1h_pct":          _float_env("PUMP_CHANGE_1H_PCT",        2.5),
-    "dump_change_5m_pct":          _float_env("DUMP_CHANGE_5M_PCT",        1.0),
-    "dump_change_1h_pct":          _float_env("DUMP_CHANGE_1H_PCT",        2.5),
-    # volume_zscore_min=2.0: z-score ≥ 2 is top ~2.3% of volume — meaningful spike
-    "volume_zscore_min":           _float_env("VOLUME_ZSCORE_MIN",         2.0),
-    # Synthetic imbalance from OHLCV rarely exceeds 0.62 — set threshold at 0.57
-    "buy_imbalance_min":           _float_env("BUY_IMBALANCE_MIN",         0.57),
-    "sell_imbalance_min":          _float_env("SELL_IMBALANCE_MIN",        0.57),
-    # trade_frequency_spike_ratio=2.0: volume ratio ≥ 2x rolling average
-    "trade_frequency_spike_ratio": _float_env("TRADE_FREQ_SPIKE_RATIO",    2.0),
+    # 5m move ≥ 0.5% = genuine momentum candle (altcoins move 0.5-2% easily)
+    # 1h threshold of 1.5% means coin is in a real uptrend
+    "pump_change_5m_pct":          _float_env("PUMP_CHANGE_5M_PCT",        0.5),
+    "pump_change_1h_pct":          _float_env("PUMP_CHANGE_1H_PCT",        1.5),
+    "dump_change_5m_pct":          _float_env("DUMP_CHANGE_5M_PCT",        0.5),
+    "dump_change_1h_pct":          _float_env("DUMP_CHANGE_1H_PCT",        1.5),
+    # volume_zscore_min=1.0: z-score ≥ 1 is top ~16% of volume — meaningful spike
+    "volume_zscore_min":           _float_env("VOLUME_ZSCORE_MIN",         1.0),
+    # Synthetic imbalance from OHLCV typically 0.48-0.58 — threshold at 0.52
+    "buy_imbalance_min":           _float_env("BUY_IMBALANCE_MIN",         0.52),
+    "sell_imbalance_min":          _float_env("SELL_IMBALANCE_MIN",        0.52),
+    # trade_frequency_spike_ratio=1.5: volume ratio ≥ 1.5x rolling average
+    "trade_frequency_spike_ratio": _float_env("TRADE_FREQ_SPIKE_RATIO",    1.5),
     # watch_condition_count=2: flag for monitoring when 2/4 conditions met
     "watch_condition_count":       _int_env("WATCH_CONDITION_COUNT",       2),
 
@@ -140,8 +140,8 @@ CONFIG = {
     "max_position_pct":         _float_env("MAX_POSITION_PCT",          40.0),
     "max_total_exposure_pct":   _float_env("MAX_TOTAL_EXPOSURE_PCT",    70.0),
     "max_trades_per_hour":      _int_env("MAX_TRADES_PER_HOUR",          3),
-    # min_confidence=0.40: confidence formula realistically scores 0.40–0.70
-    "min_confidence":           _float_env("MIN_CONFIDENCE",             0.40),
+    # min_confidence=0.30: allows moderate-confidence signals through
+    "min_confidence":           _float_env("MIN_CONFIDENCE",             0.30),
     "stop_loss_pct":            _float_env("STOP_LOSS_PCT",              1.5),
     "take_profit_pct":          _float_env("TAKE_PROFIT_PCT",            4.0),
     # daily_max_drawdown=4%: on ₹1000 that's ₹40 max daily loss before halt

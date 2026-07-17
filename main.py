@@ -25,10 +25,11 @@ from agents import (
     SignalDetectorAgent,
     load_json,
 )
+import agents as _agents
 from coinswitch_client import CoinSwitchClient
 from config import CONFIG
 from delta_client import DeltaClient
-from dual_exchange import DualExecutionAgent, DualMonitorAgent
+from dual_exchange import CS_TRADES_FILE, DualExecutionAgent, DualMonitorAgent
 from notifier import TelegramNotifier
 
 logging.basicConfig(
@@ -183,42 +184,37 @@ def run() -> None:
         _send_monday_resumption_notice(notifier)
 
     # ── Step 4 & 5: Risk + Dual Execution ────────────────────────────────────
-    if _is_weekend_utc():
-        log.info("Weekend — skipping new entries. Monitoring continues.")
-        if pump_signals:
-            notifier.send(
-                f"*⏸ WEEKEND — {len(pump_signals)} SIGNAL(S) BLOCKED*\n"
-                "New entries resume Monday on both exchanges."
-            )
-    else:
-        log.info("Step 4/5 — Risk evaluation")
-        approvals = risk_manager.evaluate(
-            signals, execution_halted=circuit_breaker.is_halted()
-        )
-        approved = [a for a in approvals if a["approved"]]
-        rejected = [a for a in approvals if not a["approved"]]
-        log.info("Approved: %s | Rejected: %s", len(approved), len(rejected))
+    log.info("Step 4/5 — Risk evaluation")
+    _original_atf = _agents.OPEN_TRADES_FILE
+    _agents.OPEN_TRADES_FILE = CS_TRADES_FILE
+    approvals = risk_manager.evaluate(
+        signals, execution_halted=circuit_breaker.is_halted()
+    )
+    _agents.OPEN_TRADES_FILE = _original_atf
+    approved = [a for a in approvals if a["approved"]]
+    rejected = [a for a in approvals if not a["approved"]]
+    log.info("Approved: %s | Rejected: %s", len(approved), len(rejected))
 
-        # Log top rejection reasons
-        reject_reasons: dict[str, int] = {}
-        for r in rejected:
-            k = r.get("reason", "unknown")
-            reject_reasons[k] = reject_reasons.get(k, 0) + 1
-        for reason, count in sorted(reject_reasons.items(), key=lambda x: -x[1])[:5]:
-            log.info("  Reject: %s × %s", reason, count)
+    # Log top rejection reasons
+    reject_reasons: dict[str, int] = {}
+    for r in rejected:
+        k = r.get("reason", "unknown")
+        reject_reasons[k] = reject_reasons.get(k, 0) + 1
+    for reason, count in sorted(reject_reasons.items(), key=lambda x: -x[1])[:5]:
+        log.info("  Reject: %s × %s", reason, count)
 
-        log.info("Step 5/5 — Execute on CoinSwitch + Delta India")
-        results = dual_executor.execute(approved)
-        cs_filled    = sum(1 for r in results if r.get("coinswitch", {}).get("status") == "filled")
-        delta_filled = sum(1 for r in results if r.get("delta", {}).get("status") == "filled")
-        log.info("Filled — CoinSwitch: %s | Delta: %s | attempted: %s",
-                 cs_filled, delta_filled, len(results))
+    log.info("Step 5/5 — Execute on CoinSwitch + Delta India")
+    results = dual_executor.execute(approved)
+    cs_filled    = sum(1 for r in results if r.get("coinswitch", {}).get("status") == "filled")
+    delta_filled = sum(1 for r in results if r.get("delta", {}).get("status") == "filled")
+    log.info("Filled — CoinSwitch: %s | Delta: %s | attempted: %s",
+             cs_filled, delta_filled, len(results))
 
     # ── Heartbeat ─────────────────────────────────────────────────────────────
-    if not pump_signals:
+    if not pump_signals and not watch_signals and not dump_signals:
         notifier.send(
-            f"*💓 HEARTBEAT — NO PUMP SIGNALS*\n"
-            f"Watch: `{len(watch_signals)}` | Mode: `{mode_str}`\n"
+            f"*💓 HEARTBEAT — NO SIGNALS*\n"
+            f"Mode: `{mode_str}`\n"
             f"Exchanges: CoinSwitch ✓ | Delta India {'✓' if delta_enabled else '✗'}\n"
             f"`{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}`"
         )

@@ -148,8 +148,14 @@ class MarketScanner:
 
         pairs = []
         for sym, data in tickers.items():
-            raw_vol = data.get("quoteVolume", 0)
-            vol = float(raw_vol) if raw_vol else 0.0
+            # c2c2 has empty quoteVolume — compute from baseVolume * lastPrice
+            raw_quote = data.get("quoteVolume")
+            vol = float(raw_quote) if raw_quote else 0.0
+            if vol <= 0:
+                base_vol = float(data.get("baseVolume", 0) or 0)
+                last_price = float(data.get("lastPrice", 0) or 0)
+                vol = base_vol * last_price
+
             if (
                 sym.endswith(f"/{self.cfg['quote_currency']}")
                 and vol >= self.cfg["min_volume_usdt"]
