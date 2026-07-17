@@ -17,7 +17,6 @@ log = logging.getLogger(__name__)
 
 BASE_URL = "https://coinswitch.co"
 EXCHANGE_USDT = "c2c1"
-EXCHANGE_INR  = "c2c1"
 
 
 class CoinSwitchClient:
@@ -120,8 +119,8 @@ class CoinSwitchClient:
 
     def get_ticker_price(self, symbol: str) -> float:
         """Get last price. Uses multi-ticker snapshot for reliability."""
-        # INR pairs on c2c1; fallback to c2c2
-        for ex in ("c2c1", "c2c2"):
+        # c2c2 has USDT pairs; fallback to c2c1
+        for ex in ("c2c2", "c2c1"):
             try:
                 tickers = self.get_all_tickers(ex)
                 price = float(tickers.get(symbol, {}).get("lastPrice", 0) or 0)
@@ -136,7 +135,7 @@ class CoinSwitchClient:
         symbol: str,
         interval_minutes: int = 5,
         limit: int = 100,
-        exchange: str = "c2c1",   # INR pairs on c2c1
+        exchange: str = "c2c2",   # candles available on c2c2
     ) -> list:
         """Historical OHLCV candles.
         interval_minutes: 1, 5, 15, 60, 1440

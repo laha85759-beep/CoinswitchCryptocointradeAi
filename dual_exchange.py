@@ -242,8 +242,7 @@ class DualExecutionAgent:
             "trailing_stop": None,
             "buy_id": result.get("order_id", ""),
             "opened_at": utc_iso(),
-            "usdt_used": approval.get("position_size_usd", 0),
-            "inr_used": approval.get("position_size_usd", 0),
+            "usdt_used": approval["position_size_usd"],
             "score": round(signal["confidence"] * 100, 2),
             "highest_profit_pct": 0.0,
             "paper": self.cfg["paper_trading_mode"],
@@ -263,8 +262,7 @@ class DualExecutionAgent:
         cs_status = cs_result.get("status", "?")
         delta_status = delta_result.get("status", "?")
         price = delta_result.get("filled_price") or cs_result.get("filled_price", 0)
-        size_inr = approval.get("position_size_inr", approval.get("position_size_usd", 0))
-        size_usd = delta_result.get("filled_price", 0) * delta_result.get("filled_qty", 0) if delta_result.get("status") == "filled" else 0
+        size = approval["position_size_usd"]
         mode = "📄 PAPER" if self.cfg["paper_trading_mode"] else "🔴 LIVE"
 
         cs_icon = "✅" if cs_status == "filled" else "❌"
@@ -275,7 +273,7 @@ class DualExecutionAgent:
             f"━━━━━━━━━━━━━━━━━━━━━\n"
             f"Mode      : `{mode}`\n"
             f"Entry     : `{price}`\n"
-            f"Size      : ₹{size_inr:.2f} INR (CS) | ${size_usd:.2f} USDT (Delta)\n"
+            f"Size      : `${size:.2f}` USDT each\n"
             f"━━━━━━━━━━━━━━━━━━━━━\n"
             f"{cs_icon} CoinSwitch : `{cs_status}`\n"
             f"{delta_icon} Delta India: `{delta_status}`\n"
@@ -392,7 +390,7 @@ class DualMonitorAgent:
         self, trade: dict, current: float, pnl_pct: float, reason: str
     ) -> dict:
         from agents import load_json, save_json, DAILY_PNL_FILE, utc_now
-        pnl_usdt = round(float(trade.get("usdt_used", trade.get("inr_used", 0))) * pnl_pct / 100.0, 2)
+        pnl_usdt = round(float(trade["usdt_used"]) * pnl_pct / 100.0, 2)
 
         if not trade.get("paper"):
             sell_price = round(current * (1 - self.cfg["limit_slippage_offset_pct"] / 100.0), 8)

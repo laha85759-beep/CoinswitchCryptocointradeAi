@@ -63,14 +63,14 @@ CONFIG = {
     "telegram_chat_id": os.getenv("TELEGRAM_CHAT_ID", ""),
 
     # ── Scanner ──────────────────────────────────────────────────────────────
-    "quote_currency":        "INR",
-    "exchange":              "c2c1",    # CoinSwitch c2c1 = INR spot pairs
+    "quote_currency":        "USDT",
+    "exchange":              "c2c2",    # CoinSwitch c2c2 = USDT pairs with candle data
     "request_delay_seconds": 1.0,
     "top_n_by_volume":       80,
     "timeframe":             "5m",
     "candle_limit":          120,      # more candles = better indicator accuracy
-    "min_volume_inr":        500_000,  # 5 lakh INR 24h volume minimum
-    "blacklist": ["USDC/INR", "USDT/INR", "BUSD/INR"],
+    "min_volume_usdt":       50_000,
+    "blacklist": ["USDC/USDT", "BUSD/USDT", "TUSD/USDT", "FDUSD/USDT"],
 
     # ── Legacy scanner thresholds (used by scanner.py SignalEngine) ───────────
     "pump_score_min": 62,
@@ -136,8 +136,8 @@ CONFIG = {
     "watch_condition_count":       _int_env("WATCH_CONDITION_COUNT",       2),
 
     # ── Risk manager limits ───────────────────────────────────────────────────
-    # max_position_pct=40: each trade up to 40% of portfolio → ~₹400 per trade
-    # max_total_exposure=70: both trades together = up to 70% → ~₹700 deployed
+    # max_position_pct=40: each trade up to 40% of portfolio → ~$40 per trade
+    # max_total_exposure=70: both trades together = up to 70% → ~$70 deployed
     "max_position_pct":         _float_env("MAX_POSITION_PCT",          40.0),
     "max_total_exposure_pct":   _float_env("MAX_TOTAL_EXPOSURE_PCT",    70.0),
     "max_trades_per_hour":      _int_env("MAX_TRADES_PER_HOUR",          3),
@@ -145,11 +145,9 @@ CONFIG = {
     "min_confidence":           _float_env("MIN_CONFIDENCE",             0.30),
     "stop_loss_pct":            _float_env("STOP_LOSS_PCT",              1.5),
     "take_profit_pct":          _float_env("TAKE_PROFIT_PCT",            4.0),
-    # daily_max_drawdown=4%: on ₹1000 that's ₹40 max daily loss before halt
+    # daily_max_drawdown=4%: on $100 that's $4 max daily loss before halt
     "daily_max_drawdown_pct":   _float_env("DAILY_MAX_DRAWDOWN_PCT",     4.0),
-    # min_liquidity: INR pairs have higher 24h volume — set floor at ₹5 lakh
-    "min_liquidity_inr":        _float_env("MIN_LIQUIDITY_INR",     500_000.0),
-    "min_order_inr":            _float_env("MIN_ORDER_INR",             100.0),
+    "min_liquidity_usd":        _float_env("MIN_LIQUIDITY_USD",     100_000.0),
     "min_order_usdt":           _float_env("MIN_ORDER_USDT",             10.0),
     "risk_order_type":          os.getenv("RISK_ORDER_TYPE",           "limit"),
 
