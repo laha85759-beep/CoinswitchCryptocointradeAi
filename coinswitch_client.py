@@ -203,23 +203,29 @@ class CoinSwitchClient:
             return True, 0.0
         return False, 0.0
 
-    def get_portfolio(self) -> list:
-        data = self._request("GET", "/trade/api/v2/user/portfolio")
+    def get_portfolio(self, exchange: str = None) -> list:
+        params = {}
+        if exchange:
+            params["exchange"] = exchange
+        data = self._request("GET", "/trade/api/v2/user/portfolio", params=params or None)
         result = data.get("data", [])
         if not result:
             log.warning("Portfolio empty or unexpected format. Raw response keys: %s", list(data.keys()))
         return result
 
     def get_usdt_balance(self) -> float:
-        portfolio = self.get_portfolio()
-        for item in portfolio:
-            currency = item.get("currency", "").upper()
-            if currency == "USDT":
-                available, locked, total = self._portfolio_balance(item)
-                log.info("USDT balance: available=%.4f locked=%.4f total=%.4f", available, locked, total)
-                return available
-        if portfolio:
-            log.warning("USDT not found in portfolio. Currencies: %s", [item.get("currency", "?") for item in portfolio[:10]])
+        # Try c2c2 first (USDT exchange), fallback to c2c1, then unfiltered
+        for ex in ("c2c2", "c2c1", None):
+            portfolio = self.get_portfolio(exchange=ex)
+            for item in portfolio:
+                currency = item.get("currency", "").upper()
+                if currency == "USDT":
+                    available, locked, total = self._portfolio_balance(item)
+                    log.info("USDT balance (exchange=%s): available=%.4f locked=%.4f total=%.4f", ex, available, locked, total)
+                    return available
+            if portfolio:
+                currencies = [item.get("currency", "?") for item in portfolio[:10]]
+                log.info("No USDT in portfolio (exchange=%s). Currencies: %s", ex, currencies)
         return 0.0
 
     def get_coin_balance(self, coin: str) -> float:
