@@ -27,7 +27,7 @@ import pandas as pd
 
 from coinswitch_client import CoinSwitchClient
 from notifier import TelegramNotifier
-from scanner import MarketScanner, SignalEngine
+from scanner import MarketScanner, SignalEngine, ConsolidationBreakoutEngine
 
 log = logging.getLogger(__name__)
 
@@ -105,6 +105,7 @@ class DataCollectorAgent:
         self.client = client
         self.audit = audit
         self.scanner = MarketScanner(cfg, client)
+        self.consol_engine = ConsolidationBreakoutEngine(cfg)
 
     def symbols(self) -> list[str]:
         watchlist = [s.strip().upper() for s in self.cfg.get("watchlist", []) if s.strip()]
@@ -190,6 +191,21 @@ class DataCollectorAgent:
                     "timestamp": utc_iso(),
                     "data_notes": ["orderbook_imbalance_and_trade_frequency_are_ohlcv_proxies"],
                 }
+
+                # ── Consolidation + Breakout detection (1h candles) ──────────
+                try:
+                    df_1h = self.scanner._ohlcv_1h(symbol, 48)
+                    if df_1h is not None and len(df_1h) >= 24:
+                        consol = self.consol_engine.detect(df_1h, df)
+                        if consol is not None:
+                            item["consolidation_breakout"] = consol
+                            log.info(
+                                "Consolidation breakout detected: %s | %s | strength=%s",
+                                symbol, consol["type"], consol.get("strength", 0),
+                            )
+                except Exception as exc:
+                    log.debug("Consolidation check failed for %s: %s", symbol, exc)
+
                 out.append(item)
             except Exception as exc:
                 out.append({"symbol": symbol, "error": str(exc), "timestamp": utc_iso()})
@@ -229,6 +245,20 @@ class SignalDetectorAgent:
                 signals.append(self._signal(symbol, "insufficient_data", 0.0, "incomplete_market_data", item))
                 continue
 
+            # ── Consolidation / trendline breakout (new strategy) ───────────
+            consol = item.get("consolidation_breakout")
+            if consol:
+                strength  = consol.get("strength", 0)
+                confidence = min(1.0, 0.55 + strength / 300)
+                min_score  = self.cfg.get("consolidation_breakout_score_min", 0.55)
+                if confidence >= min_score:
+                    signals.append(self._signal(
+                        symbol, "pump", confidence,
+                        consol.get("type", "consolidation_breakout"), item,
+                    ))
+                    continue
+
+            # ── Existing momentum signal detection ───────────────────────────
             up_move = (
                 item["change_5m"] > self.cfg["pump_change_5m_pct"]
                 or item["change_1h"] > self.cfg["pump_change_1h_pct"]

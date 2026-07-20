@@ -112,6 +112,16 @@ CONFIG = {
         "bb_squeeze":   10,
     },
 
+    # ── Consolidation + Breakout Strategy ──────────────────────────────────────
+    # Looks for coins consolidating 1-2 days, trades the breakout.
+    # Uses 1h candles for consolidation detection + 5m for entry timing.
+    "consolidation_lookback_hours":    48,   # 2-day lookback window
+    "consolidation_range_max_pct":    4.0,   # max price range % during consolidation
+    "bb_squeeze_percentile":          20,    # BB width must be ≤ 20th pctl → squeeze
+    "breakout_volume_multiplier":     1.8,   # volume must be ≥ 1.8× avg for confirmation
+    "trendline_breakout_enabled":    True,   # also detect trendline breakouts
+    "consolidation_breakout_score_min": 0.55, # min confidence to approve breakout trade
+
     # ── Multi-agent pipeline settings ─────────────────────────────────────────
     "watchlist":           _watchlist_env(),
     "poll_interval_sec":   _int_env("POLL_INTERVAL_SEC", 900),

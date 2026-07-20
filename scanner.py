@@ -128,6 +128,132 @@ class SignalEngine:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+#  Consolidation + Breakout Engine
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class ConsolidationBreakoutEngine:
+    """
+    Detects coins consolidating for 1-2 days and fires on breakout / trendline breakout.
+
+    Consolidation = narrow price range + Bollinger squeeze (low BB width percentile).
+    Breakout      = price closes above range high with volume confirmation.
+    Trendline     = price breaks above a descending trendline drawn from swing lows.
+    """
+
+    def __init__(self, cfg: dict):
+        self.lookback         = cfg.get("consolidation_lookback_hours", 48)
+        self.range_max_pct    = cfg.get("consolidation_range_max_pct", 4.0)
+        self.bb_squeeze_pct   = cfg.get("bb_squeeze_percentile", 20)
+        self.breakout_vol_mul = cfg.get("breakout_volume_multiplier", 1.8)
+        self.trendline_on     = cfg.get("trendline_breakout_enabled", True)
+
+    # ── public ────────────────────────────────────────────────────────────────
+    def detect(self, df_1h: pd.DataFrame, df_5m: pd.DataFrame | None = None) -> dict | None:
+        if df_1h is None or len(df_1h) < 24:
+            return None
+        if not self._is_consolidating(df_1h):
+            return None
+        return self._check_breakout(df_1h, df_5m)
+
+    # ── consolidation check ───────────────────────────────────────────────────
+    def _is_consolidating(self, df: pd.DataFrame) -> bool:
+        lookback = min(self.lookback, len(df))
+        recent   = df.tail(lookback)
+
+        high_range = float(recent.high.max())
+        low_range  = float(recent.low.min())
+        range_pct  = (high_range - low_range) / low_range * 100
+        if range_pct > self.range_max_pct:
+            return False
+
+        if len(df) >= 50:
+            _, _, _, bw = bollinger(df.close, 20, 2.0)
+            bw_clean = bw.dropna()
+            if len(bw_clean) >= 20:
+                current_bw = float(bw_clean.iloc[-1])
+                bw_pctl    = float((bw_clean <= current_bw).sum() / len(bw_clean) * 100)
+                if bw_pctl > self.bb_squeeze_pct:
+                    return False
+        return True
+
+    # ── breakout detection ────────────────────────────────────────────────────
+    def _check_breakout(self, df_1h: pd.DataFrame, df_5m: pd.DataFrame | None = None) -> dict | None:
+        lookback   = min(self.lookback, len(df_1h))
+        recent     = df_1h.tail(lookback)
+        high_range = float(recent.high.max())
+        low_range  = float(recent.low.min())
+
+        df = df_5m if df_5m is not None and len(df_5m) > 10 else df_1h
+        cur  = float(df.close.iloc[-1])
+        prev = float(df.close.iloc[-2]) if len(df) > 1 else cur
+
+        # ── price breakout above range ────────────────────────────────────────
+        if cur > high_range and prev <= high_range:
+            avg_vol     = float(df_1h.volume.tail(lookback).mean())
+            current_vol = float(df_1h.volume.iloc[-1])
+            vol_mult    = current_vol / avg_vol if avg_vol > 0 else 0
+
+            if vol_mult >= self.breakout_vol_mul:
+                r = float(rsi(df.close).iloc[-1]) if len(df) >= 14 else 50.0
+                if 40 < r < 75:
+                    return {
+                        "type":                "consolidation_breakout",
+                        "direction":           "BUY",
+                        "entry_price":         cur,
+                        "consolidation_high":  high_range,
+                        "consolidation_low":   low_range,
+                        "range_pct":           round((high_range - low_range) / low_range * 100, 2),
+                        "volume_multiplier":   round(vol_mult, 2),
+                        "rsi":                 round(r, 1),
+                        "strength":            min(100, int(vol_mult * 25 + (75 - r) * 0.5)),
+                    }
+
+        # ── trendline breakout ────────────────────────────────────────────────
+        if self.trendline_on and len(df_1h) >= 24:
+            tl = self._check_trendline_break(df_1h)
+            if tl:
+                return tl
+        return None
+
+    # ── trendline detection (swing-low linear regression) ─────────────────────
+    def _check_trendline_break(self, df: pd.DataFrame) -> dict | None:
+        swing_lows = []
+        for i in range(2, len(df) - 2):
+            lo = float(df.low.iloc[i])
+            if lo <= float(df.low.iloc[i - 1]) and lo <= float(df.low.iloc[i + 1]):
+                swing_lows.append((i, lo))
+        if len(swing_lows) < 3:
+            return None
+
+        x = np.array([s[0] for s in swing_lows[-3:]], dtype=float)
+        y = np.array([s[1] for s in swing_lows[-3:]], dtype=float)
+        slope, intercept = np.polyfit(x, y, 1)
+
+        idx  = float(len(df) - 1)
+        tl   = slope * idx + intercept
+        cur  = float(df.close.iloc[-1])
+        prev = float(df.close.iloc[-2]) if len(df) > 1 else cur
+
+        if cur > tl and prev <= tl:
+            avg_vol     = float(df.volume.tail(24).mean())
+            current_vol = float(df.volume.iloc[-1])
+            vol_mult    = current_vol / avg_vol if avg_vol > 0 else 0
+            if vol_mult >= self.breakout_vol_mul * 0.7:
+                r = float(rsi(df.close).iloc[-1]) if len(df) >= 14 else 50.0
+                return {
+                    "type":              "trendline_breakout",
+                    "direction":         "BUY",
+                    "entry_price":       cur,
+                    "trendline_value":   round(tl, 8),
+                    "trendline_slope":   round(slope, 8),
+                    "volume_multiplier": round(vol_mult, 2),
+                    "rsi":               round(r, 1),
+                    "strength":          min(100, int(vol_mult * 20 + (75 - r) * 0.5)),
+                }
+        return None
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 #  Market Scanner
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -199,6 +325,23 @@ class MarketScanner:
             return None
         except Exception as e:
             log.debug(f"OHLCV error {symbol}: {e}")
+            return None
+
+    def _ohlcv_1h(self, symbol: str, limit: int = 48) -> pd.DataFrame | None:
+        try:
+            for ex in ("c2c2", "c2c1"):
+                candles = self.client.get_ohlcv(symbol, 60, limit, exchange=ex)
+                if candles and len(candles) >= 24:
+                    df = pd.DataFrame(candles)
+                    df["open"]   = df["o"].astype(float)
+                    df["high"]   = df["h"].astype(float)
+                    df["low"]    = df["l"].astype(float)
+                    df["close"]  = df["c"].astype(float)
+                    df["volume"] = df["volume"].astype(float)
+                    return df
+            return None
+        except Exception as e:
+            log.debug(f"1h OHLCV error {symbol}: {e}")
             return None
 
     def scan(self) -> tuple[list[dict], list[dict]]:
