@@ -97,7 +97,7 @@ CONFIG = {
     #    Rises to ₹420 (+5%) → stop at ₹420 × (1-1.0%) = ₹415.80
     #    Drops to ₹416 → EXIT — locked +3.95% = +₹15.80 profit ✅
     #
-    "hard_sl_pct":          1.5,   # fixed crash protection
+    "hard_sl_pct":          2.0,   # fixed crash protection (backtested optimal)
     "trail_activation_pct": 1.5,   # profit % to activate trailing
     "trail_pct":            1.0,   # trail distance below peak
 
@@ -146,19 +146,18 @@ CONFIG = {
     "watch_condition_count":       _int_env("WATCH_CONDITION_COUNT",       2),
 
     # ── Risk manager limits ───────────────────────────────────────────────────
-    # max_position_pct=40: each trade up to 40% of portfolio → ~$40 per trade
-    # max_total_exposure=70: both trades together = up to 70% → ~$70 deployed
-    "max_position_pct":         _float_env("MAX_POSITION_PCT",          40.0),
-    "max_total_exposure_pct":   _float_env("MAX_TOTAL_EXPOSURE_PCT",    70.0),
+    # Backtested optimal: max_position_pct=20 reduces risk per trade
+    "max_position_pct":         _float_env("MAX_POSITION_PCT",          20.0),
+    "max_total_exposure_pct":   _float_env("MAX_TOTAL_EXPOSURE_PCT",    90.0),
     "max_trades_per_hour":      _int_env("MAX_TRADES_PER_HOUR",          3),
-    # min_confidence=0.30: allows moderate-confidence signals through
-    "min_confidence":           _float_env("MIN_CONFIDENCE",             0.30),
-    "stop_loss_pct":            _float_env("STOP_LOSS_PCT",              1.5),
-    "take_profit_pct":          _float_env("TAKE_PROFIT_PCT",            4.0),
+    # min_confidence=0.55: backtested optimal — only high-quality signals
+    "min_confidence":           _float_env("MIN_CONFIDENCE",             0.55),
+    "stop_loss_pct":            _float_env("STOP_LOSS_PCT",              2.0),
+    "take_profit_pct":          _float_env("TAKE_PROFIT_PCT",            3.0),
     # daily_max_drawdown=4%: on $100 that's $4 max daily loss before halt
     "daily_max_drawdown_pct":   _float_env("DAILY_MAX_DRAWDOWN_PCT",     4.0),
     "min_liquidity_usd":        _float_env("MIN_LIQUIDITY_USD",     100_000.0),
-    "min_order_usdt":           _float_env("MIN_ORDER_USDT",             10.0),
+    "min_order_usdt":           _float_env("MIN_ORDER_USDT",              1.0),
     "risk_order_type":          os.getenv("RISK_ORDER_TYPE",           "limit"),
 
     # ── Execution settings ────────────────────────────────────────────────────
@@ -168,4 +167,8 @@ CONFIG = {
     "limit_slippage_offset_pct":    _float_env("LIMIT_SLIPPAGE_OFFSET_PCT", 0.3),
     "max_retries":                  _int_env("MAX_RETRIES",                   3),
     "circuit_breaker_error_limit":  _int_env("CIRCUIT_BREAKER_ERROR_LIMIT",   5),
+
+    # ── Short Selling ─────────────────────────────────────────────────────────
+    "short_selling_enabled": _bool_env("SHORT_SELLING_ENABLED", True),
+    "short_exchanges": ["delta"],
 }

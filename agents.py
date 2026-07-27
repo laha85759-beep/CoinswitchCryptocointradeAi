@@ -319,10 +319,11 @@ class SignalDetectorAgent:
 
 
 class RiskManagerAgent:
-    def __init__(self, cfg: dict, client: CoinSwitchClient, audit: AuditLogger):
+    def __init__(self, cfg: dict, client: CoinSwitchClient, audit: AuditLogger, delta_client: Any = None):
         self.cfg = cfg
         self.client = client
         self.audit = audit
+        self.delta_client = delta_client
 
     def evaluate(self, signals: list[dict], execution_halted: bool = False) -> list[dict]:
         approvals = []
@@ -338,6 +339,8 @@ class RiskManagerAgent:
         # Accept pump signals and high-confidence watch signals
         if signal["signal"] == "pump":
             pass  # continue to evaluation
+        elif signal["signal"] == "dump" and self.cfg.get("short_selling_enabled", False):
+            pass  # Will be traded as short on Delta
         elif signal["signal"] == "watch" and signal["confidence"] >= 0.50:
             pass  # high-confidence watch = tradeable
         else:
@@ -400,7 +403,7 @@ class RiskManagerAgent:
             "stop_loss_pct": self.cfg["stop_loss_pct"],
             "take_profit_pct": self.cfg["take_profit_pct"],
             "order_type": self.cfg["risk_order_type"],
-            "direction": "long",
+            "direction": "short" if signal["signal"] == "dump" else "long",
             "approval_token": hashlib.sha256(
                 f"{signal['signal_id']}:{utc_iso()}".encode("utf-8")
             ).hexdigest()[:24],
@@ -411,11 +414,20 @@ class RiskManagerAgent:
     def _portfolio_usdt(self) -> float:
         if self.cfg["paper_trading_mode"]:
             return float(self.cfg["paper_portfolio_usdt"])
+        cs_bal = 0.0
         try:
-            return max(float(self.client.get_usdt_balance()), 0.0)
+            cs_bal = max(float(self.client.get_usdt_balance()), 0.0)
         except Exception as exc:
-            log.warning("USDT balance failed: %s", exc)
-            return 0.0
+            log.warning("CS USDT balance failed: %s", exc)
+
+        delta_bal = 0.0
+        if self.delta_client is not None:
+            try:
+                delta_bal = max(float(self.delta_client.get_usdt_balance()), 0.0)
+            except Exception as exc:
+                log.warning("Delta USDT balance failed: %s", exc)
+
+        return max(cs_bal, delta_bal)
 
 
 class ExecutionAgent:

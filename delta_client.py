@@ -86,8 +86,11 @@ class DeltaClient:
         use_cdn: bool = False,
     ) -> Any:
         self._throttle()
+        import urllib.parse
+        query_str = f"?{urllib.parse.urlencode(params)}" if params else ""
+        full_path_for_sig = endpoint + query_str
         body_str = json.dumps(body, separators=(",", ":")) if body else ""
-        headers = self._sign(method, endpoint, body_str) if auth else {
+        headers = self._sign(method, full_path_for_sig, body_str) if auth else {
             "Content-Type": "application/json"
         }
         base = CDN_URL if use_cdn else BASE_URL
@@ -249,13 +252,15 @@ class DeltaClient:
         return data.get("result", [])
 
     def get_usdt_balance(self) -> float:
-        """Return available USDT balance."""
+        """Return available USD / USDT balance on Delta Exchange India."""
         for item in self.get_balances():
-            asset = item.get("asset", {})
-            if (
-                asset.get("symbol", "").upper() == "USDT"
-                or str(item.get("asset_id", "")) == str(USDT_ASSET_ID)
-            ):
+            asset_sym = (
+                item.get("asset_symbol")
+                or item.get("asset", {}).get("symbol", "")
+            )
+            asset_sym = str(asset_sym).upper()
+            asset_id = str(item.get("asset_id", ""))
+            if asset_sym in ("USDT", "USD") or asset_id in ("5", "14"):
                 available = item.get("available_balance", item.get("balance", 0))
                 return float(available or 0)
         return 0.0

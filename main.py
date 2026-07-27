@@ -140,7 +140,7 @@ def run() -> None:
     dual_monitor  = DualMonitorAgent(CONFIG, cs_client, delta_client, notifier, audit)
     collector     = DataCollectorAgent(CONFIG, cs_client, audit)
     detector      = SignalDetectorAgent(CONFIG, audit)
-    risk_manager  = RiskManagerAgent(CONFIG, cs_client, audit)
+    risk_manager  = RiskManagerAgent(CONFIG, cs_client, audit, delta_client=delta_client)
     dual_executor = DualExecutionAgent(CONFIG, cs_client, delta_client, notifier, audit)
 
     mode_str = "PAPER" if CONFIG["paper_trading_mode"] else "LIVE"

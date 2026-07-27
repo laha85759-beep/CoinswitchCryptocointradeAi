@@ -91,6 +91,9 @@ class DualExecutionAgent:
 
     def _execute_coinswitch(self, approval: dict) -> dict:
         """Execute on CoinSwitch using original logic, saving to CS-specific file."""
+        if approval.get("direction") == "short":
+            return {"status": "skipped", "reason": "coinswitch_spot_no_short", "symbol": approval["symbol"]}
+            
         import agents as _agents
         original_file = _agents.OPEN_TRADES_FILE
         _agents.OPEN_TRADES_FILE = CS_TRADES_FILE
@@ -173,11 +176,13 @@ class DualExecutionAgent:
         last_error = None
         for attempt in range(1, self.cfg["max_retries"] + 1):
             try:
+                direction = approval.get("direction", "long")
                 limit_price = round(
-                    current_price * (1 + self.cfg["limit_slippage_offset_pct"] / 100.0), 8
+                    current_price * (1 + self.cfg["limit_slippage_offset_pct"] / 100.0) if direction == "long" else current_price * (1 - self.cfg["limit_slippage_offset_pct"] / 100.0), 8
                 )
+                side = "buy" if direction == "long" else "sell"
                 order = self.delta_client.place_order(
-                    symbol, "buy", self.cfg["risk_order_type"], qty, price=limit_price
+                    symbol, side, self.cfg["risk_order_type"], qty, price=limit_price
                 )
                 order_id = order.get("id") or order.get("order_id")
                 if not order_id:
@@ -224,8 +229,13 @@ class DualExecutionAgent:
         self, approval: dict, result: dict, price: float, qty: float
     ) -> None:
         signal = approval["signal"]
-        hard_sl = round(price * (1 - approval["stop_loss_pct"] / 100.0), 8)
-        take_profit = round(price * (1 + approval["take_profit_pct"] / 100.0), 8)
+        direction = approval.get("direction", "long")
+        if direction == "long":
+            hard_sl = round(price * (1 - approval["stop_loss_pct"] / 100.0), 8)
+            take_profit = round(price * (1 + approval["take_profit_pct"] / 100.0), 8)
+        else:
+            hard_sl = round(price * (1 + approval["stop_loss_pct"] / 100.0), 8)
+            take_profit = round(price * (1 - approval["take_profit_pct"] / 100.0), 8)
 
         # Get Delta product_id for this symbol
         product_id = self.delta_client.symbol_to_product_id(approval["symbol"])
@@ -236,6 +246,8 @@ class DualExecutionAgent:
             "qty": round(qty, 6),
             "entry_price": price,
             "peak_price": price,
+            "trough_price": price,
+            "direction": direction,
             "hard_sl": hard_sl,
             "take_profit": take_profit,
             "trail_active": False,
@@ -335,29 +347,46 @@ class DualMonitorAgent:
                         remaining.append(trade)
                         continue
 
-                    pnl_pct = pct_change(current, float(trade["entry_price"]))
+                    direction = trade.get("direction", "long")
+
+                    if direction == "long":
+                        pnl_pct = pct_change(current, float(trade["entry_price"]))
+                        if current > float(trade.get("peak_price", trade["entry_price"])):
+                            trade["peak_price"] = current
+                    else:
+                        pnl_pct = -pct_change(current, float(trade["entry_price"]))
+                        if current < float(trade.get("trough_price", trade.get("peak_price", trade["entry_price"]))):
+                            trade["trough_price"] = current
+
                     trade["highest_profit_pct"] = round(
                         max(float(trade.get("highest_profit_pct", 0)), pnl_pct), 4
                     )
-                    if current > float(trade.get("peak_price", trade["entry_price"])):
-                        trade["peak_price"] = current
 
                     if not trade.get("trail_active") and pnl_pct >= self.cfg["trail_activation_pct"]:
                         trade["trail_active"] = True
                         log.info("Delta trail ACTIVATED for %s at +%.2f%%", trade["symbol"], pnl_pct)
 
                     if trade.get("trail_active"):
-                        new_stop = round(
-                            float(trade["peak_price"]) * (1 - self.cfg["trail_pct"] / 100.0), 8
-                        )
-                        trade["trailing_stop"] = max(float(trade.get("trailing_stop") or 0), new_stop)
+                        if direction == "long":
+                            new_stop = round(float(trade["peak_price"]) * (1 - self.cfg["trail_pct"] / 100.0), 8)
+                            trade["trailing_stop"] = max(float(trade.get("trailing_stop") or 0), new_stop)
+                        else:
+                            new_stop = round(float(trade.get("trough_price", trade.get("peak_price", trade["entry_price"]))) * (1 + self.cfg["trail_pct"] / 100.0), 8)
+                            current_stop = float(trade.get("trailing_stop") or float('inf'))
+                            trade["trailing_stop"] = min(current_stop, new_stop)
 
                     active_stop = float(trade.get("trailing_stop") or trade["hard_sl"])
                     reason = None
-                    if current <= active_stop:
-                        reason = "trailing_stop" if trade.get("trail_active") else "stop_loss"
-                    elif current >= float(trade.get("take_profit", math.inf)):
-                        reason = "take_profit"
+                    if direction == "long":
+                        if current <= active_stop:
+                            reason = "trailing_stop" if trade.get("trail_active") else "stop_loss"
+                        elif current >= float(trade.get("take_profit", math.inf)):
+                            reason = "take_profit"
+                    else:
+                        if current >= active_stop:
+                            reason = "trailing_stop" if trade.get("trail_active") else "stop_loss"
+                        elif current <= float(trade.get("take_profit", -math.inf)):
+                            reason = "take_profit"
 
                     if reason:
                         closed_trade = self._close_delta_trade(trade, current, pnl_pct, reason)
@@ -393,10 +422,14 @@ class DualMonitorAgent:
         pnl_usdt = round(float(trade["usdt_used"]) * pnl_pct / 100.0, 2)
 
         if not trade.get("paper"):
-            sell_price = round(current * (1 - self.cfg["limit_slippage_offset_pct"] / 100.0), 8)
+            direction = trade.get("direction", "long")
+            sell_price = round(
+                current * (1 - self.cfg["limit_slippage_offset_pct"] / 100.0) if direction == "long" else current * (1 + self.cfg["limit_slippage_offset_pct"] / 100.0), 8
+            )
+            side = "sell" if direction == "long" else "buy"
             try:
                 self.delta_client.place_order(
-                    trade["symbol"], "sell", self.cfg["risk_order_type"],
+                    trade["symbol"], side, self.cfg["risk_order_type"],
                     float(trade["qty"]), price=sell_price,
                 )
             except Exception as exc:

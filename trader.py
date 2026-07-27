@@ -48,11 +48,18 @@ class TradeExecutor:
 
         usdt_to_use = usdt_free * (self.cfg["max_capital_pct"] / 100.0)
         qty         = round(usdt_to_use / price, 6)
-        hard_sl     = round(price * (1 - self.cfg["hard_sl_pct"] / 100), 8)
-        buy_price   = round(price * (1 + SLIP_PCT / 100), 8)
+        direction   = signal.get("direction", "long")
+        if direction == "long":
+            hard_sl     = round(price * (1 - self.cfg["hard_sl_pct"] / 100), 8)
+            buy_price   = round(price * (1 + SLIP_PCT / 100), 8)
+            side        = "buy"
+        else:
+            hard_sl     = round(price * (1 + self.cfg["hard_sl_pct"] / 100), 8)
+            buy_price   = round(price * (1 - SLIP_PCT / 100), 8)
+            side        = "sell"
 
         try:
-            order = self.client.place_order(symbol, "buy", "limit", qty, price=buy_price)
+            order = self.client.place_order(symbol, side, "limit", qty, price=buy_price)
             buy_id = order.get("order_id") or order.get("id") or "N/A"
             log.info(f"  ✅ BUY placed: {buy_id}")
 
@@ -84,6 +91,8 @@ class TradeExecutor:
                 "qty":                qty,
                 "entry_price":        price,
                 "peak_price":         price,
+                "trough_price":       price,
+                "direction":          direction,
                 "hard_sl":            hard_sl,
                 "trail_active":       False,
                 "trailing_stop":      None,
@@ -131,9 +140,14 @@ class TradeExecutor:
             trail_on   = t["trail_active"]
             trail_stop = t["trailing_stop"]
 
+            direction  = t.get("direction", "long")
+            
             try:
                 current    = self.client.get_ticker_price(symbol)
-                profit_pct = (current - entry) / entry * 100
+                if direction == "long":
+                    profit_pct = (current - entry) / entry * 100
+                else:
+                    profit_pct = (entry - current) / entry * 100
 
                 log.info(
                     f"  👀 {symbol} | current={current} | P&L={profit_pct:+.2f}% | "
@@ -141,9 +155,14 @@ class TradeExecutor:
                     f"stop={trail_stop or hard_sl}"
                 )
 
-                if current > peak:
-                    t["peak_price"] = current
-                    peak = current
+                if direction == "long":
+                    if current > peak:
+                        t["peak_price"] = current
+                        peak = current
+                else:
+                    if current < float(t.get("trough_price", peak)):
+                        t["trough_price"] = current
+                        peak = current # reuse peak variable for trailing stop logic below
 
                 if profit_pct > t["highest_profit_pct"]:
                     t["highest_profit_pct"] = round(profit_pct, 2)
@@ -151,7 +170,10 @@ class TradeExecutor:
                 if not trail_on and profit_pct >= self.cfg["trail_activation_pct"]:
                     t["trail_active"]  = True
                     trail_on           = True
-                    trail_stop         = round(peak * (1 - self.cfg["trail_pct"] / 100), 8)
+                    if direction == "long":
+                        trail_stop         = round(peak * (1 - self.cfg["trail_pct"] / 100), 8)
+                    else:
+                        trail_stop         = round(peak * (1 + self.cfg["trail_pct"] / 100), 8)
                     t["trailing_stop"] = trail_stop
                     log.info(f"  🎯 Trail ACTIVATED for {symbol}: stop={trail_stop}")
                     self.notifier.send(
@@ -159,25 +181,42 @@ class TradeExecutor:
                         f"━━━━━━━━━━━━━━━━━━━━━\n"
                         f"📊 *Symbol*     : `{symbol}`\n"
                         f"💰 *Profit*     : `+{profit_pct:.2f}%` ✅\n"
-                        f"📈 *Peak*       : `{peak}`\n"
+                        f"📈 *Peak/Trough*: `{peak}`\n"
                         f"🔒 *Trail Stop* : `{trail_stop}`\n"
                         f"━━━━━━━━━━━━━━━━━━━━━\n"
-                        f"↗️ Stop rises as price rises — locking profits!"
+                        f"↗️ Stop follows price — locking profits!"
                     )
 
                 if trail_on:
-                    new_stop = round(peak * (1 - self.cfg["trail_pct"] / 100), 8)
-                    if new_stop > (t["trailing_stop"] or 0):
-                        t["trailing_stop"] = new_stop
-                        trail_stop = new_stop
-                        log.info(f"  ⬆️  Trail stop raised -> {trail_stop}")
+                    if direction == "long":
+                        new_stop = round(peak * (1 - self.cfg["trail_pct"] / 100), 8)
+                        if new_stop > (t["trailing_stop"] or 0):
+                            t["trailing_stop"] = new_stop
+                            trail_stop = new_stop
+                            log.info(f"  ⬆️  Trail stop raised -> {trail_stop}")
+                    else:
+                        new_stop = round(peak * (1 + self.cfg["trail_pct"] / 100), 8)
+                        current_stop = t["trailing_stop"] or float('inf')
+                        if new_stop < current_stop:
+                            t["trailing_stop"] = new_stop
+                            trail_stop = new_stop
+                            log.info(f"  ⬇️  Trail stop lowered -> {trail_stop}")
 
-                if trail_on and current <= trail_stop:
-                    log.warning(f"  📉 TRAIL STOP HIT: {symbol} @ {current} (stop={trail_stop})")
-                    self._exit(t, current, "TRAILING STOP", round(profit_pct, 2))
+                if trail_on:
+                    if direction == "long" and current <= trail_stop:
+                        log.warning(f"  📉 TRAIL STOP HIT: {symbol} @ {current} (stop={trail_stop})")
+                        self._exit(t, current, "TRAILING STOP", round(profit_pct, 2))
+                        continue
+                    elif direction == "short" and current >= trail_stop:
+                        log.warning(f"  📈 TRAIL STOP HIT: {symbol} @ {current} (stop={trail_stop})")
+                        self._exit(t, current, "TRAILING STOP", round(profit_pct, 2))
+                        continue
+
+                if direction == "long" and current <= hard_sl:
+                    log.warning(f"  🛑 HARD SL HIT: {symbol} @ {current}")
+                    self._exit(t, current, "HARD STOP LOSS", round(profit_pct, 2))
                     continue
-
-                if current <= hard_sl:
+                elif direction == "short" and current >= hard_sl:
                     log.warning(f"  🛑 HARD SL HIT: {symbol} @ {current}")
                     self._exit(t, current, "HARD STOP LOSS", round(profit_pct, 2))
                     continue
@@ -197,6 +236,10 @@ class TradeExecutor:
         for t in trades:
             if t["symbol"] in dump_symbols:
                 try:
+                    direction = t.get("direction", "long")
+                    if direction == "short":
+                        remaining.append(t)
+                        continue
                     current = self.client.get_ticker_price(t["symbol"])
                     profit_pct = (current - t["entry_price"]) / t["entry_price"] * 100
                     log.warning(f"  ⚠️ DUMP SIGNAL for {t['symbol']} — exiting early")
@@ -214,11 +257,13 @@ class TradeExecutor:
         entry    = trade["entry_price"]
         usdt     = trade["usdt_used"]
         pnl_usdt = round(usdt * pnl_pct / 100, 2)
-        sell_price = round(current * (1 - SLIP_PCT / 100), 8)
+        direction = trade.get("direction", "long")
+        sell_price = round(current * (1 - SLIP_PCT / 100) if direction == "long" else current * (1 + SLIP_PCT / 100), 8)
+        side = "sell" if direction == "long" else "buy"
 
         try:
-            self.client.place_order(symbol, "sell", "limit", qty, price=sell_price)
-            log.info(f"  📤 SELL placed: {symbol}")
+            self.client.place_order(symbol, side, "limit", qty, price=sell_price)
+            log.info(f"  📤 EXIT placed: {symbol}")
         except Exception as e:
             log.error(f"  ❌ SELL failed {symbol}: {e}")
 
