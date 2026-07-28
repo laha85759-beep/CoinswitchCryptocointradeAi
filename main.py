@@ -210,6 +210,29 @@ def run() -> None:
     log.info("Filled — CoinSwitch: %s | Delta: %s | attempted: %s",
              cs_filled, delta_filled, len(results))
 
+    # ── Step 6: Options Hedge Agent (Delta Exchange India) ───────────────────
+    if delta_enabled and CONFIG.get("options_enabled", True):
+        try:
+            from options_agent import OptionsHedgeAgent, OptionsMonitorAgent
+            opt_monitor = OptionsMonitorAgent(CONFIG, delta_client, notifier)
+            opt_mon_res = opt_monitor.monitor()
+            log.info("Options Monitor — Open: %s | Closed: %s",
+                     opt_mon_res.get("open_options", 0), len(opt_mon_res.get("closed", [])))
+
+            opt_agent = OptionsHedgeAgent(CONFIG, delta_client, notifier)
+            for asset in CONFIG.get("options_assets", ["ETH", "BTC"]):
+                try:
+                    price = delta_client.get_ticker_price(f"{asset}/USDT")
+                    if price > 0:
+                        plan = opt_agent.generate_trade_plan(asset, price)
+                        if plan:
+                            opt_res = opt_agent.execute_plan(plan)
+                            log.info("Options trade result for %s: %s", asset, opt_res.get("status"))
+                except Exception as ex:
+                    log.warning("Options trade plan error for %s: %s", asset, ex)
+        except Exception as opt_exc:
+            log.warning("Options Hedge Agent step error: %s", opt_exc)
+
     # ── Heartbeat ─────────────────────────────────────────────────────────────
     if not pump_signals and not watch_signals and not dump_signals:
         notifier.send(

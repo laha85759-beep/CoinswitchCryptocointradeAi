@@ -29,6 +29,7 @@ jobs:
           path: |
             open_trades_cs.json
             open_trades_delta.json
+            open_options.json
             processed_signals.json
             daily_pnl.json
             last_daily_report.txt
@@ -68,6 +69,7 @@ jobs:
           path: |
             open_trades_cs.json
             open_trades_delta.json
+            open_options.json
             processed_signals.json
             daily_pnl.json
             last_daily_report.txt
