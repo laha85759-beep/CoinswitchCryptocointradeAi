@@ -174,7 +174,7 @@ CONFIG = {
 
     # ── Options Hedge Agent ───────────────────────────────────────────────────
     "options_enabled":         _bool_env("OPTIONS_ENABLED", True),
-    "options_assets":          ["ETH", "BTC"],
+    "options_assets":          ["ETH", "BTC", "XAUT"],   # Includes RWA Token Gold (XAUT)
     "options_stop_loss_pct":   _float_env("OPTIONS_STOP_LOSS_PCT", 50.0),   # -50% SL on options premium
     "options_take_profit_pct": _float_env("OPTIONS_TAKE_PROFIT_PCT", 100.0), # +100% TP on options premium
 }
