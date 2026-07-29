@@ -150,8 +150,8 @@ CONFIG = {
     "max_position_pct":         _float_env("MAX_POSITION_PCT",          20.0),
     "max_total_exposure_pct":   _float_env("MAX_TOTAL_EXPOSURE_PCT",    90.0),
     "max_trades_per_hour":      _int_env("MAX_TRADES_PER_HOUR",          3),
-    # min_confidence=0.55: backtested optimal — only high-quality signals
-    "min_confidence":           _float_env("MIN_CONFIDENCE",             0.55),
+    # min_confidence=0.45: allows high and moderate-high momentum signals through
+    "min_confidence":           _float_env("MIN_CONFIDENCE",             0.45),
     "stop_loss_pct":            _float_env("STOP_LOSS_PCT",              2.0),
     "take_profit_pct":          _float_env("TAKE_PROFIT_PCT",            3.0),
     # daily_max_drawdown=4%: on $100 that's $4 max daily loss before halt

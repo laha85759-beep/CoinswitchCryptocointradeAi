@@ -76,7 +76,7 @@ class OptionsChainProvider:
     def get_option_pricing(self, product_id: int) -> dict:
         """Fetch live bid/ask orderbook pricing for an option product."""
         try:
-            ob = self.client._request("GET", f"/v2/l2orderbook/{product_id}")
+            ob = self.client._request("GET", f"/v2/l2orderbook/{product_id}", auth=False)
             res = ob.get("result", ob) if isinstance(ob, dict) else {}
             sells = res.get("sell", [])
             buys = res.get("buy", [])
