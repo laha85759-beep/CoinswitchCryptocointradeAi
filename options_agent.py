@@ -108,6 +108,11 @@ class OptionsHedgeAgent:
         if not self.cfg.get("options_enabled", True) or not self.delta_client:
             return None
 
+        # Check if active options trade already open for this asset to avoid repeated entries
+        open_opts = load_json(OPTIONS_TRADES_FILE, [])
+        if any(t.get("asset") == asset and t.get("status") == "active" for t in open_opts):
+            return None
+
         chain = self.provider.get_live_options_chain(asset)
         if not chain:
             log.info("No active options chain found for %s", asset)

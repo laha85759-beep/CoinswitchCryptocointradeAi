@@ -233,15 +233,7 @@ def run() -> None:
         except Exception as opt_exc:
             log.warning("Options Hedge Agent step error: %s", opt_exc)
 
-    # ── Heartbeat ─────────────────────────────────────────────────────────────
-    if not pump_signals and not watch_signals and not dump_signals:
-        notifier.send(
-            f"*💓 HEARTBEAT — NO SIGNALS*\n"
-            f"Mode: `{mode_str}`\n"
-            f"Exchanges: CoinSwitch ✓ | Delta India {'✓' if delta_enabled else '✗'}\n"
-            f"`{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}`"
-        )
-
+    # Daily summary report if due
     _send_daily_report_if_due(notifier, mode_str, delta_enabled, monitor_report)
 
     log.info("Cycle complete.\n")
