@@ -416,9 +416,11 @@ class RiskManagerAgent:
             return float(self.cfg["paper_portfolio_usdt"])
         cs_bal = 0.0
         try:
-            cs_bal = max(float(self.client.get_usdt_balance()), 0.0)
+            usdt = max(float(self.client.get_usdt_balance()), 0.0)
+            inr_in_usdt = max(float(self.client.get_inr_balance()), 0.0) / 88.0  # ~88 INR/USDT rate
+            cs_bal = max(usdt, inr_in_usdt)
         except Exception as exc:
-            log.warning("CS USDT balance failed: %s", exc)
+            log.warning("CS balance failed: %s", exc)
 
         delta_bal = 0.0
         if self.delta_client is not None:
@@ -427,7 +429,11 @@ class RiskManagerAgent:
             except Exception as exc:
                 log.warning("Delta USDT balance failed: %s", exc)
 
-        return max(cs_bal, delta_bal)
+        total_bal = max(cs_bal, delta_bal)
+        # If real balance exists but is small (< $10), treat portfolio as $10.00 for order sizing floor
+        if total_bal > 0.0:
+            return max(total_bal, 10.0)
+        return 0.0
 
 
 class ExecutionAgent:
