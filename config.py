@@ -156,14 +156,14 @@ CONFIG = {
     "take_profit_pct":          _float_env("TAKE_PROFIT_PCT",            3.0),
     # daily_max_drawdown=4%: on $100 that's $4 max daily loss before halt
     "daily_max_drawdown_pct":   _float_env("DAILY_MAX_DRAWDOWN_PCT",     4.0),
-    "min_liquidity_usd":        _float_env("MIN_LIQUIDITY_USD",     100_000.0),
-    "min_order_usdt":           _float_env("MIN_ORDER_USDT",              1.0),
+    "min_liquidity_usd":        _float_env("MIN_LIQUIDITY_USD",      10_000.0),
+    "min_order_usdt":           _float_env("MIN_ORDER_USDT",              0.5),
     "risk_order_type":          os.getenv("RISK_ORDER_TYPE",           "limit"),
 
     # ── Execution settings ────────────────────────────────────────────────────
-    # slippage_tolerance=2.0%: allow up to 2% price movement between signal
+    # slippage_tolerance=3.5%: allow up to 3.5% price movement between signal
     # and execution — 15min GitHub Actions cycle means price can move
-    "slippage_tolerance_pct":       _float_env("SLIPPAGE_TOLERANCE_PCT",    2.0),
+    "slippage_tolerance_pct":       _float_env("SLIPPAGE_TOLERANCE_PCT",    3.5),
     "limit_slippage_offset_pct":    _float_env("LIMIT_SLIPPAGE_OFFSET_PCT", 0.3),
     "max_retries":                  _int_env("MAX_RETRIES",                   3),
     "circuit_breaker_error_limit":  _int_env("CIRCUIT_BREAKER_ERROR_LIMIT",   5),
