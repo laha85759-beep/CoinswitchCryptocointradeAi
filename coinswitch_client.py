@@ -258,6 +258,10 @@ class CoinSwitchClient:
         price: float = None,
         exchange: str = EXCHANGE_USDT,
     ) -> dict:
+        # Convert /USDT to /INR for c2c1 (CoinSwitchX INR exchange)
+        if exchange == "c2c1" and symbol.endswith("/USDT"):
+            symbol = symbol.replace("/USDT", "/INR")
+
         body = {
             "side": side.lower(),
             "symbol": symbol,
