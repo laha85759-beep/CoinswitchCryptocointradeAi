@@ -16,7 +16,7 @@ from cryptography.hazmat.primitives.asymmetric import ed25519
 log = logging.getLogger(__name__)
 
 BASE_URL = "https://coinswitch.co"
-EXCHANGE_USDT = "c2c2"
+EXCHANGE_USDT = "c2c1"
 
 
 class CoinSwitchClient:
