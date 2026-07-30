@@ -152,8 +152,8 @@ CONFIG = {
     "max_trades_per_hour":      _int_env("MAX_TRADES_PER_HOUR",          3),
     # min_confidence=0.45: allows high and moderate-high momentum signals through
     "min_confidence":           _float_env("MIN_CONFIDENCE",             0.45),
-    "stop_loss_pct":            _float_env("STOP_LOSS_PCT",              2.0),
-    "take_profit_pct":          _float_env("TAKE_PROFIT_PCT",            3.0),
+    "stop_loss_pct":            _float_env("STOP_LOSS_PCT",              1.5),  # Tight -1.5% SL
+    "take_profit_pct":          _float_env("TAKE_PROFIT_PCT",            4.5),  # Large +4.5% TP (1:3 Risk-Reward Ratio)
     # daily_max_drawdown=4%: on $100 that's $4 max daily loss before halt
     "daily_max_drawdown_pct":   _float_env("DAILY_MAX_DRAWDOWN_PCT",     4.0),
     "min_liquidity_usd":        _float_env("MIN_LIQUIDITY_USD",      10_000.0),
