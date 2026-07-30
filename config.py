@@ -157,7 +157,7 @@ CONFIG = {
     # daily_max_drawdown=4%: on $100 that's $4 max daily loss before halt
     "daily_max_drawdown_pct":   _float_env("DAILY_MAX_DRAWDOWN_PCT",     4.0),
     "min_liquidity_usd":        _float_env("MIN_LIQUIDITY_USD",      10_000.0),
-    "min_order_usdt":           _float_env("MIN_ORDER_USDT",              0.5),
+    "min_order_usdt":           _float_env("MIN_ORDER_USDT",              3.5),
     "risk_order_type":          os.getenv("RISK_ORDER_TYPE",           "limit"),
 
     # ── Execution settings ────────────────────────────────────────────────────
