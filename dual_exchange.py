@@ -121,7 +121,7 @@ class DualExecutionAgent:
             return {"status": "error", "reason": f"price_fetch:{exc}", "symbol": symbol}
 
         if current_price <= 0:
-            return {"status": "error", "reason": "zero_price", "symbol": symbol}
+            return {"status": "skipped", "reason": "not_listed_on_delta", "symbol": symbol}
 
         slippage = abs(pct_change(current_price, price_at_signal))
         if slippage > self.cfg["slippage_tolerance_pct"]:
@@ -285,6 +285,12 @@ class DualExecutionAgent:
         symbol = approval["symbol"]
         cs_status = cs_result.get("status", "?")
         delta_status = delta_result.get("status", "?")
+
+        # Do NOT send Telegram alert if both exchanges failed, skipped, or rejected the order
+        if cs_status != "filled" and delta_status != "filled":
+            log.info("Dual trade for %s not filled on either exchange (CS: %s, Delta: %s). Suppressing notification.", symbol, cs_status, delta_status)
+            return
+
         price = delta_result.get("filled_price") or cs_result.get("filled_price", 0)
         size = approval["position_size_usd"]
         mode = "📄 PAPER" if self.cfg["paper_trading_mode"] else "🔴 LIVE"
