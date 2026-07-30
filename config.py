@@ -147,13 +147,13 @@ CONFIG = {
 
     # ── Risk manager limits ───────────────────────────────────────────────────
     # Backtested optimal: max_position_pct=20 reduces risk per trade
-    "max_position_pct":         _float_env("MAX_POSITION_PCT",          20.0),
+    "max_position_pct":         _float_env("MAX_POSITION_PCT",          30.0),  # ₹400 / $4.50 position size (exceeds min order filter)
     "max_total_exposure_pct":   _float_env("MAX_TOTAL_EXPOSURE_PCT",    90.0),
     "max_trades_per_hour":      _int_env("MAX_TRADES_PER_HOUR",          3),
-    # min_confidence=0.45: allows high and moderate-high momentum signals through
-    "min_confidence":           _float_env("MIN_CONFIDENCE",             0.45),
-    "stop_loss_pct":            _float_env("STOP_LOSS_PCT",              1.5),  # Tight -1.5% SL
-    "take_profit_pct":          _float_env("TAKE_PROFIT_PCT",            4.5),  # Large +4.5% TP (1:3 Risk-Reward Ratio)
+    # min_confidence=0.50: ensures high-probability momentum breakout signals only
+    "min_confidence":           _float_env("MIN_CONFIDENCE",             0.50),
+    "stop_loss_pct":            _float_env("STOP_LOSS_PCT",              1.2),  # Ultra-tight -1.2% SL for capital protection
+    "take_profit_pct":          _float_env("TAKE_PROFIT_PCT",            4.8),  # High +4.8% TP (1:4 Risk-Reward ratio for max gains)
     # daily_max_drawdown=4%: on $100 that's $4 max daily loss before halt
     "daily_max_drawdown_pct":   _float_env("DAILY_MAX_DRAWDOWN_PCT",     4.0),
     "min_liquidity_usd":        _float_env("MIN_LIQUIDITY_USD",      10_000.0),
