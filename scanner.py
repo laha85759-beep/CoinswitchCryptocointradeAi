@@ -42,9 +42,12 @@ def bollinger(s: pd.Series, p: int = 20, k: float = 2.0):
 #  Signal Engine
 # ═══════════════════════════════════════════════════════════════════════════════
 
+from pp_supertrend_ghost import PPSuperTrendGhostEngine
+
 class SignalEngine:
     def __init__(self, weights: dict):
         self.w = weights
+        self.pp_ghost = PPSuperTrendGhostEngine()
 
     def score(self, df: pd.DataFrame) -> dict:
         pump, dump = {}, {}
@@ -112,6 +115,18 @@ class SignalEngine:
         else:
             pump["bb_squeeze"], dump["bb_squeeze"] = 50, 50
 
+        # 7 ── PP SuperTrend + Reversal Zone Finder [Ghost Protocol] V3 ──────
+        pp_ghost_res = self.pp_ghost.analyze(df)
+        if pp_ghost_res["signal"] == "pump":
+            pump["pp_supertrend_ghost"] = 85
+            dump["pp_supertrend_ghost"] = 15
+        elif pp_ghost_res["signal"] == "dump":
+            pump["pp_supertrend_ghost"] = 15
+            dump["pp_supertrend_ghost"] = 85
+        else:
+            pump["pp_supertrend_ghost"] = 50
+            dump["pp_supertrend_ghost"] = 50
+
         # ── Weighted composite ────────────────────────────────────────────────
         w = self.w
         tw = sum(w.values())
@@ -124,6 +139,7 @@ class SignalEngine:
             "rsi":        round(r,  1),
             "vol_ratio":  round(vol_r, 2),
             "roc5":       round(roc, 2),
+            "pp_ghost":   pp_ghost_res,
         }
 
 

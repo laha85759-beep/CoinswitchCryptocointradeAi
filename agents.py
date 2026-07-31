@@ -192,6 +192,14 @@ class DataCollectorAgent:
                     "data_notes": ["orderbook_imbalance_and_trade_frequency_are_ohlcv_proxies"],
                 }
 
+                # ── PP SuperTrend + Reversal Zone Finder [Ghost Protocol] V3 ──────
+                try:
+                    from pp_supertrend_ghost import PPSuperTrendGhostEngine
+                    pp_engine = PPSuperTrendGhostEngine()
+                    item["pp_supertrend_ghost"] = pp_engine.analyze(df)
+                except Exception as exc:
+                    log.debug("PP SuperTrend Ghost analysis failed for %s: %s", symbol, exc)
+
                 # ── Consolidation + Breakout detection (1h candles) ──────────
                 try:
                     df_1h = self.scanner._ohlcv_1h(symbol, 48)
@@ -243,6 +251,15 @@ class SignalDetectorAgent:
             symbol = item.get("symbol", "")
             if item.get("error"):
                 signals.append(self._signal(symbol, "insufficient_data", 0.0, "incomplete_market_data", item))
+                continue
+
+            # ── PP SuperTrend + Reversal Zone Finder [Ghost Protocol] V3 ────
+            pp_ghost = item.get("pp_supertrend_ghost")
+            if pp_ghost and pp_ghost.get("signal") in ("pump", "dump") and pp_ghost.get("confidence", 0) >= 0.60:
+                sig_type = pp_ghost["signal"]
+                confidence = pp_ghost.get("confidence", 0.65)
+                reason = pp_ghost.get("reason", "pp_supertrend_ghost_signal")
+                signals.append(self._signal(symbol, sig_type, confidence, reason, item))
                 continue
 
             # ── Consolidation / trendline breakout (new strategy) ───────────
@@ -469,7 +486,21 @@ class ExecutionAgent:
             log.warning("Stale signal %s: slippage=%.2f%%", symbol, slippage)
             return execution_result(symbol, "rejected", f"stale_signal_slippage_{slippage:.2f}pct", signal, approval)
 
-        qty = round(float(approval["position_size_usd"]) / current_price, 6)
+        # Dynamically size CoinSwitch order based on actual available INR balance
+        try:
+            inr_avail = float(self.client.get_inr_balance())
+            if inr_avail > 0:
+                usable_inr = inr_avail * 0.85  # Use 85% of free INR (leaves 15% buffer for fees)
+                if usable_inr >= 880.0:        # Clears $10 USD (~₹880 INR) minimum order quote filter
+                    position_usdt = usable_inr / 88.0
+                else:
+                    position_usdt = float(approval["position_size_usd"])
+            else:
+                position_usdt = float(approval["position_size_usd"])
+        except Exception:
+            position_usdt = float(approval["position_size_usd"])
+
+        qty = round(position_usdt / current_price, 6)
         if qty <= 0:
             return execution_result(symbol, "rejected", "zero_quantity", signal, approval)
 

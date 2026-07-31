@@ -104,12 +104,12 @@ CONFIG = {
     # ── Signal indicator weights (sum = 100) ──────────────────────────────────
     # Volume spike and momentum weighted highest — best predictors for 5m pumps
     "weights": {
-        "ema_cross":    15,
-        "rsi":          15,
-        "vwap":         15,
-        "volume_spike": 25,   # strongest short-term pump predictor
-        "momentum":     20,   # 5-candle ROC catches real moves
-        "bb_squeeze":   10,
+        "pp_supertrend_ghost": 25,   # Pivot Point SuperTrend + Ghost Protocol V3
+        "ema_cross":           15,
+        "rsi":                 10,
+        "vwap":                15,
+        "volume_spike":        20,   # strongest short-term pump predictor
+        "momentum":            15,   # 5-candle ROC catches real moves
     },
 
     # ── Consolidation + Breakout Strategy ──────────────────────────────────────
@@ -147,7 +147,7 @@ CONFIG = {
 
     # ── Risk manager limits ───────────────────────────────────────────────────
     # Backtested optimal: max_position_pct=20 reduces risk per trade
-    "max_position_pct":         _float_env("MAX_POSITION_PCT",          30.0),  # ₹400 / $4.50 position size (exceeds min order filter)
+    "max_position_pct":         _float_env("MAX_POSITION_PCT",          75.0),  # ~$10.50 / ₹924 INR position size (clears CoinSwitch $10 min quote filter)
     "max_total_exposure_pct":   _float_env("MAX_TOTAL_EXPOSURE_PCT",    90.0),
     "max_trades_per_hour":      _int_env("MAX_TRADES_PER_HOUR",          3),
     # min_confidence=0.50: ensures high-probability momentum breakout signals only
@@ -157,7 +157,7 @@ CONFIG = {
     # daily_max_drawdown=4%: on $100 that's $4 max daily loss before halt
     "daily_max_drawdown_pct":   _float_env("DAILY_MAX_DRAWDOWN_PCT",     4.0),
     "min_liquidity_usd":        _float_env("MIN_LIQUIDITY_USD",      10_000.0),
-    "min_order_usdt":           _float_env("MIN_ORDER_USDT",              3.5),
+    "min_order_usdt":           _float_env("MIN_ORDER_USDT",             10.0),
     "risk_order_type":          os.getenv("RISK_ORDER_TYPE",           "limit"),
 
     # ── Execution settings ────────────────────────────────────────────────────
