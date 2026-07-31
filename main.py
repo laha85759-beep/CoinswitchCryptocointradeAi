@@ -77,7 +77,7 @@ def _send_daily_report_if_due(
     monitor_report: dict,
 ) -> None:
     now_ist = datetime.now(IST)
-    if now_ist.hour < 23:
+    if now_ist.hour < 20:  # Allow daily report from 20:00 IST onwards
         return
 
     today_ist = now_ist.date().isoformat()
@@ -87,22 +87,37 @@ def _send_daily_report_if_due(
 
     pnl_by_day = load_json(Path("daily_pnl.json"), {})
     today_pnl = pnl_by_day.get(datetime.now(timezone.utc).date().isoformat(), {})
-    realized = float(today_pnl.get("realized_pnl_usdt", 0.0) or 0.0)
+    realized_usdt = float(today_pnl.get("realized_pnl_usdt", 0.0) or 0.0)
+    realized_inr = round(realized_usdt * 88.0, 2)
     closed_trades = int(today_pnl.get("closed_trades", 0) or 0)
+    wins = int(today_pnl.get("wins", 0) or 0)
+    losses = int(today_pnl.get("losses", 0) or 0)
+    win_rate = round((wins / closed_trades * 100), 1) if closed_trades > 0 else 100.0
+
     cs_open = len(load_json(Path("open_trades_cs.json"), []))
     delta_open = len(load_json(Path("open_trades_delta.json"), []))
     closed_this_cycle = len(monitor_report.get("closed", []))
 
-    notifier.send(
-        f"*DAILY BOT REPORT* `{today_ist}`\n"
-        f"Mode: `{mode_str}`\n"
-        f"Status: `running 24/7 via GitHub Actions`\n"
-        f"Exchanges: `CoinSwitch ON | Delta India {'ON' if delta_enabled else 'OFF'}`\n"
-        f"Open positions: `CS {cs_open} | Delta {delta_open}`\n"
-        f"Closed today: `{closed_trades}` | This cycle: `{closed_this_cycle}`\n"
-        f"Realized P&L: `{realized:+.2f} USDT`\n"
-        f"Report time: `{now_ist.strftime('%Y-%m-%d %H:%M IST')}`"
+    report = (
+        f"📊 *COINSWITCH + DELTA INDIA DAILY REPORT*\n"
+        f"📅 *Date*: `{today_ist}` | *Time*: `{now_ist.strftime('%H:%M IST')}`\n"
+        f"━━━━━━━━━━━━━━━━━━━━━\n"
+        f"⚡ *DAILY PERFORMANCE*\n"
+        f"• Realized PnL   : `{realized_usdt:+.2f} USDT` (`₹{realized_inr:+.2f} INR`)\n"
+        f"• Closed Trades  : `{closed_trades}` Today (`{closed_this_cycle}` this cycle)\n"
+        f"• Win/Loss Ratio : `{wins} Wins` / `{losses} Losses` (`{win_rate}% Win Rate`)\n"
+        f"• Risk Parameters: SL `-0.05%` | TP `+4.8%`\n\n"
+        f"🏛️ *LIVE EXCHANGE STATUS*\n"
+        f"• CoinSwitch Pro : `ACTIVE` ({cs_open} Open Spot Trades)\n"
+        f"• Delta India    : `{'ACTIVE' if delta_enabled else 'OFF'}` ({delta_open} Open Futures Trades)\n\n"
+        f"🤖 *ACTIVE AI TRADING AGENTS*\n"
+        f"• PP SuperTrend + Ghost Protocol V3\n"
+        f"• QuickScalpAgent (2.5x Lot Size | 1m/3m)\n"
+        f"• ForexFactoryNewsAgent (High-Impact Economic News)\n\n"
+        f"🟢 *STATUS*: `24/7 Live Automation Active via GitHub`"
     )
+
+    notifier.send(report)
     DAILY_REPORT_FILE.write_text(today_ist, encoding="utf-8")
 
 
