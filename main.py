@@ -177,6 +177,17 @@ def run() -> None:
     except Exception as news_exc:
         log.warning("ForexFactoryNewsAgent notice: %s", news_exc)
 
+    # ── Step 2.6: Quick Scalping Agent Execution ──────────────────────────────
+    try:
+        from scalp_agent import QuickScalpAgent
+        scalp_agent = QuickScalpAgent(CONFIG, cs_client, delta_client, notifier, audit)
+        symbols_to_scalp = [d["symbol"] for d in market_data if not d.get("error")]
+        scalp_trades = scalp_agent.scan_and_execute_scalps(symbols_to_scalp)
+        if scalp_trades:
+            log.info("QuickScalpAgent: Executed %s quick scalp trades", len(scalp_trades))
+    except Exception as scalp_exc:
+        log.warning("QuickScalpAgent notice: %s", scalp_exc)
+
     # ── Step 3: Detect signals ────────────────────────────────────────────────
     log.info("Step 3/5 — Detect signals")
     signals = detector.classify(market_data)
