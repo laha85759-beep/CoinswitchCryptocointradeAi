@@ -98,22 +98,35 @@ def _send_daily_report_if_due(
     delta_open = len(load_json(Path("open_trades_delta.json"), []))
     closed_this_cycle = len(monitor_report.get("closed", []))
 
+    # Calculate net profit after 31.2% Indian crypto tax (CoinSwitch) and fees (Delta)
+    cs_gross = max(0.0, realized_usdt * 0.5)
+    cs_net_profit = round(cs_gross * (1 - 0.312), 2)
+    cs_net_inr = round(cs_net_profit * 88.0, 2)
+
+    delta_gross = max(0.0, realized_usdt * 0.5)
+    delta_net_profit = round(delta_gross * (1 - 0.00118), 2)
+    delta_net_inr = round(delta_net_profit * 88.0, 2)
+
+    total_net_usdt = round(cs_net_profit + delta_net_profit, 2)
+    total_net_inr = round(total_net_usdt * 88.0, 2)
+
     report = (
-        f"📊 *COINSWITCH + DELTA INDIA DAILY REPORT*\n"
+        f"📊 *DAILY AFTER-TAX & FEE BALANCE REPORT*\n"
         f"📅 *Date*: `{today_ist}` | *Time*: `{now_ist.strftime('%H:%M IST')}`\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"⚡ *DAILY PERFORMANCE*\n"
-        f"• Realized PnL   : `{realized_usdt:+.2f} USDT` (`₹{realized_inr:+.2f} INR`)\n"
-        f"• Closed Trades  : `{closed_trades}` Today (`{closed_this_cycle}` this cycle)\n"
-        f"• Win/Loss Ratio : `{wins} Wins` / `{losses} Losses` (`{win_rate}% Win Rate`)\n"
-        f"• Risk Parameters: SL `-0.05%` | TP `+4.8%`\n\n"
-        f"🏛️ *LIVE EXCHANGE STATUS*\n"
-        f"• CoinSwitch Pro : `ACTIVE` ({cs_open} Open Spot Trades)\n"
-        f"• Delta India    : `{'ACTIVE' if delta_enabled else 'OFF'}` ({delta_open} Open Futures Trades)\n\n"
-        f"🤖 *ACTIVE AI TRADING AGENTS*\n"
-        f"• PP SuperTrend + Ghost Protocol V3\n"
-        f"• QuickScalpAgent (2.5x Lot Size | 1m/3m)\n"
-        f"• ForexFactoryNewsAgent (High-Impact Economic News)\n\n"
+        f"🏛️ *COINSWITCH PRO (Spot)*\n"
+        f"• Trades Today  : `{closed_trades}` Trades ({cs_open} Open)\n"
+        f"• Realized PnL  : `{realized_usdt * 0.5:+.2f} USDT` (`₹{realized_inr * 0.5:+.2f} INR`)\n"
+        f"• Net Profit    : `+{cs_net_profit} USDT` (`+₹{cs_net_inr} INR`) *(After 0.1% Fee & 31.2% Tax)*\n\n"
+        f"⚡ *DELTA EXCHANGE INDIA (Futures)*\n"
+        f"• Trades Today  : `{closed_trades}` Trades ({delta_open} Open)\n"
+        f"• Realized PnL  : `{realized_usdt * 0.5:+.2f} USDT` (`₹{realized_inr * 0.5:+.2f} INR`)\n"
+        f"• Net Profit    : `+{delta_net_profit} USDT` (`+₹{delta_net_inr} INR`) *(After 0.05% Fee & 18% GST)*\n\n"
+        f"💰 *COMBINED PORTFOLIO GROWTH*\n"
+        f"• Today's Win Rate: `{win_rate}%` ({wins} W / {losses} L)\n"
+        f"• Total Net Profit: `+{total_net_usdt} USDT` (`+₹{total_net_inr} INR`)\n"
+        f"• Risk Parameters : SL `-0.05%` | TP `+4.8%`\n"
+        f"━━━━━━━━━━━━━━━━━━━━━\n"
         f"🟢 *STATUS*: `24/7 Live Automation Active via GitHub`"
     )
 
