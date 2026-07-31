@@ -322,33 +322,20 @@ class DualExecutionAgent:
         # Get Delta product_id for this symbol
         product_id = self.delta_client.symbol_to_product_id(approval["symbol"])
 
-        # Place live Take Profit & Stop Loss orders directly on Delta Exchange India orderbook
-        tp_order_id, sl_order_id = "", ""
-        if not self.cfg["paper_trading_mode"] and result.get("status") == "filled" and qty > 0 and product_id:
+        # Place live position bracket TP & SL directly on Delta Exchange India position UI
+        if not self.cfg["paper_trading_mode"] and result.get("status") == "filled" and product_id:
             try:
                 symbol = approval["symbol"]
-                close_side = "sell" if direction == "long" else "buy"
-                abs_qty = abs(int(round(qty))) or 1
-                
-                # Take Profit order
                 tp_price_str = str(round(take_profit, 2 if price > 100 else (4 if price > 1 else 6)))
-                tp_res = self.delta_client._request("POST", "/v2/orders", body={
-                    "product_id": product_id, "size": abs_qty, "side": close_side,
-                    "order_type": "market_order", "stop_order_type": "take_profit_order", "stop_price": tp_price_str
-                })
-                tp_order_id = str(tp_res.get("result", {}).get("id") or "")
-                log.info("Delta LIVE TAKE PROFIT order placed for %s @ %s (Order ID: %s)", symbol, tp_price_str, tp_order_id)
-                
-                # Stop Loss order
                 sl_price_str = str(round(hard_sl, 2 if price > 100 else (4 if price > 1 else 6)))
-                sl_res = self.delta_client._request("POST", "/v2/orders", body={
-                    "product_id": product_id, "size": abs_qty, "side": close_side,
-                    "order_type": "market_order", "stop_order_type": "stop_loss_order", "stop_price": sl_price_str
+                bracket_res = self.delta_client._request("POST", "/v2/orders/bracket", body={
+                    "product_id": product_id,
+                    "take_profit_price": tp_price_str,
+                    "stop_loss_price": sl_price_str,
                 })
-                sl_order_id = str(sl_res.get("result", {}).get("id") or "")
-                log.info("Delta LIVE STOP LOSS order placed for %s @ %s (Order ID: %s)", symbol, sl_price_str, sl_order_id)
+                log.info("Delta LIVE POSITION BRACKET TP (%s) & SL (%s) attached for %s: success=%s", tp_price_str, sl_price_str, symbol, bracket_res.get("success"))
             except Exception as exc:
-                log.warning("Failed to place live Delta TP/SL orders for %s: %s", approval["symbol"], exc)
+                log.warning("Failed to attach Delta position bracket TP/SL for %s: %s", approval["symbol"], exc)
 
         trade = {
             "symbol": approval["symbol"],
