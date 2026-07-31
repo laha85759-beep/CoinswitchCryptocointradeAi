@@ -66,8 +66,7 @@ CONFIG = {
     "quote_currency":        "USDT",
     "exchange":              "c2c2",    # CoinSwitch c2c2 = USDT pairs with candle data
     "request_delay_seconds": 1.0,
-    "top_n_by_volume":       80,
-    "timeframe":             "5m",
+    "top_n_by_volume":       150,     # scans all top active & newly listed coins
     "candle_limit":          120,      # more candles = better indicator accuracy
     "min_volume_usdt":       50_000,
     "blacklist": ["USDC/USDT", "BUSD/USDT", "TUSD/USDT", "FDUSD/USDT"],

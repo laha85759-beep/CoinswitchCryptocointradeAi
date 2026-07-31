@@ -304,13 +304,15 @@ class MarketScanner:
                     last_price = float(data.get("lastPrice", 0) or 0)
                     vol = base_vol * last_price
 
-                if sym.endswith(f"/{quote}") and vol >= min_vol and sym not in self.cfg["blacklist"]:
-                    pairs.append((sym, vol))
+                # Automatically include all active and newly listed coins (bypass volume limit for new listings)
+                if sym.endswith(f"/{quote}") and sym not in self.cfg["blacklist"]:
+                    if vol >= min_vol or vol > 100.0 or data.get("is_new"):
+                        pairs.append((sym, vol))
 
             if pairs:
                 pairs.sort(key=lambda x: x[1], reverse=True)
-                result = [p[0] for p in pairs[: self.cfg["top_n_by_volume"]]]
-                log.info("Scanner: found %s %s pairs with vol >= %s", len(result), exchange, min_vol)
+                result = [p[0] for p in pairs[: self.cfg.get("top_n_by_volume", 150)]]
+                log.info("Scanner: found %s active & newly listed %s pairs for live trading", len(result), exchange)
                 return result
             else:
                 sample = list(tickers.items())[:5]
