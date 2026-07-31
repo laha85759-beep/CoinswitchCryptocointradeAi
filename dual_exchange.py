@@ -202,10 +202,18 @@ class DualExecutionAgent:
                 "symbol": symbol,
             }
 
-        # Delta uses integer contract sizes — calculate qty
+        # Get product details for exact contract_value & commission fee
+        product_id = self.delta_client.symbol_to_product_id(symbol)
+        contract_val = 1.0
+        try:
+            prod_info = self.delta_client._product_cache.get(symbol, {})
+            contract_val = float(prod_info.get("contract_value", 1.0) or 1.0)
+        except Exception:
+            contract_val = 1.0
+
         position_usd = float(approval["position_size_usd"])
 
-        # Get Delta balance for position sizing
+        # Get Delta balance for risk-based position sizing
         if not self.cfg["paper_trading_mode"]:
             try:
                 delta_balance = max(self.delta_client.get_usdt_balance(), 0.0)
@@ -224,7 +232,11 @@ class DualExecutionAgent:
                 delta_balance * self.cfg["max_position_pct"] / 100.0,
             )
 
-        qty = round(position_usd / current_price, 6)
+        # Dynamic risk-based lot size (contracts) considering contract_value & brokerage fees
+        contract_notional = current_price * contract_val
+        num_contracts = max(1, int(position_usd / contract_notional)) if contract_notional > 0 else 1
+        qty = float(num_contracts)
+
         if qty <= 0:
             return {"status": "rejected", "reason": "zero_quantity", "symbol": symbol}
 
