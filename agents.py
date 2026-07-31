@@ -517,18 +517,19 @@ class ExecutionAgent:
         last_error = None
         for attempt in range(1, self.cfg["max_retries"] + 1):
             try:
-                limit_price = current_price * (1 + self.cfg["limit_slippage_offset_pct"] / 100.0)
-                # Format price precision based on asset magnitude
-                if limit_price > 100:
-                    limit_price = round(limit_price, 2)
-                elif limit_price > 1:
-                    limit_price = round(limit_price, 4)
-                else:
-                    limit_price = round(limit_price, 6)
-
                 order_qty = round(qty, 4) if qty > 1 else round(qty, 6)
-
-                order = self.client.place_order(symbol, "buy", approval["order_type"], order_qty, price=limit_price)
+                order_type = str(approval.get("order_type", "market")).upper()
+                if order_type == "MARKET":
+                    order = self.client.place_order(symbol, "buy", "MARKET", order_qty)
+                else:
+                    limit_price = current_price * (1 + self.cfg["limit_slippage_offset_pct"] / 100.0)
+                    if limit_price > 100:
+                        limit_price = round(limit_price, 2)
+                    elif limit_price > 1:
+                        limit_price = round(limit_price, 4)
+                    else:
+                        limit_price = round(limit_price, 6)
+                    order = self.client.place_order(symbol, "buy", "LIMIT", order_qty, price=limit_price)
                 order_id = order.get("order_id") or order.get("id")
                 if not order_id:
                     return execution_result(symbol, "error", "missing_order_id", signal, approval)

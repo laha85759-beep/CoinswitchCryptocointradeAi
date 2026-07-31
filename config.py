@@ -158,7 +158,7 @@ CONFIG = {
     "daily_max_drawdown_pct":   _float_env("DAILY_MAX_DRAWDOWN_PCT",     4.0),
     "min_liquidity_usd":        _float_env("MIN_LIQUIDITY_USD",      10_000.0),
     "min_order_usdt":           _float_env("MIN_ORDER_USDT",             10.0),
-    "risk_order_type":          os.getenv("RISK_ORDER_TYPE",           "limit"),
+    "risk_order_type":          os.getenv("RISK_ORDER_TYPE",           "market"),
 
     # ── Execution settings ────────────────────────────────────────────────────
     # slippage_tolerance=3.5%: allow up to 3.5% price movement between signal
