@@ -73,10 +73,17 @@ class DualExecutionAgent:
         for approval in approvals:
             if approval.get("approved") is not True:
                 continue
+
+            symbol = approval["symbol"]
+            direction = approval.get("direction", "long")
+
+            # ── Check & handle position flips (reversals) ────────────────────
+            self._handle_position_flips(symbol, direction)
+
             cs_result = self._execute_coinswitch(approval)
             delta_result = self._execute_delta(approval)
             combined = {
-                "symbol": approval["symbol"],
+                "symbol": symbol,
                 "coinswitch": cs_result,
                 "delta": delta_result,
                 "timestamp": utc_iso(),
@@ -86,6 +93,69 @@ class DualExecutionAgent:
 
         self.audit.write("DualExecutionAgent", {"count": len(all_results), "results": all_results})
         return all_results
+
+    def _handle_position_flips(self, symbol: str, new_direction: str) -> None:
+        """
+        If a new signal arrives for an existing asset in the OPPOSITE direction
+        (e.g., existing Long and new signal is Short/Sell from PP SuperTrend):
+        Immediately close the existing trade on both exchanges before entering the new trade!
+        """
+        # 1. CoinSwitch position flip check
+        cs_trades = load_json(CS_TRADES_FILE, [])
+        new_cs_trades = []
+        cs_closed_any = False
+        for trade in cs_trades:
+            if trade.get("symbol") == symbol:
+                existing_dir = trade.get("direction", "long")
+                if existing_dir != new_direction:
+                    log.info("SUPER TREND REVERSAL (CoinSwitch) for %s: Closing %s to open %s", symbol, existing_dir, new_direction)
+                    try:
+                        qty = float(trade.get("qty", 0))
+                        if qty > 0 and not trade.get("paper"):
+                            self.cs_client.place_order(symbol, "sell", "MARKET", qty, exchange="c2c2")
+                    except Exception as exc:
+                        log.warning("Failed to close CoinSwitch position for %s: %s", symbol, exc)
+                    cs_closed_any = True
+                else:
+                    new_cs_trades.append(trade)
+            else:
+                new_cs_trades.append(trade)
+
+        if cs_closed_any:
+            save_json(CS_TRADES_FILE, new_cs_trades)
+            self.notifier.send(
+                f"🔄 *POSITION REVERSAL FLIP (CoinSwitch)* `{symbol}`\n"
+                f"SuperTrend reversal detected! Closed existing position to enter new `{new_direction.upper()}` trade."
+            )
+
+        # 2. Delta Exchange position flip check
+        delta_trades = load_json(DELTA_TRADES_FILE, [])
+        new_delta_trades = []
+        delta_closed_any = False
+        for trade in delta_trades:
+            if trade.get("symbol") == symbol:
+                existing_dir = trade.get("direction", "long")
+                if existing_dir != new_direction:
+                    log.info("SUPER TREND REVERSAL (Delta) for %s: Closing %s to open %s", symbol, existing_dir, new_direction)
+                    try:
+                        qty = float(trade.get("qty", 0))
+                        close_side = "sell" if existing_dir == "long" else "buy"
+                        if qty > 0 and not trade.get("paper"):
+                            self.delta_client.place_order(symbol, close_side, "market", qty)
+                    except Exception as exc:
+                        log.warning("Failed to close Delta position for %s: %s", symbol, exc)
+                    delta_closed_any = True
+                else:
+                    new_delta_trades.append(trade)
+            else:
+                new_delta_trades.append(trade)
+
+        if delta_closed_any:
+            save_json(DELTA_TRADES_FILE, new_delta_trades)
+            self.notifier.send(
+                f"🔄 *POSITION REVERSAL FLIP (Delta India)* `{symbol}`\n"
+                f"SuperTrend reversal detected! Closed existing position to enter new `{new_direction.upper()}` trade."
+            )
 
     # ── CoinSwitch execution ─────────────────────────────────────────────────
 
