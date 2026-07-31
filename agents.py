@@ -588,6 +588,19 @@ class ExecutionAgent:
         price = float(result["filled_price"])
         hard_sl = round(price * (1 - approval["stop_loss_pct"] / 100.0), 8)
         take_profit = round(price * (1 + approval["take_profit_pct"] / 100.0), 8)
+        
+        # Place live Take Profit Limit Sell order directly on CoinSwitch Pro orderbook
+        tp_order_id = ""
+        if not self.cfg["paper_trading_mode"] and result.get("status") == "filled" and result.get("filled_qty", 0) > 0:
+            try:
+                symbol = approval["symbol"]
+                qty = float(result["filled_qty"])
+                tp_res = self.client.place_order(symbol, "sell", "LIMIT", qty, price=take_profit, exchange="c2c2")
+                tp_order_id = str(tp_res.get("order_id") or tp_res.get("id") or "")
+                log.info("CoinSwitch LIVE TAKE PROFIT order placed for %s @ %s (Order ID: %s)", symbol, take_profit, tp_order_id)
+            except Exception as exc:
+                log.warning("Failed to place live CoinSwitch Take Profit order for %s: %s", approval["symbol"], exc)
+
         trade = {
             "symbol": approval["symbol"],
             "coin": approval["symbol"].split("/")[0],
@@ -596,6 +609,7 @@ class ExecutionAgent:
             "peak_price": price,
             "hard_sl": hard_sl,
             "take_profit": take_profit,
+            "tp_order_id": tp_order_id,
             "trail_active": False,
             "trailing_stop": None,
             "buy_id": result["order_id"],

@@ -322,6 +322,18 @@ class DualExecutionAgent:
         # Get Delta product_id for this symbol
         product_id = self.delta_client.symbol_to_product_id(approval["symbol"])
 
+        # Place live Take Profit Limit Sell/Buy order directly on Delta Exchange India orderbook
+        tp_order_id = ""
+        if not self.cfg["paper_trading_mode"] and result.get("status") == "filled" and qty > 0:
+            try:
+                symbol = approval["symbol"]
+                close_side = "sell" if direction == "long" else "buy"
+                tp_res = self.delta_client.place_order(symbol, close_side, "limit", qty, price=take_profit)
+                tp_order_id = str(tp_res.get("id") or tp_res.get("order_id") or "")
+                log.info("Delta LIVE TAKE PROFIT order placed for %s @ %s (Order ID: %s)", symbol, take_profit, tp_order_id)
+            except Exception as exc:
+                log.warning("Failed to place live Delta Take Profit order for %s: %s", approval["symbol"], exc)
+
         trade = {
             "symbol": approval["symbol"],
             "coin": approval["symbol"].split("/")[0],
@@ -332,6 +344,7 @@ class DualExecutionAgent:
             "direction": direction,
             "hard_sl": hard_sl,
             "take_profit": take_profit,
+            "tp_order_id": tp_order_id,
             "trail_active": False,
             "trailing_stop": None,
             "buy_id": result.get("order_id", ""),
