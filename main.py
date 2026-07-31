@@ -167,15 +167,15 @@ def run() -> None:
     else:
         circuit_breaker.record_success()
 
-    # ── Step 2.5: Forex Economic Calendar News Evaluation ─────────────────────
+    # ── Step 2.5: Forex Factory Economic News Execution ──────────────────────
     try:
-        from news_agent import ForexCalendarAgent
-        news_agent = ForexCalendarAgent(CONFIG)
-        news_impact = news_agent.evaluate_news_impact()
-        if news_impact.get("active_events"):
-            log.info("Forex Calendar Active Events: %s", news_impact["active_events"])
+        from forex_factory_agent import ForexFactoryNewsAgent
+        ff_agent = ForexFactoryNewsAgent(CONFIG, cs_client, delta_client, notifier, audit)
+        news_trades = ff_agent.process_and_execute_news_trades()
+        if news_trades:
+            log.info("ForexFactoryNewsAgent: Executed %s high-impact news trades", len(news_trades))
     except Exception as news_exc:
-        log.warning("Forex Calendar Agent notice: %s", news_exc)
+        log.warning("ForexFactoryNewsAgent notice: %s", news_exc)
 
     # ── Step 3: Detect signals ────────────────────────────────────────────────
     log.info("Step 3/5 — Detect signals")

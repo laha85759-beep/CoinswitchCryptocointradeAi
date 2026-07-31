@@ -88,7 +88,7 @@ def handle_webhook():
         log.info("Received TradingView / Zing Webhook Signal: %s | Action: %s | Price: %s", raw_symbol, action.upper(), price)
 
         # Risk Manager Approval
-        approval = risk_manager.approve(signal)
+        approval = risk_manager._evaluate_one(signal, False)
         if not approval.get("approved"):
             log.warning("RiskManager rejected webhook signal for %s: %s", raw_symbol, approval.get("reason"))
             return jsonify({"status": "rejected", "reason": approval.get("reason")}), 200
@@ -102,7 +102,24 @@ def handle_webhook():
         return jsonify({"error": str(exc)}), 500
 
 
+@app.route("/forex-news", methods=["POST"])
+def handle_forex_news():
+    try:
+        data = request.get_json(force=True)
+        if not data:
+            return jsonify({"error": "empty_payload"}), 400
+
+        from forex_factory_agent import ForexFactoryNewsAgent
+        ff_agent = ForexFactoryNewsAgent(CONFIG, cs_client, delta_client, notifier, audit)
+        results = ff_agent.process_and_execute_news_trades(data)
+        return jsonify({"status": "processed", "executed": len(results), "results": results}), 200
+
+    except Exception as exc:
+        log.error("Forex news webhook error: %s", exc)
+        return jsonify({"error": str(exc)}), 500
+
+
 if __name__ == "__main__":
     port = CONFIG.get("webhook_port", 5000)
-    log.info("Starting TradingView Webhook Bridge Server on port %s...", port)
+    log.info("Starting TradingView & Forex Factory Webhook Bridge Server on port %s...", port)
     app.run(host="0.0.0.0", port=port)
