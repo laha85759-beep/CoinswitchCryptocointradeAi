@@ -94,8 +94,12 @@ class QuickScalpAgent:
                     if approval.get("approved"):
                         approval["take_profit_pct"] = 1.2
                         approval["stop_loss_pct"] = 0.05
+                        # Scale lot size specifically for QuickScalpAgent: 2.5x larger lot size for fast scalps
+                        scalp_mult = float(self.cfg.get("scalp_lot_multiplier", 2.5))
+                        approval["position_size_usd"] = round(approval.get("position_size_usd", 10.0) * scalp_mult, 2)
 
-                        log.info("⚡ QuickScalpAgent SIGNAL APPROVED: %s -> %s (RSI=%.1f, Vol=%.2fx)", symbol, direction.upper(), r, vol_ratio)
+                        log.info("⚡ QuickScalpAgent SIGNAL APPROVED (2.5x LARGER LOT SIZE): %s -> %s (Size: $%s, RSI=%.1f, Vol=%.2fx)", 
+                                 symbol, direction.upper(), approval["position_size_usd"], r, vol_ratio)
                         results = self.executor.execute([approval])
                         scalp_results.extend(results)
 

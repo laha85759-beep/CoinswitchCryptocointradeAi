@@ -153,6 +153,7 @@ CONFIG = {
     "min_confidence":           _float_env("MIN_CONFIDENCE",             0.50),
     "stop_loss_pct":            _float_env("STOP_LOSS_PCT",              0.05), # Ultra-tight -0.05% SL for capital protection
     "take_profit_pct":          _float_env("TAKE_PROFIT_PCT",            4.8),  # High +4.8% TP (1:4 Risk-Reward ratio for max gains)
+    "scalp_lot_multiplier":     _float_env("SCALP_LOT_MULTIPLIER",       2.5),  # QuickScalpAgent uses 2.5x larger lot size
     # daily_max_drawdown=4%: on $100 that's $4 max daily loss before halt
     "daily_max_drawdown_pct":   _float_env("DAILY_MAX_DRAWDOWN_PCT",     4.0),
     "min_liquidity_usd":        _float_env("MIN_LIQUIDITY_USD",      10_000.0),
