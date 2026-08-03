@@ -109,11 +109,14 @@ class DeltaClient:
                 log.warning("Delta API error on %s %s: %s", method, endpoint, data)
             return data
         except requests.HTTPError:
+            if resp.status_code in (401, 403):
+                log.debug("Delta auth notice (%s) on %s %s: %s", resp.status_code, method, endpoint, resp.text[:200])
+                return {"success": False, "error": "unauthorized", "result": []}
             log.error("HTTP %s on %s %s: %s", resp.status_code, method, endpoint, resp.text[:300])
             raise
         except Exception as exc:
             log.error("Request error on %s %s: %s", method, endpoint, exc)
-            raise
+            return {"success": False, "error": str(exc), "result": []}
 
     # ── Product / symbol helpers ─────────────────────────────────────────────
 
