@@ -288,17 +288,16 @@ class DeltaClient:
         order_type: str,
         quantity: float,
         price: float | None = None,
+        stop_loss_price: float | None = None,
+        take_profit_price: float | None = None,
     ) -> dict:
         """
-        Place a buy or sell order on Delta Exchange India.
-        Delta India trades perpetual futures — quantity is contract size (integer).
+        Place a buy or sell order on Delta Exchange India with optional atomic TP/SL bracket attachment.
         """
         product_id = self.symbol_to_product_id(symbol)
         if product_id is None:
             raise ValueError(f"Symbol {symbol} not found on Delta Exchange India")
 
-        # Delta uses integer size (contracts). For spot/perp, 1 contract = 1 unit.
-        # We round to avoid fractional contract errors.
         size = max(1, int(round(quantity)))
 
         body: dict = {
@@ -309,6 +308,14 @@ class DeltaClient:
         }
         if price is not None and order_type.lower() == "limit":
             body["limit_price"] = str(round(price, 8))
+
+        if stop_loss_price and stop_loss_price > 0:
+            body["stop_loss_price"] = str(round(stop_loss_price, 4))
+            body["stop_loss_order_type"] = "market_order"
+
+        if take_profit_price and take_profit_price > 0:
+            body["take_profit_price"] = str(round(take_profit_price, 4))
+            body["take_profit_order_type"] = "limit_order"
 
         log.info(
             "Delta ORDER %s %s %s qty=%s price=%s product_id=%s",

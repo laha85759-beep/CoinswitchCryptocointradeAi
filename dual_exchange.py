@@ -260,8 +260,18 @@ class DualExecutionAgent:
             try:
                 direction = approval.get("direction", "long")
                 side = "buy" if direction == "long" else "sell"
-                # ALWAYS execute MARKET order entry on Delta Exchange India (no limit orders)
-                order = self.delta_client.place_order(symbol, side, "market", qty)
+                stop_loss_pct = float(approval.get("stop_loss_pct", self.cfg["stop_loss_pct"]))
+                take_profit_pct = float(approval.get("take_profit_pct", self.cfg["take_profit_pct"]))
+                
+                if direction == "long":
+                    calc_sl = round(current_price * (1 - stop_loss_pct / 100.0), 4)
+                    calc_tp = round(current_price * (1 + take_profit_pct / 100.0), 4)
+                else:
+                    calc_sl = round(current_price * (1 + stop_loss_pct / 100.0), 4)
+                    calc_tp = round(current_price * (1 - take_profit_pct / 100.0), 4)
+
+                # ALWAYS execute MARKET order entry with ATOMIC TP (+4.8%) & SL (-0.05%) on Delta Exchange India
+                order = self.delta_client.place_order(symbol, side, "market", qty, stop_loss_price=calc_sl, take_profit_price=calc_tp)
                 order_id = order.get("id") or order.get("order_id")
                 if not order_id:
                     return {"status": "error", "reason": "missing_order_id", "symbol": symbol}
