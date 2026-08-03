@@ -600,14 +600,18 @@ class ExecutionAgent:
         # Place live Take Profit Limit Sell order directly on CoinSwitch Pro orderbook
         tp_order_id = ""
         if not self.cfg["paper_trading_mode"] and result.get("status") == "filled" and result.get("filled_qty", 0) > 0:
-            try:
-                symbol = approval["symbol"]
-                qty = float(result["filled_qty"])
-                tp_res = self.client.place_order(symbol, "sell", "LIMIT", qty, price=take_profit, exchange="c2c2")
-                tp_order_id = str(tp_res.get("order_id") or tp_res.get("id") or "")
-                log.info("CoinSwitch LIVE TAKE PROFIT order placed for %s @ %s (Order ID: %s)", symbol, take_profit, tp_order_id)
-            except Exception as exc:
-                log.warning("Failed to place live CoinSwitch Take Profit order for %s: %s", approval["symbol"], exc)
+            time.sleep(2.5)  # Pause 2.5s for CoinSwitch Pro spot wallet ledger balance settlement
+            for attempt in range(1, 4):
+                try:
+                    symbol = approval["symbol"]
+                    qty = float(result["filled_qty"])
+                    tp_res = self.client.place_order(symbol, "sell", "LIMIT", qty, price=take_profit, exchange="c2c2")
+                    tp_order_id = str(tp_res.get("order_id") or tp_res.get("id") or "")
+                    log.info("CoinSwitch LIVE TAKE PROFIT order placed for %s @ %s (Order ID: %s)", symbol, take_profit, tp_order_id)
+                    break
+                except Exception as exc:
+                    log.warning("CoinSwitch TP order placement attempt %s notice for %s: %s", attempt, approval["symbol"], exc)
+                    time.sleep(2)
 
         trade = {
             "symbol": approval["symbol"],
