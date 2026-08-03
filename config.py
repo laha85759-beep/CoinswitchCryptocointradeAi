@@ -148,8 +148,8 @@ CONFIG = {
     # ── Risk manager limits ───────────────────────────────────────────────────
     # Backtested optimal: max_position_pct=20 reduces risk per trade
     "max_position_pct":         _float_env("MAX_POSITION_PCT",          75.0),  # ~$10.50 / ₹924 INR position size (clears CoinSwitch $10 min quote filter)
-    "max_total_exposure_pct":   _float_env("MAX_TOTAL_EXPOSURE_PCT",    90.0),
-    "max_trades_per_hour":      _int_env("MAX_TRADES_PER_HOUR",          3),
+    "max_total_exposure_pct":   _float_env("MAX_TOTAL_EXPOSURE_PCT",    98.0),
+    "max_trades_per_hour":      _int_env("MAX_TRADES_PER_HOUR",         10),
     # min_confidence=0.50: ensures high-probability momentum breakout signals only
     "min_confidence":           _float_env("MIN_CONFIDENCE",             0.50),
     "stop_loss_pct":            _float_env("STOP_LOSS_PCT",              0.05), # Ultra-tight -0.05% SL for capital protection
