@@ -278,13 +278,15 @@ class CoinSwitchClient:
             else:
                 price = 1.0
 
+        target_exchange = "c2c2" if symbol.upper().endswith("/USDT") or symbol.upper().endswith("USDT") else exchange
+
         body = {
             "side": side.lower(),
             "symbol": symbol,
             "type": target_type,
             "quantity": quantity,
             "price": price,
-            "exchange": exchange,
+            "exchange": target_exchange,
         }
         log.info(f"  Placing {side.upper()} {target_type.upper()} {quantity} {symbol} @ {price}")
         data = self._request("POST", "/trade/api/v2/order", body=body)
