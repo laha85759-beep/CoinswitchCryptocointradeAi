@@ -81,7 +81,7 @@ CONFIG = {
     # max_open_trades=2 means max 2 concurrent live positions
     # max_capital_pct=40 means each trade uses 40% of free USDT balance
     "max_capital_pct":  40,
-    "max_open_trades":  2,
+    "max_open_trades":  10,    # allow up to 10 concurrent live positions across exchanges
 
     # ── Exit strategy: Trailing Stop ──────────────────────────────────────────
     #
