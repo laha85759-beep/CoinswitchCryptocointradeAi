@@ -133,7 +133,21 @@ def handle_us_earnings():
         return jsonify({"error": str(exc)}), 500
 
 
+@app.route("/ai-trader", methods=["POST"])
+def handle_ai_trader():
+    try:
+        data = request.get_json(force=True) if request.data else {}
+        from ai_trader_agent import AITraderAgent
+        ai_trader = AITraderAgent(CONFIG, cs_client, delta_client, notifier, audit)
+        results = ai_trader.fetch_top_ai_signals_and_copytrade()
+        return jsonify({"status": "processed", "executed": len(results), "results": results}), 200
+
+    except Exception as exc:
+        log.error("AI-Trader webhook error: %s", exc)
+        return jsonify({"error": str(exc)}), 500
+
+
 if __name__ == "__main__":
     port = CONFIG.get("webhook_port", 5000)
-    log.info("Starting TradingView, Forex & US Earnings Webhook Bridge Server on port %s...", port)
+    log.info("Starting TradingView, Forex, US Earnings & HKUDS AI-Trader Webhook Bridge Server on port %s...", port)
     app.run(host="0.0.0.0", port=port)

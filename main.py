@@ -253,6 +253,17 @@ def run() -> None:
     except Exception as earn_exc:
         log.warning("USStocksEarningsAgent notice: %s", earn_exc)
 
+    # ── Step 2.8: HKUDS AI-Trader Integration Agent (Market Intel & Copy-Trade) ──
+    try:
+        from ai_trader_agent import AITraderAgent
+        ai_trader = AITraderAgent(CONFIG, cs_client, delta_client, notifier, audit)
+        market_intel = ai_trader.fetch_market_intel()
+        copy_trades = ai_trader.fetch_top_ai_signals_and_copytrade()
+        if copy_trades:
+            log.info("AITraderAgent: Executed %s top AI-Trader platform copytrades", len(copy_trades))
+    except Exception as ai_exc:
+        log.warning("AITraderAgent notice: %s", ai_exc)
+
     # ── Step 3: Detect signals ────────────────────────────────────────────────
     log.info("Step 3/5 — Detect signals")
     signals = detector.classify(market_data)
