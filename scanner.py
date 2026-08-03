@@ -331,7 +331,7 @@ class MarketScanner:
             # c2c2 has candle data; fallback to c2c1
             for ex in ("c2c2", "c2c1"):
                 candles = self.client.get_ohlcv(symbol, interval, self.cfg["candle_limit"], exchange=ex)
-                if candles and len(candles) >= 50:
+                if candles and len(candles) >= 15:
                     df = pd.DataFrame(candles)
                     df["open"] = df["o"].astype(float)
                     df["high"] = df["h"].astype(float)

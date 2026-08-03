@@ -69,7 +69,8 @@ class CoinSwitchClient:
             return resp.json()
         except requests.HTTPError as e:
             body = resp.text[:500] + ("..." if len(resp.text) > 500 else "")
-            log.error(f"HTTP {resp.status_code} on {method} {path}: {body}")
+            if not (resp.status_code == 422 and "candles" in path):
+                log.error(f"HTTP {resp.status_code} on {method} {path}: {body}")
             raise
         except Exception as e:
             log.error(f"Request error on {method} {path}: {e}")
@@ -142,17 +143,20 @@ class CoinSwitchClient:
         """
         end = int(time.time() * 1000)
         start = end - (limit * interval_minutes * 60 * 1000)
-        data = self._request(
-            "GET", "/trade/api/v2/candles",
-            params={
-                "exchange": exchange,
-                "symbol": symbol,
-                "interval": str(interval_minutes),
-                "start_time": str(start),
-                "end_time": str(end),
-            },
-        )
-        return data.get("data", [])
+        try:
+            data = self._request(
+                "GET", "/trade/api/v2/candles",
+                params={
+                    "exchange": exchange,
+                    "symbol": symbol,
+                    "interval": str(interval_minutes),
+                    "start_time": str(start),
+                    "end_time": str(end),
+                },
+            )
+            return data.get("data", [])
+        except Exception:
+            return []
 
     @staticmethod
     def _portfolio_balance(item: dict) -> tuple[float, float, float]:
@@ -172,17 +176,18 @@ class CoinSwitchClient:
         if main is None:
             main = item.get("free")
 
-        locked = item.get("locked_balance")
-        if locked is None:
-            locked = item.get("locked")
-        if locked is None:
-            locked = item.get("freeze")
-        if locked is None:
-            locked = item.get("lock")
+        locked = (
+            item.get("locked_balance")
+            or item.get("blocked_balance_order")
+            or item.get("blocked")
+            or item.get("locked")
+            or item.get("freeze")
+            or item.get("lock")
+        )
 
         available = _coerce(main)
         locked_val = _coerce(locked)
-        if item.get("main_balance") is not None and locked is not None and available >= locked_val:
+        if item.get("main_balance") is not None and locked_val > 0 and available >= locked_val:
             available = available - locked_val
         return available, locked_val, available + locked_val
 
@@ -258,20 +263,30 @@ class CoinSwitchClient:
         price: float = None,
         exchange: str = EXCHANGE_USDT,
     ) -> dict:
-        # Convert /USDT to /INR for c2c1 (CoinSwitchX INR exchange)
-        if exchange == "c2c1" and symbol.endswith("/USDT"):
-            symbol = symbol.replace("/USDT", "/INR")
+        # CoinSwitch Pro API requires type: 'limit' and a valid price for all orders
+        target_type = "limit"
+        if price is None or price <= 0:
+            current_p = self.get_ticker_price(symbol)
+            if current_p > 0:
+                price = current_p * 1.01 if side.lower() == "buy" else current_p * 0.99
+                if price > 100:
+                    price = round(price, 2)
+                elif price > 1:
+                    price = round(price, 4)
+                else:
+                    price = round(price, 6)
+            else:
+                price = 1.0
 
         body = {
             "side": side.lower(),
             "symbol": symbol,
-            "type": order_type.upper(),
+            "type": target_type,
             "quantity": quantity,
+            "price": price,
             "exchange": exchange,
         }
-        if price is not None:
-            body["price"] = price
-        log.info(f"  Placing {side.upper()} {order_type.upper()} {quantity} {symbol} @ {price or 'LIMIT'}")
+        log.info(f"  Placing {side.upper()} {target_type.upper()} {quantity} {symbol} @ {price}")
         data = self._request("POST", "/trade/api/v2/order", body=body)
         return data.get("data", {})
 

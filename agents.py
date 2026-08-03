@@ -129,7 +129,7 @@ class DataCollectorAgent:
         for symbol in symbols:
             try:
                 df = self.scanner._ohlcv(symbol)
-                if df is None or len(df) < 50:
+                if df is None or len(df) < 15:
                     out.append({"symbol": symbol, "error": "insufficient_ohlcv", "timestamp": utc_iso()})
                     continue
 
@@ -200,6 +200,14 @@ class DataCollectorAgent:
                 except Exception as exc:
                     log.debug("PP SuperTrend Ghost analysis failed for %s: %s", symbol, exc)
 
+                # ── SMC Liquidity Gap & Liquidity Run Strategy Engine ────────────
+                try:
+                    from liquidity_gap_run_engine import LiquidityGapRunEngine
+                    liq_engine = LiquidityGapRunEngine()
+                    item["liquidity_gap_run"] = liq_engine.analyze(df)
+                except Exception as exc:
+                    log.debug("Liquidity Gap & Run analysis failed for %s: %s", symbol, exc)
+
                 # ── Consolidation + Breakout detection (1h candles) ──────────
                 try:
                     df_1h = self.scanner._ohlcv_1h(symbol, 48)
@@ -251,6 +259,15 @@ class SignalDetectorAgent:
             symbol = item.get("symbol", "")
             if item.get("error"):
                 signals.append(self._signal(symbol, "insufficient_data", 0.0, "incomplete_market_data", item))
+                continue
+
+            # ── SMC Liquidity Gap & Liquidity Run Strategy Engine ────────────
+            liq_gap = item.get("liquidity_gap_run")
+            if liq_gap and liq_gap.get("signal") in ("pump", "dump"):
+                sig_type = liq_gap["signal"]
+                confidence = liq_gap.get("confidence", 0.90)
+                reason = liq_gap.get("reason", "liquidity_gap_run_signal")
+                signals.append(self._signal(symbol, sig_type, confidence, reason, item))
                 continue
 
             # ── PP SuperTrend + Reversal Zone Finder [Ghost Protocol] V3 ────

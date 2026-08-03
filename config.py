@@ -67,7 +67,8 @@ CONFIG = {
     "exchange":              "c2c2",    # CoinSwitch c2c2 = USDT pairs with candle data
     "request_delay_seconds": 1.0,
     "top_n_by_volume":       150,     # scans all top active & newly listed coins
-    "candle_limit":          120,      # more candles = better indicator accuracy
+    "timeframe":             "5m",
+    "candle_limit":          50,       # 50 candles for 5m indicators
     "min_volume_usdt":       50_000,
     "blacklist": ["USDC/USDT", "BUSD/USDT", "TUSD/USDT", "FDUSD/USDT"],
 
@@ -104,11 +105,11 @@ CONFIG = {
     # Volume spike and momentum weighted highest — best predictors for 5m pumps
     "weights": {
         "pp_supertrend_ghost": 25,   # Pivot Point SuperTrend + Ghost Protocol V3
-        "ema_cross":           15,
+        "liquidity_gap_run":   25,   # SMC Liquidity Gap & Liquidity Run Strategy
+        "ema_cross":           10,
         "rsi":                 10,
         "vwap":                15,
-        "volume_spike":        20,   # strongest short-term pump predictor
-        "momentum":            15,   # 5-candle ROC catches real moves
+        "volume_spike":        15,   # strongest short-term pump predictor
     },
 
     # ── Consolidation + Breakout Strategy ──────────────────────────────────────
