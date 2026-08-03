@@ -46,7 +46,7 @@ class LiquidityGapRunEngine:
         # Low spikes below previous key low, but candle closes back ABOVE previous key low
         if (curr_low < range_low or prev_low < range_low) and curr_close > range_low and curr_close > curr_open:
             wick_ratio = (min(curr_open, curr_close) - curr_low) / (curr_high - curr_low + 1e-8)
-            if wick_ratio >= 0.35 or curr_close > prev_high:
+            if wick_ratio >= 0.25 or curr_close > prev_close:
                 sl_price = round(min(curr_low, prev_low), 6)
                 return {
                     "signal": "pump",
@@ -62,7 +62,7 @@ class LiquidityGapRunEngine:
         # High spikes above previous key high, but candle closes back BELOW previous key high
         if (curr_high > range_high or prev_high > range_high) and curr_close < range_high and curr_close < curr_open:
             wick_ratio = (curr_high - max(curr_open, curr_close)) / (curr_high - curr_low + 1e-8)
-            if wick_ratio >= 0.35 or curr_close < prev_low:
+            if wick_ratio >= 0.25 or curr_close < prev_close:
                 sl_price = round(max(curr_high, prev_high), 6)
                 return {
                     "signal": "dump",
