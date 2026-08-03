@@ -243,6 +243,16 @@ def run() -> None:
     except Exception as scalp_exc:
         log.warning("QuickScalpAgent notice: %s", scalp_exc)
 
+    # ── Step 2.7: US Stocks Monthly Earnings Trading Agent ────────────────────
+    try:
+        from us_stocks_earnings_agent import USStocksEarningsAgent
+        earn_agent = USStocksEarningsAgent(CONFIG, cs_client, delta_client, notifier, audit)
+        earn_trades = earn_agent.process_and_execute_earnings_trades()
+        if earn_trades:
+            log.info("USStocksEarningsAgent: Executed %s US stocks monthly earnings trades", len(earn_trades))
+    except Exception as earn_exc:
+        log.warning("USStocksEarningsAgent notice: %s", earn_exc)
+
     # ── Step 3: Detect signals ────────────────────────────────────────────────
     log.info("Step 3/5 — Detect signals")
     signals = detector.classify(market_data)

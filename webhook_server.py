@@ -119,7 +119,21 @@ def handle_forex_news():
         return jsonify({"error": str(exc)}), 500
 
 
+@app.route("/us-earnings", methods=["POST"])
+def handle_us_earnings():
+    try:
+        data = request.get_json(force=True) if request.data else {}
+        from us_stocks_earnings_agent import USStocksEarningsAgent
+        earn_agent = USStocksEarningsAgent(CONFIG, cs_client, delta_client, notifier, audit)
+        results = earn_agent.process_and_execute_earnings_trades(data if data else None)
+        return jsonify({"status": "processed", "executed": len(results), "results": results}), 200
+
+    except Exception as exc:
+        log.error("US earnings webhook error: %s", exc)
+        return jsonify({"error": str(exc)}), 500
+
+
 if __name__ == "__main__":
     port = CONFIG.get("webhook_port", 5000)
-    log.info("Starting TradingView & Forex Factory Webhook Bridge Server on port %s...", port)
+    log.info("Starting TradingView, Forex & US Earnings Webhook Bridge Server on port %s...", port)
     app.run(host="0.0.0.0", port=port)
