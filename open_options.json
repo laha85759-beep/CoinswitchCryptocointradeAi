@@ -1,1 +1,95 @@
-[]
+[
+  {
+    "strategy": "long_straddle",
+    "asset": "ETH",
+    "spot_price_at_entry": 1863.2,
+    "call_leg": {
+      "symbol": "C-ETH-1860-060826",
+      "product_id": 145207,
+      "strike": 1860.0,
+      "entry_premium": 31.6
+    },
+    "put_leg": {
+      "symbol": "P-ETH-1860-060826",
+      "product_id": 145197,
+      "strike": 1860.0,
+      "entry_premium": 26.5
+    },
+    "total_premium_paid": 58.1,
+    "peak_combined_value": 58.1,
+    "mandatory_risk": {
+      "stop_loss_premium": 29.05,
+      "stop_loss_pct": 50.0,
+      "take_profit_premium": 116.2,
+      "take_profit_pct": 100.0,
+      "max_possible_loss": 58.1,
+      "unlimited_profit": true
+    },
+    "opened_at": "2026-08-03T15:53:23.145346+00:00",
+    "status": "active",
+    "call_order_id": 1450673217,
+    "put_order_id": 1450673250
+  },
+  {
+    "strategy": "long_straddle",
+    "asset": "BTC",
+    "spot_price_at_entry": 63725.5,
+    "call_leg": {
+      "symbol": "C-BTC-63800-060826",
+      "product_id": 145219,
+      "strike": 63800.0,
+      "entry_premium": 644.0
+    },
+    "put_leg": {
+      "symbol": "P-BTC-63800-060826",
+      "product_id": 145218,
+      "strike": 63800.0,
+      "entry_premium": 678.0
+    },
+    "total_premium_paid": 1322.0,
+    "peak_combined_value": 1322.0,
+    "mandatory_risk": {
+      "stop_loss_premium": 661.0,
+      "stop_loss_pct": 50.0,
+      "take_profit_premium": 2644.0,
+      "take_profit_pct": 100.0,
+      "max_possible_loss": 1322.0,
+      "unlimited_profit": true
+    },
+    "opened_at": "2026-08-03T15:53:28.442008+00:00",
+    "status": "active",
+    "call_order_id": 1450673336,
+    "put_order_id": 1450673377
+  },
+  {
+    "strategy": "long_straddle",
+    "asset": "XAUT",
+    "spot_price_at_entry": 4036.81,
+    "call_leg": {
+      "symbol": "C-XAUT-4040-040826",
+      "product_id": 145087,
+      "strike": 4040.0,
+      "entry_premium": 15.3
+    },
+    "put_leg": {
+      "symbol": "P-XAUT-4040-040826",
+      "product_id": 145077,
+      "strike": 4040.0,
+      "entry_premium": 24.7
+    },
+    "total_premium_paid": 40.0,
+    "peak_combined_value": 40.0,
+    "mandatory_risk": {
+      "stop_loss_premium": 20.0,
+      "stop_loss_pct": 50.0,
+      "take_profit_premium": 80.0,
+      "take_profit_pct": 100.0,
+      "max_possible_loss": 40.0,
+      "unlimited_profit": true
+    },
+    "opened_at": "2026-08-03T15:53:33.766788+00:00",
+    "status": "active",
+    "call_order_id": 1450673492,
+    "put_order_id": 1450673538
+  }
+]
