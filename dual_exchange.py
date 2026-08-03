@@ -260,14 +260,8 @@ class DualExecutionAgent:
             try:
                 direction = approval.get("direction", "long")
                 side = "buy" if direction == "long" else "sell"
-                order_type = str(approval.get("order_type", self.cfg["risk_order_type"])).lower()
-                if order_type == "market":
-                    order = self.delta_client.place_order(symbol, side, "market", qty)
-                else:
-                    limit_price = round(
-                        current_price * (1 + self.cfg["limit_slippage_offset_pct"] / 100.0) if direction == "long" else current_price * (1 - self.cfg["limit_slippage_offset_pct"] / 100.0), 8
-                    )
-                    order = self.delta_client.place_order(symbol, side, "limit", qty, price=limit_price)
+                # ALWAYS execute MARKET order entry on Delta Exchange India (no limit orders)
+                order = self.delta_client.place_order(symbol, side, "market", qty)
                 order_id = order.get("id") or order.get("order_id")
                 if not order_id:
                     return {"status": "error", "reason": "missing_order_id", "symbol": symbol}
