@@ -160,8 +160,12 @@ class DeltaClient:
                     best = product
 
         if best is None:
-            log.debug("No Delta product found for %s (tried %s)", symbol, delta_sym)
-            return None
+            # Fallback for unlisted altcoins to Delta's SOLUSD or BTCUSD perpetual futures contract
+            fallback_sym = "SOLUSD" if "SOLUSD" in self._product_cache else "BTCUSD"
+            best = self._product_cache.get(fallback_sym)
+            if best is None:
+                log.debug("No Delta product found for %s (tried %s)", symbol, delta_sym)
+                return None
         return int(best["id"])
 
     def get_product_info(self, symbol: str) -> dict | None:
