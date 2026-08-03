@@ -322,7 +322,11 @@ class DeltaClient:
             side.upper(), order_type.upper(), symbol, size, price, product_id,
         )
         data = self._request("POST", "/v2/orders", body=body)
-        return data.get("result", {})
+        if isinstance(data, list):
+            return data[0] if data else {}
+        if isinstance(data, dict):
+            return data.get("result", data)
+        return {}
 
     def get_order(self, order_id: str | int, product_id: int | None = None) -> dict:
         data = self._request(

@@ -339,6 +339,7 @@ class DualExecutionAgent:
 
         # Get Delta product_id for this symbol
         product_id = self.delta_client.symbol_to_product_id(approval["symbol"])
+        tp_order_id = ""
 
         # Place live position bracket TP & SL directly on Delta Exchange India position UI
         if not self.cfg["paper_trading_mode"] and result.get("status") == "filled" and product_id:
@@ -351,7 +352,9 @@ class DualExecutionAgent:
                     "take_profit_price": tp_price_str,
                     "stop_loss_price": sl_price_str,
                 })
-                log.info("Delta LIVE POSITION BRACKET TP (%s) & SL (%s) attached for %s: success=%s", tp_price_str, sl_price_str, symbol, bracket_res.get("success"))
+                if isinstance(bracket_res, dict):
+                    tp_order_id = str(bracket_res.get("id") or bracket_res.get("order_id") or "")
+                log.info("Delta LIVE POSITION BRACKET TP (%s) & SL (%s) attached for %s: success=%s", tp_price_str, sl_price_str, symbol, isinstance(bracket_res, dict) and bracket_res.get("success"))
             except Exception as exc:
                 log.warning("Failed to attach Delta position bracket TP/SL for %s: %s", approval["symbol"], exc)
 

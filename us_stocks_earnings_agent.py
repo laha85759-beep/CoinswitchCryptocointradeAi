@@ -138,6 +138,7 @@ class USStocksEarningsAgent:
                     "suspected_cause": f"us_stock_earnings_{matched_stock['ticker'].lower()}_{signal_type}",
                     "supporting_data": {
                         "price": price,
+                        "volume_24h": 10000000.0,
                         "volume_ratio": 2.2,
                         "change_5m": 1.2 if signal_type == "pump" else -1.2,
                         "stock_event": matched_stock["name"],
