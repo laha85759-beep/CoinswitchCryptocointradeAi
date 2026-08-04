@@ -425,6 +425,8 @@ class RiskManagerAgent:
         max_position = portfolio_usdt * self.cfg["max_position_pct"] / 100.0
         remaining_exposure = max(0.0, max_total - total_exposure)
         position_size = min(max_position, remaining_exposure)
+        if position_size < self.cfg["min_order_usdt"] and portfolio_usdt >= self.cfg["min_order_usdt"]:
+            position_size = min(portfolio_usdt, self.cfg["min_order_usdt"])
         if position_size < self.cfg["min_order_usdt"]:
             return risk_reject(signal, f"position_{position_size:.2f}_below_min_order")
 
@@ -451,8 +453,8 @@ class RiskManagerAgent:
         cs_bal = 0.0
         try:
             usdt = max(float(self.client.get_usdt_balance()), 0.0)
-            inr_in_usdt = max(float(self.client.get_inr_balance()), 0.0) / 88.0  # ~88 INR/USDT rate
-            cs_bal = max(usdt, inr_in_usdt)
+            inr_in_usdt = max(float(self.client.get_inr_balance()), 0.0) / 88.0
+            cs_bal = usdt + inr_in_usdt
         except Exception as exc:
             log.warning("CS balance failed: %s", exc)
 
@@ -463,8 +465,7 @@ class RiskManagerAgent:
             except Exception as exc:
                 log.warning("Delta USDT balance failed: %s", exc)
 
-        total_bal = max(cs_bal, delta_bal)
-        # If real balance exists but is small (< $10), treat portfolio as $10.00 for order sizing floor
+        total_bal = cs_bal + delta_bal
         if total_bal > 0.0:
             return max(total_bal, 10.0)
         return 0.0
