@@ -152,8 +152,8 @@ CONFIG = {
     "max_trades_per_hour":      _int_env("MAX_TRADES_PER_HOUR",         10),
     # min_confidence=0.50: ensures high-probability momentum breakout signals only
     "min_confidence":           _float_env("MIN_CONFIDENCE",             0.50),
-    "stop_loss_pct":            _float_env("STOP_LOSS_PCT",              0.05), # Ultra-tight -0.05% SL for capital protection
-    "take_profit_pct":          _float_env("TAKE_PROFIT_PCT",            4.8),  # High +4.8% TP (1:4 Risk-Reward ratio for max gains)
+    "stop_loss_pct":            _float_env("STOP_LOSS_PCT",              1.5),  # Optimal -1.5% SL for momentum breakouts
+    "take_profit_pct":          _float_env("TAKE_PROFIT_PCT",            4.8),  # High +4.8% TP (1:3+ Risk-Reward ratio)
     "scalp_lot_multiplier":     _float_env("SCALP_LOT_MULTIPLIER",       2.5),  # QuickScalpAgent uses 2.5x larger lot size
     # daily_max_drawdown=4%: on $100 that's $4 max daily loss before halt
     "daily_max_drawdown_pct":   _float_env("DAILY_MAX_DRAWDOWN_PCT",     4.0),
