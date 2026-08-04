@@ -160,12 +160,8 @@ class DeltaClient:
                     best = product
 
         if best is None:
-            # Fallback for unlisted altcoins to Delta's SOLUSD or BTCUSD perpetual futures contract
-            fallback_sym = "SOLUSD" if "SOLUSD" in self._product_cache else "BTCUSD"
-            best = self._product_cache.get(fallback_sym)
-            if best is None:
-                log.debug("No Delta product found for %s (tried %s)", symbol, delta_sym)
-                return None
+            log.debug("No Delta product found for %s (tried %s)", symbol, delta_sym)
+            return None
         return int(best["id"])
 
     def get_product_info(self, symbol: str) -> dict | None:
@@ -325,7 +321,11 @@ class DeltaClient:
         if isinstance(data, list):
             return data[0] if data else {}
         if isinstance(data, dict):
-            return data.get("result", data)
+            res = data.get("result", data)
+            if isinstance(res, list):
+                return res[0] if res else {}
+            if isinstance(res, dict):
+                return res
         return {}
 
     def get_order(self, order_id: str | int, product_id: int | None = None) -> dict:
@@ -333,10 +333,15 @@ class DeltaClient:
             "GET", "/v2/orders",
             params={"id": str(order_id)},
         )
-        result = data.get("result", {})
-        if isinstance(result, list):
-            return result[0] if result else {}
-        return result
+        if isinstance(data, list):
+            return data[0] if data else {}
+        if isinstance(data, dict):
+            res = data.get("result", data)
+            if isinstance(res, list):
+                return res[0] if res else {}
+            if isinstance(res, dict):
+                return res
+        return {}
 
     def cancel_order(self, order_id: str | int, product_id: int) -> dict:
         body = {"id": int(order_id), "product_id": int(product_id)}

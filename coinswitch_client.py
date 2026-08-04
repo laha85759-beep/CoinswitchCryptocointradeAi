@@ -278,19 +278,32 @@ class CoinSwitchClient:
             else:
                 price = 1.0
 
-        target_exchange = "c2c2" if symbol.upper().endswith("/USDT") or symbol.upper().endswith("USDT") else exchange
+        primary_exchange = "c2c2" if symbol.upper().endswith("/USDT") or symbol.upper().endswith("USDT") else exchange
+        exchanges_to_try = [primary_exchange, "c2c1" if primary_exchange == "c2c2" else "c2c2"]
 
-        body = {
-            "side": side.lower(),
-            "symbol": symbol,
-            "type": target_type,
-            "quantity": quantity,
-            "price": price,
-            "exchange": target_exchange,
-        }
-        log.info(f"  Placing {side.upper()} {target_type.upper()} {quantity} {symbol} @ {price}")
-        data = self._request("POST", "/trade/api/v2/order", body=body)
-        return data.get("data", {})
+        last_exc = None
+        for ex in exchanges_to_try:
+            body = {
+                "side": side.lower(),
+                "symbol": symbol,
+                "type": target_type,
+                "quantity": quantity,
+                "price": price,
+                "exchange": ex,
+            }
+            log.info(f"  Placing {side.upper()} {target_type.upper()} {quantity} {symbol} @ {price} (exchange={ex})")
+            try:
+                data = self._request("POST", "/trade/api/v2/order", body=body)
+                return data.get("data", {})
+            except requests.HTTPError as exc:
+                last_exc = exc
+                if exc.response is not None and exc.response.status_code == 422:
+                    log.warning(f"CoinSwitch order on {ex} failed for {symbol} (HTTP 422), trying fallback...")
+                    continue
+                raise
+        if last_exc:
+            raise last_exc
+        return {}
 
     def cancel_order(self, order_id: str) -> dict:
         data = self._request("DELETE", "/trade/api/v2/order", body={"order_id": order_id})

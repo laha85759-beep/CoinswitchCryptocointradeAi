@@ -504,17 +504,17 @@ class ExecutionAgent:
             return execution_result(symbol, "rejected", f"stale_signal_slippage_{slippage:.2f}pct", signal, approval)
 
         # Dynamically size CoinSwitch order based on actual available INR balance
-        try:
-            inr_avail = float(self.client.get_inr_balance())
-            if inr_avail > 0:
-                usable_inr = inr_avail * 0.85  # Use 85% of free INR (leaves 15% buffer for fees)
-                if usable_inr >= 880.0:        # Clears $10 USD (~₹880 INR) minimum order quote filter
-                    position_usdt = usable_inr / 88.0
-                else:
-                    position_usdt = float(approval["position_size_usd"])
-            else:
+        if not self.cfg["paper_trading_mode"]:
+            try:
+                inr_avail = float(self.client.get_inr_balance())
+                if inr_avail < 880.0:  # ₹880 INR minimum (~$10 USD order size)
+                    log.warning("CoinSwitch INR balance ₹%.2f below minimum ₹880.0 required for order", inr_avail)
+                    return execution_result(symbol, "rejected", f"cs_inr_balance_{inr_avail:.2f}_below_min", signal, approval)
+                position_usdt = min(float(approval["position_size_usd"]), (inr_avail * 0.85) / 88.0)
+            except Exception as exc:
+                log.debug("CoinSwitch INR balance check notice: %s", exc)
                 position_usdt = float(approval["position_size_usd"])
-        except Exception:
+        else:
             position_usdt = float(approval["position_size_usd"])
 
         qty = round(position_usdt / current_price, 6)
@@ -566,15 +566,9 @@ class ExecutionAgent:
                 log.warning("Execution attempt %s failed for %s: %s", attempt, symbol, exc)
                 time.sleep(1)
 
-        # Fallback to simulated paper execution on live exchange API error so trade flow stays active
-        order_id = f"PAPER-{approval['signal_id']}"
-        result = execution_result(
-            symbol, "filled", f"cs_paper_fallback:{last_error}", signal, approval,
-            order_id=order_id, filled_price=current_price, filled_qty=qty,
-        )
-        self._record_open_trade(approval, result)
-        self._notify_entry(approval, result, current_price)
-        return result
+        # Live execution failed after all retries — do NOT create phantom paper trades
+        log.error("CoinSwitch execution FAILED for %s after %s retries: %s", symbol, self.cfg["max_retries"], last_error)
+        return execution_result(symbol, "error", f"live_execution_failed:{last_error}", signal, approval)
 
     def _notify_entry(self, approval: dict, result: dict, price: float) -> None:
         """Send a rich Telegram entry notification."""

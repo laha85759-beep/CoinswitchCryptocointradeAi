@@ -311,19 +311,9 @@ class DualExecutionAgent:
                 log.warning("Delta execution attempt %s failed for %s: %s", attempt, symbol, exc)
                 time.sleep(1)
 
-        # Fallback to simulated paper execution on live exchange API error so trade flow stays active
-        order_id = f"DELTA-PAPER-{approval['signal_id']}"
-        result = {
-            "status": "filled",
-            "reason": f"delta_paper_fallback:{last_error}",
-            "symbol": symbol,
-            "order_id": order_id,
-            "filled_price": current_price,
-            "filled_qty": qty,
-            "exchange": "delta",
-        }
-        self._record_delta_trade(approval, result, current_price, qty)
-        return result
+        # Live execution failed after all retries — do NOT create phantom paper trades
+        log.error("Delta execution FAILED for %s after %s retries: %s", symbol, self.cfg["max_retries"], last_error)
+        return {"status": "error", "reason": f"live_execution_failed:{last_error}", "symbol": symbol}
 
     def _record_delta_trade(
         self, approval: dict, result: dict, price: float, qty: float
@@ -341,22 +331,8 @@ class DualExecutionAgent:
         product_id = self.delta_client.symbol_to_product_id(approval["symbol"])
         tp_order_id = ""
 
-        # Place live position bracket TP & SL directly on Delta Exchange India position UI
-        if not self.cfg["paper_trading_mode"] and result.get("status") == "filled" and product_id:
-            try:
-                symbol = approval["symbol"]
-                tp_price_str = str(round(take_profit, 2 if price > 100 else (4 if price > 1 else 6)))
-                sl_price_str = str(round(hard_sl, 2 if price > 100 else (4 if price > 1 else 6)))
-                bracket_res = self.delta_client._request("POST", "/v2/orders/bracket", body={
-                    "product_id": product_id,
-                    "take_profit_price": tp_price_str,
-                    "stop_loss_price": sl_price_str,
-                })
-                if isinstance(bracket_res, dict):
-                    tp_order_id = str(bracket_res.get("id") or bracket_res.get("order_id") or "")
-                log.info("Delta LIVE POSITION BRACKET TP (%s) & SL (%s) attached for %s: success=%s", tp_price_str, sl_price_str, symbol, isinstance(bracket_res, dict) and bracket_res.get("success"))
-            except Exception as exc:
-                log.warning("Failed to attach Delta position bracket TP/SL for %s: %s", approval["symbol"], exc)
+        # TP/SL already attached atomically in place_order() call — no duplicate bracket needed
+        log.info("Delta trade recorded for %s: TP=%s SL=%s (attached atomically)", approval["symbol"], take_profit, hard_sl)
 
         trade = {
             "symbol": approval["symbol"],

@@ -106,14 +106,14 @@ class ForexFactoryNewsAgent:
                         "signal_id": f"FF-{int(time.time()*1000)}",
                         "symbol": symbol,
                         "signal": signal_type,
-                        "confidence": 0.92,
+                        "confidence": 0.70,
                         "reason": f"forex_factory_news:{title}_{currency}_actual={actual}_fc={forecast}",
                         "supporting_data": {
                             "price": price,
-                            "volume_24h": 100000.0,
-                            "atr_pct": 1.5,
-                            "volume_ratio": 3.0,
-                            "change_5m": 2.0 if signal_type == "pump" else -2.0,
+                            "volume_24h": 0.0,
+                            "atr_pct": 0.0,
+                            "volume_ratio": 1.0,
+                            "change_5m": 0.0,
                         }
                     }
 
@@ -133,6 +133,6 @@ class ForexFactoryNewsAgent:
                                 f"Trade  : `{direction.upper()}`\n"
                                 f"SL: -1.2% | TP: +4.8%"
                             )
-                        break
+                        time.sleep(1)  # Brief pause between symbol executions
 
         return executed_trades
