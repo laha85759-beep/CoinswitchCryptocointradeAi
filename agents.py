@@ -504,16 +504,18 @@ class ExecutionAgent:
             log.warning("Stale signal %s: slippage=%.2f%%", symbol, slippage)
             return execution_result(symbol, "rejected", f"stale_signal_slippage_{slippage:.2f}pct", signal, approval)
 
-        # Dynamically size CoinSwitch order based on actual available INR balance
+        # Dynamically size CoinSwitch order based on actual available USDT/INR balance
         if not self.cfg["paper_trading_mode"]:
             try:
+                usdt_avail = float(self.client.get_usdt_balance())
                 inr_avail = float(self.client.get_inr_balance())
-                if inr_avail < 880.0:  # ₹880 INR minimum (~$10 USD order size)
-                    log.warning("CoinSwitch INR balance ₹%.2f below minimum ₹880.0 required for order", inr_avail)
-                    return execution_result(symbol, "rejected", f"cs_inr_balance_{inr_avail:.2f}_below_min", signal, approval)
-                position_usdt = min(float(approval["position_size_usd"]), (inr_avail * 0.85) / 88.0)
+                total_cs_usdt = usdt_avail + (inr_avail / 88.0)
+                if total_cs_usdt < 10.0:  # $10 USD (~880 INR) minimum order size requirement
+                    log.warning("CoinSwitch USDT balance $%.2f below minimum $10.0 required for order", total_cs_usdt)
+                    return execution_result(symbol, "rejected", f"cs_usdt_balance_{total_cs_usdt:.2f}_below_min", signal, approval)
+                position_usdt = min(float(approval["position_size_usd"]), max(10.0, total_cs_usdt * 0.85))
             except Exception as exc:
-                log.debug("CoinSwitch INR balance check notice: %s", exc)
+                log.debug("CoinSwitch balance check notice: %s", exc)
                 position_usdt = float(approval["position_size_usd"])
         else:
             position_usdt = float(approval["position_size_usd"])
