@@ -153,13 +153,21 @@ class DataCollectorAgent:
                 rolling_avg = float(volume.tail(20).mean() or 0)
                 volume_ratio = 1.0 if rolling_avg <= 0 else float(volume.iloc[-1] / rolling_avg)
 
-                # ATR-based volatility (14-period)
-                tr = pd.concat([
-                    high - low,
-                    (high - close.shift(1)).abs(),
-                    (low - close.shift(1)).abs()
-                ], axis=1).max(axis=1)
-                atr = float(tr.ewm(span=14, adjust=False).mean().iloc[-1])
+                # Technical Analysis calculations using Python 'ta' library
+                try:
+                    import ta
+                    atr = float(ta.volatility.AverageTrueRange(high, low, close, window=14).average_true_range().iloc[-1] or 0.0)
+                    macd_diff = float(ta.trend.MACD(close).macd_diff().iloc[-1] or 0.0)
+                    rsi_val = float(ta.momentum.RSIIndicator(close, window=14).rsi().iloc[-1] or 50.0)
+                    bb = ta.volatility.BollingerBands(close, window=20, window_dev=2)
+                    bb_pband = float(bb.bollinger_pband().iloc[-1] or 0.5)
+                except Exception:
+                    tr = pd.concat([high - low, (high - close.shift(1)).abs(), (low - close.shift(1)).abs()], axis=1).max(axis=1)
+                    atr = float(tr.ewm(span=14, adjust=False).mean().iloc[-1])
+                    macd_diff = 0.0
+                    rsi_val = 50.0
+                    bb_pband = 0.5
+
                 atr_pct = (atr / price * 100) if price > 0 else 0.0
 
                 orderbook_imbalance = synthetic_imbalance(change_5m, volume_ratio)

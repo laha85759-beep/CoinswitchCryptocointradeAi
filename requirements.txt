@@ -6,4 +6,6 @@ delta-rest-client>=1.0.14
 einops>=0.8.0
 safetensors>=0.6.0
 huggingface_hub>=0.20.0
+ta>=0.11.0
+
 
