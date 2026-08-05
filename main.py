@@ -264,9 +264,28 @@ def run() -> None:
     except Exception as ai_exc:
         log.warning("AITraderAgent notice: %s", ai_exc)
 
+    # ── Step 2.9: Kronos AI K-Line Foundation Model Forecasting ───────────────
+    kronos_agent = None
+    try:
+        from kronos_agent import KronosAIAgent
+        kronos_agent = KronosAIAgent(CONFIG)
+        market_map = {d["symbol"]: d for d in market_data if not d.get("error")}
+    except Exception as kronos_exc:
+        log.warning("KronosAIAgent notice: %s", kronos_exc)
+
     # ── Step 3: Detect signals ────────────────────────────────────────────────
     log.info("Step 3/5 — Detect signals")
     signals = detector.classify(market_data)
+
+    if kronos_agent and market_map:
+        try:
+            candidate_signals = [s for s in signals if s["signal"] in ("pump", "dump")]
+            if candidate_signals:
+                signals = kronos_agent.enhance_signals(signals, market_map)
+                log.info("KronosAIAgent: Evaluated %s candidate signals with K-line Foundation Model", len(candidate_signals))
+        except Exception as k_exc:
+            log.warning("Kronos signal enhancement notice: %s", k_exc)
+
     pump_signals  = [s for s in signals if s["signal"] == "pump"]
     watch_signals = [s for s in signals if s["signal"] == "watch"]
     dump_signals  = [s for s in signals if s["signal"] == "dump"]

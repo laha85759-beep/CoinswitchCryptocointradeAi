@@ -513,7 +513,10 @@ class ExecutionAgent:
                 if total_cs_usdt < 10.0:  # $10 USD (~880 INR) minimum order size requirement
                     log.warning("CoinSwitch USDT balance $%.2f below minimum $10.0 required for order", total_cs_usdt)
                     return execution_result(symbol, "rejected", f"cs_usdt_balance_{total_cs_usdt:.2f}_below_min", signal, approval)
-                position_usdt = min(float(approval["position_size_usd"]), max(10.0, total_cs_usdt * 0.85))
+                if total_cs_usdt <= 20.0:
+                    position_usdt = total_cs_usdt * 0.98  # Use 98% of free USDT to maximize order size clearance
+                else:
+                    position_usdt = min(float(approval["position_size_usd"]), total_cs_usdt * 0.85)
             except Exception as exc:
                 log.debug("CoinSwitch balance check notice: %s", exc)
                 position_usdt = float(approval["position_size_usd"])
