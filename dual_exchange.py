@@ -226,13 +226,12 @@ class DualExecutionAgent:
                     "reason": f"delta_balance_{delta_balance:.2f}_too_low",
                     "symbol": symbol,
                 }
-            # Scale position to Delta balance
-            position_usd = min(
-                position_usd,
-                delta_balance * self.cfg["max_position_pct"] / 100.0,
-            )
+            # 20x Leverage allows capital distribution across up to 3-5 concurrent positions
+            leverage = 20
+            max_pos_margin = max(3.0, (delta_balance * 0.35))  # Allocate ~35% margin per trade so multiple trades run in parallel
+            position_usd = min(position_usd, max_pos_margin * leverage)
 
-        # Dynamic risk-based lot size (contracts) considering contract_value & brokerage fees
+        # Dynamic risk-based lot size (contracts) considering contract_value & 20x leverage
         contract_notional = current_price * contract_val
         num_contracts = max(1, int(position_usd / contract_notional)) if contract_notional > 0 else 1
         qty = float(num_contracts)

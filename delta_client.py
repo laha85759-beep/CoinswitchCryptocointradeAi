@@ -277,6 +277,17 @@ class DeltaClient:
 
     # ── Orders ───────────────────────────────────────────────────────────────
 
+    def set_leverage(self, product_id: int, leverage: int = 20) -> dict:
+        """Set leverage for a specific product on Delta Exchange India (e.g. 10x, 20x, 50x)."""
+        try:
+            body = {"product_id": product_id, "leverage": str(leverage)}
+            res = self._request("POST", "/v2/products/leverage", body=body)
+            log.info("Delta set_leverage %sx for product_id=%s: %s", leverage, product_id, res.get("success", True))
+            return res
+        except Exception as exc:
+            log.debug("Delta set_leverage notice for product_id=%s: %s", product_id, exc)
+            return {}
+
     def place_order(
         self,
         symbol: str,
@@ -286,13 +297,18 @@ class DeltaClient:
         price: float | None = None,
         stop_loss_price: float | None = None,
         take_profit_price: float | None = None,
+        leverage: int = 20,
     ) -> dict:
         """
-        Place a buy or sell order on Delta Exchange India with optional atomic TP/SL bracket attachment.
+        Place a buy or sell order on Delta Exchange India with optional atomic TP/SL bracket attachment and leverage setting.
         """
         product_id = self.symbol_to_product_id(symbol)
         if product_id is None:
             raise ValueError(f"Symbol {symbol} not found on Delta Exchange India")
+
+        # Automatically apply desired leverage (default 20x) on Delta Exchange India
+        if leverage and leverage > 1:
+            self.set_leverage(product_id, leverage)
 
         size = max(1, int(round(quantity)))
 
