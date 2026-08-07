@@ -40,9 +40,16 @@ risk_manager = RiskManagerAgent(CONFIG, cs_client, audit, delta_client=delta_cli
 WEBHOOK_SECRET = CONFIG.get("webhook_secret", "coinswitch_bot_secret_123")
 
 
+from flask import send_from_directory
+import os
+
 @app.route("/", methods=["GET"])
-def health_check():
-    return jsonify({"status": "online", "service": "CoinSwitch + Delta TradingView Webhook Bridge", "timestamp": time.time()}), 200
+def serve_dashboard():
+    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), "index.html")
+
+@app.route("/<path:filename>", methods=["GET"])
+def serve_static(filename):
+    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), filename)
 
 
 @app.route("/webhook", methods=["POST"])
