@@ -1,280 +1,339 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OPUS 4.7 • Dual Exchange Quant Engine</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>0XFCDC... POLYMARKET MAKER TERMINAL V2.1 | DUAL EXCHANGE QUANT ENGINE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-
-  <!-- ═══════════════════ HEADER BAR ═══════════════════ -->
-  <header class="header-bar">
+<body class="terminal-body">
+  
+  <!-- TOP CONTROL HEADER BAR -->
+  <header class="terminal-header">
     <div class="header-left">
-      <div class="brand-badge">B</div>
-      <span class="header-title">OPUS 4.7 <span class="sep">•</span> CoinSwitch + Delta <span class="sep">•</span> DUAL EXCHANGE QUANT ENGINE <span class="sep">•</span> <span class="live-text">LIVE</span></span>
-    </div>
-
-    <div class="header-center">
-      <div class="ticker-strip">
-        <div class="ticker-track">
-          <span class="ticker-item">BTC <span id="header-btc" class="ticker-price">—</span></span>
-          <span class="ticker-sep">│</span>
-          <span class="ticker-item">ETH <span id="header-eth" class="ticker-price">—</span></span>
-          <span class="ticker-sep">│</span>
-          <span class="ticker-item">SOL <span id="header-sol" class="ticker-price">—</span></span>
-          <span class="ticker-sep">│</span>
-          <span class="ticker-item">XRP <span id="header-xrp" class="ticker-price">—</span></span>
-        </div>
+      <div class="brand-badge">N</div>
+      <div class="title-group">
+        <h1 class="terminal-title">0XFCDC...F9D8E3 - POLYMARKET MAKER TERMINAL</h1>
+        <div class="subtitle">V2.1 - NEVERSMILE - 4-ASSET COVERAGE - 5M / 15M / 1H - COMPLETE-SETS • DIRECTIONAL</div>
       </div>
+    </div>
+    
+    <div class="header-ticker">
+      <div class="ticker-item"><span class="sym">BTC SPOT</span> <span class="val green" id="header-btc">$60,148</span></div>
+      <div class="ticker-item"><span class="sym">ETH SPOT</span> <span class="val green" id="header-eth">$1,570.18</span></div>
+      <div class="ticker-item"><span class="sym">SOL SPOT</span> <span class="val red" id="header-sol">$71.80</span></div>
+      <div class="ticker-item"><span class="sym">XRP SPOT</span> <span class="val green" id="header-xrp">$1.048</span></div>
+      <div class="ticker-item"><span class="sym">TRADES</span> <span class="val" id="header-trades">15,045</span></div>
+      <div class="ticker-item"><span class="sym">WIN RATE</span> <span class="val green" id="header-winrate">47.1%</span></div>
     </div>
 
     <div class="header-right">
-      <span class="pulse-dot"></span>
-      <span class="live-badge">LIVE</span>
-      <span class="utc-clock" id="live-utc-clock">00:00:00 UTC</span>
+      <div class="live-indicator"><span class="pulse-dot"></span> COMPLETE SETS LIVE</div>
+      <div class="clock" id="live-utc-clock">13:03:25</div>
     </div>
   </header>
 
-  <!-- ═══════════════════ MAIN CONTENT ═══════════════════ -->
-  <main class="dashboard">
+  <!-- LIVE STREAMING TICKER TAPE -->
+  <div class="ticker-tape-container">
+    <span class="tape-label">● LIVE TAPE</span>
+    <div class="tape-scroll" id="tape-content">
+      <span class="tape-trade buy-up">BUY ETH DOWN $3.86 @ $0.760</span>
+      <span class="tape-trade buy-up">BUY BTC UP $1.42 @ $0.270</span>
+      <span class="tape-trade buy-down">BUY SOL DOWN $23.17 @ $0.900</span>
+      <span class="tape-trade buy-up">BUY SOL DOWN $11.71 @ $0.910</span>
+      <span class="tape-trade buy-up">BUY XRP UP $14.50 @ $0.480</span>
+      <span class="tape-trade buy-down">BUY BTC DOWN $8.90 @ $0.730</span>
+    </div>
+  </div>
 
-    <!-- ──────── TOP ROW ──────── -->
-    <section class="top-row">
+  <main class="terminal-grid">
 
-      <!-- WALLET CARD -->
-      <div class="card card--glow wallet-card">
-        <div class="card-header">
-          <span class="card-icon">◈</span>
-          <span class="card-title">Gravia_001 LIVE</span>
-          <span class="pulse-dot pulse-dot--sm"></span>
-        </div>
-        <div class="wallet-body">
-          <div class="wallet-main-stat">
-            <span class="wallet-label">TOTAL CAPITAL</span>
-            <span class="wallet-value" id="total-capital">$—</span>
-          </div>
-          <div class="wallet-stats-row">
-            <div class="wallet-stat">
-              <span class="wallet-stat-label">WIN RATE</span>
-              <span class="wallet-stat-value green" id="stat-winrate">—%</span>
-            </div>
-            <div class="wallet-stat">
-              <span class="wallet-stat-label">TOTAL TRADES</span>
-              <span class="wallet-stat-value" id="stat-trades">—</span>
-            </div>
-          </div>
-          <div class="wallet-balances">
-            <div class="balance-row">
-              <span class="balance-label">CS USDT</span>
-              <span class="balance-value" id="bal-cs-usdt">—</span>
-            </div>
-            <div class="balance-row">
-              <span class="balance-label">CS INR</span>
-              <span class="balance-value" id="bal-cs-inr">—</span>
-            </div>
-            <div class="balance-row">
-              <span class="balance-label">DELTA USDT</span>
-              <span class="balance-value" id="bal-delta-usdt">—</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- LIVE PRICE CARD -->
-      <div class="card price-card">
-        <div class="card-header">
-          <span class="card-icon">◉</span>
-          <span class="card-title">LIVE PRICE FEED</span>
-          <span class="tag tag--cyan">STREAM</span>
-        </div>
-        <div class="price-body">
-          <div class="btc-live">
-            <span class="btc-label">BTC/USDT</span>
-            <span class="btc-price" id="btc-live-price">$—</span>
-          </div>
-          <div class="orderbook" id="orderbook-list">
-            <div class="orderbook-header">
-              <span>SYMBOL</span><span>PRICE</span><span>CHG</span>
-            </div>
-            <!-- populated by JS -->
-          </div>
-        </div>
-      </div>
-
-      <!-- STREAK CARD -->
-      <div class="card card--glow streak-card">
-        <div class="card-header">
-          <span class="card-icon">★</span>
-          <span class="card-title">#1 TRADER • LIVE STREAK</span>
-          <span class="pulse-dot pulse-dot--sm"></span>
-        </div>
-        <div class="streak-body">
-          <div class="streak-multiplier">
-            <span class="streak-label">STREAK MULT.</span>
-            <span class="streak-value" id="streak-mult">×1.00</span>
-          </div>
-          <canvas id="streakMiniChart" width="240" height="80"></canvas>
-          <div class="streak-stats">
-            <span>BEST: <b class="green" id="streak-best">—</b></span>
-            <span>CURRENT: <b class="cyan" id="streak-current">—</b></span>
-          </div>
-        </div>
-      </div>
-
-    </section>
-
-    <!-- ──────── HEATMAP SECTION ──────── -->
-    <section class="heatmap-section">
-      <div class="card heatmap-card">
-        <div class="card-header">
-          <span class="card-icon">◎</span>
-          <span class="card-title">Mirofish • CRYPTO FORCE MAP</span>
-          <span class="tag tag--magenta">HEATMAP</span>
-        </div>
-        <div class="heatmap-body">
-          <div class="heatmap-canvas-wrap">
-            <canvas id="heatmapCanvas"></canvas>
-          </div>
-          <div class="heatmap-sidebar">
-            <div class="heatmap-legend">
-              <div class="legend-item"><span class="legend-dot" style="background:#ff3355"></span> BEAR</div>
-              <div class="legend-item"><span class="legend-dot" style="background:#00ff88"></span> BULL</div>
-              <div class="legend-item"><span class="legend-dot" style="background:#00e5ff"></span> MEDIAN</div>
-              <div class="legend-item"><span class="legend-dot" style="background:#ffd700"></span> CATALYST</div>
-              <div class="legend-item"><span class="legend-dot" style="background:#ff0080"></span> CLUSTER</div>
-            </div>
-            <div class="heatmap-stats">
-              <div class="hm-stat">
-                <span class="hm-stat-label">WIN RATE</span>
-                <span class="hm-stat-value green" id="hm-winrate">—%</span>
-              </div>
-              <div class="hm-stat">
-                <span class="hm-stat-label">FILLS</span>
-                <span class="hm-stat-value cyan" id="hm-fills">—</span>
-              </div>
-              <div class="hm-stat">
-                <span class="hm-stat-label">ACTIVE POS.</span>
-                <span class="hm-stat-value magenta" id="hm-active">—</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ──────── BOTTOM ROW ──────── -->
-    <section class="bottom-row">
-
-      <!-- PNL EQUITY CURVE -->
+    <!-- ROW 1: WALLET & MAX CONVEXITY -->
+    <section class="grid-row row-top">
+      
+      <!-- WALLET & ALL-TIME PNL -->
       <div class="card pnl-card">
         <div class="card-header">
-          <span class="card-icon">△</span>
-          <span class="card-title">PNL TOTAL</span>
-          <span class="pnl-value-header" id="total-pnl-value">$—</span>
+          <span class="card-title">★ WALLET • 0XFCDC...F9D8E3 <span class="badge green">COMPLETE SETS</span> <span class="tag">4-ASSET</span></span>
+          <span class="card-right">REALLESD • ALL-TIME</span>
         </div>
         <div class="pnl-body">
-          <canvas id="equityCurveCanvas"></canvas>
+          <div class="pnl-stat-main">
+            <span class="pnl-label">ALL-TIME PNL</span>
+            <div class="pnl-value green" id="alltime-pnl">+$94,637</div>
+            <div class="pnl-sub"><span class="sub-label">DEPOSITS</span> <span class="sub-val">$4.3M</span> | <span class="sub-label">ROI ON CAPITAL</span> <span class="sub-val green">+2.20%</span></div>
+          </div>
+
+          <div class="pnl-chart-container">
+            <canvas id="equityCurveCanvas" height="90"></canvas>
+            <span class="chart-tag">● LIVE</span>
+          </div>
+        </div>
+
+        <div class="pnl-footer-stats">
+          <div class="f-stat"><div class="f-lbl">TRADES</div><div class="f-val" id="stat-trades">15,045</div></div>
+          <div class="f-stat"><div class="f-lbl">WIN RATE</div><div class="f-val green" id="stat-winrate">47.1%</div></div>
+          <div class="f-stat"><div class="f-lbl">AVG TRADE</div><div class="f-val" id="stat-avgtrade">$4.27</div></div>
+          <div class="f-stat"><div class="f-lbl">MEDIAN</div><div class="f-val" id="stat-mediantrade">$3.11</div></div>
+          <div class="f-stat wide"><div class="f-lbl">AVG HOLD • 5M ROUND</div>
+            <div class="progress-bar"><div class="progress-fill" style="width: 70%;"></div></div>
+            <div class="f-val" id="stat-avghold">4:09</div>
+          </div>
         </div>
       </div>
 
-      <!-- TRADE RECORDS TABLE -->
-      <div class="card trades-card">
+      <!-- CHEAP TAILS & MAX CONVEXITY -->
+      <div class="card convexity-card">
         <div class="card-header">
-          <span class="card-icon">▤</span>
-          <span class="card-title">TRADE RECORDS</span>
-          <span class="tag tag--cyan" id="trade-count-badge">0</span>
+          <span class="card-title">★ CHEAP TAILS <span class="badge orange">MAX-CONVEXITY</span></span>
+          <span class="card-right">SORTED BY X • ENTRY — $1.00 SETTLE</span>
         </div>
-        <div class="trades-tabs">
-          <button class="tab-btn active" data-filter="all">ALL</button>
-          <button class="tab-btn" data-filter="coinswitch">COINSWITCH</button>
-          <button class="tab-btn" data-filter="delta">DELTA</button>
-          <button class="tab-btn" data-filter="running">RUNNING</button>
-          <button class="tab-btn" data-filter="closed">CLOSED</button>
+        <div class="convexity-body">
+          <div class="multiplier-display">
+            <span class="mult-prefix">x</span>
+            <span class="mult-value" id="top-mult">16.7</span>
+            <canvas id="convexitySparkline" width="220" height="60"></canvas>
+          </div>
+          <div class="top-fill-badge">
+            <span class="lbl">TOP FILL</span>
+            <div class="fill-amt green" id="top-fill-val">+$22.53</div>
+            <div class="fill-entry">ENTRY $0.060 → $1.000</div>
+          </div>
         </div>
-        <div class="trades-table-wrap">
-          <table class="trades-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Symbol</th>
-                <th>Exchange</th>
-                <th>Direction</th>
-                <th>Entry</th>
-                <th>Current/Exit</th>
-                <th>P&amp;L</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="trade-table-body">
-              <tr class="empty-row"><td colspan="8">Awaiting data feed…</td></tr>
-            </tbody>
-          </table>
+
+        <div class="tickets-table">
+          <div class="t-row"><span class="mult green">x16.7</span> <span class="asset">BTC</span> <span class="dir green">▲ UP</span> <span class="time">JUN 28 09:03 ET</span> <span class="price">$0.060</span> <span class="pnl green">+$22.53</span></div>
+          <div class="t-row"><span class="mult red">x27.4</span> <span class="asset">BTC</span> <span class="dir red">▼ DOWN</span> <span class="time">JUN 28 09:03 ET</span> <span class="price">$0.036</span> <span class="pnl green">+$28.90</span></div>
+          <div class="t-row"><span class="mult green">x14.4</span> <span class="asset">BTC</span> <span class="dir green">▲ UP</span> <span class="time">JUN 28 09:03 ET</span> <span class="price">$0.070</span> <span class="pnl green">+$71.43</span></div>
+          <div class="t-row"><span class="mult green">x12.5</span> <span class="asset">ETH</span> <span class="dir green">▲ UP</span> <span class="time">JUN 28 09:03 ET</span> <span class="price">$0.080</span> <span class="pnl green">+$30.38</span></div>
+          <div class="t-row"><span class="mult red">x13.9</span> <span class="asset">SOL</span> <span class="dir red">▼ DOWN</span> <span class="time">JUN 28 09:03 ET</span> <span class="price">$0.072</span> <span class="pnl green">+$16.77</span></div>
+          <div class="t-row"><span class="mult green">x10.1</span> <span class="asset">XRP</span> <span class="dir green">▲ UP</span> <span class="time">JUN 28 09:02 ET</span> <span class="price">$0.099</span> <span class="pnl green">+$24.71</span></div>
+        </div>
+
+        <div class="convexity-footer">
+          <span>★ TOP TICKETS COMBINED POT. PAYOUT</span>
+          <span class="payout-val green" id="payout-total">+$194.72</span>
         </div>
       </div>
-
-      <!-- ANALYTICS -->
-      <div class="card analytics-card">
-        <div class="card-header">
-          <span class="card-icon">▦</span>
-          <span class="card-title">ANALYTICS</span>
-          <span class="tag tag--yellow">STATS</span>
-        </div>
-        <div class="analytics-body">
-          <canvas id="analyticsCanvas"></canvas>
-        </div>
-      </div>
-
     </section>
 
-    <!-- ──────── EXECUTION LOG ──────── -->
-    <section class="exec-log-section">
-      <div class="card exec-log-card">
+    <!-- ROW 2: DIRECTIONAL NEURAL MESH (NEURAL NETWORK VISUALIZER) -->
+    <section class="grid-row row-mesh">
+      <div class="card mesh-card">
         <div class="card-header">
-          <span class="card-icon">◎</span>
-          <span class="card-title">EXECUTION LOG • LIVE</span>
-          <span class="pulse-dot pulse-dot--sm"></span>
+          <span class="card-title">Directional Neural Mesh</span>
+          <span class="card-right">★ 4-LAYER COMPLETE-SETS NETWORK • INPUTS → MODEL → PAIRS → POSITIONS • LIVE TRADE FLOW</span>
         </div>
-        <div class="exec-log-body-wrap">
-          <div class="exec-log-scroll" id="exec-log-body">
-            <div class="log-entry log-info">[INIT] Awaiting first data feed…</div>
+        <div class="mesh-sub-header">
+          <span>■ EVALUATION CYCLE - 75 MS</span>
+          <span>■ MULTI-EXCHANGE FEED - CHAINLINK</span>
+          <span class="green">■ 219 TRADES / HR</span>
+        </div>
+        
+        <div class="mesh-canvas-container">
+          <canvas id="neuralMeshCanvas"></canvas>
+          <div class="mesh-overlay-tags">
+            <span class="tag-floating tag1">SOL CHEAP TAILS • ETH BUY UP • $3.72 @ 0.240</span>
+            <span class="tag-floating tag2">SOL BUY DOWN • $11.71 @ 0.910</span>
           </div>
-          <div class="exec-log-sidebar">
-            <div class="exec-stat">
-              <span class="exec-stat-label">PROC</span>
-              <span class="exec-stat-value cyan" id="exec-proc">0</span>
-            </div>
-            <div class="exec-stat">
-              <span class="exec-stat-label">LAG</span>
-              <span class="exec-stat-value yellow" id="exec-lag">0ms</span>
-            </div>
-            <div class="exec-stat">
-              <span class="exec-stat-label">NEXT</span>
-              <span class="exec-stat-value" id="exec-next">5s</span>
-            </div>
+        </div>
+
+        <div class="mesh-footer-metrics">
+          <div class="m-item"><span class="m-lbl">■ EVAL/SEC:</span> <span class="m-val yellow">53.7</span></div>
+          <div class="m-item"><span class="m-lbl">■ POSITIONS HELD:</span> <span class="m-val" id="mesh-pos-held">46</span></div>
+          <div class="m-item"><span class="m-lbl">▲ AVG HOLD:</span> <span class="m-val">4:09</span></div>
+          <div class="m-item"><span class="m-lbl">► FLIP RATE:</span> <span class="m-val red">18.25</span></div>
+          <div class="mesh-legend">
+            <span class="leg green">■ BUY UP • BULL SIGNAL</span>
+            <span class="leg red">■ BUY DOWN • SET PAIR</span>
+            <span class="leg yellow">■ NEURAL ACTIVATION</span>
+            <span class="leg cyan">■ CHEAP TAIL • DEEP-OTM</span>
+            <span class="leg dim">■ EACH BALL = 1 LIVE NEVERSMILE TRADE</span>
           </div>
         </div>
       </div>
+    </section>
+
+    <!-- ROW 3: DIRECTIONAL ENGINE & TREASURY OUTPUT -->
+    <section class="grid-row row-engine">
+      <div class="card engine-card">
+        <div class="card-header">
+          <span class="card-title">Directional Engine</span>
+          <span class="card-right">★ COMPLETE-SETS LIFECYCLE • BUY UP + BUY DOWN UNDER $1 — DIRECTIONAL OVERLAY — HOLD TO SETTLE</span>
+        </div>
+        <div class="engine-subtitle">
+          <span class="green">BUY UP</span> + <span class="red">BUY DOWN</span> - pair settles <span class="green">$1.00</span> • avg set cost <span class="green">$0.9775</span> + <span class="cyan">2.25¢ EDGE / SET</span> • <span class="green">+$6.63 NET / TRADE</span> • 62,188 fills
+        </div>
+
+        <div class="engine-widgets-container">
+          
+          <!-- LEFT WIDGET: LONG-UP POSITIONS -->
+          <div class="widget-box long-up-box">
+            <div class="w-title green">▲ LONG-UP POSITIONS</div>
+            <div class="nodes-row">
+              <div class="node-badge green">UP</div>
+              <div class="node-badge green">UP</div>
+              <div class="node-badge green">UP</div>
+              <div class="node-badge green">UP</div>
+              <div class="node-badge green">UP</div>
+            </div>
+            <div class="price-val green">$0.4507</div>
+            <div class="price-lbl">AVG BUY PRICE</div>
+            <div class="w-sub">248,187 HEDGED • 35,606 FILLS</div>
+            <div class="w-status green">COMPLETE SET • UP LES</div>
+          </div>
+
+          <!-- CENTER WIDGET: LONG-DOWN POSITIONS -->
+          <div class="widget-box long-down-box">
+            <div class="w-title red">▼ LONG-DOWN POSITIONS</div>
+            <div class="nodes-row">
+              <div class="node-badge red">DN</div>
+              <div class="node-badge red">DN</div>
+              <div class="node-badge red">DN</div>
+              <div class="node-badge red">DN</div>
+              <div class="node-badge red">DN</div>
+            </div>
+            <div class="price-val red">$0.4402</div>
+            <div class="price-lbl">AVG BUY PRICE</div>
+            <div class="w-sub">294,033 HEDGED • 26,772 FILLS</div>
+            <div class="w-status red">COMPLETE SET • DOWN LES</div>
+          </div>
+
+          <!-- CENTER GAUGE WIDGET -->
+          <div class="widget-box center-gauge-box">
+            <div class="gauge-center">
+              <div class="gauge-ring">
+                <div class="gauge-inner">
+                  <div class="tr-num" id="trades-hr-counter">221</div>
+                  <div class="tr-lbl">TRADES / HR</div>
+                </div>
+              </div>
+            </div>
+            <div class="w-title center-title">BUY → HOLD → $1.00 OR SELL</div>
+            <div class="w-title yellow">◆ DIRECTIONAL ENGINE</div>
+          </div>
+
+          <!-- RIGHT WIDGET: TREASURY OUTPUT -->
+          <div class="widget-box treasury-box">
+            <div class="w-title yellow">★ TREASURY • OUTPUT</div>
+            <div class="t-stat">
+              <span class="lbl">TOTAL FILLS • 24H</span>
+              <span class="val" id="treasury-fills">62,188</span>
+            </div>
+            <div class="t-stat">
+              <span class="lbl">NET PNL / FILL</span>
+              <span class="val green" id="treasury-pnl-fill">+$6.63</span>
+            </div>
+            <div class="t-stat main">
+              <span class="lbl">PNL EXTRACTED • ALL</span>
+              <span class="val green" id="treasury-pnl-total">+$96,102</span>
+            </div>
+            <div class="w-status dim">► OUTCOMES • MIXED</div>
+          </div>
+
+        </div>
+
+        <div class="engine-footer-metrics">
+          <div class="ef-item"><span class="ef-lbl">▲ WIN RATE</span> <div class="ef-val green">47.1%</div></div>
+          <div class="ef-item"><span class="ef-lbl">◆ MARKETS WITH BOTH SIDES</span> <div class="ef-val green">81%</div></div>
+          <div class="ef-item"><span class="ef-lbl">▲ AVG HOLD TIME</span> <div class="ef-val">4:09</div></div>
+          <div class="ef-item"><span class="ef-lbl">★ NET PNL / TRADE</span> <div class="ef-val green">+$6.63</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ROW 4: VOLUME PROFILE & FAIR-VALUE PROBABILITY MODEL -->
+    <section class="grid-row row-bottom">
+
+      <!-- VOLUME PROFILE & ASSET ALLOCATION -->
+      <div class="card volume-card">
+        <div class="card-header">
+          <span class="card-title">★ VOLUME PROFILE • OBSERVED WINDOW</span>
+          <span class="card-right">62,188 FILLS</span>
+        </div>
+        <div class="volume-body">
+          <div class="donut-container">
+            <canvas id="assetDonutCanvas" width="130" height="130"></canvas>
+            <div class="donut-center-text">
+              <span class="d-num">62,188</span>
+            </div>
+          </div>
+
+          <div class="allocation-legend">
+            <div class="alloc-row"><span class="sq eth"></span> ETH 48.3% <span class="count">62 MARKETS</span></div>
+            <div class="alloc-row"><span class="sq sol"></span> SOL 22.7% <span class="count">48 MARKETS</span></div>
+            <div class="alloc-row"><span class="sq btc"></span> BTC 20.3% <span class="count">17 MARKETS</span></div>
+            <div class="alloc-row"><span class="sq xrp"></span> XRP 8.6% <span class="count">45 MARKETS</span></div>
+          </div>
+        </div>
+
+        <div class="volume-chart-container">
+          <span class="chart-lbl">■ TRADE VOLUME • USD / MIN</span>
+          <canvas id="volumeHistogramCanvas" height="60"></canvas>
+        </div>
+
+        <div class="volume-footer-stats">
+          <div class="v-stat"><span class="v-lbl">TOTAL TURNOVER</span><span class="v-val">$64,091.70</span></div>
+          <div class="v-stat"><span class="v-lbl">AVG TRADE</span><span class="v-val">$4.27</span></div>
+          <div class="v-stat"><span class="v-lbl">MEDIAN TRADE</span><span class="v-val">$3.11</span></div>
+          <div class="v-stat right"><span class="v-lbl">PEAK $310 • AVG $187</span></div>
+        </div>
+      </div>
+
+      <!-- FAIR-VALUE MODEL & PROBABILITY CURVE -->
+      <div class="card fairvalue-card">
+        <div class="card-header">
+          <span class="card-title">★ FAIR-VALUE MODEL • LIVE</span>
+          <span class="card-right">5M / 15M / 1H • BTC/ETH/SOL/XRP ROTATION</span>
+        </div>
+        <div class="fv-body">
+          <div class="fv-tags">
+            <span class="fv-tag orange">0.60 MODEL LIVE</span>
+            <span class="fv-tag green">MODEL - FAIR P(UP) <strong class="badge green">+2.3¢</strong></span>
+            <span class="fv-tag right">BTC 15M - 1782615000</span>
+          </div>
+
+          <div class="fv-chart-container">
+            <canvas id="probabilityCurveCanvas" height="150"></canvas>
+          </div>
+        </div>
+
+        <div class="fv-footer-metrics">
+          <div class="fv-item"><span class="fv-lbl">π / T0</span><span class="fv-val yellow">0.43%</span></div>
+          <div class="fv-item"><span class="fv-lbl">μ / σT</span><span class="fv-val">0.0038</span></div>
+          <div class="fv-item"><span class="fv-lbl">P(UP) MODEL</span><span class="fv-val green">0.467</span></div>
+          <div class="fv-item"><span class="fv-lbl">EDGE UP</span><span class="fv-val green">+2.3¢</span></div>
+        </div>
+      </div>
+
     </section>
 
   </main>
 
-  <!-- ═══════════════════ FOOTER ═══════════════════ -->
-  <footer class="footer-bar">
-    <span class="footer-item"><span class="footer-dot green-dot"></span> DAEMON ONLINE</span>
-    <span class="footer-sep">│</span>
-    <span class="footer-item">PID <span class="cyan" id="footer-pid">7741</span></span>
-    <span class="footer-sep">│</span>
-    <span class="footer-item">TRADES/HR <span class="green" id="footer-tph">—</span></span>
-    <span class="footer-sep">│</span>
-    <span class="footer-item">LATENCY <span class="yellow" id="footer-latency">—ms</span></span>
-    <span class="footer-sep">│</span>
-    <span class="footer-item">FEED <span class="cyan">WSS</span> BINANCE+DELTA</span>
-    <span class="footer-sep">│</span>
-    <span class="footer-item">ENGINE <span class="magenta">OPUS 4.7</span></span>
+  <!-- FOOTER DAEMON STATUS BAR -->
+  <footer class="terminal-footer">
+    <div class="f-left">
+      <span class="status-dot green"></span>
+      <span class="text">COMPLETE SETS DAEMON • ONLINE</span>
+      <span class="dim">|</span>
+      <span>PID 9733</span>
+      <span class="dim">|</span>
+      <span>TRADES / HR 219</span>
+      <span class="dim">|</span>
+      <span>LATENCY 5MS</span>
+      <span class="dim">|</span>
+      <span>FEED CHAINLINK</span>
+    </div>
+    <div class="f-right">
+      <span>CPU 35%</span>
+      <span class="dim">|</span>
+      <span>MEM 1.3GB</span>
+      <span class="dim">|</span>
+      <span>UPTIME 83:43:02</span>
+    </div>
   </footer>
 
   <script src="app.js"></script>
