@@ -285,13 +285,16 @@ class DualExecutionAgent:
                         break
                     time.sleep(2)
 
-                if not filled:
-                    return {
-                        "status": "partial",
-                        "reason": "order_pending",
-                        "symbol": symbol,
-                        "order_id": str(order_id),
-                    }
+                # 1. Attach server-side position bracket orders (HARD STOP-LOSS & TAKE-PROFIT) on Delta Exchange engine
+                try:
+                    bracket_res = self.delta_client._request("POST", "/v2/orders/bracket", body={
+                        "product_id": product_id,
+                        "stop_loss_price": str(calc_sl),
+                        "take_profit_price": str(calc_tp),
+                    })
+                    log.info("Delta LIVE HARD POSITION BRACKET SL (%s) & TP (%s) attached for %s: success=%s", calc_sl, calc_tp, symbol, bracket_res.get("success", True))
+                except Exception as b_exc:
+                    log.warning("Failed to attach Delta position bracket TP/SL for %s: %s", symbol, b_exc)
 
                 result = {
                     "status": "filled",
@@ -438,6 +441,67 @@ class DualMonitorAgent:
 
         # ── Monitor Delta positions ───────────────────────────────────────────
         delta_trades = load_json(DELTA_TRADES_FILE, [])
+
+        # Sync real live open positions directly from Delta Exchange India API (/v2/positions/margined)
+        if not self.cfg.get("paper_trading_mode"):
+            try:
+                live_res = self.delta_client._request("GET", "/v2/positions/margined")
+                live_positions = live_res.get("result", [])
+                if isinstance(live_positions, dict):
+                    live_positions = [live_positions]
+                
+                tracked_symbols = {t["symbol"] for t in delta_trades}
+                for pos in live_positions:
+                    size = float(pos.get("size") or pos.get("open_qty") or 0)
+                    if abs(size) > 0:
+                        prod_sym = str(pos.get("product_symbol", "")).upper()
+                        # Map Delta product_symbol to standard symbol (e.g. ONDOUSD -> ONDO/USDT)
+                        if prod_sym.endswith("USD"):
+                            symbol = f"{prod_sym[:-3]}/USDT"
+                        elif prod_sym.endswith("USDT"):
+                            symbol = f"{prod_sym[:-4]}/USDT"
+                        else:
+                            symbol = prod_sym
+
+                        if symbol not in tracked_symbols:
+                            entry_price = float(pos.get("entry_price") or 0)
+                            direction = "long" if size > 0 else "short"
+                            sl_price = round(entry_price * 0.985, 4) if direction == "long" else round(entry_price * 1.015, 4)
+                            tp_price = round(entry_price * 1.048, 4) if direction == "long" else round(entry_price * 0.952, 4)
+
+                            # Attach server-side bracket order
+                            product_id = pos.get("product_id")
+                            if product_id:
+                                try:
+                                    self.delta_client._request("POST", "/v2/orders/bracket", body={
+                                        "product_id": product_id,
+                                        "stop_loss_price": str(sl_price),
+                                        "take_profit_price": str(tp_price),
+                                    })
+                                except Exception:
+                                    pass
+
+                            synced_trade = {
+                                "symbol": symbol,
+                                "direction": direction,
+                                "entry_price": entry_price,
+                                "qty": abs(size),
+                                "hard_sl": sl_price,
+                                "take_profit": tp_price,
+                                "peak_price": entry_price,
+                                "trough_price": entry_price,
+                                "highest_profit_pct": 0.0,
+                                "trail_active": False,
+                                "order_id": str(pos.get("id") or "synced_api"),
+                                "exchange": "delta",
+                                "opened_at": utc_iso(),
+                            }
+                            delta_trades.append(synced_trade)
+                            tracked_symbols.add(symbol)
+                            log.info("DualMonitor: Synced live Delta position for %s (size=%s entry=%s SL=%s TP=%s)", symbol, size, entry_price, sl_price, tp_price)
+            except Exception as sync_exc:
+                log.debug("Delta live position sync notice: %s", sync_exc)
+
         if delta_trades:
             remaining, closed = [], []
             for trade in delta_trades:
@@ -518,8 +582,8 @@ class DualMonitorAgent:
     def _close_delta_trade(
         self, trade: dict, current: float, pnl_pct: float, reason: str
     ) -> dict:
-        from agents import load_json, save_json, DAILY_PNL_FILE, utc_now
-        pnl_usdt = round(float(trade["usdt_used"]) * pnl_pct / 100.0, 2)
+        usdt_used = float(trade.get("usdt_used") or (float(trade.get("qty", 1.0)) * float(trade.get("entry_price", 1.0))))
+        pnl_usdt = round(usdt_used * pnl_pct / 100.0, 2)
 
         if not trade.get("paper"):
             direction = trade.get("direction", "long")
