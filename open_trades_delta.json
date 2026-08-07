@@ -1,1 +1,18 @@
-[]
+[
+  {
+    "direction": "short",
+    "entry_price": 0.78,
+    "exchange": "delta",
+    "hard_sl": 0.7917,
+    "highest_profit_pct": 0.0,
+    "last_monitor_error": "name 'utc_now' is not defined",
+    "opened_at": "2026-08-07T08:16:56.080415+00:00",
+    "order_id": "synced_api",
+    "peak_price": 0.78,
+    "qty": 2.0,
+    "symbol": "ZRO/USDT",
+    "take_profit": 0.7426,
+    "trail_active": false,
+    "trough_price": 0.78
+  }
+]
