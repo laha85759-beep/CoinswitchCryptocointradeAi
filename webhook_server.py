@@ -57,10 +57,6 @@ def load_json_safe(path, default):
 def serve_dashboard():
     return send_from_directory(os.path.dirname(os.path.abspath(__file__)), "index.html")
 
-@app.route("/<path:filename>", methods=["GET"])
-def serve_static(filename):
-    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), filename)
-
 @app.route("/api/terminal-data", methods=["GET"])
 def get_terminal_data():
     try:
@@ -206,13 +202,6 @@ def get_terminal_data():
         log.error("Failed to fetch terminal data: %s", exc)
         return jsonify({"error": str(exc)}), 500
 
-@app.route("/<path:filename>", methods=["GET"])
-def serve_static(filename):
-    folder = os.path.dirname(os.path.abspath(__file__))
-    target = os.path.join(folder, filename)
-    if os.path.isfile(target):
-        return send_from_directory(folder, filename)
-    return jsonify({"error": "not_found"}), 404
 
 
 @app.route("/webhook", methods=["POST"])
@@ -317,7 +306,15 @@ def handle_ai_trader():
         return jsonify({"error": str(exc)}), 500
 
 
+@app.route("/<path:filename>", methods=["GET"])
+def serve_static(filename):
+    folder = os.path.dirname(os.path.abspath(__file__))
+    target = os.path.join(folder, filename)
+    if os.path.isfile(target):
+        return send_from_directory(folder, filename)
+    return jsonify({"error": "not_found"}), 404
+
 if __name__ == "__main__":
-    port = CONFIG.get("webhook_port", 5000)
+    port = int(os.environ.get("PORT", CONFIG.get("webhook_port", 5000)))
     log.info("Starting TradingView, Forex, US Earnings & HKUDS AI-Trader Webhook Bridge Server on port %s...", port)
     app.run(host="0.0.0.0", port=port)

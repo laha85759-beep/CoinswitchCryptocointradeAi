@@ -253,10 +253,8 @@ function getMockData() {
       if (data.status !== 'success') throw new Error('API returned non-success');
       processData(data, Math.round(performance.now() - startMs));
     } catch (err) {
-      // Fallback to mock data if API is unreachable (e.g. on static Render hosting)
-      console.warn("API unreachable, falling back to live mock data.");
-      const mock = getMockData();
-      processData(mock, Math.round(performance.now() - startMs));
+      console.error("API unreachable:", err);
+      updateText('#total-capital', 'ERR: NO DATA');
     }
 
   }
