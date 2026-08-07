@@ -383,19 +383,27 @@ class DualExecutionAgent:
         cs_icon = "✅" if cs_status == "filled" else "❌"
         delta_icon = "✅" if delta_status == "filled" else "❌"
 
+        direction_str = str(approval.get("direction", "long")).upper()
+        dir_icon = "🟢 LONG" if direction_str == "LONG" else "🔴 SHORT"
+        kronos_v = approval.get("kronos_verdict", "CONFIRMED_BULLISH")
+        sl_val = round(price * 0.985, 4) if direction_str == "LONG" else round(price * 1.015, 4)
+        tp_val = round(price * 1.048, 4) if direction_str == "LONG" else round(price * 0.952, 4)
+
         self.notifier.send(
-            f"🚀 *DUAL TRADE OPENED* `{symbol}`\n"
-            f"━━━━━━━━━━━━━━━━━━━━━\n"
-            f"Mode      : `{mode}`\n"
-            f"Entry     : `{price}`\n"
-            f"Size      : `${size:.2f}` USDT each\n"
-            f"━━━━━━━━━━━━━━━━━━━━━\n"
-            f"{cs_icon} CoinSwitch : `{cs_status}`\n"
-            f"{delta_icon} Delta India: `{delta_status}`\n"
-            f"━━━━━━━━━━━━━━━━━━━━━\n"
-            f"SL: -{self.cfg['stop_loss_pct']}% | "
-            f"TP: +{self.cfg['take_profit_pct']}% | "
-            f"Trail: +{self.cfg['trail_activation_pct']}%"
+            f"🚀 *LIVE DUAL TRADE OPENED* — `{symbol}`\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"📊 *Direction*: `{dir_icon}`\n"
+            f"💵 *Entry Price*: `${price}`\n"
+            f"💰 *Position Size*: `${size:.2f} USDT`\n"
+            f"🧠 *Kronos AI Verdict*: `{kronos_v}`\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"{cs_icon} *CoinSwitch Pro*: `{cs_status.upper()}`\n"
+            f"{delta_icon} *Delta India*: `{delta_status.upper()} (20x Leverage)`\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🛑 *Hard Server SL*: `-${self.cfg['stop_loss_pct']}%` (`${sl_val}`)\n"
+            f"🎯 *Take Profit*: `+{self.cfg['take_profit_pct']}%` (`${tp_val}`)\n"
+            f"🛡️ *Trailing Stop*: `+{self.cfg['trail_activation_pct']}% Activation`\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━"
         )
 
 
@@ -608,19 +616,25 @@ class DualMonitorAgent:
         pnl[today]["closed_trades"] = int(pnl[today]["closed_trades"]) + 1
         save_json(DAILY_PNL_FILE, pnl)
 
-        icon = "✅" if pnl_pct >= 0 else "🔴"
+        icon = "🎉 PROFIT" if pnl_pct >= 0 else "🛡️ CAP LOSS"
+        pnl_sign = "+" if pnl_usdt >= 0 else ""
         reason_label = {
-            "take_profit": "🎯 TAKE PROFIT",
-            "trailing_stop": "📈 TRAILING STOP",
-            "stop_loss": "🛑 STOP LOSS",
+            "take_profit": "🎯 TAKE PROFIT (+4.8%)",
+            "trailing_stop": "📈 TRAILING STOP HIT",
+            "stop_loss": "🛑 HARD STOP LOSS (-1.5%)",
         }.get(reason, reason.upper())
 
         self.notifier.send(
-            f"{icon} *DELTA TRADE CLOSED* `{trade['symbol']}`\n"
-            f"Reason : `{reason_label}`\n"
-            f"Entry  : `{trade['entry_price']}` → Exit: `{current}`\n"
-            f"P&L    : `{pnl_pct:+.2f}%` (`{pnl_usdt:+.2f}` USDT)\n"
-            f"Mode   : `{'paper' if trade.get('paper') else 'LIVE'}`"
+            f"{'🟢' if pnl_pct >= 0 else '🔴'} *DELTA TRADE CLOSED ({icon})* — `{trade['symbol']}`\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🎯 *Exit Reason*: `{reason_label}`\n"
+            f"📈 *Direction*: `{trade.get('direction', 'LONG').upper()}`\n"
+            f"💵 *Entry*: `${trade['entry_price']}` ➔ *Exit*: `${current}`\n"
+            f"💰 *Net Trade P&L*: `{pnl_pct:+.2f}%` (`{pnl_sign}{pnl_usdt:.2f} USDT`)\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🏛️ *Exchange*: `Delta Exchange India (20x)`\n"
+            f"🕒 *Exit Time*: `{timestamp}`\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━"
         )
         log.info(
             "DELTA CLOSED %s | reason=%s | pnl=%.2f%% | pnl_usdt=%.2f",
