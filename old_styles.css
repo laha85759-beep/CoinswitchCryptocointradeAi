@@ -364,35 +364,20 @@ body {
   padding: 10px;
 }
 
-.heatmap-grid-wrap {
+.heatmap-canvas-wrap {
   flex: 1;
   min-height: 200px;
+  position: relative;
   background: rgba(0, 0, 0, 0.3);
   border-radius: 4px;
   border: 1px solid var(--border-color);
-  padding: 10px;
 }
-.heatmap-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-  gap: 8px;
+.heatmap-canvas-wrap canvas {
+  display: block;
+  width: 100%;
   height: 100%;
-  align-content: start;
+  min-height: 200px;
 }
-.heatmap-cell {
-  background: #111;
-  border: 1px solid #333;
-  padding: 5px;
-  text-align: center;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: bold;
-}
-.heatmap-cell.bull { color: var(--green); border-color: rgba(0,255,136,0.3); background: rgba(0,255,136,0.1); }
-.heatmap-cell.bear { color: var(--red); border-color: rgba(255,51,85,0.3); background: rgba(255,51,85,0.1); }
-.heatmap-cell.median { color: var(--cyan); border-color: rgba(0,229,255,0.3); background: rgba(0,229,255,0.1); }
-.heatmap-cell.catalyst { color: var(--yellow); border-color: rgba(255,215,0,0.3); background: rgba(255,215,0,0.1); }
-.heatmap-cell.cluster { color: var(--magenta); border-color: rgba(255,0,128,0.3); background: rgba(255,0,128,0.1); }
 
 .heatmap-sidebar {
   width: 160px;
@@ -687,193 +672,4 @@ body {
   .heatmap-sidebar { width: 100%; flex-direction: row; flex-wrap: wrap; }
   .header-center { display: none; }
   .header-title { font-size: 9px; }
-}
-
-/* ── ADVANCED WIDGETS ── */
-.adv-widgets-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-/* Decision Tree */
-.decision-body { padding: 12px; display: flex; flex-direction: column; align-items: center; font-size: 10px; }
-.dt-node { padding: 4px 8px; border: 1px solid #1a222d; border-radius: 4px; background: #0c1015; color: #556677; }
-.dt-node.active { border-color: var(--cyan); color: var(--cyan); }
-.dt-node.glow-magenta { border-color: var(--magenta); color: var(--magenta); box-shadow: 0 0 8px rgba(255,0,128,0.3); }
-.dt-arrow { color: #334455; padding: 2px; }
-.dt-split { display: flex; gap: 16px; }
-.dt-branch { display: flex; flex-direction: column; align-items: center; }
-.dt-rej { border-color: var(--red); color: var(--red); opacity: 0.5; }
-
-/* Execution Cycle */
-.cycle-body { padding: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
-.cycle-ring { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 12px; }
-.cycle-step { padding: 6px 10px; border: 1px solid #1a222d; font-size: 10px; color: #556677; border-radius: 12px; }
-.cycle-step.active { background: rgba(0, 229, 255, 0.1); border-color: var(--cyan); color: var(--cyan); }
-.cycle-status { font-size: 12px; letter-spacing: 1px; font-weight: bold; }
-
-/* Robustness */
-.robust-grid { padding: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; height: 100%; }
-.r-stat { background: #080b0e; border: 1px solid #161e27; padding: 8px; display: flex; flex-direction: column; border-radius: 4px; justify-content: center; }
-.r-lbl { font-size: 9px; color: #667788; margin-bottom: 4px; }
-.r-val { font-size: 14px; font-weight: bold; color: var(--fg); }
-
-/* Directional Engine */
-.engine-body { padding: 12px; display: flex; gap: 8px; height: 100%; }
-.engine-box { flex: 1; background: #080b0e; border: 1px solid #161e27; padding: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 4px; }
-.eb-title { font-size: 10px; margin-bottom: 6px; }
-.eb-val { font-size: 18px; font-weight: bold; }
-.engine-box.treasury { border-color: rgba(255,215,0,0.3); }
-
-/* Volume Profile */
-.volume-body { padding: 12px; display: flex; align-items: center; justify-content: center; height: 100%; overflow: hidden; }
-.volume-bars {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  width: 100%;
-}
-.vol-bar-row {
-  display: flex;
-  align-items: center;
-  font-size: 10px;
-}
-.vol-bar-price {
-  width: 50px;
-  color: var(--text-muted);
-}
-.vol-bar-track {
-  flex: 1;
-  background: rgba(255,255,255,0.05);
-  height: 12px;
-  border-radius: 2px;
-  overflow: hidden;
-  position: relative;
-}
-.vol-bar-fill {
-  background: var(--cyan);
-  height: 100%;
-}
-
-/* Fair Value Model */
-.fv-body { padding: 12px; display: flex; flex-direction: column; height: 100%; justify-content: start; overflow-y: auto; gap: 4px; }
-.pv-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 6px;
-  background: rgba(255,255,255,0.02);
-  border-radius: 3px;
-  font-size: 11px;
-}
-
-@media (max-width: 1200px) {
-  .adv-widgets-row { grid-template-columns: 1fr; }
-}
-
-/* ── 21st.dev Style UI Upgrades ── */
-
-/* 1. Animated Gradient Borders (Conic Spin) */
-@property --bg-angle {
-  syntax: "<angle>";
-  initial-value: 0deg;
-  inherits: false;
-}
-
-@keyframes spin-gradient {
-  to { --bg-angle: 360deg; }
-}
-
-.card--glow {
-  position: relative;
-  z-index: 1;
-  background: padding-box #0c1015; /* Inside */
-  border: 1px solid transparent;
-}
-.card--glow::before {
-  content: "";
-  position: absolute;
-  inset: -2px;
-  z-index: -1;
-  background: conic-gradient(from var(--bg-angle), var(--magenta) 0%, transparent 20%, transparent 80%, var(--magenta) 100%);
-  border-radius: inherit;
-  animation: spin-gradient 4s linear infinite;
-  opacity: 0.8;
-}
-
-/* 2. Hover Physics (3D Floating) */
-.card {
-  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
-}
-.card:hover {
-  transform: translateY(-4px) scale(1.01);
-  box-shadow: 0 12px 24px -10px rgba(0,229,255,0.15);
-  z-index: 2;
-}
-
-/* 3. Ticker Fade Masks */
-.ticker-strip {
-  position: relative;
-  overflow: hidden;
-  -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
-  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
-}
-.tape-scroll {
-  -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
-  mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
-}
-
-/* Glowing text highlight animation for number changes */
-@keyframes number-flash {
-  0% { color: #fff; text-shadow: 0 0 10px #fff; }
-  100% { color: inherit; text-shadow: none; }
-}
-.flash-update {
-  animation: number-flash 0.8s ease-out;
-}
-
-/* ── MOBILE RESPONSIVENESS ── */
-@media (max-width: 768px) {
-  .header-bar {
-    flex-direction: column;
-    align-items: flex-start;
-    height: auto;
-    padding: 10px;
-  }
-  .header-tickers {
-    margin-top: 10px;
-    width: 100%;
-    justify-content: space-between;
-  }
-  .main-grid {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "wallet"
-      "performance"
-      "orderbook"
-      "heatmap"
-      "chart";
-  }
-  .adv-widgets-row {
-    grid-template-columns: 1fr;
-  }
-  .trade-table-wrap {
-    overflow-x: auto;
-  }
-  table {
-    font-size: 10px;
-  }
-  .footer-bar {
-    flex-direction: column;
-    height: auto;
-    gap: 4px;
-    padding: 10px;
-  }
-  .footer-sep {
-    display: none;
-  }
-  .hm-grid {
-    grid-template-columns: 1fr;
-  }
 }

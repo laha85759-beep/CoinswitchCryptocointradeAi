@@ -1,94 +1,3 @@
-
-// ── Smooth Easing Number Updater (21st.dev style) ──
-function easeNumber(elementId, targetValue, formatFn = (n) => n) {
-  const el = document.getElementById(elementId);
-  if (!el) return;
-  
-  // Parse target as float
-  let target = typeof targetValue === 'string' ? parseFloat(targetValue.replace(/[^0-9.-]+/g,"")) : targetValue;
-  if (isNaN(target)) {
-    el.textContent = targetValue;
-    return;
-  }
-
-  // Parse current
-  let currentStr = el.textContent || '0';
-  let current = parseFloat(currentStr.replace(/[^0-9.-]+/g,"")) || 0;
-  
-  // If difference is tiny or same, just set it
-  if (Math.abs(target - current) < 0.0001) {
-    el.textContent = formatFn(targetValue);
-    return;
-  }
-
-  // Trigger flash animation
-  el.classList.remove('flash-update');
-  void el.offsetWidth; // trigger reflow
-  el.classList.add('flash-update');
-
-  // Spring animation loop
-  const startTime = performance.now();
-  const duration = 800; // ms
-
-  function updateStep(currentTime) {
-    const elapsed = currentTime - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-    
-    // EaseOut Expo
-    const ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-    
-    const currVal = current + (target - current) * ease;
-    
-    // Determine if it was originally formatted as a string (e.g. "$60,000")
-    if (typeof targetValue === 'string' && targetValue.startsWith('$')) {
-       el.textContent = '$' + formatFn(currVal);
-    } else if (typeof targetValue === 'string' && targetValue.endsWith('%')) {
-       el.textContent = formatFn(currVal) + '%';
-    } else {
-       el.textContent = formatFn(currVal);
-    }
-
-    if (progress < 1) {
-      requestAnimationFrame(updateStep);
-    } else {
-      el.textContent = typeof targetValue === 'string' ? targetValue : formatFn(target); // final exact text
-    }
-  }
-  requestAnimationFrame(updateStep);
-}
-
-// Override updateText to use easeNumber for purely numeric strings
-const oldUpdateText = updateText;
-updateText = function(selector, value) {
-  const el = document.querySelector(selector);
-  if (!el) return;
-  
-  // If it's a DOM node being appended (like in table), just use standard
-  if (typeof value !== 'string' && typeof value !== 'number') {
-    return oldUpdateText(selector, value);
-  }
-  
-  // Check if value contains numbers
-  if (/[0-9]/.test(String(value))) {
-    // We pass formatting logic based on the string format
-    let isDollar = String(value).startsWith('$');
-    let isPct = String(value).endsWith('%');
-    let hasComma = String(value).includes(',');
-    let decMatch = String(value).match(/\.([0-9]+)/);
-    let decCount = decMatch ? decMatch[1].length : 0;
-    
-    const formatter = (n) => {
-       let str = Number(n).toLocaleString('en-US', {minimumFractionDigits:decCount, maximumFractionDigits:decCount});
-       if (!hasComma) str = str.replace(/,/g, '');
-       return str;
-    };
-    
-    easeNumber(el.id, value, formatter);
-  } else {
-    oldUpdateText(selector, value);
-  }
-};
-
 /* ═══════════════════════════════════════════════════════
    OPUS 4.7 — Cyberpunk Quant Terminal  •  app.js
    ═══════════════════════════════════════════════════════ */
@@ -133,49 +42,25 @@ updateText = function(selector, value) {
   }
 
   // ═══════════════════ FETCH REAL DATA ═══════════════════
-  
-  
-// ── MOCK DATA FALLBACK ──
-let mockBaseBtc = 65000;
-let mockBaseEth = 3500;
-function getMockData() {
-  mockBaseBtc += (Math.random() - 0.5) * 50;
-  mockBaseEth += (Math.random() - 0.5) * 5;
-  return {
-    status: 'success',
-    tickers: { btc: mockBaseBtc, eth: mockBaseEth, sol: 145 + (Math.random()-0.5), xrp: 0.61 + (Math.random()-0.5)*0.01 },
-    balances: { total_capital_usdt: 25430.50 + Math.random()*10, cs_usdt: 12400.0, cs_inr: 50000.0, delta_usdt: 13030.5 },
-    performance: { closed_trades_count: 142, total_realized_pnl_usdt: 4230.75 + Math.random()*5 },
-    open_positions: {
-      total_count: 3,
-      delta: [
-        { symbol: 'BTCUSDT', direction: 'long', entry_price: mockBaseBtc - 100 },
-        { symbol: 'ETHUSDT', direction: 'short', entry_price: mockBaseEth + 20 }
-      ],
-      coinswitch: [
-        { symbol: 'SOL/USDT', direction: 'long', entry_price: 140.5 }
-      ]
-    }
-  };
-}
+  async function fetchRealData() {
+    const startMs = performance.now();
+    try {
+      const res = await fetch('/api/terminal-data');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.status !== 'success') throw new Error('API returned non-success');
 
-  
-  
-  function processData(data, lagMs) {
       latestData = data;
       fetchCount++;
       nextCountdown = 5;
+
+      const lagMs = Math.round(performance.now() - startMs);
 
       // ── Update header tickers ──
       updateText('#header-btc', fmtPrice(data.tickers.btc));
       updateText('#header-eth', fmtPrice(data.tickers.eth));
       updateText('#header-sol', fmtPrice(data.tickers.sol));
       updateText('#header-xrp', fmtPrice(data.tickers.xrp, 4));
-      
-      if(data.tickers.ada) updateText('#header-ada', fmtPrice(data.tickers.ada, 4));
-      if(data.tickers.dot) updateText('#header-dot', fmtPrice(data.tickers.dot, 2));
-      if(data.tickers.doge) updateText('#header-doge', fmtPrice(data.tickers.doge, 4));
-      if(data.tickers.shib) updateText('#header-shib', fmtPrice(data.tickers.shib, 6));
 
       // ── Update wallet ──
       updateText('#total-capital', `$${fmtNum(data.balances.total_capital_usdt)}`);
@@ -188,138 +73,63 @@ function getMockData() {
       const totalPnl = data.performance.total_realized_pnl_usdt || 0;
       updateText('#stat-trades', closedCount);
 
+      // Win rate approximation — from closed trades
       const winRate = closedCount > 0 ? Math.max(0, Math.min(100, Math.round((totalPnl >= 0 ? 65 : 35) + (totalPnl / (closedCount * 2))))) : 0;
       updateText('#stat-winrate', `${winRate}%`);
       updateText('#hm-winrate', `${winRate}%`);
 
+      // ── PnL ──
       const pnlEl = $('#total-pnl-value');
       if (pnlEl) {
         const sign = totalPnl >= 0 ? '+' : '';
-        updateText('#total-pnl-value', `${sign}$${fmtNum(totalPnl)}`);
+        pnlEl.textContent = `${sign}$${fmtNum(totalPnl)}`;
         pnlEl.className = 'pnl-value-header ' + (totalPnl >= 0 ? 'green' : 'red');
       }
 
+      // Track PnL history for equity curve
       pnlHistory.push(totalPnl);
       if (pnlHistory.length > 60) pnlHistory.shift();
 
+      // ── Live BTC price ──
       updateText('#btc-live-price', `$${fmtComma(data.tickers.btc)}`);
+
+      // ── Order book style list ──
       updateOrderbook(data.tickers);
 
+      // ── Positions / heatmap stats ──
       const totalPos = (data.open_positions.total_count || 0);
       updateText('#hm-active', totalPos);
       updateText('#hm-fills', closedCount);
       updateText('#trade-count-badge', totalPos + closedCount);
 
+      // ── Streak (derived) ──
       const streakMult = 1 + (closedCount * 0.05);
       updateText('#streak-mult', `×${streakMult.toFixed(2)}`);
       updateText('#streak-best', closedCount > 0 ? closedCount : '—');
       updateText('#streak-current', totalPos);
 
+      // ── Footer stats ──
       updateText('#footer-latency', `${lagMs}ms`);
       updateText('#exec-lag', `${lagMs}ms`);
       updateText('#exec-proc', fetchCount);
-      
       const tph = closedCount > 0 ? (closedCount / Math.max(1, fetchCount * 5 / 3600)).toFixed(1) : '0';
       updateText('#footer-tph', tph);
 
-      if(data.advanced && data.advanced.directional_bias) {
-        updateText('#eng-up', data.advanced.directional_bias.long_pct + '%');
-        updateText('#eng-dn', data.advanced.directional_bias.short_pct + '%');
-      } else {
-        updateText('#eng-up', data.open_positions.total_count);
-        updateText('#eng-dn', Math.floor(data.open_positions.total_count / 2));
-      }
-      updateText('#eng-treasury', `$${fmtNum(totalPnl)}`);
-      
-      if(data.advanced && data.advanced.robustness) {
-        const rob = data.advanced.robustness;
-        updateText('#r-err', rob.error_rate || '0.00%');
-        updateText('#r-lat', rob.api_latency || '42ms');
-        updateText('#r-slip', rob.slippage || '0.12%');
-        updateText('#r-uptime', rob.uptime || '100%');
-      } else {
-        const errRate = (fetchCount % 50 === 0 && lagMs > 500) ? 0.05 : 0;
-        updateText('#r-err', `${errRate.toFixed(2)}%`);
-        updateText('#r-lat', `${lagMs}ms`);
-        updateText('#r-slip', `${(0.01 + Math.random()*0.02).toFixed(2)}%`);
-        updateText('#r-uptime', `100%`);
-      }
-
-      if (data.heatmap_coins || (data.advanced && data.advanced.heatmap_coins)) {
-        const hc = data.heatmap_coins || data.advanced.heatmap_coins;
-        const grid = document.getElementById('heatmapGrid');
-        if(grid) {
-          grid.innerHTML = hc.map(c => `<div class="heatmap-cell ${c.type || 'median'}">${c.symbol || c.name || ''}</div>`).join('');
-        }
-      }
-
-      if (data.advanced && data.advanced.volume_profile) {
-         const vpb = document.getElementById('volumeProfileBars');
-         if (vpb && data.advanced.volume_profile.length > 0) {
-             const maxVol = Math.max(...data.advanced.volume_profile.map(v => v.volume));
-             vpb.innerHTML = data.advanced.volume_profile.map(v => `
-               <div class="vol-bar-row">
-                 <div class="vol-bar-price">${v.price_level}</div>
-                 <div class="vol-bar-track">
-                   <div class="vol-bar-fill" style="width: ${maxVol > 0 ? (v.volume / maxVol) * 100 : 0}%"></div>
-                 </div>
-               </div>
-             `).join('');
-         }
-      }
-
-      if (data.advanced && data.advanced.decision_tree) {
-         const dtc = document.getElementById('decision-tree-container');
-         if(dtc) {
-            dtc.innerHTML = data.advanced.decision_tree.map((node, i) => `
-              <div class="dt-node active">${node.step || node}</div>
-              ${i < data.advanced.decision_tree.length - 1 ? '<div class="dt-arrow">↓</div>' : ''}
-            `).join('');
-         }
-      }
-
-      if (data.advanced && data.advanced.pair_value) {
-         const pvc = document.getElementById('pair-value-container');
-         if(pvc) {
-           pvc.innerHTML = data.advanced.pair_value.map(pv => `
-             <div class="pv-row">
-               <span>${pv.pair}</span>
-               <span class="yellow">Spread: ${pv.spread}</span>
-             </div>
-           `).join('');
-         }
-      }
-
+      // ── Trade table ──
       populateTradeTable(data, currentFilter);
 
-      const logBody = document.getElementById('exec-log-body');
-      if (logBody) {
-        addLogEntry('INFO', `SYNC OK: Fetched ${data.open_positions.total_count} positions. Lag: ${lagMs}ms`);
-        if (data.open_positions.delta && data.open_positions.delta.length > 0 && Math.random() > 0.8) {
-           addLogEntry('EXEC', `DELTA: Adjusted hedge ${data.open_positions.delta[0].symbol}`);
-        }
-      }
+      // ── Execution log ──
+      generateLogEntries(data, lagMs);
 
+      // ── Re-render canvases ──
       renderEquityCurve();
       renderAnalytics(data);
       renderStreakChart();
-  }
 
-
-  async function fetchRealData() {
-    const startMs = performance.now();
-    
-    try {
-      const res = await fetch('/api/terminal-data');
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      if (data.status !== 'success') throw new Error('API returned non-success');
-      processData(data, Math.round(performance.now() - startMs));
     } catch (err) {
-      console.error("API unreachable:", err);
-      updateText('#total-capital', 'ERR: NO DATA');
+      addLogEntry(`[ERR] Fetch failed: ${err.message}`, 'log-reject');
+      console.error('fetchRealData error:', err);
     }
-
   }
 
   // ═══════════════════ UPDATE HELPERS ═══════════════════
@@ -463,13 +273,126 @@ function getMockData() {
     });
   }
 
-  // ═══════════════════ HEATMAP (Legacy animation removed for grid) ═══════════════════
+  // ═══════════════════ HEATMAP ═══════════════════
   function initHeatmapDots() {
-      // Intentionally left blank, grid populated in processData
+    const coins = [
+      { name: 'BTC', type: 'bull' }, { name: 'ETH', type: 'bull' },
+      { name: 'SOL', type: 'bull' }, { name: 'XRP', type: 'median' },
+      { name: 'ADA', type: 'bear' }, { name: 'DOGE', type: 'bear' },
+      { name: 'DOT', type: 'median' }, { name: 'AVAX', type: 'bull' },
+      { name: 'LINK', type: 'catalyst' }, { name: 'MATIC', type: 'median' },
+      { name: 'UNI', type: 'cluster' }, { name: 'ATOM', type: 'bull' },
+      { name: 'APT', type: 'catalyst' }, { name: 'ARB', type: 'median' },
+      { name: 'OP', type: 'cluster' }, { name: 'FTM', type: 'bear' },
+      { name: 'NEAR', type: 'bull' }, { name: 'INJ', type: 'catalyst' },
+      { name: 'SUI', type: 'bull' }, { name: 'SEI', type: 'median' },
+      { name: 'TIA', type: 'cluster' }, { name: 'RUNE', type: 'bear' },
+      { name: 'ZRO', type: 'bear' }, { name: 'WIF', type: 'catalyst' },
+      { name: 'JUP', type: 'bull' }, { name: 'PEPE', type: 'bear' },
+      { name: 'PYTH', type: 'median' }, { name: 'STX', type: 'bull' },
+      { name: 'RENDER', type: 'cluster' }, { name: 'FET', type: 'catalyst' },
+      { name: 'TAO', type: 'bull' }, { name: 'PENDLE', type: 'median' },
+      { name: 'AAVE', type: 'bull' }, { name: 'MKR', type: 'median' },
+      { name: 'LDO', type: 'cluster' }, { name: 'CRV', type: 'bear' },
+    ];
+
+    const typeColors = {
+      bull: '#00ff88',
+      bear: '#ff3355',
+      median: '#00e5ff',
+      catalyst: '#ffd700',
+      cluster: '#ff0080',
+    };
+
+    heatmapDots = coins.map((c) => ({
+      name: c.name,
+      color: typeColors[c.type],
+      type: c.type,
+      x: Math.random(),
+      y: Math.random(),
+      r: 6 + Math.random() * 14,
+      vx: (Math.random() - 0.5) * 0.001,
+      vy: (Math.random() - 0.5) * 0.001,
+      pulsePhase: Math.random() * Math.PI * 2,
+      labeled: coins.indexOf(c) < 12, // label first 12
+    }));
   }
 
   function renderHeatmap() {
-      // Legacy heatmap animation removed
+    const canvas = $('#heatmapCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const wrap = canvas.parentElement;
+    canvas.width = wrap.clientWidth;
+    canvas.height = wrap.clientHeight || 220;
+    const W = canvas.width;
+    const H = canvas.height;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // Background grid
+    ctx.strokeStyle = 'rgba(26, 35, 45, 0.4)';
+    ctx.lineWidth = 0.5;
+    for (let x = 0; x < W; x += 40) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+    }
+    for (let y = 0; y < H; y += 40) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    }
+
+    const now = performance.now() / 1000;
+
+    heatmapDots.forEach((dot) => {
+      // Move
+      dot.x += dot.vx;
+      dot.y += dot.vy;
+
+      // Bounce
+      if (dot.x < 0.02 || dot.x > 0.98) dot.vx *= -1;
+      if (dot.y < 0.05 || dot.y > 0.95) dot.vy *= -1;
+
+      // Slight random drift
+      dot.vx += (Math.random() - 0.5) * 0.0001;
+      dot.vy += (Math.random() - 0.5) * 0.0001;
+      dot.vx = Math.max(-0.002, Math.min(0.002, dot.vx));
+      dot.vy = Math.max(-0.002, Math.min(0.002, dot.vy));
+
+      const px = dot.x * W;
+      const py = dot.y * H;
+      const pulseScale = 1 + 0.15 * Math.sin(now * 2 + dot.pulsePhase);
+      const r = dot.r * pulseScale;
+
+      // Glow
+      const grd = ctx.createRadialGradient(px, py, 0, px, py, r * 2.5);
+      grd.addColorStop(0, dot.color + '30');
+      grd.addColorStop(1, dot.color + '00');
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.arc(px, py, r * 2.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Dot
+      ctx.fillStyle = dot.color + 'cc';
+      ctx.beginPath();
+      ctx.arc(px, py, r, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Inner bright core
+      ctx.fillStyle = dot.color;
+      ctx.beginPath();
+      ctx.arc(px, py, r * 0.4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Label
+      if (dot.labeled) {
+        ctx.fillStyle = dot.color + 'dd';
+        ctx.font = '9px "Share Tech Mono", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(dot.name, px, py - r - 4);
+      }
+    });
+
+    requestAnimationFrame(renderHeatmap);
   }
 
   // ═══════════════════ EQUITY CURVE ═══════════════════
@@ -508,27 +431,36 @@ function getMockData() {
       y: padY + drawH - ((v - minVal) / range) * drawH,
     }));
 
-    ctx.lineWidth = 3;
-    ctx.lineJoin = 'round';
-    ctx.stroke();
-
-    // Fill gradient (Growth Style)
-    const fillGrd = ctx.createLinearGradient(0, padY, 0, H);
+    // Gradient fill
+    const grd = ctx.createLinearGradient(0, padY, 0, H);
+    const lastVal = data[data.length - 1];
     if (lastVal >= 0) {
-      fillGrd.addColorStop(0, 'rgba(0, 255, 136, 0.6)');
-      fillGrd.addColorStop(1, 'rgba(0, 255, 136, 0.05)');
+      grd.addColorStop(0, 'rgba(0, 255, 136, 0.25)');
+      grd.addColorStop(1, 'rgba(0, 255, 136, 0.01)');
     } else {
-      fillGrd.addColorStop(0, 'rgba(255, 51, 85, 0.6)');
-      fillGrd.addColorStop(1, 'rgba(255, 51, 85, 0.05)');
+      grd.addColorStop(0, 'rgba(255, 51, 85, 0.25)');
+      grd.addColorStop(1, 'rgba(255, 51, 85, 0.01)');
     }
-    
+
     ctx.beginPath();
     ctx.moveTo(points[0].x, H);
     points.forEach((p) => ctx.lineTo(p.x, p.y));
     ctx.lineTo(points[points.length - 1].x, H);
     ctx.closePath();
-    ctx.fillStyle = fillGrd;
+    ctx.fillStyle = grd;
     ctx.fill();
+
+    // Line
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) {
+      const xc = (points[i - 1].x + points[i].x) / 2;
+      const yc = (points[i - 1].y + points[i].y) / 2;
+      ctx.quadraticCurveTo(points[i - 1].x, points[i - 1].y, xc, yc);
+    }
+    ctx.strokeStyle = lastVal >= 0 ? '#00ff88' : '#ff3355';
+    ctx.lineWidth = 2;
+    ctx.stroke();
 
     // End dot
     const lastPt = points[points.length - 1];
@@ -713,40 +645,3 @@ function getMockData() {
   });
 
 })();
-
-// ── ADVANCED WIDGETS RENDERING ──
-
-function initAdvancedWidgets() {
-  renderVolumeDonut();
-  renderProbCurve();
-  animateExecutionCycle();
-}
-
-function renderVolumeDonut() {
-  // Logic replaced by dynamic bar generation in processData
-}
-
-function renderProbCurve() {
-  // Logic replaced by dynamic pair_value generation in processData
-}
-
-function animateExecutionCycle() {
-  let step = 0;
-  setInterval(() => {
-    const steps = document.querySelectorAll('.cycle-step');
-    if(!steps.length) return;
-    steps.forEach(el => el.classList.remove('active'));
-    steps[step].classList.add('active');
-    
-    const lbl = document.getElementById('cycle-phase-lbl');
-    const phases = ['SCANNING', 'PREDICTING', 'HEDGING', 'SETTLING'];
-    if(lbl) lbl.textContent = phases[step];
-    
-    step = (step + 1) % steps.length;
-  }, 2000);
-}
-
-// Hook into DOMContentLoaded
-document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(initAdvancedWidgets, 500); // slight delay to ensure DOM is ready
-});

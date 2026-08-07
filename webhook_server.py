@@ -169,6 +169,65 @@ def get_terminal_data():
                     "signal": "catalyst" if t.get("direction") == "long" else "cluster",
                 })
 
+        # Mock Data for Advanced UI Widgets
+        decision_tree = {
+            "current_state": "Scanning Markets",
+            "nodes": [
+                {"id": "market_scan", "status": "active", "label": "Scan Market"},
+                {"id": "volatility_check", "status": "pending", "label": "Volatility Check"},
+                {"id": "risk_approval", "status": "pending", "label": "Risk Approval"},
+                {"id": "execution", "status": "pending", "label": "Execution"}
+            ]
+        }
+        
+        directional_bias = {
+            "long_pct": 65,
+            "short_pct": 35,
+            "trend": "bullish"
+        }
+        
+        volume_profile = [
+            {"price": btc_price * 1.05, "volume": 120, "type": "ask"},
+            {"price": btc_price * 1.02, "volume": 350, "type": "ask"},
+            {"price": btc_price, "volume": 550, "type": "poc"},
+            {"price": btc_price * 0.98, "volume": 420, "type": "bid"},
+            {"price": btc_price * 0.95, "volume": 180, "type": "bid"}
+        ]
+        
+        pair_value = [
+            {"pair": "BTC", "cs_inr_implied_usdt": btc_price * 1.01, "delta_usdt": btc_price, "spread_pct": 1.0},
+            {"pair": "ETH", "cs_inr_implied_usdt": eth_price * 0.99, "delta_usdt": eth_price, "spread_pct": -1.0},
+            {"pair": "SOL", "cs_inr_implied_usdt": sol_price * 1.02, "delta_usdt": sol_price, "spread_pct": 2.0}
+        ]
+        
+        robustness = {
+            "system_health": 98.5,
+            "api_latency_ms": 120,
+            "uptime_hrs": 142.3,
+            "error_rate_pct": 0.05
+        }
+
+        # Extend tickers to simulate "All coins"
+        all_tickers = {
+            "btc": btc_price,
+            "eth": eth_price,
+            "sol": sol_price,
+            "xrp": xrp_price,
+            "ada": 0.45,
+            "dot": 5.80,
+            "doge": 0.12,
+            "shib": 0.000015
+        }
+
+        # Heatmap enrichment
+        for t in ["ADA", "DOT", "DOGE", "SHIB"]:
+            if t not in [c["symbol"] for c in heatmap_coins]:
+                heatmap_coins.append({
+                    "symbol": t,
+                    "price": all_tickers.get(t.lower(), 0),
+                    "signal": "catalyst" if (sum(ord(c) for c in t) % 2 == 0) else "bear"
+                })
+
         return jsonify({
             "status": "success",
             "balances": {
@@ -177,12 +236,7 @@ def get_terminal_data():
                 "delta_usdt": round(delta_usdt, 2),
                 "total_capital_usdt": round(total_real_capital, 2),
             },
-            "tickers": {
-                "btc": btc_price,
-                "eth": eth_price,
-                "sol": sol_price,
-                "xrp": xrp_price,
-            },
+            "tickers": all_tickers,
             "open_positions": {
                 "coinswitch": open_cs,
                 "delta": open_delta,
@@ -197,6 +251,13 @@ def get_terminal_data():
             },
             "execution_log": execution_log[-20:],
             "heatmap_coins": heatmap_coins,
+            "advanced": {
+                "decision_tree": decision_tree,
+                "directional_bias": directional_bias,
+                "volume_profile": volume_profile,
+                "pair_value": pair_value,
+                "robustness": robustness
+            }
         }), 200
     except Exception as exc:
         log.error("Failed to fetch terminal data: %s", exc)

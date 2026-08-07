@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=2.4">
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
@@ -28,14 +28,6 @@
           <span class="ticker-item">SOL <span id="header-sol" class="ticker-price">—</span></span>
           <span class="ticker-sep">│</span>
           <span class="ticker-item">XRP <span id="header-xrp" class="ticker-price">—</span></span>
-          <span class="ticker-sep">│</span>
-          <span class="ticker-item">ADA <span id="header-ada" class="ticker-price">—</span></span>
-          <span class="ticker-sep">│</span>
-          <span class="ticker-item">DOT <span id="header-dot" class="ticker-price">—</span></span>
-          <span class="ticker-sep">│</span>
-          <span class="ticker-item">DOGE <span id="header-doge" class="ticker-price">—</span></span>
-          <span class="ticker-sep">│</span>
-          <span class="ticker-item">SHIB <span id="header-shib" class="ticker-price">—</span></span>
         </div>
       </div>
     </div>
@@ -144,8 +136,8 @@
           <span class="tag tag--magenta">HEATMAP</span>
         </div>
         <div class="heatmap-body">
-          <div class="heatmap-grid-wrap">
-            <div id="heatmapGrid" class="heatmap-grid"></div>
+          <div class="heatmap-canvas-wrap">
+            <canvas id="heatmapCanvas"></canvas>
           </div>
           <div class="heatmap-sidebar">
             <div class="heatmap-legend">
@@ -268,105 +260,6 @@
       </div>
     </section>
 
-  
-    <!-- ──────── ADVANCED ENGINE WIDGETS ──────── -->
-    <section class="adv-widgets-row">
-      
-      <!-- STRATEGY DECISION TREE -->
-      <div class="card decision-card">
-        <div class="card-header">
-          <span class="card-icon">⎇</span>
-          <span class="card-title">DECISION TREE</span>
-          <span class="tag tag--magenta">LOGIC</span>
-        </div>
-        <div class="decision-body" id="decision-tree-container">
-          <!-- Populated by JS -->
-        </div>
-      </div>
-
-      <!-- EXECUTION CYCLE -->
-      <div class="card cycle-card">
-        <div class="card-header">
-          <span class="card-icon">↻</span>
-          <span class="card-title">EXECUTION CYCLE</span>
-          <span class="pulse-dot pulse-dot--sm"></span>
-        </div>
-        <div class="cycle-body">
-          <div class="cycle-ring">
-            <div class="cycle-step active">1. SCAN</div>
-            <div class="cycle-step">2. PREDICT</div>
-            <div class="cycle-step">3. HEDGE</div>
-            <div class="cycle-step">4. SETTLE</div>
-          </div>
-          <div class="cycle-status cyan">PHASE: <span id="cycle-phase-lbl">SCANNING</span></div>
-        </div>
-      </div>
-
-      <!-- ROBUSTNESS METRICS -->
-      <div class="card robustness-card">
-        <div class="card-header">
-          <span class="card-icon">⛨</span>
-          <span class="card-title">SYSTEM ROBUSTNESS</span>
-          <span class="tag tag--cyan">HEALTH</span>
-        </div>
-        <div class="robust-grid">
-          <div class="r-stat"><span class="r-lbl">API LATENCY</span><span class="r-val" id="r-lat">42ms</span></div>
-          <div class="r-stat"><span class="r-lbl">ERROR RATE</span><span class="r-val green" id="r-err">0.00%</span></div>
-          <div class="r-stat"><span class="r-lbl">SLIPPAGE</span><span class="r-val yellow" id="r-slip">0.12%</span></div>
-          <div class="r-stat"><span class="r-lbl">UPTIME</span><span class="r-val cyan" id="r-uptime">100%</span></div>
-        </div>
-      </div>
-
-    </section>
-
-    <section class="adv-widgets-row">
-      <!-- DIRECTIONAL ENGINE -->
-      <div class="card engine-card">
-        <div class="card-header">
-          <span class="card-icon">◆</span>
-          <span class="card-title">DIRECTIONAL ENGINE</span>
-          <span class="tag tag--yellow">HEDGE</span>
-        </div>
-        <div class="engine-body">
-          <div class="engine-box">
-            <div class="eb-title green">▲ LONG UP</div>
-            <div class="eb-val" id="eng-up">0</div>
-          </div>
-          <div class="engine-box">
-            <div class="eb-title red">▼ LONG DOWN</div>
-            <div class="eb-val" id="eng-dn">0</div>
-          </div>
-          <div class="engine-box treasury">
-            <div class="eb-title yellow">★ TREASURY</div>
-            <div class="eb-val green" id="eng-treasury">$0.00</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- VOLUME PROFILE -->
-      <div class="card volume-card">
-        <div class="card-header">
-          <span class="card-icon">▤</span>
-          <span class="card-title">VOLUME PROFILE</span>
-        </div>
-        <div class="volume-body">
-          <div id="volumeProfileBars" class="volume-bars"></div>
-        </div>
-      </div>
-
-      <!-- FAIR VALUE MODEL -->
-      <div class="card fairvalue-card">
-        <div class="card-header">
-          <span class="card-icon">~</span>
-          <span class="card-title">FAIR VALUE MODEL</span>
-          <span class="tag tag--magenta">LIVE</span>
-        </div>
-        <div class="fv-body" id="pair-value-container">
-          <!-- Populated by JS -->
-        </div>
-      </div>
-    </section>
-
   </main>
 
   <!-- ═══════════════════ FOOTER ═══════════════════ -->
@@ -384,6 +277,6 @@
     <span class="footer-item">ENGINE <span class="magenta">OPUS 4.7</span></span>
   </footer>
 
-  <script src="app.js?v=2.4"></script>
+  <script src="app.js"></script>
 </body>
 </html>
