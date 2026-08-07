@@ -120,6 +120,55 @@ def get_terminal_data():
 
         total_real_capital = (cs_usdt + (cs_inr / 88.0)) + delta_usdt
 
+        # Load last 30 execution log entries from agent_audit.jsonl
+        execution_log = []
+        audit_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "agent_audit.jsonl")
+        if os.path.exists(audit_path):
+            try:
+                lines = []
+                with open(audit_path, "r") as f:
+                    for line in f:
+                        lines.append(line.strip())
+                # Take last 30 lines
+                for line in lines[-30:]:
+                    try:
+                        entry = json.loads(line)
+                        agent = entry.get("agent", "Unknown")
+                        ts = entry.get("timestamp", "")
+                        payload = entry.get("payload", {})
+                        results = payload.get("results", [])
+                        for r in results:
+                            execution_log.append({
+                                "agent": agent,
+                                "timestamp": r.get("timestamp", ts),
+                                "symbol": r.get("symbol", ""),
+                                "status": r.get("status", ""),
+                                "reason": r.get("reason", ""),
+                                "filled_price": r.get("filled_price", 0),
+                                "exchange": "delta" if "delta" in str(r) else "coinswitch",
+                            })
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+
+        # Build heatmap coins data from tickers
+        heatmap_coins = [
+            {"symbol": "BTC", "price": btc_price, "signal": "bull" if btc_price > 60000 else "bear"},
+            {"symbol": "ETH", "price": eth_price, "signal": "bull" if eth_price > 2500 else "bear"},
+            {"symbol": "SOL", "price": sol_price, "signal": "bull" if sol_price > 130 else "median"},
+            {"symbol": "XRP", "price": xrp_price, "signal": "median"},
+        ]
+        # Add open position coins to heatmap
+        for t in open_cs + open_delta:
+            sym = t.get("symbol", "").replace("/USDT", "")
+            if sym and sym not in [c["symbol"] for c in heatmap_coins]:
+                heatmap_coins.append({
+                    "symbol": sym,
+                    "price": t.get("entry_price", 0),
+                    "signal": "catalyst" if t.get("direction") == "long" else "cluster",
+                })
+
         return jsonify({
             "status": "success",
             "balances": {
@@ -144,7 +193,10 @@ def get_terminal_data():
             "performance": {
                 "total_realized_pnl_usdt": round(total_pnl_usdt, 2),
                 "closed_trades_count": total_trades_count,
-            }
+                "daily_pnl": daily_pnl,
+            },
+            "execution_log": execution_log[-20:],
+            "heatmap_coins": heatmap_coins,
         }), 200
     except Exception as exc:
         log.error("Failed to fetch terminal data: %s", exc)
