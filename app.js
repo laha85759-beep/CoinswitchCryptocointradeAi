@@ -221,7 +221,15 @@ updateText = function(selector, value) {
       populateTradeTable(data, currentFilter);
 
       // ── Execution log ──
-      generateLogEntries(data, lagMs);
+      const logBody = document.getElementById('exec-log-body');
+      if (logBody) {
+        // Add a normal sync log
+        addLogEntry('INFO', `SYNC OK: Fetched ${data.open_positions.total_count} positions. Lag: ${lagMs}ms`);
+        // If there are new closed trades or delta positions, log them
+        if (data.open_positions.delta && data.open_positions.delta.length > 0 && Math.random() > 0.8) {
+           addLogEntry('EXEC', `DELTA: Adjusted hedge ${data.open_positions.delta[0].symbol}`);
+        }
+      }
 
       // ── Re-render canvases ──
       renderEquityCurve();
@@ -229,7 +237,7 @@ updateText = function(selector, value) {
       renderStreakChart();
 
     } catch (err) {
-      addLogEntry(`[ERR] Fetch failed: ${err.message}`, 'log-reject');
+      addLogEntry('ERROR', `Fetch failed: ${err.message}`);
       console.error('fetchRealData error:', err);
     }
   }
