@@ -789,3 +789,48 @@ body {
 .flash-update {
   animation: number-flash 0.8s ease-out;
 }
+
+/* ── MOBILE RESPONSIVENESS ── */
+@media (max-width: 768px) {
+  .header-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    height: auto;
+    padding: 10px;
+  }
+  .header-tickers {
+    margin-top: 10px;
+    width: 100%;
+    justify-content: space-between;
+  }
+  .main-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "wallet"
+      "performance"
+      "orderbook"
+      "heatmap"
+      "chart";
+  }
+  .adv-widgets-row {
+    grid-template-columns: 1fr;
+  }
+  .trade-table-wrap {
+    overflow-x: auto;
+  }
+  table {
+    font-size: 10px;
+  }
+  .footer-bar {
+    flex-direction: column;
+    height: auto;
+    gap: 4px;
+    padding: 10px;
+  }
+  .footer-sep {
+    display: none;
+  }
+  .hm-grid {
+    grid-template-columns: 1fr;
+  }
+}
