@@ -728,3 +728,64 @@ body {
 @media (max-width: 1200px) {
   .adv-widgets-row { grid-template-columns: 1fr; }
 }
+
+/* ── 21st.dev Style UI Upgrades ── */
+
+/* 1. Animated Gradient Borders (Conic Spin) */
+@property --bg-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes spin-gradient {
+  to { --bg-angle: 360deg; }
+}
+
+.card--glow {
+  position: relative;
+  z-index: 1;
+  background: padding-box #0c1015; /* Inside */
+  border: 1px solid transparent;
+}
+.card--glow::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  background: conic-gradient(from var(--bg-angle), var(--magenta) 0%, transparent 20%, transparent 80%, var(--magenta) 100%);
+  border-radius: inherit;
+  animation: spin-gradient 4s linear infinite;
+  opacity: 0.8;
+}
+
+/* 2. Hover Physics (3D Floating) */
+.card {
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 12px 24px -10px rgba(0,229,255,0.15);
+  z-index: 2;
+}
+
+/* 3. Ticker Fade Masks */
+.ticker-strip {
+  position: relative;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+.tape-scroll {
+  -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+  mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+}
+
+/* Glowing text highlight animation for number changes */
+@keyframes number-flash {
+  0% { color: #fff; text-shadow: 0 0 10px #fff; }
+  100% { color: inherit; text-shadow: none; }
+}
+.flash-update {
+  animation: number-flash 0.8s ease-out;
+}

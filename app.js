@@ -1,3 +1,94 @@
+
+// ── Smooth Easing Number Updater (21st.dev style) ──
+function easeNumber(elementId, targetValue, formatFn = (n) => n) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  
+  // Parse target as float
+  let target = typeof targetValue === 'string' ? parseFloat(targetValue.replace(/[^0-9.-]+/g,"")) : targetValue;
+  if (isNaN(target)) {
+    el.textContent = targetValue;
+    return;
+  }
+
+  // Parse current
+  let currentStr = el.textContent || '0';
+  let current = parseFloat(currentStr.replace(/[^0-9.-]+/g,"")) || 0;
+  
+  // If difference is tiny or same, just set it
+  if (Math.abs(target - current) < 0.0001) {
+    el.textContent = formatFn(targetValue);
+    return;
+  }
+
+  // Trigger flash animation
+  el.classList.remove('flash-update');
+  void el.offsetWidth; // trigger reflow
+  el.classList.add('flash-update');
+
+  // Spring animation loop
+  const startTime = performance.now();
+  const duration = 800; // ms
+
+  function updateStep(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    
+    // EaseOut Expo
+    const ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+    
+    const currVal = current + (target - current) * ease;
+    
+    // Determine if it was originally formatted as a string (e.g. "$60,000")
+    if (typeof targetValue === 'string' && targetValue.startsWith('$')) {
+       el.textContent = '$' + formatFn(currVal);
+    } else if (typeof targetValue === 'string' && targetValue.endsWith('%')) {
+       el.textContent = formatFn(currVal) + '%';
+    } else {
+       el.textContent = formatFn(currVal);
+    }
+
+    if (progress < 1) {
+      requestAnimationFrame(updateStep);
+    } else {
+      el.textContent = typeof targetValue === 'string' ? targetValue : formatFn(target); // final exact text
+    }
+  }
+  requestAnimationFrame(updateStep);
+}
+
+// Override updateText to use easeNumber for purely numeric strings
+const oldUpdateText = updateText;
+updateText = function(selector, value) {
+  const el = document.querySelector(selector);
+  if (!el) return;
+  
+  // If it's a DOM node being appended (like in table), just use standard
+  if (typeof value !== 'string' && typeof value !== 'number') {
+    return oldUpdateText(selector, value);
+  }
+  
+  // Check if value contains numbers
+  if (/[0-9]/.test(String(value))) {
+    // We pass formatting logic based on the string format
+    let isDollar = String(value).startsWith('$');
+    let isPct = String(value).endsWith('%');
+    let hasComma = String(value).includes(',');
+    let decMatch = String(value).match(/\.([0-9]+)/);
+    let decCount = decMatch ? decMatch[1].length : 0;
+    
+    const formatter = (n) => {
+       let str = Number(n).toLocaleString('en-US', {minimumFractionDigits:decCount, maximumFractionDigits:decCount});
+       if (!hasComma) str = str.replace(/,/g, '');
+       return str;
+    };
+    
+    easeNumber(el.id, value, formatter);
+  } else {
+    oldUpdateText(selector, value);
+  }
+};
+
 /* ═══════════════════════════════════════════════════════
    OPUS 4.7 — Cyberpunk Quant Terminal  •  app.js
    ═══════════════════════════════════════════════════════ */
