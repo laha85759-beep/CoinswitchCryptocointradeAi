@@ -57,6 +57,10 @@ def load_json_safe(path, default):
 def serve_dashboard():
     return send_from_directory(os.path.dirname(os.path.abspath(__file__)), "index.html")
 
+@app.route("/<path:filename>", methods=["GET"])
+def serve_static(filename):
+    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), filename)
+
 @app.route("/api/terminal-data", methods=["GET"])
 def get_terminal_data():
     try:
