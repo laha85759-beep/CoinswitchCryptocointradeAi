@@ -152,7 +152,11 @@ def get_terminal_data():
 
 @app.route("/<path:filename>", methods=["GET"])
 def serve_static(filename):
-    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), filename)
+    folder = os.path.dirname(os.path.abspath(__file__))
+    target = os.path.join(folder, filename)
+    if os.path.isfile(target):
+        return send_from_directory(folder, filename)
+    return jsonify({"error": "not_found"}), 404
 
 
 @app.route("/webhook", methods=["POST"])
