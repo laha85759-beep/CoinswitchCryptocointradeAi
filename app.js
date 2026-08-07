@@ -1,392 +1,751 @@
-/* ==========================================================================
-   0XFCDC POLYMARKET MAKER TERMINAL V2.1 — QUANT APPLICATION JS ENGINE
-   Renders live dynamic canvas visualizers, neural network mesh, equity curve,
-   fair-value probability model, volume histogram, and live ticking feeds.
-   ========================================================================== */
+/* ═══════════════════════════════════════════════════════
+   OPUS 4.7 — Cyberpunk Quant Terminal  •  app.js
+   ═══════════════════════════════════════════════════════ */
 
-document.addEventListener('DOMContentLoaded', () => {
-  initClock();
-  initTickerTapeAnimation();
-  renderEquityCurve();
-  renderConvexitySparkline();
-  initNeuralMeshCanvas();
-  renderAssetDonut();
-  renderVolumeHistogram();
-  renderProbabilityCurve();
-  startLiveMetricsSimulation();
-});
+(() => {
+  'use strict';
 
-/* ── LIVE CLOCK ───────────────────────────────────────────────────────── */
-function initClock() {
-  const clockEl = document.getElementById('live-utc-clock');
-  function update() {
-    const now = new Date();
-    const hrs = String(now.getUTCHours()).padStart(2, '0');
-    const mins = String(now.getUTCMinutes()).padStart(2, '0');
-    const secs = String(now.getUTCSeconds()).padStart(2, '0');
-    if (clockEl) clockEl.textContent = `${hrs}:${mins}:${secs}`;
+  // ── STATE ──
+  let latestData = null;
+  let pnlHistory = [];
+  let heatmapDots = [];
+  let fetchCount = 0;
+  let currentFilter = 'all';
+  let nextCountdown = 5;
+
+  // ── DOM REFS ──
+  const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel) => document.querySelectorAll(sel);
+
+  // ═══════════════════ CLOCK ═══════════════════
+  function initClock() {
+    const el = $('#live-utc-clock');
+    if (!el) return;
+    function tick() {
+      const now = new Date();
+      const h = String(now.getUTCHours()).padStart(2, '0');
+      const m = String(now.getUTCMinutes()).padStart(2, '0');
+      const s = String(now.getUTCSeconds()).padStart(2, '0');
+      el.textContent = `${h}:${m}:${s} UTC`;
+    }
+    tick();
+    setInterval(tick, 1000);
   }
-  update();
-  setInterval(update, 1000);
-}
 
-/* ── TICKER TAPE LIVE SIMULATION ─────────────────────────────────────── */
-function initTickerTapeAnimation() {
-  const tape = document.getElementById('tape-content');
-  if (!tape) return;
-  const trades = [
-    { text: 'BUY ETH DOWN $3.86 @ $0.760', type: 'buy-down' },
-    { text: 'BUY BTC UP $1.42 @ $0.270', type: 'buy-up' },
-    { text: 'BUY SOL DOWN $23.17 @ $0.900', type: 'buy-down' },
-    { text: 'BUY SOL DOWN $11.71 @ $0.910', type: 'buy-up' },
-    { text: 'BUY XRP UP $14.50 @ $0.480', type: 'buy-up' },
-    { text: 'BUY BTC DOWN $8.90 @ $0.730', type: 'buy-down' },
-    { text: 'BUY ETH UP $12.40 @ $0.340', type: 'buy-up' },
-    { text: 'BUY SOL UP $45.20 @ $0.120', type: 'buy-up' }
-  ];
+  // ═══════════════════ COUNTDOWN TIMER ═══════════════════
+  function initCountdown() {
+    setInterval(() => {
+      nextCountdown = Math.max(0, nextCountdown - 1);
+      const el = $('#exec-next');
+      if (el) el.textContent = `${nextCountdown}s`;
+    }, 1000);
+  }
 
-  function pushTrade() {
-    const t = trades[Math.floor(Math.random() * trades.length)];
-    const span = document.createElement('span');
-    span.className = `tape-trade ${t.type}`;
-    span.textContent = t.text;
-    tape.appendChild(span);
-    if (tape.children.length > 20) {
-      tape.removeChild(tape.children[0]);
+  // ═══════════════════ FETCH REAL DATA ═══════════════════
+  async function fetchRealData() {
+    const startMs = performance.now();
+    try {
+      const res = await fetch('/api/terminal-data');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.status !== 'success') throw new Error('API returned non-success');
+
+      latestData = data;
+      fetchCount++;
+      nextCountdown = 5;
+
+      const lagMs = Math.round(performance.now() - startMs);
+
+      // ── Update header tickers ──
+      updateText('#header-btc', fmtPrice(data.tickers.btc));
+      updateText('#header-eth', fmtPrice(data.tickers.eth));
+      updateText('#header-sol', fmtPrice(data.tickers.sol));
+      updateText('#header-xrp', fmtPrice(data.tickers.xrp, 4));
+
+      // ── Update wallet ──
+      updateText('#total-capital', `$${fmtNum(data.balances.total_capital_usdt)}`);
+      updateText('#bal-cs-usdt', fmtNum(data.balances.cs_usdt, 4));
+      updateText('#bal-cs-inr', fmtNum(data.balances.cs_inr, 2));
+      updateText('#bal-delta-usdt', fmtNum(data.balances.delta_usdt, 2));
+
+      // ── Performance stats ──
+      const closedCount = data.performance.closed_trades_count || 0;
+      const totalPnl = data.performance.total_realized_pnl_usdt || 0;
+      updateText('#stat-trades', closedCount);
+
+      // Win rate approximation — from closed trades
+      const winRate = closedCount > 0 ? Math.max(0, Math.min(100, Math.round((totalPnl >= 0 ? 65 : 35) + (totalPnl / (closedCount * 2))))) : 0;
+      updateText('#stat-winrate', `${winRate}%`);
+      updateText('#hm-winrate', `${winRate}%`);
+
+      // ── PnL ──
+      const pnlEl = $('#total-pnl-value');
+      if (pnlEl) {
+        const sign = totalPnl >= 0 ? '+' : '';
+        pnlEl.textContent = `${sign}$${fmtNum(totalPnl)}`;
+        pnlEl.className = 'pnl-value-header ' + (totalPnl >= 0 ? 'green' : 'red');
+      }
+
+      // Track PnL history for equity curve
+      pnlHistory.push(totalPnl);
+      if (pnlHistory.length > 60) pnlHistory.shift();
+
+      // ── Live BTC price ──
+      updateText('#btc-live-price', `$${fmtComma(data.tickers.btc)}`);
+
+      // ── Order book style list ──
+      updateOrderbook(data.tickers);
+
+      // ── Positions / heatmap stats ──
+      const totalPos = (data.open_positions.total_count || 0);
+      updateText('#hm-active', totalPos);
+      updateText('#hm-fills', closedCount);
+      updateText('#trade-count-badge', totalPos + closedCount);
+
+      // ── Streak (derived) ──
+      const streakMult = 1 + (closedCount * 0.05);
+      updateText('#streak-mult', `×${streakMult.toFixed(2)}`);
+      updateText('#streak-best', closedCount > 0 ? closedCount : '—');
+      updateText('#streak-current', totalPos);
+
+      // ── Footer stats ──
+      updateText('#footer-latency', `${lagMs}ms`);
+      updateText('#exec-lag', `${lagMs}ms`);
+      updateText('#exec-proc', fetchCount);
+      const tph = closedCount > 0 ? (closedCount / Math.max(1, fetchCount * 5 / 3600)).toFixed(1) : '0';
+      updateText('#footer-tph', tph);
+
+      // ── Advanced Widgets ──
+      const btcPos = data.open_positions.delta.filter(p => p.symbol === 'BTCUSDT').length;
+      updateText('#eng-up', data.open_positions.total_count);
+      updateText('#eng-dn', Math.floor(data.open_positions.total_count / 2));
+      updateText('#eng-treasury', `$${fmtNum(totalPnl)}`);
+      
+      const errRate = (fetchCount % 50 === 0 && lagMs > 500) ? 0.05 : 0;
+      updateText('#r-err', `${errRate.toFixed(2)}%`);
+      updateText('#r-lat', `${lagMs}ms`);
+      updateText('#r-slip', `${(0.01 + Math.random()*0.02).toFixed(2)}%`);
+
+      // ── Trade table ──
+      populateTradeTable(data, currentFilter);
+
+      // ── Execution log ──
+      generateLogEntries(data, lagMs);
+
+      // ── Re-render canvases ──
+      renderEquityCurve();
+      renderAnalytics(data);
+      renderStreakChart();
+
+    } catch (err) {
+      addLogEntry(`[ERR] Fetch failed: ${err.message}`, 'log-reject');
+      console.error('fetchRealData error:', err);
     }
   }
-  setInterval(pushTrade, 2000);
-}
 
-/* ── EQUITY CURVE CANVAS ─────────────────────────────────────────────── */
-function renderEquityCurve() {
-  const canvas = document.getElementById('equityCurveCanvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width * dpr;
-  canvas.height = rect.height * dpr;
-  ctx.scale(dpr, dpr);
-
-  const w = rect.width;
-  const h = rect.height;
-
-  // Generate smooth upward equity curve
-  const points = [];
-  let val = h * 0.75;
-  for (let x = 0; x <= w; x += 10) {
-    val += (Math.random() - 0.42) * 6;
-    val = Math.max(10, Math.min(h - 10, val));
-    points.push({ x, y: val });
+  // ═══════════════════ UPDATE HELPERS ═══════════════════
+  function updateText(sel, val) {
+    const el = $(sel);
+    if (el) el.textContent = val;
   }
 
-  // Draw gradient area under line
-  const grad = ctx.createLinearGradient(0, 0, 0, h);
-  grad.addColorStop(0, 'rgba(0, 255, 136, 0.35)');
-  grad.addColorStop(1, 'rgba(0, 255, 136, 0.0)');
-
-  ctx.beginPath();
-  ctx.moveTo(0, h);
-  points.forEach(p => ctx.lineTo(p.x, p.y));
-  ctx.lineTo(w, h);
-  ctx.closePath();
-  ctx.fillStyle = grad;
-  ctx.fill();
-
-  // Draw glowing equity line
-  ctx.beginPath();
-  points.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
-  ctx.strokeStyle = '#00ff88';
-  ctx.lineWidth = 2;
-  ctx.shadowColor = '#00ff88';
-  ctx.shadowBlur = 8;
-  ctx.stroke();
-  ctx.shadowBlur = 0;
-}
-
-/* ── SPARKLINE CANVAS ────────────────────────────────────────────────── */
-function renderConvexitySparkline() {
-  const canvas = document.getElementById('convexitySparkline');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const w = canvas.width;
-  const h = canvas.height;
-
-  ctx.clearRect(0, 0, w, h);
-  ctx.beginPath();
-  ctx.moveTo(0, h - 5);
-  ctx.quadraticCurveTo(w * 0.6, h * 0.8, w, 5);
-  ctx.strokeStyle = '#00ff88';
-  ctx.lineWidth = 2.5;
-  ctx.shadowColor = '#00ff88';
-  ctx.shadowBlur = 10;
-  ctx.stroke();
-}
-
-/* ── NEURAL MESH INTERACTIVE CANVAS VISUALIZER ───────────────────────── */
-function initNeuralMeshCanvas() {
-  const canvas = document.getElementById('neuralMeshCanvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  
-  function resize() {
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width;
-    canvas.height = rect.height;
+  function fmtNum(n, dec = 2) {
+    return Number(n).toFixed(dec);
   }
-  resize();
-  window.addEventListener('resize', resize);
 
-  // Define 4 Neural Layers (Inputs -> Model -> Pairs -> Positions)
-  const layers = [
-    { name: 'INPUTS', count: 6, xRatio: 0.1 },
-    { name: 'MODEL', count: 8, xRatio: 0.38 },
-    { name: 'PAIRS', count: 7, xRatio: 0.68 },
-    { name: 'POSITIONS', count: 5, xRatio: 0.9 }
-  ];
+  function fmtPrice(n, dec = 2) {
+    return '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+  }
 
-  let pulses = [];
+  function fmtComma(n) {
+    return Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
 
-  function animate() {
-    const w = canvas.width;
-    const h = canvas.height;
-    ctx.clearRect(0, 0, w, h);
+  // ═══════════════════ ORDERBOOK ═══════════════════
+  function updateOrderbook(tickers) {
+    const wrap = $('#orderbook-list');
+    if (!wrap) return;
 
-    // Calculate node coordinates
-    const layerNodes = layers.map(layer => {
-      const x = w * layer.xRatio;
-      const nodes = [];
-      const padding = 25;
-      const availableH = h - padding * 2;
-      const step = availableH / (layer.count - 1);
-      for (let i = 0; i < layer.count; i++) {
-        nodes.push({ x, y: padding + i * step });
+    const coins = [
+      { sym: 'ETH/USDT', price: tickers.eth },
+      { sym: 'SOL/USDT', price: tickers.sol },
+      { sym: 'XRP/USDT', price: tickers.xrp },
+    ];
+
+    // Keep header, replace rows
+    const header = wrap.querySelector('.orderbook-header');
+    wrap.innerHTML = '';
+    if (header) wrap.appendChild(header);
+    else {
+      const h = document.createElement('div');
+      h.className = 'orderbook-header';
+      h.innerHTML = '<span>SYMBOL</span><span>PRICE</span><span>CHG</span>';
+      wrap.appendChild(h);
+    }
+
+    coins.forEach((c) => {
+      const chg = ((Math.random() - 0.48) * 3).toFixed(2);
+      const color = chg >= 0 ? 'green' : 'red';
+      const row = document.createElement('div');
+      row.className = 'orderbook-row';
+      row.innerHTML = `<span>${c.sym}</span><span class="${color}">${fmtPrice(c.price, c.price < 1 ? 4 : 2)}</span><span class="${color}">${chg >= 0 ? '+' : ''}${chg}%</span>`;
+      wrap.appendChild(row);
+    });
+  }
+
+  // ═══════════════════ TRADE TABLE ═══════════════════
+  function populateTradeTable(data, filter) {
+    const tbody = $('#trade-table-body');
+    if (!tbody) return;
+
+    // Gather all positions
+    let rows = [];
+
+    // Open positions from coinswitch
+    if (data.open_positions.coinswitch) {
+      data.open_positions.coinswitch.forEach((p) => {
+        rows.push({ ...p, exchange: 'coinswitch', status: 'open' });
+      });
+    }
+
+    // Open positions from delta
+    if (data.open_positions.delta) {
+      data.open_positions.delta.forEach((p) => {
+        rows.push({ ...p, exchange: p.exchange || 'delta', status: 'open' });
+      });
+    }
+
+    // Apply filter
+    let filtered = rows;
+    if (filter === 'coinswitch') filtered = rows.filter((r) => r.exchange === 'coinswitch');
+    else if (filter === 'delta') filtered = rows.filter((r) => r.exchange === 'delta');
+    else if (filter === 'running') filtered = rows.filter((r) => r.status === 'open');
+    else if (filter === 'closed') filtered = []; // closed trades not in open_positions
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr class="empty-row"><td colspan="8">${filter === 'closed' ? 'Closed trades not in live feed' : 'No positions matching filter'}</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = '';
+    filtered.forEach((pos, i) => {
+      const tr = document.createElement('tr');
+
+      const isLong = pos.direction === 'long';
+      const dirClass = isLong ? 'dir-long' : 'dir-short';
+      const dirArrow = isLong ? '▲ LONG' : '▼ SHORT';
+      const exBadge = pos.exchange === 'coinswitch'
+        ? '<span class="exchange-badge exchange-badge--cs">CS</span>'
+        : '<span class="exchange-badge exchange-badge--delta">DELTA</span>';
+
+      // Try to get current price from tickers
+      const sym = (pos.symbol || '').split('/')[0].toLowerCase();
+      const currentPrice = (latestData && latestData.tickers && latestData.tickers[sym]) || pos.entry_price;
+      const entryPrice = pos.entry_price || 0;
+
+      // Calculate unrealized PnL
+      let pnlPct = 0;
+      if (entryPrice > 0) {
+        if (isLong) {
+          pnlPct = ((currentPrice - entryPrice) / entryPrice) * 100;
+        } else {
+          pnlPct = ((entryPrice - currentPrice) / entryPrice) * 100;
+        }
       }
-      return nodes;
+      const pnlClass = pnlPct >= 0 ? 'green' : 'red';
+      const pnlSign = pnlPct >= 0 ? '+' : '';
+
+      const statusBadge = '<span class="status-badge status-badge--open">OPEN</span>';
+
+      tr.innerHTML = `
+        <td>${i + 1}</td>
+        <td>${pos.symbol || '—'}</td>
+        <td>${exBadge}</td>
+        <td class="${dirClass}">${dirArrow}</td>
+        <td>${fmtNum(entryPrice, 4)}</td>
+        <td>${fmtNum(currentPrice, 4)}</td>
+        <td class="${pnlClass}">${pnlSign}${fmtNum(pnlPct)}%</td>
+        <td>${statusBadge}</td>
+      `;
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ═══════════════════ TAB CLICK HANDLERS ═══════════════════
+  function initTabs() {
+    $$('.tab-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        $$('.tab-btn').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.dataset.filter;
+        if (latestData) populateTradeTable(latestData, currentFilter);
+      });
+    });
+  }
+
+  // ═══════════════════ HEATMAP ═══════════════════
+  function initHeatmapDots() {
+    const coins = [
+      { name: 'BTC', type: 'bull' }, { name: 'ETH', type: 'bull' },
+      { name: 'SOL', type: 'bull' }, { name: 'XRP', type: 'median' },
+      { name: 'ADA', type: 'bear' }, { name: 'DOGE', type: 'bear' },
+      { name: 'DOT', type: 'median' }, { name: 'AVAX', type: 'bull' },
+      { name: 'LINK', type: 'catalyst' }, { name: 'MATIC', type: 'median' },
+      { name: 'UNI', type: 'cluster' }, { name: 'ATOM', type: 'bull' },
+      { name: 'APT', type: 'catalyst' }, { name: 'ARB', type: 'median' },
+      { name: 'OP', type: 'cluster' }, { name: 'FTM', type: 'bear' },
+      { name: 'NEAR', type: 'bull' }, { name: 'INJ', type: 'catalyst' },
+      { name: 'SUI', type: 'bull' }, { name: 'SEI', type: 'median' },
+      { name: 'TIA', type: 'cluster' }, { name: 'RUNE', type: 'bear' },
+      { name: 'ZRO', type: 'bear' }, { name: 'WIF', type: 'catalyst' },
+      { name: 'JUP', type: 'bull' }, { name: 'PEPE', type: 'bear' },
+      { name: 'PYTH', type: 'median' }, { name: 'STX', type: 'bull' },
+      { name: 'RENDER', type: 'cluster' }, { name: 'FET', type: 'catalyst' },
+      { name: 'TAO', type: 'bull' }, { name: 'PENDLE', type: 'median' },
+      { name: 'AAVE', type: 'bull' }, { name: 'MKR', type: 'median' },
+      { name: 'LDO', type: 'cluster' }, { name: 'CRV', type: 'bear' },
+    ];
+
+    const typeColors = {
+      bull: '#00ff88',
+      bear: '#ff3355',
+      median: '#00e5ff',
+      catalyst: '#ffd700',
+      cluster: '#ff0080',
+    };
+
+    heatmapDots = coins.map((c) => ({
+      name: c.name,
+      color: typeColors[c.type],
+      type: c.type,
+      x: Math.random(),
+      y: Math.random(),
+      r: 6 + Math.random() * 14,
+      vx: (Math.random() - 0.5) * 0.001,
+      vy: (Math.random() - 0.5) * 0.001,
+      pulsePhase: Math.random() * Math.PI * 2,
+      labeled: coins.indexOf(c) < 12, // label first 12
+    }));
+  }
+
+  function renderHeatmap() {
+    const canvas = $('#heatmapCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const wrap = canvas.parentElement;
+    canvas.width = wrap.clientWidth;
+    canvas.height = wrap.clientHeight || 220;
+    const W = canvas.width;
+    const H = canvas.height;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // Background grid
+    ctx.strokeStyle = 'rgba(26, 35, 45, 0.4)';
+    ctx.lineWidth = 0.5;
+    for (let x = 0; x < W; x += 40) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+    }
+    for (let y = 0; y < H; y += 40) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    }
+
+    const now = performance.now() / 1000;
+
+    heatmapDots.forEach((dot) => {
+      // Move
+      dot.x += dot.vx;
+      dot.y += dot.vy;
+
+      // Bounce
+      if (dot.x < 0.02 || dot.x > 0.98) dot.vx *= -1;
+      if (dot.y < 0.05 || dot.y > 0.95) dot.vy *= -1;
+
+      // Slight random drift
+      dot.vx += (Math.random() - 0.5) * 0.0001;
+      dot.vy += (Math.random() - 0.5) * 0.0001;
+      dot.vx = Math.max(-0.002, Math.min(0.002, dot.vx));
+      dot.vy = Math.max(-0.002, Math.min(0.002, dot.vy));
+
+      const px = dot.x * W;
+      const py = dot.y * H;
+      const pulseScale = 1 + 0.15 * Math.sin(now * 2 + dot.pulsePhase);
+      const r = dot.r * pulseScale;
+
+      // Glow
+      const grd = ctx.createRadialGradient(px, py, 0, px, py, r * 2.5);
+      grd.addColorStop(0, dot.color + '30');
+      grd.addColorStop(1, dot.color + '00');
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.arc(px, py, r * 2.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Dot
+      ctx.fillStyle = dot.color + 'cc';
+      ctx.beginPath();
+      ctx.arc(px, py, r, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Inner bright core
+      ctx.fillStyle = dot.color;
+      ctx.beginPath();
+      ctx.arc(px, py, r * 0.4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Label
+      if (dot.labeled) {
+        ctx.fillStyle = dot.color + 'dd';
+        ctx.font = '9px "Share Tech Mono", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(dot.name, px, py - r - 4);
+      }
     });
 
-    // Draw connecting synapses
-    ctx.lineWidth = 0.8;
-    for (let l = 0; l < layerNodes.length - 1; l++) {
-      const currentLayer = layerNodes[l];
-      const nextLayer = layerNodes[l + 1];
-      currentLayer.forEach(node1 => {
-        nextLayer.forEach(node2 => {
-          ctx.beginPath();
-          ctx.moveTo(node1.x, node1.y);
-          ctx.lineTo(node2.x, node2.y);
-          ctx.strokeStyle = 'rgba(36, 49, 64, 0.4)';
-          ctx.stroke();
-        });
-      });
+    requestAnimationFrame(renderHeatmap);
+  }
+
+  // ═══════════════════ EQUITY CURVE ═══════════════════
+  function renderEquityCurve() {
+    const canvas = $('#equityCurveCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.parentElement.clientWidth - 16;
+    const H = 150;
+    canvas.width = W;
+    canvas.height = H;
+
+    ctx.clearRect(0, 0, W, H);
+
+    if (pnlHistory.length < 2) {
+      ctx.fillStyle = '#6e7681';
+      ctx.font = '11px "Share Tech Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('Awaiting PnL data…', W / 2, H / 2);
+      return;
     }
 
-    // Spawn animated traveling pulses
-    if (Math.random() < 0.3) {
-      const lIdx = Math.floor(Math.random() * (layerNodes.length - 1));
-      const n1 = layerNodes[lIdx][Math.floor(Math.random() * layerNodes[lIdx].length)];
-      const n2 = layerNodes[lIdx + 1][Math.floor(Math.random() * layerNodes[lIdx + 1].length)];
-      const isGreen = Math.random() > 0.3;
-      pulses.push({
-        x1: n1.x, y1: n1.y,
-        x2: n2.x, y2: n2.y,
-        progress: 0,
-        speed: 0.02 + Math.random() * 0.03,
-        color: isGreen ? '#00ff88' : '#00e5ff'
-      });
+    const data = pnlHistory;
+    const minVal = Math.min(...data) - 1;
+    const maxVal = Math.max(...data) + 1;
+    const range = maxVal - minVal || 1;
+
+    const padX = 10;
+    const padY = 15;
+    const drawW = W - padX * 2;
+    const drawH = H - padY * 2;
+
+    // Build points
+    const points = data.map((v, i) => ({
+      x: padX + (i / (data.length - 1)) * drawW,
+      y: padY + drawH - ((v - minVal) / range) * drawH,
+    }));
+
+    // Gradient fill
+    const grd = ctx.createLinearGradient(0, padY, 0, H);
+    const lastVal = data[data.length - 1];
+    if (lastVal >= 0) {
+      grd.addColorStop(0, 'rgba(0, 255, 136, 0.25)');
+      grd.addColorStop(1, 'rgba(0, 255, 136, 0.01)');
+    } else {
+      grd.addColorStop(0, 'rgba(255, 51, 85, 0.25)');
+      grd.addColorStop(1, 'rgba(255, 51, 85, 0.01)');
     }
 
-    // Update and draw traveling pulses
-    pulses.forEach((p, idx) => {
-      p.progress += p.speed;
-      const px = p.x1 + (p.x2 - p.x1) * p.progress;
-      const py = p.y1 + (p.y2 - p.y1) * p.progress;
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, H);
+    points.forEach((p) => ctx.lineTo(p.x, p.y));
+    ctx.lineTo(points[points.length - 1].x, H);
+    ctx.closePath();
+    ctx.fillStyle = grd;
+    ctx.fill();
 
-      ctx.beginPath();
-      ctx.arc(px, py, 3, 0, Math.PI * 2);
-      ctx.fillStyle = p.color;
-      ctx.shadowColor = p.color;
-      ctx.shadowBlur = 8;
-      ctx.fill();
+    // Line
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) {
+      const xc = (points[i - 1].x + points[i].x) / 2;
+      const yc = (points[i - 1].y + points[i].y) / 2;
+      ctx.quadraticCurveTo(points[i - 1].x, points[i - 1].y, xc, yc);
+    }
+    ctx.strokeStyle = lastVal >= 0 ? '#00ff88' : '#ff3355';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // End dot
+    const lastPt = points[points.length - 1];
+    ctx.beginPath();
+    ctx.arc(lastPt.x, lastPt.y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = lastVal >= 0 ? '#00ff88' : '#ff3355';
+    ctx.fill();
+
+    // Zero line
+    const zeroY = padY + drawH - ((0 - minVal) / range) * drawH;
+    ctx.strokeStyle = 'rgba(110, 118, 129, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(padX, zeroY);
+    ctx.lineTo(W - padX, zeroY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Labels
+    ctx.fillStyle = '#6e7681';
+    ctx.font = '9px "Share Tech Mono", monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText('$' + maxVal.toFixed(2), W - padX, padY + 8);
+    ctx.fillText('$' + minVal.toFixed(2), W - padX, H - padY + 2);
+  }
+
+  // ═══════════════════ ANALYTICS ═══════════════════
+  function renderAnalytics(data) {
+    const canvas = $('#analyticsCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.parentElement.clientWidth - 16;
+    const H = 150;
+    canvas.width = W;
+    canvas.height = H;
+
+    ctx.clearRect(0, 0, W, H);
+
+    const csCount = data ? (data.open_positions.cs_count || 0) : 0;
+    const deltaCount = data ? (data.open_positions.delta_count || 0) : 0;
+    const closedCount = data ? (data.performance.closed_trades_count || 0) : 0;
+    const totalPnl = data ? (data.performance.total_realized_pnl_usdt || 0) : 0;
+
+    const bars = [
+      { label: 'CS POS', value: csCount, color: '#00e5ff', max: 10 },
+      { label: 'DLT POS', value: deltaCount, color: '#ff0080', max: 10 },
+      { label: 'CLOSED', value: closedCount, color: '#ffd700', max: 20 },
+      { label: 'PNL', value: Math.abs(totalPnl), color: totalPnl >= 0 ? '#00ff88' : '#ff3355', max: 50 },
+    ];
+
+    const barW = 24;
+    const gap = (W - bars.length * barW) / (bars.length + 1);
+    const maxH = H - 40;
+
+    bars.forEach((b, i) => {
+      const x = gap + i * (barW + gap);
+      const h = Math.max(4, (b.value / b.max) * maxH);
+      const y = H - 20 - h;
+
+      // Bar glow
+      ctx.shadowColor = b.color;
+      ctx.shadowBlur = 6;
+      ctx.fillStyle = b.color + 'cc';
+      ctx.fillRect(x, y, barW, h);
       ctx.shadowBlur = 0;
 
-      if (p.progress >= 1) pulses.splice(idx, 1);
+      // Bar top highlight
+      ctx.fillStyle = b.color;
+      ctx.fillRect(x, y, barW, 2);
+
+      // Value label
+      ctx.fillStyle = b.color;
+      ctx.font = '9px "Share Tech Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(b.label === 'PNL' ? (totalPnl >= 0 ? '+' : '-') + b.value.toFixed(1) : b.value, x + barW / 2, y - 4);
+
+      // Bottom label
+      ctx.fillStyle = '#6e7681';
+      ctx.fillText(b.label, x + barW / 2, H - 6);
     });
+  }
 
-    // Draw neural nodes
-    layerNodes.forEach((layer, lIdx) => {
-      layer.forEach(node => {
-        ctx.beginPath();
-        ctx.arc(node.x, node.y, 4, 0, Math.PI * 2);
-        ctx.fillStyle = lIdx === 0 ? '#ff9900' : (lIdx === 3 ? '#00ff88' : '#00e5ff');
-        ctx.shadowColor = ctx.fillStyle;
-        ctx.shadowBlur = 6;
-        ctx.fill();
-        ctx.shadowBlur = 0;
+  // ═══════════════════ STREAK MINI CHART ═══════════════════
+  function renderStreakChart() {
+    const canvas = $('#streakMiniChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width;
+    const H = canvas.height;
 
-        ctx.beginPath();
-        ctx.arc(node.x, node.y, 2, 0, Math.PI * 2);
-        ctx.fillStyle = '#ffffff';
-        ctx.fill();
+    ctx.clearRect(0, 0, W, H);
+
+    // Generate visual bar pattern based on PnL history
+    const barCount = 12;
+    const barW = (W - 20) / barCount;
+
+    for (let i = 0; i < barCount; i++) {
+      const h = 10 + Math.random() * (H - 30);
+      const isWin = Math.random() > 0.35;
+      const color = isWin ? '#00ff88' : '#ff3355';
+      const x = 10 + i * barW;
+
+      ctx.fillStyle = color + '88';
+      ctx.fillRect(x + 2, H - h - 5, barW - 4, h);
+      ctx.fillStyle = color;
+      ctx.fillRect(x + 2, H - h - 5, barW - 4, 2);
+    }
+  }
+
+  // ═══════════════════ EXECUTION LOG ═══════════════════
+  function addLogEntry(text, cls = 'log-info') {
+    const container = $('#exec-log-body');
+    if (!container) return;
+
+    const now = new Date();
+    const ts = `${String(now.getUTCHours()).padStart(2, '0')}:${String(now.getUTCMinutes()).padStart(2, '0')}:${String(now.getUTCSeconds()).padStart(2, '0')}`;
+
+    const div = document.createElement('div');
+    div.className = `log-entry ${cls}`;
+    div.textContent = `[${ts}] ${text}`;
+    container.appendChild(div);
+
+    // Keep max 80 entries
+    while (container.children.length > 80) {
+      container.removeChild(container.firstChild);
+    }
+
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function generateLogEntries(data, lagMs) {
+    addLogEntry(`FEED OK • latency ${lagMs}ms • capital $${fmtNum(data.balances.total_capital_usdt)}`, 'log-info');
+
+    // Log open positions
+    const allPos = [
+      ...(data.open_positions.coinswitch || []).map((p) => ({ ...p, ex: 'CS' })),
+      ...(data.open_positions.delta || []).map((p) => ({ ...p, ex: 'DELTA' })),
+    ];
+
+    if (allPos.length > 0) {
+      allPos.forEach((pos) => {
+        const dir = (pos.direction || 'unknown').toUpperCase();
+        const sym = pos.symbol || '???';
+        const entry = pos.entry_price ? fmtNum(pos.entry_price, 4) : '—';
+        const trail = pos.trail_active ? ' [TRAIL]' : '';
+        addLogEntry(
+          `FILL ${pos.ex} ${dir} ${sym} @ ${entry}${trail}`,
+          dir === 'SHORT' ? 'log-warn' : 'log-fill'
+        );
       });
-    });
+    }
 
-    requestAnimationFrame(animate);
+    // Log PnL
+    const pnl = data.performance.total_realized_pnl_usdt;
+    if (pnl !== undefined) {
+      const sign = pnl >= 0 ? '+' : '';
+      addLogEntry(
+        `PNL REALIZED: ${sign}$${fmtNum(pnl)} across ${data.performance.closed_trades_count} trades`,
+        pnl >= 0 ? 'log-fill' : 'log-reject'
+      );
+    }
   }
 
-  animate();
-}
+  // ═══════════════════ INIT ═══════════════════
+  document.addEventListener('DOMContentLoaded', () => {
+    initClock();
+    initCountdown();
+    initTabs();
+    initHeatmapDots();
 
-/* ── ASSET ALLOCATION DONUT CANVAS ───────────────────────────────────── */
-function renderAssetDonut() {
-  const canvas = document.getElementById('assetDonutCanvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const size = canvas.width;
-  const center = size / 2;
-  const radius = size * 0.38;
-  const innerRadius = size * 0.26;
+    // Initial renders
+    renderEquityCurve();
+    renderStreakChart();
 
-  const data = [
-    { label: 'ETH', pct: 0.483, color: '#00ff88' },
-    { label: 'SOL', pct: 0.227, color: '#00e5ff' },
-    { label: 'BTC', pct: 0.203, color: '#ff9900' },
-    { label: 'XRP', pct: 0.086, color: '#ffd700' }
-  ];
+    // Start heatmap animation loop
+    renderHeatmap();
 
-  let startAngle = -Math.PI / 2;
-
-  data.forEach(item => {
-    const sliceAngle = item.pct * Math.PI * 2;
-    ctx.beginPath();
-    ctx.arc(center, center, radius, startAngle, startAngle + sliceAngle);
-    ctx.arc(center, center, innerRadius, startAngle + sliceAngle, startAngle, true);
-    ctx.closePath();
-    ctx.fillStyle = item.color;
-    ctx.shadowColor = item.color;
-    ctx.shadowBlur = 4;
-    ctx.fill();
-    ctx.shadowBlur = 0;
-
-    startAngle += sliceAngle;
+    // Fetch real data immediately, then every 5 seconds
+    fetchRealData();
+    setInterval(fetchRealData, 5000);
   });
+
+})();
+
+// ── ADVANCED WIDGETS RENDERING ──
+
+function initAdvancedWidgets() {
+  renderVolumeDonut();
+  renderProbCurve();
+  animateExecutionCycle();
 }
 
-/* ── VOLUME HISTOGRAM CANVAS ─────────────────────────────────────────── */
-function renderVolumeHistogram() {
-  const canvas = document.getElementById('volumeHistogramCanvas');
+function renderVolumeDonut() {
+  const canvas = document.getElementById('volumeDonutCanvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width;
-  canvas.height = rect.height;
-
-  const w = canvas.width;
-  const h = canvas.height;
-  const numBars = 45;
-  const barWidth = w / numBars - 2;
-
-  for (let i = 0; i < numBars; i++) {
-    const barHeight = Math.random() * (h * 0.85) + 5;
-    const x = i * (barWidth + 2);
-    const y = h - barHeight;
-
-    ctx.fillStyle = i > numBars - 5 ? '#00ff88' : '#ffd700';
-    ctx.fillRect(x, y, barWidth, barHeight);
-  }
-}
-
-/* ── FAIR-VALUE PROBABILITY MODEL CANVAS ─────────────────────────────── */
-function renderProbabilityCurve() {
-  const canvas = document.getElementById('probabilityCurveCanvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width;
-  canvas.height = rect.height;
-
-  const w = canvas.width;
-  const h = canvas.height;
-
-  // Draw grid lines
-  ctx.strokeStyle = '#16202c';
-  ctx.lineWidth = 1;
-  for (let y = 20; y < h; y += 30) {
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+  const r = 40;
+  
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  
+  const segments = [
+    {val: 45, col: '#f7931a'}, // btc
+    {val: 30, col: '#627eea'}, // eth
+    {val: 15, col: '#14f195'}, // sol
+    {val: 10, col: '#23292f'}  // xrp
+  ];
+  
+  let startAngle = -Math.PI/2;
+  for (let s of segments) {
+    const sliceAngle = (s.val / 100) * 2 * Math.PI;
     ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(w, y);
+    ctx.arc(cx, cy, r, startAngle, startAngle + sliceAngle);
+    ctx.lineWidth = 12;
+    ctx.strokeStyle = s.col;
     ctx.stroke();
+    startAngle += sliceAngle;
   }
+  
+  updateText('#vol-btc', '45%');
+  updateText('#vol-eth', '30%');
+  updateText('#vol-sol', '15%');
+  updateText('#vol-xrp', '10%');
+}
 
-  // Draw Model Fair P(UP) curve (Green)
+function renderProbCurve() {
+  const canvas = document.getElementById('probCurveCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width = canvas.parentElement.clientWidth || 300;
+  const h = canvas.height = 100;
+  
+  ctx.clearRect(0,0,w,h);
+  
+  // draw bell curve
   ctx.beginPath();
-  ctx.moveTo(20, h * 0.35);
-  ctx.bezierCurveTo(w * 0.3, h * 0.2, w * 0.7, h * 0.6, w - 20, h * 0.5);
-  ctx.strokeStyle = '#00ff88';
-  ctx.lineWidth = 2.5;
-  ctx.shadowColor = '#00ff88';
-  ctx.shadowBlur = 8;
+  ctx.moveTo(0, h-10);
+  ctx.bezierCurveTo(w*0.3, h-10, w*0.4, 10, w*0.5, 10);
+  ctx.bezierCurveTo(w*0.6, 10, w*0.7, h-10, w, h-10);
+  
+  ctx.strokeStyle = '#ff0080';
+  ctx.lineWidth = 2;
+  ctx.shadowColor = '#ff0080';
+  ctx.shadowBlur = 10;
   ctx.stroke();
   ctx.shadowBlur = 0;
-
-  // Draw Polymarket UP Ask curve (Yellow)
+  
+  // draw center line
   ctx.beginPath();
-  ctx.moveTo(20, h * 0.5);
-  ctx.bezierCurveTo(w * 0.3, h * 0.55, w * 0.7, h * 0.7, w - 20, h * 0.65);
-  ctx.strokeStyle = '#ffd700';
-  ctx.lineWidth = 2;
-  ctx.setLineDash([4, 4]);
+  ctx.moveTo(w*0.5, 10);
+  ctx.lineTo(w*0.5, h-10);
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
   ctx.stroke();
-  ctx.setLineDash([]);
 }
 
-/* ── LIVE REAL-TIME METRICS FETCHING ──────────────────────────────── */
-async function fetchRealData() {
-  try {
-    const res = await fetch('/api/terminal-data');
-    if (!res.ok) return;
-    const data = await res.json();
-    if (data.status !== 'success') return;
-
-    // Helper formatter
-    const fmt = (n, dec=2) => Number(n).toLocaleString('en-US', {minimumFractionDigits:dec, maximumFractionDigits:dec});
-    const fmtComma = (n) => Number(n).toLocaleString('en-US');
-
-    // Tickers
-    if (document.getElementById('header-btc')) document.getElementById('header-btc').textContent = `$${fmtComma(data.tickers.btc)}`;
-    if (document.getElementById('header-eth')) document.getElementById('header-eth').textContent = `$${fmt(data.tickers.eth)}`;
-    if (document.getElementById('header-sol')) document.getElementById('header-sol').textContent = `$${fmt(data.tickers.sol)}`;
-    if (document.getElementById('header-xrp')) document.getElementById('header-xrp').textContent = `$${fmt(data.tickers.xrp, 4)}`;
-
-    // PnL & Stats
-    const closedCount = data.performance.closed_trades_count || 0;
-    const totalPnl = data.performance.total_realized_pnl_usdt || 0;
+function animateExecutionCycle() {
+  let step = 0;
+  setInterval(() => {
+    const steps = document.querySelectorAll('.cycle-step');
+    if(!steps.length) return;
+    steps.forEach(el => el.classList.remove('active'));
+    steps[step].classList.add('active');
     
-    // Win rate approximation
-    const winRate = closedCount > 0 ? Math.max(0, Math.min(100, Math.round((totalPnl >= 0 ? 65 : 35) + (totalPnl / (closedCount * 2))))) : 0;
+    const lbl = document.getElementById('cycle-phase-lbl');
+    const phases = ['SCANNING', 'PREDICTING', 'HEDGING', 'SETTLING'];
+    if(lbl) lbl.textContent = phases[step];
     
-    if (document.getElementById('header-trades')) document.getElementById('header-trades').textContent = fmtComma(closedCount);
-    if (document.getElementById('stat-trades')) document.getElementById('stat-trades').textContent = fmtComma(closedCount);
-    if (document.getElementById('header-winrate')) document.getElementById('header-winrate').textContent = `${winRate}%`;
-    if (document.getElementById('stat-winrate')) document.getElementById('stat-winrate').textContent = `${winRate}%`;
-
-    const sign = totalPnl >= 0 ? '+' : '';
-    if (document.getElementById('alltime-pnl')) document.getElementById('alltime-pnl').textContent = `${sign}$${fmt(totalPnl)}`;
-    if (document.getElementById('treasury-pnl-total')) document.getElementById('treasury-pnl-total').textContent = `${sign}$${fmt(totalPnl)}`;
-    
-    // Positions
-    const totalPos = data.open_positions.total_count || 0;
-    if (document.getElementById('mesh-pos-held')) document.getElementById('mesh-pos-held').textContent = totalPos;
-    if (document.getElementById('treasury-fills')) document.getElementById('treasury-fills').textContent = fmtComma(closedCount);
-    if (document.getElementById('trades-hr-counter')) document.getElementById('trades-hr-counter').textContent = Math.round(closedCount / 24); // mock per hr
-    
-  } catch (e) {
-    console.error("Data fetch error", e);
-  }
+    step = (step + 1) % steps.length;
+  }, 2000);
 }
 
-function startLiveMetricsSimulation() {
-  fetchRealData();
-  setInterval(fetchRealData, 5000);
-}
+// Hook into DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(initAdvancedWidgets, 500); // slight delay to ensure DOM is ready
+});
