@@ -280,8 +280,8 @@ class DeltaClient:
     def set_leverage(self, product_id: int, leverage: int = 20) -> dict:
         """Set leverage for a specific product on Delta Exchange India (e.g. 10x, 20x, 50x)."""
         try:
-            body = {"product_id": product_id, "leverage": str(leverage)}
-            res = self._request("POST", "/v2/products/leverage", body=body)
+            body = {"leverage": str(leverage)}
+            res = self._request("POST", f"/v2/products/{product_id}/leverage", body=body)
             log.info("Delta set_leverage %sx for product_id=%s: %s", leverage, product_id, res.get("success", True))
             return res
         except Exception as exc:
