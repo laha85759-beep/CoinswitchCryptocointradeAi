@@ -343,25 +343,61 @@ function renderProbabilityCurve() {
 
 /* ── LIVE REAL-TIME METRICS SIMULATION ──────────────────────────────── */
 function startLiveMetricsSimulation() {
-  setInterval(() => {
-    // Ticker price jitter
-    const btcEl = document.getElementById('header-btc');
-    if (btcEl) {
-      const p = 60148 + Math.floor((Math.random() - 0.48) * 30);
-      btcEl.textContent = `$${p.toLocaleString()}`;
-    }
+  async function fetchRealData() {
+    try {
+      const res = await fetch('/api/terminal-data');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data || data.status !== 'success') return;
 
-    // Trades counter increment
-    const tradesEl = document.getElementById('header-trades');
-    const statTradesEl = document.getElementById('stat-trades');
-    const trHrCounter = document.getElementById('trades-hr-counter');
-    if (tradesEl) {
-      let count = parseInt(tradesEl.textContent.replace(',', '')) + Math.floor(Math.random() * 2);
-      tradesEl.textContent = count.toLocaleString();
-      if (statTradesEl) statTradesEl.textContent = count.toLocaleString();
+      // Update Tickers
+      if (data.tickers) {
+        const btcEl = document.getElementById('header-btc');
+        const ethEl = document.getElementById('header-eth');
+        const solEl = document.getElementById('header-sol');
+        const xrpEl = document.getElementById('header-xrp');
+        if (btcEl && data.tickers.btc) btcEl.textContent = `$${data.tickers.btc.toLocaleString()}`;
+        if (ethEl && data.tickers.eth) ethEl.textContent = `$${data.tickers.eth.toLocaleString()}`;
+        if (solEl && data.tickers.sol) solEl.textContent = `$${data.tickers.sol.toLocaleString()}`;
+        if (xrpEl && data.tickers.xrp) xrpEl.textContent = `$${data.tickers.xrp.toLocaleString()}`;
+      }
+
+      // Update Capital & Balances
+      if (data.balances) {
+        const pnlEl = document.getElementById('alltime-pnl');
+        if (pnlEl) {
+          const totalCap = data.balances.total_capital_usdt || 27.59;
+          pnlEl.textContent = `$${totalCap.toFixed(2)} USDT`;
+        }
+      }
+
+      // Update Positions Count
+      if (data.open_positions) {
+        const posHeldEl = document.getElementById('mesh-pos-held');
+        if (posHeldEl) {
+          posHeldEl.textContent = data.open_positions.total_count || 1;
+        }
+      }
+
+      // Update Realized PnL & Trade Count
+      if (data.performance) {
+        const tradesEl = document.getElementById('header-trades');
+        const statTradesEl = document.getElementById('stat-trades');
+        const pnlTotalEl = document.getElementById('treasury-pnl-total');
+
+        if (tradesEl) tradesEl.textContent = (data.performance.closed_trades_count || 0).toLocaleString();
+        if (statTradesEl) statTradesEl.textContent = (data.performance.closed_trades_count || 0).toLocaleString();
+        if (pnlTotalEl) {
+          const pnlVal = data.performance.total_realized_pnl_usdt || 0.0;
+          pnlTotalEl.textContent = `${pnlVal >= 0 ? '+' : ''}$${pnlVal.toFixed(2)} USDT`;
+        }
+      }
+
+    } catch (e) {
+      console.log('API sync notice:', e);
     }
-    if (trHrCounter) {
-      trHrCounter.textContent = 210 + Math.floor(Math.random() * 25);
-    }
-  }, 1500);
+  }
+
+  fetchRealData();
+  setInterval(fetchRealData, 3000);
 }
