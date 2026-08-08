@@ -16,7 +16,7 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
   
   // If difference is tiny or same, just set it
   if (Math.abs(target - current) < 0.0001) {
-    el.textContent = formatFn(targetValue);
+    el.textContent = targetValue;
     return;
   }
 
@@ -151,8 +151,8 @@ function getMockData() {
       updateText('#bal-delta-usdt', fmtNum(data.balances.delta_usdt, 2));
 
       // ── Performance stats ──
-      const closedCount = data.performance.closed_trades_count || 0;
-      const totalPnl = data.performance.total_realized_pnl_usdt || 0;
+      const closedCount = (data.performance && data.performance.closed_trades_count) || 0;
+      const totalPnl = (data.performance && data.performance.total_realized_pnl_usdt) || 0;
       updateText('#stat-trades', closedCount);
 
       const winRate = closedCount > 0 ? Math.max(0, Math.min(100, Math.round((totalPnl >= 0 ? 65 : 35) + (totalPnl / (closedCount * 2))))) : 0;
@@ -169,10 +169,10 @@ function getMockData() {
       pnlHistory.push(totalPnl);
       if (pnlHistory.length > 60) pnlHistory.shift();
 
-      updateText('#btc-live-price', `$${fmtComma(data.tickers.btc)}`);
-      updateOrderbook(data.tickers);
+      updateText('#btc-live-price', `$${fmtComma((data.tickers && data.tickers.btc) || 0)}`);
+      if(data.tickers) updateOrderbook(data.tickers);
 
-      const totalPos = (data.open_positions.total_count || 0);
+      const totalPos = (data.open_positions && data.open_positions.total_count) || 0;
       updateText('#hm-active', totalPos);
       updateText('#hm-fills', closedCount);
       updateText('#trade-count-badge', totalPos + closedCount);
@@ -213,7 +213,7 @@ function getMockData() {
       }
 
       if (data.heatmap_coins || (data.advanced && data.advanced.heatmap_coins)) {
-        const hc = data.heatmap_coins || data.advanced.heatmap_coins;
+        const hc = data.heatmap_coins || (data.advanced && data.advanced.heatmap_coins) || [];
         const grid = document.getElementById('heatmapGrid');
         if(grid) {
           grid.innerHTML = hc.map(c => `<div class="heatmap-cell ${c.type || 'median'}">${c.symbol || c.name || ''}</div>`).join('');
@@ -259,10 +259,10 @@ function getMockData() {
 
       populateTradeTable(data, currentFilter);
 
-      const logBody = document.getElementById('exec-log-body');
+      const logBody = document.getElementById('exec-log-list');
       if (logBody) {
-        addLogEntry('INFO', `SYNC OK: Fetched ${data.open_positions.total_count} positions. Lag: ${lagMs}ms`);
-        if (data.open_positions.delta && data.open_positions.delta.length > 0 && Math.random() > 0.8) {
+        addLogEntry('INFO', `SYNC OK: Fetched ${(data.open_positions && data.open_positions.total_count) || 0} positions. Lag: ${lagMs}ms`);
+        if (data.open_positions && data.open_positions.delta && data.open_positions.delta.length > 0 && Math.random() > 0.8) {
            addLogEntry('EXEC', `DELTA: Adjusted hedge ${data.open_positions.delta[0].symbol}`);
         }
       }
@@ -360,21 +360,21 @@ function getMockData() {
 
   // ═══════════════════ TRADE TABLE ═══════════════════
   function populateTradeTable(data, filter) {
-    const tbody = $('#trade-table-body');
+    const tbody = $('#trades-tbody');
     if (!tbody) return;
 
     // Gather all positions
     let rows = [];
 
     // Open positions from coinswitch
-    if (data.open_positions.coinswitch) {
+    if (data.open_positions && data.open_positions.coinswitch) {
       data.open_positions.coinswitch.forEach((p) => {
         rows.push({ ...p, exchange: 'coinswitch', status: 'open' });
       });
     }
 
     // Open positions from delta
-    if (data.open_positions.delta) {
+    if (data.open_positions && data.open_positions.delta) {
       data.open_positions.delta.forEach((p) => {
         rows.push({ ...p, exchange: p.exchange || 'delta', status: 'open' });
       });
@@ -627,7 +627,7 @@ function getMockData() {
 
   // ═══════════════════ EXECUTION LOG ═══════════════════
   function addLogEntry(text, cls = 'log-info') {
-    const container = $('#exec-log-body');
+    const container = $('#exec-log-list');
     if (!container) return;
 
     const now = new Date();
@@ -651,8 +651,8 @@ function getMockData() {
 
     // Log open positions
     const allPos = [
-      ...(data.open_positions.coinswitch || []).map((p) => ({ ...p, ex: 'CS' })),
-      ...(data.open_positions.delta || []).map((p) => ({ ...p, ex: 'DELTA' })),
+      ...((data.open_positions && data.open_positions.coinswitch) || []).map((p) => ({ ...p, ex: 'CS' })),
+      ...((data.open_positions && data.open_positions.delta) || []).map((p) => ({ ...p, ex: 'DELTA' })),
     ];
 
     if (allPos.length > 0) {
@@ -669,11 +669,11 @@ function getMockData() {
     }
 
     // Log PnL
-    const pnl = data.performance.total_realized_pnl_usdt;
-    if (pnl !== undefined) {
+    const pnl = (data.performance && data.performance.total_realized_pnl_usdt) || 0;
+    if (pnl !== undefined && pnl !== 0) {
       const sign = pnl >= 0 ? '+' : '';
       addLogEntry(
-        `PNL REALIZED: ${sign}$${fmtNum(pnl)} across ${data.performance.closed_trades_count} trades`,
+        `PNL REALIZED: ${sign}$${fmtNum(pnl)} across ${data.performance.closed_trades_count || 0} trades`,
         pnl >= 0 ? 'log-fill' : 'log-reject'
       );
     }
