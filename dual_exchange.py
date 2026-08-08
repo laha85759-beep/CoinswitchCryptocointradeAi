@@ -507,6 +507,29 @@ class DualMonitorAgent:
                             delta_trades.append(synced_trade)
                             tracked_symbols.add(symbol)
                             log.info("DualMonitor: Synced live Delta position for %s (size=%s entry=%s SL=%s TP=%s)", symbol, size, entry_price, sl_price, tp_price)
+
+                # Remove ghost trades (trades present locally but closed natively on exchange)
+                live_symbols = set()
+                for pos in live_positions:
+                    size = float(pos.get("size") or pos.get("open_qty") or 0)
+                    if abs(size) > 0:
+                        prod_sym = str(pos.get("product_symbol", "")).upper()
+                        if prod_sym.endswith("USD"):
+                            symbol = f"{prod_sym[:-3]}/USDT"
+                        elif prod_sym.endswith("USDT"):
+                            symbol = f"{prod_sym[:-4]}/USDT"
+                        else:
+                            symbol = prod_sym
+                        live_symbols.add(symbol)
+                
+                valid_trades = []
+                for t in delta_trades:
+                    if not t.get("paper") and t["symbol"] not in live_symbols:
+                        log.info("DualMonitor: Ghost trade detected and cleared for %s (Native TP/SL hit or manually closed on exchange)", t["symbol"])
+                        continue
+                    valid_trades.append(t)
+                delta_trades = valid_trades
+                
             except Exception as sync_exc:
                 log.debug("Delta live position sync notice: %s", sync_exc)
 
