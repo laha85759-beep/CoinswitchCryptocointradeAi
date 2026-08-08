@@ -216,7 +216,7 @@ function getMockData() {
         const hc = data.heatmap_coins || (data.advanced && data.advanced.heatmap_coins) || [];
         const grid = document.getElementById('heatmapGrid');
         if(grid) {
-          grid.innerHTML = hc.map(c => `<div class="heatmap-cell ${c.type || 'median'}">${c.symbol || c.name || ''}</div>`).join('');
+          grid.innerHTML = hc.map(c => `<div class="heatmap-cell ${c.signal || c.type || 'median'}">${c.symbol || c.name || ''}</div>`).join('');
         }
       }
 
