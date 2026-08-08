@@ -57,7 +57,11 @@ def load_json_safe(path, default):
 
 @app.route("/", methods=["GET"])
 def serve_dashboard():
-    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), "index.html")
+    response = send_from_directory(os.path.dirname(os.path.abspath(__file__)), "index.html")
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 @app.route("/api/terminal-data", methods=["GET"])
 def get_terminal_data():
