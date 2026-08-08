@@ -331,6 +331,9 @@ class OptionsMonitorAgent:
 
             except Exception as exc:
                 log.error("Error monitoring options position for %s: %s", trade.get("asset"), exc)
+                if "not found on Delta Exchange" in str(exc) or "invalid_contract" in str(exc):
+                    log.info("Contract expired or invalid. Force-clearing %s from tracking.", trade.get("asset"))
+                    continue
                 remaining.append(trade)
 
         save_json(OPTIONS_TRADES_FILE, remaining)
