@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=2.5">
+  <link rel="stylesheet" href="styles.css?v=2.6">
 </head>
 <body>
 
@@ -217,7 +217,7 @@
                 <th>Status</th>
               </tr>
             </thead>
-            <tbody id="trade-table-body">
+            <tbody id="trades-tbody">
               <tr class="empty-row"><td colspan="8">Awaiting data feed…</td></tr>
             </tbody>
           </table>
@@ -247,7 +247,7 @@
           <span class="pulse-dot pulse-dot--sm"></span>
         </div>
         <div class="exec-log-body-wrap">
-          <div class="exec-log-scroll" id="exec-log-body">
+          <div class="exec-log-scroll" id="exec-log-list">
             <div class="log-entry log-info">[INIT] Awaiting first data feed…</div>
           </div>
           <div class="exec-log-sidebar">
@@ -384,7 +384,7 @@
     <span class="footer-item">ENGINE <span class="magenta">OPUS 4.7</span></span>
   </footer>
 
-  <script src="app.js?v=2.5"></script>
+  <script src="app.js?v=2.6"></script>
 </body>
 </html>
 

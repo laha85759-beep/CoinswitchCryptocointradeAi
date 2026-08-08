@@ -224,14 +224,17 @@ function getMockData() {
          const vpb = document.getElementById('volumeProfileBars');
          if (vpb && data.advanced.volume_profile.length > 0) {
              const maxVol = Math.max(...data.advanced.volume_profile.map(v => v.volume));
-             vpb.innerHTML = data.advanced.volume_profile.map(v => `
+             vpb.innerHTML = data.advanced.volume_profile.map(v => {
+               const color = v.type === 'ask' ? '#ef4444' : (v.type === 'bid' ? '#10b981' : '#0ea5e9');
+               return `
                <div class="vol-bar-row">
                  <div class="vol-bar-price">${fmtPrice(v.price || v.price_level, 0)}</div>
                  <div class="vol-bar-track">
-                   <div class="vol-bar-fill" style="width: ${maxVol > 0 ? (v.volume / maxVol) * 100 : 0}%"></div>
+                   <div class="vol-bar-fill" style="width: ${maxVol > 0 ? (v.volume / maxVol) * 100 : 0}%; background: ${color}; box-shadow: 0 0 10px ${color}88;"></div>
                  </div>
                </div>
-             `).join('');
+               `;
+             }).join('');
          }
       }
 
