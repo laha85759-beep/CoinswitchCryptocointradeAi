@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from sentiment_agent import AISentimentAgent
 import logging
 import math
 import os
@@ -361,11 +362,12 @@ class SignalDetectorAgent:
 
 
 class RiskManagerAgent:
-    def __init__(self, cfg: dict, client: CoinSwitchClient, audit: AuditLogger, delta_client: Any = None):
+    def __init__(self, cfg: dict, cs_client: Any, audit: AuditLogger, delta_client: Any = None):
         self.cfg = cfg
-        self.client = client
+        self.cs_client = cs_client
         self.audit = audit
         self.delta_client = delta_client
+        self.sentiment_agent = AISentimentAgent()
 
     def evaluate(self, signals: list[dict], execution_halted: bool = False) -> list[dict]:
         approvals = []
@@ -396,9 +398,18 @@ class RiskManagerAgent:
             return risk_reject(signal, f"liquidity_{vol_24h:.0f}_below_min")
 
         # Skip high-volatility pairs (ATR > 5% means too risky for small capital)
-        atr_pct = float(supporting.get("atr_pct", 0) or 0)
+        atr_pct = float(supporting.get("atr_pct", 0) or 0.1)
+        if atr_pct <= 0: atr_pct = 0.1
         if atr_pct > 5.0:
             return risk_reject(signal, f"atr_{atr_pct:.2f}pct_too_volatile")
+
+        # AI Sentiment Filter
+        sentiment = self.sentiment_agent.get_market_sentiment()
+        direction = "long" if signal["signal"] in ("pump", "watch") else "short"
+        if direction == "long" and not sentiment["can_long"]:
+            return risk_reject(signal, f"sentiment_extreme_fear_score_{sentiment['score']}")
+        if direction == "short" and not sentiment["can_short"]:
+            return risk_reject(signal, f"sentiment_extreme_greed_score_{sentiment['score']}")
 
         trades = load_json(OPEN_TRADES_FILE, [])
         if any(t.get("symbol") == symbol for t in trades):
@@ -430,9 +441,19 @@ class RiskManagerAgent:
         if day_loss < -(portfolio_usdt * self.cfg["daily_max_drawdown_pct"] / 100.0):
             return risk_reject(signal, "daily_drawdown_limit_reached")
 
+        # Dynamic Position Sizing (Volatility-Adjusted)
+        base_risk_pct = float(self.cfg.get("base_risk_pct", 2.0))
+        risk_amount = portfolio_usdt * (base_risk_pct / 100.0)
+        
+        # Volatility scaled position: position = Risk / ATR%
+        volatility_adjusted_size = risk_amount / (atr_pct / 100.0)
+        
         max_position = portfolio_usdt * self.cfg["max_position_pct"] / 100.0
         remaining_exposure = max(0.0, max_total - total_exposure)
-        position_size = min(max_position, remaining_exposure)
+        
+        # Take the minimum of the volatility-adjusted size, max_position, and remaining_exposure
+        position_size = min(volatility_adjusted_size, max_position, remaining_exposure)
+        
         if position_size < self.cfg["min_order_usdt"] and portfolio_usdt >= self.cfg["min_order_usdt"]:
             position_size = min(portfolio_usdt, self.cfg["min_order_usdt"])
         if position_size < self.cfg["min_order_usdt"]:
@@ -447,7 +468,8 @@ class RiskManagerAgent:
             "stop_loss_pct": self.cfg["stop_loss_pct"],
             "take_profit_pct": self.cfg["take_profit_pct"],
             "order_type": self.cfg["risk_order_type"],
-            "direction": "short" if signal["signal"] == "dump" else "long",
+            "direction": direction,
+            "atr_pct": atr_pct,
             "approval_token": hashlib.sha256(
                 f"{signal['signal_id']}:{utc_iso()}".encode("utf-8")
             ).hexdigest()[:24],

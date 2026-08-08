@@ -359,6 +359,7 @@ class DualExecutionAgent:
             "approval_token": approval["approval_token"],
             "exchange": "delta",
             "product_id": product_id,
+            "atr_pct": approval.get("atr_pct", 1.0),
         }
         trades = load_json(DELTA_TRADES_FILE, [])
         trades.append(trade)
@@ -562,11 +563,18 @@ class DualMonitorAgent:
                         log.info("Delta trail ACTIVATED for %s at +%.2f%%", trade["symbol"], pnl_pct)
 
                     if trade.get("trail_active"):
+                        # Chandelier Exit Trailing Stop
+                        atr_pct = float(trade.get("atr_pct", 1.0))
+                        if atr_pct <= 0: atr_pct = 1.0
+                        trail_distance_pct = atr_pct * 1.5
+                        # Cap the trail distance between 1% and 5% to prevent crazy stops
+                        trail_distance_pct = max(1.0, min(5.0, trail_distance_pct))
+                        
                         if direction == "long":
-                            new_stop = round(float(trade["peak_price"]) * (1 - self.cfg["trail_pct"] / 100.0), 8)
+                            new_stop = round(float(trade["peak_price"]) * (1 - trail_distance_pct / 100.0), 8)
                             trade["trailing_stop"] = max(float(trade.get("trailing_stop") or 0), new_stop)
                         else:
-                            new_stop = round(float(trade.get("trough_price", trade.get("peak_price", trade["entry_price"]))) * (1 + self.cfg["trail_pct"] / 100.0), 8)
+                            new_stop = round(float(trade.get("trough_price", trade.get("peak_price", trade["entry_price"]))) * (1 + trail_distance_pct / 100.0), 8)
                             current_stop = float(trade.get("trailing_stop") or float('inf'))
                             trade["trailing_stop"] = min(current_stop, new_stop)
 
