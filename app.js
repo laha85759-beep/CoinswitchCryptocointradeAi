@@ -226,7 +226,7 @@ function getMockData() {
              const maxVol = Math.max(...data.advanced.volume_profile.map(v => v.volume));
              vpb.innerHTML = data.advanced.volume_profile.map(v => `
                <div class="vol-bar-row">
-                 <div class="vol-bar-price">${v.price_level}</div>
+                 <div class="vol-bar-price">${fmtPrice(v.price || v.price_level, 0)}</div>
                  <div class="vol-bar-track">
                    <div class="vol-bar-fill" style="width: ${maxVol > 0 ? (v.volume / maxVol) * 100 : 0}%"></div>
                  </div>
@@ -235,12 +235,13 @@ function getMockData() {
          }
       }
 
-      if (data.advanced && data.advanced.decision_tree) {
+      if (data.advanced && data.advanced.decision_tree && data.advanced.decision_tree.nodes) {
          const dtc = document.getElementById('decision-tree-container');
          if(dtc) {
-            dtc.innerHTML = data.advanced.decision_tree.map((node, i) => `
-              <div class="dt-node active">${node.step || node}</div>
-              ${i < data.advanced.decision_tree.length - 1 ? '<div class="dt-arrow">↓</div>' : ''}
+            const nodes = data.advanced.decision_tree.nodes;
+            dtc.innerHTML = nodes.map((node, i) => `
+              <div class="dt-node ${node.status === 'active' ? 'active' : ''}">${node.label || node.step || node}</div>
+              ${i < nodes.length - 1 ? '<div class="dt-arrow">↓</div>' : ''}
             `).join('');
          }
       }
@@ -251,7 +252,7 @@ function getMockData() {
            pvc.innerHTML = data.advanced.pair_value.map(pv => `
              <div class="pv-row">
                <span>${pv.pair}</span>
-               <span class="yellow">Spread: ${pv.spread}</span>
+               <span class="${pv.spread_pct >= 0 ? 'green' : 'red'}">Spread: ${pv.spread_pct}%</span>
              </div>
            `).join('');
          }
