@@ -23,6 +23,7 @@ from config import CONFIG
 from dual_exchange import DualExecutionAgent
 from agents import AuditLogger, RiskManagerAgent
 from notifier import TelegramNotifier
+from nemotron_agent import NemotronAnalysisAgent
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -36,6 +37,7 @@ audit = AuditLogger(CONFIG.get("log_file", "trading.log"))
 
 dual_executor = DualExecutionAgent(CONFIG, cs_client, delta_client, notifier, audit)
 risk_manager = RiskManagerAgent(CONFIG, cs_client, audit, delta_client=delta_client)
+nemotron_analyzer = NemotronAnalysisAgent()
 
 WEBHOOK_SECRET = CONFIG.get("webhook_secret", "coinswitch_bot_secret_123")
 
@@ -314,13 +316,21 @@ def handle_webhook():
 
         log.info("Received TradingView / Zing Webhook Signal: %s | Action: %s | Price: %s", raw_symbol, action.upper(), price)
 
-        # Risk Manager Approval
+        # 1. Nemotron LLM Deep Reasoning Validation
+        nemotron_decision = nemotron_analyzer.analyze_signal(signal, price)
+        if not nemotron_decision.get("approved"):
+            log.warning("Nemotron rejected webhook signal for %s: %s", raw_symbol, nemotron_decision.get("reason"))
+            return jsonify({"status": "rejected", "reason": f"Nemotron LLM: {nemotron_decision.get('reason')}"}), 200
+            
+        log.info("Nemotron approved trade for %s: %s", raw_symbol, nemotron_decision.get("reason"))
+
+        # 2. Risk Manager Approval
         approval = risk_manager._evaluate_one(signal, False)
         if not approval.get("approved"):
             log.warning("RiskManager rejected webhook signal for %s: %s", raw_symbol, approval.get("reason"))
             return jsonify({"status": "rejected", "reason": approval.get("reason")}), 200
 
-        # Execute live trade across CoinSwitch Pro & Delta Exchange India
+        # 3. Execute live trade across CoinSwitch Pro & Delta Exchange India
         results = dual_executor.execute([approval])
         return jsonify({"status": "executed", "symbol": raw_symbol, "direction": approval.get("direction"), "results": results}), 200
 

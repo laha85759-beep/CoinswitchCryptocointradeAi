@@ -4,36 +4,36 @@
    ========================================================================== */
 
 :root {
-  --bg-main: #06090c;
-  --bg-card: #0c1015;
-  --bg-card-hover: #121820;
-  --bg-card-header: #0e141b;
-  --border-color: #1a232d;
-  --border-light: #243140;
+  --bg-main: #0f172a;
+  --bg-card: rgba(30, 41, 59, 0.6);
+  --bg-card-hover: rgba(30, 41, 59, 0.8);
+  --bg-card-header: rgba(15, 23, 42, 0.5);
+  --border-color: rgba(255, 255, 255, 0.1);
+  --border-light: rgba(255, 255, 255, 0.2);
 
-  --text-main: #d0d7de;
-  --text-muted: #6e7681;
-  --text-dim: #484f58;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
 
-  --green: #00ff88;
-  --green-glow: rgba(0, 255, 136, 0.25);
-  --green-bg: rgba(0, 255, 136, 0.1);
+  --green: #10b981;
+  --green-glow: rgba(16, 185, 129, 0.25);
+  --green-bg: rgba(16, 185, 129, 0.1);
 
-  --red: #ff3355;
-  --red-glow: rgba(255, 51, 85, 0.25);
-  --red-bg: rgba(255, 51, 85, 0.1);
+  --red: #ef4444;
+  --red-glow: rgba(239, 68, 68, 0.25);
+  --red-bg: rgba(239, 68, 68, 0.1);
 
-  --magenta: #ff0080;
-  --magenta-glow: rgba(255, 0, 128, 0.3);
-  --magenta-bg: rgba(255, 0, 128, 0.1);
+  --magenta: #8b5cf6;
+  --magenta-glow: rgba(139, 92, 246, 0.3);
+  --magenta-bg: rgba(139, 92, 246, 0.1);
 
-  --cyan: #00e5ff;
-  --cyan-glow: rgba(0, 229, 255, 0.2);
+  --cyan: #0ea5e9;
+  --cyan-glow: rgba(14, 165, 233, 0.2);
 
-  --yellow: #ffd700;
-  --yellow-glow: rgba(255, 215, 0, 0.2);
+  --yellow: #f59e0b;
+  --yellow-glow: rgba(245, 158, 11, 0.2);
 
-  --font-mono: 'Share Tech Mono', 'JetBrains Mono', monospace;
+  --font-mono: 'Inter', 'Segoe UI', system-ui, sans-serif;
 }
 
 * {
@@ -43,16 +43,24 @@
 }
 
 body {
-  background-color: var(--bg-main);
+  background: linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #020617);
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
   color: var(--text-main);
   font-family: var(--font-mono);
   font-size: 11px;
-  line-height: 1.35;
+  line-height: 1.4;
   overflow-x: hidden;
   user-select: none;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+}
+
+@keyframes gradientBG {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 /* Custom Scrollbar */
@@ -74,7 +82,9 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 6px 16px;
-  background: linear-gradient(180deg, #0e141b 0%, #0a0f14 100%);
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border-color);
   position: sticky;
   top: 0;
@@ -185,12 +195,19 @@ body {
 /* ═══════════════════ CARDS ═══════════════════ */
 .card {
   background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border-radius: 12px;
   overflow: hidden;
-  transition: border-color 0.3s ease;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
 }
-.card:hover { border-color: var(--border-light); }
+.card:hover { 
+  border-color: var(--border-light); 
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  transform: translateY(-2px);
+}
 
 .card--glow {
   border-color: rgba(255, 0, 128, 0.4);
@@ -642,7 +659,9 @@ body {
   justify-content: center;
   gap: 8px;
   padding: 6px 16px;
-  background: linear-gradient(180deg, #0a0f14 0%, #06090c 100%);
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-top: 1px solid var(--border-color);
   font-size: 10px;
   color: var(--text-dim);
@@ -788,7 +807,7 @@ body {
 .card--glow {
   position: relative;
   z-index: 1;
-  background: padding-box #0c1015; /* Inside */
+  background: var(--bg-card); /* Inside */
   border: 1px solid transparent;
 }
 .card--glow::before {
