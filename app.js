@@ -1,4 +1,3 @@
-
 // ── Smooth Easing Number Updater (21st.dev style) ──
 function easeNumber(elementId, targetValue, formatFn = (n) => n) {
   const el = document.getElementById(elementId);
@@ -56,38 +55,6 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
   }
   requestAnimationFrame(updateStep);
 }
-
-// Override updateText to use easeNumber for purely numeric strings
-const oldUpdateText = updateText;
-updateText = function(selector, value) {
-  const el = document.querySelector(selector);
-  if (!el) return;
-  
-  // If it's a DOM node being appended (like in table), just use standard
-  if (typeof value !== 'string' && typeof value !== 'number') {
-    return oldUpdateText(selector, value);
-  }
-  
-  // Check if value contains numbers
-  if (/[0-9]/.test(String(value))) {
-    // We pass formatting logic based on the string format
-    let isDollar = String(value).startsWith('$');
-    let isPct = String(value).endsWith('%');
-    let hasComma = String(value).includes(',');
-    let decMatch = String(value).match(/\.([0-9]+)/);
-    let decCount = decMatch ? decMatch[1].length : 0;
-    
-    const formatter = (n) => {
-       let str = Number(n).toLocaleString('en-US', {minimumFractionDigits:decCount, maximumFractionDigits:decCount});
-       if (!hasComma) str = str.replace(/,/g, '');
-       return str;
-    };
-    
-    easeNumber(el.id, value, formatter);
-  } else {
-    oldUpdateText(selector, value);
-  }
-};
 
 /* ═══════════════════════════════════════════════════════
    OPUS 4.7 — Cyberpunk Quant Terminal  •  app.js
@@ -325,7 +292,26 @@ function getMockData() {
   // ═══════════════════ UPDATE HELPERS ═══════════════════
   function updateText(sel, val) {
     const el = $(sel);
-    if (el) el.textContent = val;
+    if (!el) return;
+    
+    // Check if value contains numbers for easing
+    if (typeof val === 'string' && /[0-9]/.test(val) && !sel.includes('log') && !sel.includes('cycle')) {
+      let isDollar = val.startsWith('$');
+      let isPct = val.endsWith('%');
+      let hasComma = val.includes(',');
+      let decMatch = val.match(/\.([0-9]+)/);
+      let decCount = decMatch ? decMatch[1].length : 0;
+      
+      const formatter = (n) => {
+         let str = Number(n).toLocaleString('en-US', {minimumFractionDigits:decCount, maximumFractionDigits:decCount});
+         if (!hasComma) str = str.replace(/,/g, '');
+         return str;
+      };
+      
+      easeNumber(el.id, val, formatter);
+    } else {
+      el.textContent = val;
+    }
   }
 
   function fmtNum(n, dec = 2) {
