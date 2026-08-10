@@ -534,19 +534,22 @@ class ExecutionAgent:
             log.warning("Stale signal %s: slippage=%.2f%%", symbol, slippage)
             return execution_result(symbol, "rejected", f"stale_signal_slippage_{slippage:.2f}pct", signal, approval)
 
-        # Dynamically size CoinSwitch order based on actual available USDT/INR balance
+        # Dynamically size CoinSwitch order based on actual available currency balance per market
         if not self.cfg["paper_trading_mode"]:
             try:
                 usdt_avail = float(self.client.get_usdt_balance())
                 inr_avail = float(self.client.get_inr_balance())
-                total_cs_usdt = usdt_avail + (inr_avail / 88.0)
-                if total_cs_usdt < 0.05:  # Absolute minimum to prevent math errors
-                    log.warning("CoinSwitch USDT balance $%.2f is essentially zero", total_cs_usdt)
-                    return execution_result(symbol, "rejected", f"cs_usdt_balance_{total_cs_usdt:.2f}_below_min", signal, approval)
-                if total_cs_usdt <= 20.0:
-                    position_usdt = total_cs_usdt * 0.98  # Use 98% of free USDT to maximize order size clearance
+                
+                # Default to USDT balance for c2c2 market orders
+                if usdt_avail >= 0.50:
+                    position_usdt = usdt_avail * 0.96  # Leave 4% buffer for fee & rounding
+                elif inr_avail >= 50.0:
+                    position_usdt = (inr_avail / 88.0) * 0.96
                 else:
-                    position_usdt = min(float(approval["position_size_usd"]), total_cs_usdt * 0.85)
+                    total_cs_usdt = usdt_avail + (inr_avail / 88.0)
+                    if total_cs_usdt < 0.50:
+                        return execution_result(symbol, "rejected", f"cs_usdt_balance_{total_cs_usdt:.2f}_below_min", signal, approval)
+                    position_usdt = total_cs_usdt * 0.95
             except Exception as exc:
                 log.debug("CoinSwitch balance check notice: %s", exc)
                 position_usdt = float(approval["position_size_usd"])
