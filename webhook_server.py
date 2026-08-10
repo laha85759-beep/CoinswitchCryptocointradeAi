@@ -435,13 +435,7 @@ def handle_ai_trader():
         return jsonify({"error": str(exc)}), 500
 
 
-@app.route("/<path:filename>", methods=["GET"])
-def serve_static(filename):
-    folder = os.path.dirname(os.path.abspath(__file__))
-    target = os.path.join(folder, filename)
-    if os.path.isfile(target):
-        return send_from_directory(folder, filename)
-    return jsonify({"error": "not_found"}), 404
+
 
 def autonomous_trading_loop():
     import main
