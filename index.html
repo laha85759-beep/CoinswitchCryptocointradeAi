@@ -3,19 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OPUS 4.7 • Vibe Quant Terminal</title>
+  <title>CoinsAI • Quantitative Trading Terminal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=3.0">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=4.0">
 </head>
 <body>
 
   <!-- ═══════════════════ HEADER BAR ═══════════════════ -->
   <header class="header-bar">
     <div class="header-left">
-      <div class="brand-badge">O</div>
-      <span class="header-title">OPUS 4.7 <span class="sep">•</span> CoinSwitch + Delta <span class="sep">•</span> <span class="live-text">LIVE</span></span>
+      <div class="brand-badge">
+        <img src="logo.jpg" alt="CoinsAI">
+      </div>
+      <span class="header-title">CoinsAI <span class="sep">|</span> MULTI-EXCHANGE ENGINE <span class="sep">|</span> <span class="live-text">LIVE</span></span>
     </div>
 
     <div class="header-center">
@@ -32,27 +34,24 @@
 
     <div class="header-right">
       <span class="pulse-dot"></span>
-      <span class="live-badge">SYNCED</span>
+      <span class="live-badge">CONNECTED</span>
       <span class="utc-clock" id="live-utc-clock">00:00:00 UTC</span>
     </div>
   </header>
 
-  <!-- ═══════════════════ MAIN CONTENT ═══════════════════ -->
+  <!-- ═══════════════════ MAIN CONTENT GRID ═══════════════════ -->
   <main class="dashboard">
 
-    <!-- ──────── TOP ROW ──────── -->
-    <section class="top-row">
-
-      <!-- WALLET CARD -->
+    <!-- ──────── LEFT COLUMN ──────── -->
+    <section class="left-col">
       <div class="card">
         <div class="card-header">
-          <span class="card-icon">◈</span>
-          <span class="card-title">LIVE PORTFOLIO</span>
+          <span class="card-title">ALL-TIME PNL & CAPITAL</span>
         </div>
         <div class="wallet-body">
           <div class="wallet-main-stat">
-            <span class="wallet-label">TOTAL CAPITAL</span>
-            <span class="wallet-value cyan" id="total-capital">$0.00</span>
+            <span class="wallet-label">TOTAL ASSETS</span>
+            <span class="wallet-value" id="total-capital">$0.00</span>
           </div>
           <div class="wallet-stats-row">
             <div class="wallet-stat">
@@ -60,17 +59,17 @@
               <span class="wallet-stat-value green" id="stat-winrate">0%</span>
             </div>
             <div class="wallet-stat">
-              <span class="wallet-stat-label">TOTAL TRADES</span>
+              <span class="wallet-stat-label">FILLS</span>
               <span class="wallet-stat-value" id="stat-trades">0</span>
             </div>
           </div>
           <div class="wallet-balances">
             <div class="balance-row">
-              <span class="balance-label">CS USDT</span>
+              <span class="balance-label">COINSWITCH USDT</span>
               <span class="balance-value" id="bal-cs-usdt">0.00</span>
             </div>
             <div class="balance-row">
-              <span class="balance-label">CS INR</span>
+              <span class="balance-label">COINSWITCH INR</span>
               <span class="balance-value" id="bal-cs-inr">0.00</span>
             </div>
             <div class="balance-row">
@@ -80,121 +79,80 @@
           </div>
         </div>
       </div>
-
-      <!-- PRICE CARD -->
-      <div class="card">
-        <div class="card-header">
-          <span class="card-icon">◉</span>
-          <span class="card-title">BTC/USDT</span>
-          <span class="tag tag--cyan">STREAM</span>
-        </div>
-        <div class="price-body">
-          <div class="price-display">
-            <span class="price-currency">BITCOIN</span>
-            <span class="price-value up" id="btc-live-price">$0.00</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- DECISION TREE CARD -->
-      <div class="card">
-        <div class="card-header">
-          <span class="card-icon">⎈</span>
-          <span class="card-title">QUANT PIPELINE</span>
-        </div>
-        <div class="tree-body" id="decision-tree-container">
-          <div class="tree-node active">
-            <div class="node-dot"></div>
-            <div class="node-label">Liquidity Syncing</div>
-          </div>
-          <div class="tree-line"></div>
-          <div class="tree-node">
-            <div class="node-dot"></div>
-            <div class="node-label">Order Block Scanning</div>
-          </div>
-          <div class="tree-line" style="top: 85px;"></div>
-          <div class="tree-node">
-            <div class="node-dot"></div>
-            <div class="node-label">Execution Engine</div>
-          </div>
-        </div>
-      </div>
-
     </section>
 
-    <!-- ──────── MIDDLE ROW ──────── -->
-    <section class="middle-row">
-
-      <!-- HEATMAP -->
+    <!-- ──────── MIDDLE COLUMN ──────── -->
+    <section class="mid-col">
       <div class="card">
         <div class="card-header">
-          <span class="card-icon">▤</span>
-          <span class="card-title">MARKET HEATMAP</span>
+          <span class="card-title">LIVE POSITIONS & ORDER BOOK</span>
+        </div>
+        <div class="positions-body">
+          <div class="positions-header">
+            <span>SYMBOL / EXCH</span>
+            <span>ENTRY PRICE</span>
+            <span>SIZE</span>
+            <span style="text-align: right;">UNREALIZED PNL</span>
+          </div>
+          <div id="trades-container">
+            <div class="empty-state">NO POSITIONS HELD</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 12px;">
+        <div class="card-header">
+          <span class="card-title">DIRECTIONAL NEURAL MESH (HEATMAP)</span>
         </div>
         <div class="heatmap-body">
           <div class="heatmap-grid" id="heatmapGrid">
-            <div class="heat-cell heat-bull"><span class="heat-sym">BTC</span><span class="heat-val">+1.2%</span></div>
-            <div class="heat-cell heat-bear"><span class="heat-sym">ETH</span><span class="heat-val">-0.4%</span></div>
-            <div class="heat-cell heat-catalyst"><span class="heat-sym">SOL</span><span class="heat-val">+5.1%</span></div>
-            <div class="heat-cell heat-cluster"><span class="heat-sym">XRP</span><span class="heat-val">+0.1%</span></div>
+            <div class="heat-cell heat-bull"><span class="heat-sym">BTC</span><span class="heat-val">BULL</span></div>
+            <div class="heat-cell heat-bear"><span class="heat-sym">ETH</span><span class="heat-val">BEAR</span></div>
+            <div class="heat-cell heat-bull"><span class="heat-sym">SOL</span><span class="heat-val">BULL</span></div>
+            <div class="heat-cell"><span class="heat-sym">XRP</span><span class="heat-val">NEUTRAL</span></div>
           </div>
         </div>
       </div>
+    </section>
 
-      <!-- ADVANCED STATS -->
+    <!-- ──────── RIGHT COLUMN ──────── -->
+    <section class="right-col">
       <div class="card">
         <div class="card-header">
-          <span class="card-icon">⚡</span>
-          <span class="card-title">SYSTEM METRICS</span>
+          <span class="card-title">SYSTEM ANALYTICS</span>
         </div>
         <div class="adv-stats-grid">
           <div class="stat-block">
-            <span class="stat-lbl">LATENCY</span>
+            <span class="stat-lbl">API LATENCY</span>
             <span class="stat-val cyan" id="footer-latency">0ms</span>
           </div>
           <div class="stat-block">
-            <span class="stat-lbl">UPTIME</span>
+            <span class="stat-lbl">PROCESSOR UPTIME</span>
             <span class="stat-val green" id="r-uptime">100%</span>
           </div>
-          <div class="stat-block" style="grid-column: span 2;">
-            <span class="stat-lbl">DIRECTIONAL BIAS</span>
-            <div style="display:flex; justify-content:space-between; margin-top:2px;">
-              <span class="stat-sub green" id="eng-up">LONG</span>
-              <span class="stat-sub red" id="eng-dn">SHORT</span>
-            </div>
-            <div class="progress-bar-container">
-              <div class="progress-bar-fill" style="width: 50%;"></div>
-            </div>
+          <div class="stat-block">
+            <span class="stat-lbl">NET LONG EXPOSURE</span>
+            <span class="stat-val green" id="eng-up">0%</span>
+          </div>
+          <div class="stat-block">
+            <span class="stat-lbl">NET SHORT EXPOSURE</span>
+            <span class="stat-val red" id="eng-dn">0%</span>
           </div>
         </div>
       </div>
 
-    </section>
-
-    <!-- ──────── BOTTOM ROW ──────── -->
-    <section class="trades-row">
       <div class="card">
         <div class="card-header">
-          <span class="card-icon">⚡</span>
-          <span class="card-title">ACTIVE POSITIONS</span>
+          <span class="card-title">LIVE EXECUTION TAPE</span>
         </div>
-        <div class="positions-body" id="trades-container">
-          <div class="empty-state">NO ACTIVE TRADES</div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-header">
-          <span class="card-icon">≡</span>
-          <span class="card-title">EXECUTION LOGS</span>
-        </div>
-        <div class="positions-body" id="exec-log-list" style="font-family: var(--font-mono); font-size:11px; overflow-y:auto; max-height:250px;">
-          <div class="dim">System initializing...</div>
+        <div class="log-body" id="exec-log-list">
+          <div class="log-row"><span class="log-ts">[00:00:00]</span> <span class="log-tag">SYS</span> <span class="log-msg">CoinsAI Terminal initialized...</span></div>
         </div>
       </div>
     </section>
 
   </main>
 
-  <script src="app.js?v=3.0"></script>
+  <script src="app.js?v=4.0"></script>
 </body>
 </html>

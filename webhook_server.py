@@ -63,6 +63,10 @@ def serve_dashboard():
     response.headers["Expires"] = "0"
     return response
 
+@app.route("/<path:filename>", methods=["GET"])
+def serve_static(filename):
+    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), filename)
+
 @app.route("/api/terminal-data", methods=["GET"])
 def get_terminal_data():
     try:

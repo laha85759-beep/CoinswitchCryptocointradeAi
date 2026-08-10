@@ -138,22 +138,15 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
       const pnlColor = pnl >= 0 ? 'green' : 'red';
       const sign = pnl >= 0 ? '+' : '';
       return `
-        <div class="trade-card ${dirClass}">
-          <div class="trade-left">
-            <div class="trade-header">
-              <span class="trade-sym">${pos.symbol}</span>
-              <span class="tag tag--cyan">${pos.ex}</span>
-              <span class="trade-dir ${dirClass}">${pos.direction.toUpperCase()}</span>
-            </div>
-            <div class="trade-details">
-              <span>ENTRY: ${fmtPrice(pos.entry_price || 0, 4)}</span>
-              ${pos.quantity ? `<span>SIZE: ${fmtNum(pos.quantity, 4)}</span>` : ''}
-            </div>
+        <div class="trade-row">
+          <div class="trade-sym-block">
+            <span class="trade-sym">${pos.symbol}</span>
+            <span class="tag">${pos.ex}</span>
+            <span class="trade-dir ${dirClass}">${pos.direction.toUpperCase()}</span>
           </div>
-          <div class="trade-right">
-            <span class="trade-pnl ${pnlColor}">${sign}$${fmtNum(pnl, 2)}</span>
-            <span class="trade-unrealized">UNREALIZED</span>
-          </div>
+          <span class="trade-entry">${fmtPrice(pos.entry_price || 0, 4)}</span>
+          <span class="trade-size">${fmtNum(pos.quantity || 0, 4)}</span>
+          <span class="trade-pnl ${pnlColor}">${sign}$${fmtNum(pnl, 2)}</span>
         </div>
       `;
     }).join('');
@@ -165,10 +158,10 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
     const now = new Date();
     const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
     const div = document.createElement('div');
-    div.style.marginBottom = '6px';
-    div.innerHTML = `<span class="dim">[${ts}]</span> <span class="cyan">SYS</span> ${msg}`;
+    div.className = 'log-row';
+    div.innerHTML = `<span class="log-ts">[${ts}]</span> <span class="log-tag">SYS</span> <span class="log-msg">${msg}</span>`;
     el.prepend(div);
-    if(el.children.length > 30) el.removeChild(el.lastChild);
+    if(el.children.length > 50) el.removeChild(el.lastChild);
   }
 
   // ═══════════════════ DATA LOOP ═══════════════════
