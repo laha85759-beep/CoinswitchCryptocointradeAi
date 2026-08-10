@@ -443,7 +443,23 @@ def serve_static(filename):
         return send_from_directory(folder, filename)
     return jsonify({"error": "not_found"}), 404
 
+def autonomous_trading_loop():
+    import main
+    while True:
+        try:
+            log.info("Starting autonomous agent cycle...")
+            main.run()
+            log.info("Autonomous agent cycle complete. Sleeping for 15 minutes...")
+        except Exception as e:
+            log.error(f"Error in autonomous loop: {e}")
+            time.sleep(60) # Wait 1 minute on crash
+        time.sleep(900)
+
 if __name__ == "__main__":
+    import threading
+    worker_thread = threading.Thread(target=autonomous_trading_loop, daemon=True)
+    worker_thread.start()
+    
     port = int(os.environ.get("PORT", CONFIG.get("webhook_port", 5000)))
     log.info("Starting TradingView, Forex, US Earnings & HKUDS AI-Trader Webhook Bridge Server on port %s...", port)
     app.run(host="0.0.0.0", port=port)
