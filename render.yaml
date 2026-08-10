@@ -1,7 +1,7 @@
 services:
   # ── UI Dashboard Web Service ──
   - type: web
-    name: coinswitch-quant-backend
+    name: coinsai-terminal
     env: python
     buildCommand: "pip install -r requirements.txt"
     startCommand: "gunicorn webhook_server:app --bind 0.0.0.0:$PORT"
@@ -14,7 +14,7 @@ services:
   # ── 24/7 Background Trading Worker ──
   # This continuously runs the bot every 15 minutes natively on Render
   - type: worker
-    name: coinswitch-quant-worker
+    name: coinsai-worker
     env: python
     buildCommand: "pip install -r requirements.txt"
     startCommand: "while true; do python main.py; echo 'Cycle complete. Sleeping for 15m...'; sleep 900; done"
