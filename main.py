@@ -356,4 +356,18 @@ def run() -> None:
 
 
 if __name__ == "__main__":
-    run()
+    try:
+        run()
+    except Exception as e:
+        import traceback
+        import logging
+        logging.error("CRITICAL CRASH: %s", traceback.format_exc())
+        try:
+            from notifier import TelegramNotifier
+            from config import load_config
+            cfg = load_config()
+            notifier = TelegramNotifier(cfg["telegram_token"], cfg["telegram_chat_id"])
+            notifier.send(f"🚨 *CRITICAL BOT FAILURE* 🚨\n\n*Reason:*\n`{str(e)}`\n\nBot cycle crashed. Check logs immediately.")
+        except Exception:
+            pass
+        raise e
