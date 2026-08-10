@@ -112,6 +112,35 @@ def get_terminal_data():
         # Load Real Open & Closed Trades
         open_cs = load_json_safe("open_trades_cs.json", [])
         open_delta = load_json_safe("open_trades_delta.json", [])
+        
+        # Fetch LIVE Real Positions directly from Delta Exchange India API
+        if delta_client is not None:
+            try:
+                live_delta_pos = delta_client._request("GET", "/v2/positions/margined")
+                if isinstance(live_delta_pos, list):
+                    parsed_positions = []
+                    for pos in live_delta_pos:
+                        sz = float(pos.get("size", 0) or 0)
+                        if abs(sz) > 0:
+                            raw_sym = str(pos.get("symbol", ""))
+                            sym_name = raw_sym.replace("USD", "/USDT") if "USD" in raw_sym else raw_sym
+                            entry_p = float(pos.get("entry_price", 0) or 0)
+                            unrealized = float(pos.get("unrealized_pnl", 0) or 0)
+                            parsed_positions.append({
+                                "symbol": sym_name,
+                                "direction": "long" if sz > 0 else "short",
+                                "qty": abs(sz),
+                                "quantity": abs(sz),
+                                "entry_price": entry_p,
+                                "unrealized_pnl": round(unrealized, 4),
+                                "exchange": "delta",
+                                "paper": False
+                            })
+                    if parsed_positions:
+                        open_delta = parsed_positions
+            except Exception as exc:
+                log.warning("Failed to fetch live Delta positions: %s", exc)
+
         daily_pnl = load_json_safe("daily_pnl.json", {})
 
         # Calculate Total Realized PnL
