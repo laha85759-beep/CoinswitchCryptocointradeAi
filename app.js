@@ -58,25 +58,20 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
     setInterval(tick, 1000);
   }
 
+  let lastHeatmapCoins = [];
+
   // ═══════════════════ DATA PROCESSING ═══════════════════
   function processData(data, lagMs) {
       fetchCount++;
 
-      // Tickers
-      if(data.tickers) {
-        updateText('#header-btc', fmtPrice(data.tickers.btc));
-        updateText('#header-eth', fmtPrice(data.tickers.eth));
-        updateText('#header-sol', fmtPrice(data.tickers.sol));
-        updateText('#header-xrp', fmtPrice(data.tickers.xrp, 4));
-        
-        // Main BTC Pulse
-        const btcEl = $('#btc-live-price');
-        if (btcEl) {
-            const oldVal = parseFloat(btcEl.textContent.replace(/[^0-9.-]+/g,"")) || 0;
-            updateText('#btc-live-price', `$${fmtComma(data.tickers.btc)}`);
-            if (data.tickers.btc > oldVal) { btcEl.className = 'price-value up'; }
-            else if (data.tickers.btc < oldVal) { btcEl.className = 'price-value down'; }
-        }
+      // Heatmap Coins list from top level or advanced
+      const coinsList = data.heatmap_coins || (data.advanced && data.advanced.heatmap_coins) || [];
+      if (coinsList.length > 0) {
+        lastHeatmapCoins = coinsList;
+        renderHeatmap(lastHeatmapCoins);
+        renderTickerMarquee(lastHeatmapCoins, data.tickers);
+      } else if (data.tickers) {
+        renderHeaderTickers(data.tickers);
       }
 
       // Wallet
@@ -104,20 +99,65 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
 
       // Positions rendering
       populateTrades(data);
-
-      // Heatmap rendering
-      if (data.advanced && data.advanced.heatmap_coins) {
-         const grid = $('#heatmapGrid');
-         if(grid) {
-           grid.innerHTML = data.advanced.heatmap_coins.map(c => `
-             <div class="heat-cell ${c.signal === 'bull' ? 'heat-bull' : (c.signal==='bear'?'heat-bear':'heat-catalyst')}">
-               <span class="heat-sym">${c.symbol.replace('/USDT','')}</span>
-               <span class="heat-val">${c.type || ''}</span>
-             </div>
-           `).join('');
-         }
-      }
   }
+
+  function renderTickerMarquee(coins, tickers) {
+    const el = $('#tickerMarquee');
+    if (!el) return;
+    // Build single row of coins
+    const items = coins.map(c => {
+      const p = c.price > 0 ? (c.price > 10 ? fmtPrice(c.price, 2) : fmtPrice(c.price, 4)) : '—';
+      return `<span class="ticker-item">${c.symbol} <span class="ticker-price">${p}</span></span>`;
+    }).join('');
+    // Duplicate to make continuous loop
+    el.innerHTML = items + items;
+  }
+
+  function renderHeaderTickers(tickers) {
+    if(tickers.btc) updateText('#header-btc', fmtPrice(tickers.btc));
+    if(tickers.eth) updateText('#header-eth', fmtPrice(tickers.eth));
+    if(tickers.sol) updateText('#header-sol', fmtPrice(tickers.sol));
+    if(tickers.xrp) updateText('#header-xrp', fmtPrice(tickers.xrp, 4));
+  }
+
+  function renderHeatmap(coins) {
+    const grid = $('#heatmapGrid');
+    if (!grid) return;
+    const filter = ($('#heatSearch')?.value || '').toUpperCase().trim();
+    const filtered = filter ? coins.filter(c => c.symbol.toUpperCase().includes(filter)) : coins;
+
+    if (filtered.length === 0) {
+      grid.innerHTML = '<div class="empty-state" style="grid-column: span 6;">NO MATCHING COINS</div>';
+      return;
+    }
+
+    grid.innerHTML = filtered.map(c => {
+      let sigClass = 'heat-cell';
+      const sig = (c.signal || 'median').toLowerCase();
+      if (sig === 'bull') sigClass += ' heat-bull';
+      else if (sig === 'bear') sigClass += ' heat-bear';
+      else if (sig === 'catalyst') sigClass += ' heat-catalyst';
+      else if (sig === 'cluster') sigClass += ' heat-cluster';
+
+      const pDisplay = c.price > 0 ? (c.price > 10 ? fmtPrice(c.price, 2) : (c.price > 1 ? fmtPrice(c.price, 3) : fmtPrice(c.price, 4))) : '—';
+
+      return `
+        <div class="${sigClass}">
+          <span class="heat-sym">${c.symbol}</span>
+          <span class="heat-price">${pDisplay}</span>
+          <span class="heat-val">${sig}</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Setup Heatmap search listener
+  document.addEventListener('DOMContentLoaded', () => {
+    const input = $('#heatSearch');
+    if (input) {
+      input.addEventListener('input', () => renderHeatmap(lastHeatmapCoins));
+    }
+  });
 
   function populateTrades(data) {
     const wrap = $('#trades-container');

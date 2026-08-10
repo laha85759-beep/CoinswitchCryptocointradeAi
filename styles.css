@@ -86,11 +86,18 @@ body {
 .sep { color: var(--border-heavy); font-weight: normal; }
 .live-text { background: var(--accent-green); color: white; padding: 2px 6px; font-size: 10px; font-weight: 700; border-radius: 2px; }
 
-.header-center { flex-grow: 1; display: flex; justify-content: center; overflow: hidden; padding: 0 20px; }
-.ticker-strip { width: 100%; display: flex; justify-content: flex-end; gap: 16px; font-family: var(--font-mono); font-size: 11px; }
-.ticker-item { display: flex; gap: 6px; color: var(--text-muted); font-weight: 600; }
+.header-center { flex-grow: 1; display: flex; justify-content: center; overflow: hidden; padding: 0 20px; position: relative; }
+.ticker-marquee-wrap { width: 100%; overflow: hidden; whitespace: nowrap; display: flex; align-items: center; }
+.ticker-strip { display: inline-flex; gap: 16px; font-family: var(--font-mono); font-size: 11px; animation: marquee 35s linear infinite; }
+.ticker-strip:hover { animation-play-state: paused; }
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker-item { display: inline-flex; gap: 6px; color: var(--text-muted); font-weight: 600; background: var(--bg-main); padding: 2px 8px; border: 1px solid var(--border-color); border-radius: 2px; }
 .ticker-price { color: var(--text-main); font-weight: 800; }
-.ticker-sep { color: var(--border-color); }
+.ticker-sep { color: var(--border-color); display: none; }
 
 .header-right { display: flex; align-items: center; gap: 12px; font-family: var(--font-mono); }
 .pulse-dot { width: 8px; height: 8px; background: var(--accent-green); border-radius: 50%; box-shadow: 0 0 0 2px rgba(5,150,105,0.2); }
@@ -172,10 +179,20 @@ body {
 .trade-pnl { font-size: 12px; font-weight: 800; text-align: right; }
 
 /* Heatmap */
-.heatmap-body { padding: 12px; }
-.heatmap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 4px; }
+.heatmap-body { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.heat-search-input {
+  width: 100%;
+  padding: 4px 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  border: 1px solid var(--border-heavy);
+  background: var(--bg-main);
+  color: var(--text-main);
+  outline: none;
+}
+.heat-search-input:focus { border-color: var(--accent-blue); }
+.heatmap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(68px, 1fr)); gap: 4px; max-height: 380px; overflow-y: auto; padding-right: 2px; }
 .heat-cell { 
-  aspect-ratio: 1; 
   display: flex; 
   flex-direction: column; 
   justify-content: center; 
@@ -183,13 +200,26 @@ body {
   font-family: var(--font-mono); 
   border: 1px solid var(--border-color);
   background: var(--bg-main);
+  padding: 4px 2px;
+  border-radius: 2px;
+  transition: transform 0.1s ease;
 }
-.heat-sym { font-size: 11px; font-weight: 800; color: var(--text-main); }
-.heat-val { font-size: 9px; font-weight: 700; }
-.heat-bull { background: var(--heat-bull); border-color: var(--heat-bull-border); }
-.heat-bull .heat-val { color: var(--accent-green); }
-.heat-bear { background: var(--heat-bear); border-color: var(--heat-bear-border); }
-.heat-bear .heat-val { color: var(--accent-red); }
+.heat-cell:hover { transform: scale(1.04); box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 10; }
+.heat-sym { font-size: 10px; font-weight: 800; color: var(--text-main); }
+.heat-price { font-size: 9px; font-weight: 600; color: var(--text-muted); margin: 1px 0; }
+.heat-val { font-size: 8px; font-weight: 800; padding: 1px 3px; border-radius: 2px; text-transform: uppercase; }
+
+.heat-bull { background: #d1fae5; border-color: #34d399; }
+.heat-bull .heat-val { background: #059669; color: #fff; }
+
+.heat-bear { background: #fee2e2; border-color: #f87171; }
+.heat-bear .heat-val { background: #dc2626; color: #fff; }
+
+.heat-catalyst { background: #fef3c7; border-color: #fbbf24; }
+.heat-catalyst .heat-val { background: #d97706; color: #fff; }
+
+.heat-cluster { background: #e0e7ff; border-color: #818cf8; }
+.heat-cluster .heat-val { background: #4f46e5; color: #fff; }
 
 /* ──────── RIGHT COLUMN: LOGS & SYSTEM ──────── */
 .right-col { display: flex; flex-direction: column; gap: 12px; }

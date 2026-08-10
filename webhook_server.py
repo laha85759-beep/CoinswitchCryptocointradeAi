@@ -156,7 +156,14 @@ def get_terminal_data():
 
         # Dynamic Heatmap generation for ALL common coins
         # Known common coins between CS USDT market and Delta
-        common_bases = ['ZRO', 'MOODENG', 'PUMP', 'ZORA', 'FARTCOIN', 'XAUT', 'DOGS', 'SPX', 'BTC', 'AIXBT', 'VIRTUAL', 'JASMY', 'TRUMP', 'LIGHT', 'VVV', 'ORDER', 'ETH', 'MELANIA', 'GOAT', 'HYPE', 'POPCAT', 'GRIFFAIN', 'ONDO', 'SOL', 'MON', 'DEEP', 'XRP', 'ADA', 'DOT', 'DOGE', 'SHIB']
+        common_bases = [
+            'BTC', 'ETH', 'SOL', 'XRP', 'ADA', 'DOT', 'DOGE', 'SHIB', 'AVAX', 'NEAR',
+            'LINK', 'SUI', 'APT', 'PEPE', 'FLOKI', 'WIF', 'BONK', 'TIA', 'INJ', 'FET',
+            'RENDER', 'AR', 'STX', 'MATIC', 'BNB', 'LTC', 'BCH', 'ATOM', 'ZRO', 'MOODENG',
+            'PUMP', 'ZORA', 'FARTCOIN', 'XAUT', 'DOGS', 'SPX', 'AIXBT', 'VIRTUAL', 'JASMY',
+            'TRUMP', 'LIGHT', 'VVV', 'ORDER', 'MELANIA', 'GOAT', 'HYPE', 'POPCAT', 'GRIFFAIN',
+            'ONDO', 'MON', 'DEEP'
+        ]
         
         heatmap_coins = []
         for base in common_bases:

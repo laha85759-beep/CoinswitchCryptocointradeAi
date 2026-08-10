@@ -21,14 +21,13 @@
     </div>
 
     <div class="header-center">
-      <div class="ticker-strip">
-        <span class="ticker-item">BTC <span id="header-btc" class="ticker-price">—</span></span>
-        <span class="ticker-sep">│</span>
-        <span class="ticker-item">ETH <span id="header-eth" class="ticker-price">—</span></span>
-        <span class="ticker-sep">│</span>
-        <span class="ticker-item">SOL <span id="header-sol" class="ticker-price">—</span></span>
-        <span class="ticker-sep">│</span>
-        <span class="ticker-item">XRP <span id="header-xrp" class="ticker-price">—</span></span>
+      <div class="ticker-marquee-wrap">
+        <div class="ticker-strip" id="tickerMarquee">
+          <span class="ticker-item">BTC <span id="header-btc" class="ticker-price">—</span></span>
+          <span class="ticker-item">ETH <span id="header-eth" class="ticker-price">—</span></span>
+          <span class="ticker-item">SOL <span id="header-sol" class="ticker-price">—</span></span>
+          <span class="ticker-item">XRP <span id="header-xrp" class="ticker-price">—</span></span>
+        </div>
       </div>
     </div>
 
@@ -102,14 +101,12 @@
 
       <div class="card" style="margin-top: 12px;">
         <div class="card-header">
-          <span class="card-title">DIRECTIONAL NEURAL MESH (HEATMAP)</span>
+          <span class="card-title">DIRECTIONAL NEURAL MESH (HEATMAP • 50+ COINS)</span>
         </div>
         <div class="heatmap-body">
+          <input type="text" id="heatSearch" placeholder="🔍 SEARCH COIN (BTC, ETH, SOL, PEPE, WIF...)..." class="heat-search-input" />
           <div class="heatmap-grid" id="heatmapGrid">
             <div class="heat-cell heat-bull"><span class="heat-sym">BTC</span><span class="heat-val">BULL</span></div>
-            <div class="heat-cell heat-bear"><span class="heat-sym">ETH</span><span class="heat-val">BEAR</span></div>
-            <div class="heat-cell heat-bull"><span class="heat-sym">SOL</span><span class="heat-val">BULL</span></div>
-            <div class="heat-cell"><span class="heat-sym">XRP</span><span class="heat-val">NEUTRAL</span></div>
           </div>
         </div>
       </div>
