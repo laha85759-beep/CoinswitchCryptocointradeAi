@@ -312,7 +312,17 @@ class MarketScanner:
             if pairs:
                 pairs.sort(key=lambda x: x[1], reverse=True)
                 result = [p[0] for p in pairs[: self.cfg.get("top_n_by_volume", 150)]]
-                log.info("Scanner: found %s active & newly listed %s pairs for live trading", len(result), exchange)
+                
+                # Prepend priority altcoins & memecoins to ensure they are scanned first
+                priority = self.cfg.get("priority_memecoins", [])
+                for p_sym in reversed(priority):
+                    if p_sym not in result and p_sym not in self.cfg["blacklist"]:
+                        result.insert(0, p_sym)
+                    elif p_sym in result:
+                        result.remove(p_sym)
+                        result.insert(0, p_sym)
+
+                log.info("Scanner: prioritized %s altcoin & memecoin pairs for CoinSwitch live trading", len(result))
                 return result
             else:
                 sample = list(tickers.items())[:5]

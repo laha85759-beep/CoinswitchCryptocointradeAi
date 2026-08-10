@@ -65,11 +65,17 @@ CONFIG = {
     # ── Scanner ──────────────────────────────────────────────────────────────
     "quote_currency":        "USDT",
     "exchange":              "c2c2",    # CoinSwitch c2c2 = USDT pairs with candle data
-    "request_delay_seconds": 1.0,
+    "request_delay_seconds": 0.5,
     "top_n_by_volume":       150,     # scans all top active & newly listed coins
     "timeframe":             "5m",
     "candle_limit":          50,       # 50 candles for 5m indicators
-    "min_volume_usdt":       50_000,
+    "min_volume_usdt":       100.0,    # Lower volume filter to catch explosive low-cap memecoins & new listings
+    "priority_memecoins": [
+        "PEPE/USDT", "DOGE/USDT", "SHIB/USDT", "WIF/USDT", "BONK/USDT", "FLOKI/USDT",
+        "MOODENG/USDT", "PUMP/USDT", "FARTCOIN/USDT", "ZRO/USDT", "SPX/USDT", "POPCAT/USDT",
+        "GOAT/USDT", "GRIFFAIN/USDT", "TRUMP/USDT", "VIRTUAL/USDT", "AIXBT/USDT", "HYPE/USDT",
+        "SOL/USDT", "AVAX/USDT", "NEAR/USDT", "SUI/USDT", "LINK/USDT", "APT/USDT", "TIA/USDT"
+    ],
     "blacklist": ["USDC/USDT", "BUSD/USDT", "TUSD/USDT", "FDUSD/USDT"],
 
     # ── Legacy scanner thresholds (used by scanner.py SignalEngine) ───────────
