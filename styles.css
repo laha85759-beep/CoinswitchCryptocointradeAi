@@ -365,13 +365,36 @@ body {
 .real-stat-val { font-size: 11px; font-weight: 800; font-family: var(--font-mono); }
 
 /* ──────── REAL MARKET FLOWS CONTAINER ──────── */
+.flow-tabs-wrap {
+  display: flex;
+  gap: 3px;
+  margin-left: auto;
+}
+.flow-tab-btn {
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.flow-tab-btn.active, .flow-tab-btn:hover {
+  background: var(--accent-blue);
+  color: white;
+  border-color: var(--accent-blue);
+}
+
 .real-flows-container {
   display: flex;
   flex-direction: column;
   gap: 4px;
   padding: 8px;
   background: var(--bg-card);
-  max-height: 180px;
+  max-height: 220px;
   overflow-y: auto;
 }
 .real-flow-row {

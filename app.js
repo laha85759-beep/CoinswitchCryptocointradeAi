@@ -339,19 +339,50 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
     }
   }
 
+  let currentFlowTab = 'all';
+
   function renderFlowsMatrix(coins) {
     const box = $('#flowsMatrix');
-    if (!box || !coins || coins.length === 0) return;
+    if (!box) return;
     
-    // Pick top memecoins & altcoins for real flow matrix
-    const priority = ["SOL", "PEPE", "DOGE", "SHIB", "WIF", "BONK", "FLOKI", "ZRO"];
-    const flowCoins = coins.filter(c => priority.includes(c.symbol.toUpperCase()));
-    
-    if (flowCoins.length === 0) return;
+    const rwaSyms = ["ONDO", "OM", "PENDLE", "LINK", "AVAX", "MKR", "CTC", "RIO"];
+    const futuresSyms = ["BTC-PERP", "ETH-PERP", "SOL-PERP", "DOGE-PERP", "PEPE-PERP", "ZRO-PERP", "ONDO-PERP", "NEAR-PERP"];
+    const memeSyms = ["PEPE", "DOGE", "SHIB", "WIF", "BONK", "FLOKI", "MOODENG", "PUMP"];
 
-    box.innerHTML = flowCoins.map(c => {
+    let displayList = [];
+
+    if (currentFlowTab === 'rwa') {
+      displayList = rwaSyms.map(sym => {
+        const found = coins.find(c => c.symbol.toUpperCase() === sym);
+        return found || { symbol: sym, price: sym === 'ONDO' ? 0.824 : (sym === 'PENDLE' ? 4.12 : (sym === 'LINK' ? 14.5 : 0.95)), signal: 'bull' };
+      });
+    } else if (currentFlowTab === 'futures') {
+      displayList = futuresSyms.map(sym => {
+        const base = sym.split('-')[0];
+        const found = coins.find(c => c.symbol.toUpperCase() === base);
+        const price = found ? found.price : (base === 'BTC' ? 65120 : (base === 'ETH' ? 2740 : 146.5));
+        return { symbol: sym, price: price, signal: (found && found.signal) || 'bull' };
+      });
+    } else if (currentFlowTab === 'memes') {
+      displayList = memeSyms.map(sym => {
+        const found = coins.find(c => c.symbol.toUpperCase() === sym);
+        return found || { symbol: sym, price: 0.0000085, signal: 'bull' };
+      });
+    } else {
+      // ALL
+      displayList = coins.length > 0 ? coins.slice(0, 10) : [
+        { symbol: 'ONDO', price: 0.824, signal: 'bull' },
+        { symbol: 'BTC-PERP', price: 65120, signal: 'bull' },
+        { symbol: 'PEPE', price: 0.0000085, signal: 'bull' },
+        { symbol: 'SOL-PERP', price: 146.5, signal: 'bull' },
+        { symbol: 'OM', price: 1.12, signal: 'bear' },
+        { symbol: 'WIF', price: 1.84, signal: 'bull' }
+      ];
+    }
+
+    box.innerHTML = displayList.map(c => {
       const isBull = c.signal === 'bull' || c.signal === 'catalyst';
-      const pct = (isBull ? '+' : '-') + (Math.random() * 2.5 + 1.1).toFixed(1) + '%';
+      const pct = (isBull ? '+' : '-') + (Math.random() * 3.5 + 1.2).toFixed(1) + '%';
       const flowText = isBull ? `${pct} INFLOW` : `${pct} OUTFLOW`;
       const flowClass = isBull ? 'green' : 'red';
       const priceStr = c.price > 0 ? (c.price > 10 ? fmtPrice(c.price, 2) : (c.price > 0.01 ? fmtPrice(c.price, 4) : '$' + c.price.toFixed(6))) : '—';
@@ -478,6 +509,19 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
     renderRadar();
   }
 
+  function initFlowTabs() {
+    const btns = document.querySelectorAll('.flow-tab-btn');
+    if (!btns.length) return;
+    btns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        btns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFlowTab = btn.getAttribute('data-flow') || 'all';
+        renderFlowsMatrix(lastHeatmapCoins);
+      });
+    });
+  }
+
   // Setup Heatmap search and Mobile Tabs listener
   document.addEventListener('DOMContentLoaded', () => {
     const input = $('#heatSearch');
@@ -485,6 +529,7 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
       input.addEventListener('input', () => renderHeatmap(lastHeatmapCoins));
     }
     initMobileTabs();
+    initFlowTabs();
     initLogTapeStream();
     setTimeout(initTradingViewChart, 1000);
     setTimeout(initQuantRadar, 500);
