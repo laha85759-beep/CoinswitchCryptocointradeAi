@@ -320,6 +320,10 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
         "toolbar_bg": "#f1f3f6",
         "enable_publishing": false,
         "allow_symbol_change": true,
+        "studies": [
+          "RSI@tv-basicstudies",
+          "MASimple@tv-basicstudies"
+        ],
         "container_id": "tradingview_5m_chart"
       });
     } catch(e) {

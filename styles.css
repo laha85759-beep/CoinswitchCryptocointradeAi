@@ -221,6 +221,55 @@ body {
 .heat-cluster { background: #e0e7ff; border-color: #818cf8; }
 .heat-cluster .heat-val { background: #4f46e5; color: #fff; }
 
+/* ──────── EXCHANGE REAL TRADE STATUS BADGES ──────── */
+.exchange-status-bar {
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-main);
+  border-bottom: 1px solid var(--border-color);
+}
+.exch-badge {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  border-radius: 2px;
+  font-family: var(--font-mono);
+}
+.exch-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--accent-green);
+  border-radius: 50%;
+  box-shadow: 0 0 4px var(--accent-green);
+}
+.exch-name { font-size: 9px; font-weight: 800; color: var(--text-main); }
+.exch-mode { font-size: 8px; font-weight: 800; color: var(--accent-green); margin-left: auto; }
+
+/* ──────── TECHNICAL INDICATOR SIGNAL GAUGE ──────── */
+.indicator-gauge-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 8px;
+  background: var(--bg-card);
+}
+.ind-box {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  font-family: var(--font-mono);
+}
+.ind-title { font-size: 9px; font-weight: 700; color: var(--text-muted); }
+.ind-status { font-size: 9px; font-weight: 800; }
+
 /* ──────── AI AGENT DECISION PIPELINE FLOWCHART ──────── */
 .agent-pipeline-body {
   padding: 10px;
