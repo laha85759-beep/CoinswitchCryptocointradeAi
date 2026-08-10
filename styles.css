@@ -39,19 +39,36 @@
   --21st-green: #10b981;
 }
 
-/* 21st.dev COMPONENTS & DYNAMIC UI ANIMATIONS */
+/* ═══════════════════ FRAMER MOTION ANIMATION ENGINE ═══════════════════ */
+:root {
+  --framer-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --framer-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Framer Motion Gesture Active Scale */
+button:active, .mob-tab-btn:active, .flow-tab-btn:active, .heat-cell:active {
+  transform: scale(0.95) !important;
+  transition: transform 0.1s var(--framer-spring) !important;
+}
+
+/* Framer Motion Staggered Entrance */
 .card-21st {
   background: rgba(255, 255, 255, 0.95) !important;
   backdrop-filter: blur(16px);
   border: 1px solid var(--21st-border) !important;
   box-shadow: 0 4px 20px var(--21st-glow), 0 1px 3px rgba(0, 0, 0, 0.05) !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  animation: cardAmbientGlow 8s ease-in-out infinite alternate;
+  transition: all 0.35s var(--framer-spring);
+  animation: framerEntrance 0.5s var(--framer-ease-out) forwards, cardAmbientGlow 8s ease-in-out infinite alternate;
 }
 .card-21st:hover {
   border-color: rgba(37, 99, 235, 0.6) !important;
-  box-shadow: 0 10px 32px rgba(37, 99, 235, 0.22), 0 2px 8px rgba(0, 0, 0, 0.08) !important;
-  transform: translateY(-2px);
+  box-shadow: 0 12px 36px rgba(37, 99, 235, 0.2), 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+  transform: translateY(-3px) scale(1.004);
+}
+
+@keyframes framerEntrance {
+  0% { opacity: 0; transform: translateY(12px) scale(0.98); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes cardAmbientGlow {
@@ -295,9 +312,9 @@ body {
   background: var(--bg-main);
   padding: 4px 2px;
   border-radius: 2px;
-  transition: transform 0.1s ease;
+  transition: all 0.25s var(--framer-spring);
 }
-.heat-cell:hover { transform: scale(1.04); box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 10; }
+.heat-cell:hover { transform: translateY(-2px) scale(1.05); box-shadow: 0 4px 12px rgba(0,0,0,0.12); z-index: 10; }
 .heat-sym { font-size: 10px; font-weight: 800; color: var(--text-main); }
 .heat-price { font-size: 9px; font-weight: 600; color: var(--text-muted); margin: 1px 0; }
 .heat-val { font-size: 8px; font-weight: 800; padding: 1px 3px; border-radius: 2px; text-transform: uppercase; }
