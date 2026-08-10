@@ -3,22 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>CoinsAI • Quantitative Trading Terminal</title>
+  <title>CoinsAI • 21st.dev Next-Gen Quant Terminal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=7.0">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=8.0">
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 </head>
 <body>
 
-  <!-- ═══════════════════ HEADER BAR ═══════════════════ -->
-  <header class="header-bar">
+  <!-- ═══════════════════ 21ST.DEV GLASSMOPHISM HEADER ═══════════════════ -->
+  <header class="header-bar card-21st">
     <div class="header-left">
-      <div class="brand-badge">
+      <div class="brand-badge badge-glow">
         <img src="logo.jpg" alt="CoinsAI">
       </div>
-      <span class="header-title">CoinsAI <span class="sep">|</span> MULTI-EXCHANGE ENGINE <span class="sep">|</span> <span class="live-text">LIVE</span></span>
+      <span class="header-title">CoinsAI <span class="sep">|</span> 21ST.DEV QUANT HUB <span class="sep">|</span> <span class="live-text glow-green">REAL TRADES LIVE</span></span>
     </div>
 
     <div class="header-center">
@@ -34,15 +34,16 @@
 
     <div class="header-right">
       <span class="pulse-dot"></span>
-      <span class="live-badge">CONNECTED</span>
+      <span class="live-badge glow-badge">CONNECTED</span>
       <span class="utc-clock" id="live-utc-clock">00:00:00 UTC</span>
     </div>
   </header>
 
   <!-- ═══════════════════ MOBILE TAB NAVIGATION ═══════════════════ -->
-  <nav class="mobile-nav-bar">
+  <nav class="mobile-nav-bar card-21st">
     <button class="mob-tab-btn active" data-tab="all">⚡ ALL</button>
     <button class="mob-tab-btn" data-tab="chart">📈 CHART</button>
+    <button class="mob-tab-btn" data-tab="radar">🎯 RADAR</button>
     <button class="mob-tab-btn" data-tab="agents">🤖 AGENTS</button>
     <button class="mob-tab-btn" data-tab="trades">💼 TRADES</button>
     <button class="mob-tab-btn" data-tab="heatmap">🗺️ HEATMAP</button>
@@ -53,15 +54,15 @@
 
     <!-- ──────── LEFT COLUMN ──────── -->
     <section class="left-col mob-section" id="sec-wallet">
-      <div class="card">
+      <div class="card card-21st">
         <div class="card-header">
           <span class="card-title">ALL-TIME PNL & CAPITAL</span>
-          <span class="tag">REAL-TIME</span>
+          <span class="tag-21st glow-tag">21ST.DEV REAL-TIME</span>
         </div>
         <div class="wallet-body">
           <div class="wallet-main-stat">
             <span class="wallet-label">TOTAL ASSETS</span>
-            <span class="wallet-value" id="total-capital">$0.00</span>
+            <span class="wallet-value glow-text" id="total-capital">$0.00</span>
           </div>
           <div class="wallet-stats-row">
             <div class="wallet-stat">
@@ -91,7 +92,7 @@
       </div>
 
       <!-- Real-time Equity Performance Curve -->
-      <div class="card" style="margin-top: 12px;">
+      <div class="card card-21st" style="margin-top: 12px;">
         <div class="card-header">
           <span class="card-title">EQUITY GROWTH GRAPHIC</span>
           <span class="tag green">LIVE TREND</span>
@@ -101,8 +102,19 @@
         </div>
       </div>
 
+      <!-- NEW 21ST.DEV COMPONENT: ANIMATED QUANT RADAR CANVAS -->
+      <div class="card card-21st mob-section" id="sec-radar" style="margin-top: 12px;">
+        <div class="card-header">
+          <span class="card-title">21ST.DEV QUANT SIGNAL RADAR</span>
+          <span class="tag-21st glow-cyan">AI MESH SCAN</span>
+        </div>
+        <div class="radar-container">
+          <canvas id="quantRadarCanvas" width="280" height="150"></canvas>
+        </div>
+      </div>
+
       <!-- AI AGENT PIPELINE FLOWCHART -->
-      <div class="card mob-section" id="sec-agents" style="margin-top: 12px;">
+      <div class="card card-21st mob-section" id="sec-agents" style="margin-top: 12px;">
         <div class="card-header">
           <span class="card-title">AI AGENTS DECISION PIPELINE</span>
           <span class="tag cyan">AUTOMATED</span>
@@ -151,7 +163,7 @@
     <section class="mid-col mob-section" id="sec-trades">
 
       <!-- EMBEDDED TRADINGVIEW REAL-TIME CHART WITH TECHNICAL INDICATORS -->
-      <div class="card mob-section" id="sec-chart">
+      <div class="card card-21st mob-section" id="sec-chart">
         <div class="card-header">
           <span class="card-title">LIVE TRADINGVIEW CHART & TECHNICAL INDICATORS</span>
           <span class="tag green">5M LIVE</span>
@@ -161,8 +173,8 @@
         </div>
       </div>
 
-      <!-- NEW: LIVE TECHNICAL INDICATOR MATRIX GAUGE -->
-      <div class="card" style="margin-top: 12px;">
+      <!-- LIVE TECHNICAL INDICATOR MATRIX GAUGE -->
+      <div class="card card-21st" style="margin-top: 12px;">
         <div class="card-header">
           <span class="card-title">TECHNICAL INDICATOR SIGNAL GAUGE (5M)</span>
         </div>
@@ -186,7 +198,7 @@
         </div>
       </div>
 
-      <div class="card" style="margin-top: 12px;">
+      <div class="card card-21st" style="margin-top: 12px;">
         <div class="card-header">
           <span class="card-title">LIVE POSITIONS & ORDER BOOK</span>
         </div>
@@ -203,7 +215,7 @@
         </div>
       </div>
 
-      <div class="card mob-section" id="sec-heatmap" style="margin-top: 12px;">
+      <div class="card card-21st mob-section" id="sec-heatmap" style="margin-top: 12px;">
         <div class="card-header">
           <span class="card-title">DIRECTIONAL NEURAL MESH (HEATMAP • 50+ COINS)</span>
         </div>
@@ -218,7 +230,7 @@
 
     <!-- ──────── RIGHT COLUMN ──────── -->
     <section class="right-col mob-section" id="sec-analytics">
-      <div class="card">
+      <div class="card card-21st">
         <div class="card-header">
           <span class="card-title">REAL TRADE SYSTEM ANALYTICS</span>
           <span class="tag green">LIVE CONNECTED</span>
@@ -279,7 +291,7 @@
       </div>
 
       <!-- COINS CAPITAL FLOW MATRIX -->
-      <div class="card" style="margin-top: 12px;">
+      <div class="card card-21st" style="margin-top: 12px;">
         <div class="card-header">
           <span class="card-title">MEMECOINS & ALTCOINS CAPITAL FLOWS</span>
         </div>
@@ -291,18 +303,18 @@
         </div>
       </div>
 
-      <div class="card" style="margin-top: 12px;">
+      <div class="card card-21st" style="margin-top: 12px;">
         <div class="card-header">
           <span class="card-title">LIVE EXECUTION TAPE</span>
         </div>
         <div class="log-body" id="exec-log-list">
-          <div class="log-row"><span class="log-ts">[00:00:00]</span> <span class="log-tag">SYS</span> <span class="log-msg">CoinsAI Terminal initialized...</span></div>
+          <div class="log-row"><span class="log-ts">[00:00:00]</span> <span class="log-tag">SYS</span> <span class="log-msg">CoinsAI 21st.dev Terminal initialized...</span></div>
         </div>
       </div>
     </section>
 
   </main>
 
-  <script src="app.js?v=7.0"></script>
+  <script src="app.js?v=8.0"></script>
 </body>
 </html>

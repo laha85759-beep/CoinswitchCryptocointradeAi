@@ -31,6 +31,57 @@
   --heat-bull-border: #34d399;
   --heat-bear: #fee2e2;
   --heat-bear-border: #f87171;
+  
+  /* 21st.dev Futuristic Palette */
+  --21st-border: rgba(37, 99, 235, 0.25);
+  --21st-glow: rgba(37, 99, 235, 0.12);
+  --21st-cyan: #06b6d4;
+  --21st-green: #10b981;
+}
+
+/* 21st.dev COMPONENTS & GRAPHICS */
+.card-21st {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--21st-border) !important;
+  box-shadow: 0 4px 20px var(--21st-glow), 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.card-21st:hover {
+  border-color: rgba(37, 99, 235, 0.5) !important;
+  box-shadow: 0 8px 30px rgba(37, 99, 235, 0.18), 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+  transform: translateY(-1px);
+}
+
+.tag-21st {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  box-shadow: 0 0 6px rgba(29, 78, 216, 0.2);
+}
+.glow-cyan { background: #ecfeff !important; color: #0891b2 !important; border-color: #a5f3fc !important; box-shadow: 0 0 8px rgba(8, 145, 178, 0.25) !important; }
+.glow-text { text-shadow: 0 0 12px rgba(37, 99, 235, 0.3); }
+.glow-green { text-shadow: 0 0 10px rgba(5, 150, 105, 0.4); }
+.glow-badge { box-shadow: 0 0 10px rgba(5, 150, 105, 0.3) !important; }
+
+/* 21st.dev RADAR CANVAS CONTAINER */
+.radar-container {
+  padding: 6px;
+  background: #090d16;
+  border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+#quantRadarCanvas {
+  width: 100%;
+  height: 150px;
+  display: block;
 }
 
 * {

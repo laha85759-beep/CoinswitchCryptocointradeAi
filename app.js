@@ -392,6 +392,81 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
     });
   }
 
+  // ═══════════════════ 21ST.DEV QUANT RADAR ═══════════════════
+  function initQuantRadar() {
+    const canvas = document.getElementById('quantRadarCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let angle = 0;
+
+    const blips = [
+      { r: 35, a: 0.8, name: 'PEPE' },
+      { r: 55, a: 2.4, name: 'BTC' },
+      { r: 40, a: 4.1, name: 'WIF' },
+      { r: 65, a: 5.2, name: 'SOL' }
+    ];
+
+    function renderRadar() {
+      const width = canvas.width = canvas.parentElement?.clientWidth || 280;
+      const height = canvas.height = 150;
+      const cx = width / 2;
+      const cy = height / 2;
+      const radius = Math.min(cx, cy) - 10;
+
+      ctx.clearRect(0, 0, width, height);
+
+      // Radar Concentric Circles
+      ctx.strokeStyle = 'rgba(6, 182, 212, 0.25)';
+      ctx.lineWidth = 1;
+      [0.3, 0.6, 0.9].forEach(f => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius * f, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+
+      // Crosshairs
+      ctx.beginPath();
+      ctx.moveTo(cx - radius, cy); ctx.lineTo(cx + radius, cy);
+      ctx.moveTo(cx, cy - radius); ctx.lineTo(cx, cy + radius);
+      ctx.stroke();
+
+      // Rotating Sweep Line
+      angle += 0.03;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(angle);
+      
+      const sweepGrad = ctx.createConicGradient(0, 0, 0);
+      sweepGrad.addColorStop(0, 'rgba(6, 182, 212, 0.4)');
+      sweepGrad.addColorStop(0.1, 'rgba(6, 182, 212, 0.0)');
+      
+      ctx.fillStyle = sweepGrad;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, radius, 0, Math.PI / 3);
+      ctx.fill();
+      ctx.restore();
+
+      // Radar Targets / Blips
+      blips.forEach(b => {
+        const bx = cx + Math.cos(b.a) * b.r;
+        const by = cy + Math.sin(b.a) * b.r;
+
+        ctx.fillStyle = '#06b6d4';
+        ctx.beginPath();
+        ctx.arc(bx, by, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#10b981';
+        ctx.font = '8px monospace';
+        ctx.fillText(b.name, bx + 5, by - 2);
+      });
+
+      requestAnimationFrame(renderRadar);
+    }
+    renderRadar();
+  }
+
   // Setup Heatmap search and Mobile Tabs listener
   document.addEventListener('DOMContentLoaded', () => {
     const input = $('#heatSearch');
@@ -400,6 +475,7 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
     }
     initMobileTabs();
     setTimeout(initTradingViewChart, 1000);
+    setTimeout(initQuantRadar, 500);
   });
 
   // ═══════════════════ INIT ═══════════════════
