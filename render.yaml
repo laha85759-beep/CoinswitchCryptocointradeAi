@@ -1,43 +1,12 @@
-# Render service manifest - defines two services using the same repository
+# Render service manifest - single web service runs both UI and worker via supervisord
 services:
-  - type: web
-    name: cs-bot-ui
-    env: python
-    plan: free
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "gunicorn --chdir cs_bot_v2 -w 2 -b 0.0.0.0:$PORT app:app"
-    dockerfilePath: Dockerfile
-
-  - type: worker
-    name: cs-bot-worker
-    env: python
-    plan: free
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "python cs_bot_v2/run_forever.py"
-    dockerfilePath: Dockerfile
-services:
-  # ── UI Dashboard Web Service ──
   - type: web
     name: coinsai-terminal
-    env: python
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "gunicorn webhook_server:app --bind 0.0.0.0:$PORT"
+    env: docker
+    buildCommand: ""
+    startCommand: ""
+    dockerfilePath: Dockerfile
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.0
-      - key: WEBHOOK_SECRET
-        sync: false
-
-  # ── 24/7 Background Trading Worker ──
-  # This continuously runs the bot every 15 minutes natively on Render
-  - type: worker
-    name: coinsai-worker
-    env: python
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "while true; do python main.py; echo 'Cycle complete. Sleeping for 15m...'; sleep 900; done"
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.0
       - key: PAPER_TRADING_MODE
         value: "false"
       - key: CS_API_KEY
