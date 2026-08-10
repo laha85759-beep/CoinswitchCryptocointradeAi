@@ -1,3 +1,20 @@
+# Render service manifest - defines two services using the same repository
+services:
+  - type: web
+    name: cs-bot-ui
+    env: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn --chdir cs_bot_v2 -w 2 -b 0.0.0.0:$PORT app:app"
+    dockerfilePath: Dockerfile
+
+  - type: worker
+    name: cs-bot-worker
+    env: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python cs_bot_v2/run_forever.py"
+    dockerfilePath: Dockerfile
 services:
   # ── UI Dashboard Web Service ──
   - type: web
