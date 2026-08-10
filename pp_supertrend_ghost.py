@@ -141,23 +141,23 @@ class PPSuperTrendGhostEngine:
         if pp_buy or (trend[-1] == 1 and ghost_bull_zone):
             signal_type = "pump"
             reasons.append("pp_supertrend_buy_signal" if pp_buy else "ghost_protocol_bullish_reversal_zone")
-            confidence = 0.88 if (pp_buy and ghost_bull_zone) else (0.78 if pp_buy else 0.70)
+            confidence = 0.96 if (pp_buy and ghost_bull_zone) else (0.90 if pp_buy else 0.85)
             if close[-1] > ema9[-1]:
-                confidence += 0.05
+                confidence += 0.03
         elif pp_sell or (trend[-1] == -1 and ghost_bear_zone):
             signal_type = "dump"
             reasons.append("pp_supertrend_sell_signal" if pp_sell else "ghost_protocol_bearish_reversal_zone")
-            confidence = 0.88 if (pp_sell and ghost_bear_zone) else (0.78 if pp_sell else 0.70)
+            confidence = 0.96 if (pp_sell and ghost_bear_zone) else (0.90 if pp_sell else 0.85)
             if close[-1] < ema9[-1]:
-                confidence += 0.05
+                confidence += 0.03
         elif trend[-1] == 1 and close[-1] > ema9[-1]:
             signal_type = "pump"
             reasons.append("pp_supertrend_bullish_trend_continuation")
-            confidence = 0.62
+            confidence = 0.72
         elif trend[-1] == -1 and close[-1] < ema9[-1]:
             signal_type = "dump"
             reasons.append("pp_supertrend_bearish_trend_continuation")
-            confidence = 0.62
+            confidence = 0.72
 
         return {
             "signal": signal_type,

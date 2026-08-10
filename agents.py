@@ -270,21 +270,21 @@ class SignalDetectorAgent:
                 signals.append(self._signal(symbol, "insufficient_data", 0.0, "incomplete_market_data", item))
                 continue
 
-            # ── SMC Liquidity Gap & Liquidity Run Strategy Engine ────────────
+            # ── 1. PP SuperTrend + Reversal Zone Finder [Ghost Protocol] V3 (TOP PRIORITY) ────
+            pp_ghost = item.get("pp_supertrend_ghost")
+            if pp_ghost and pp_ghost.get("signal") in ("pump", "dump") and pp_ghost.get("confidence", 0) >= 0.65:
+                sig_type = pp_ghost["signal"]
+                confidence = pp_ghost.get("confidence", 0.75)
+                reason = pp_ghost.get("reason", "pp_supertrend_ghost_signal")
+                signals.append(self._signal(symbol, sig_type, confidence, reason, item))
+                continue
+
+            # ── 2. SMC Liquidity Gap & Liquidity Run Strategy Engine ────────────
             liq_gap = item.get("liquidity_gap_run")
             if liq_gap and liq_gap.get("signal") in ("pump", "dump"):
                 sig_type = liq_gap["signal"]
                 confidence = liq_gap.get("confidence", 0.90)
                 reason = liq_gap.get("reason", "liquidity_gap_run_signal")
-                signals.append(self._signal(symbol, sig_type, confidence, reason, item))
-                continue
-
-            # ── PP SuperTrend + Reversal Zone Finder [Ghost Protocol] V3 ────
-            pp_ghost = item.get("pp_supertrend_ghost")
-            if pp_ghost and pp_ghost.get("signal") in ("pump", "dump") and pp_ghost.get("confidence", 0) >= 0.60:
-                sig_type = pp_ghost["signal"]
-                confidence = pp_ghost.get("confidence", 0.65)
-                reason = pp_ghost.get("reason", "pp_supertrend_ghost_signal")
                 signals.append(self._signal(symbol, sig_type, confidence, reason, item))
                 continue
 
