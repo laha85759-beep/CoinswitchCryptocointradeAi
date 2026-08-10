@@ -77,7 +77,7 @@ CONFIG = {
         "ONDO/USDT", "OM/USDT", "PENDLE/USDT", "LINK/USDT", "AVAX/USDT", "MKR/USDT", "CTC/USDT",
         "SOL/USDT", "NEAR/USDT", "SUI/USDT", "APT/USDT", "TIA/USDT"
     ],
-    "blacklist": ["USDC/USDT", "BUSD/USDT", "TUSD/USDT", "FDUSD/USDT"],
+    "blacklist": ["BTC/USDT", "BTC/INR", "ETH/USDT", "ETH/INR", "USDC/USDT", "BUSD/USDT", "TUSD/USDT", "FDUSD/USDT"],
 
     # ── Legacy scanner thresholds (used by scanner.py SignalEngine) ───────────
     "pump_score_min": 62,
