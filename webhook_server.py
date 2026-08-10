@@ -444,6 +444,18 @@ def handle_ai_trader():
 
 
 
+def self_ping_heartbeat_loop():
+    import requests
+    target_url = os.environ.get("RENDER_EXTERNAL_URL", "https://coinsai-terminal.onrender.com")
+    time.sleep(30) # Initial wait for server boot
+    while True:
+        try:
+            res = requests.get(target_url, timeout=10)
+            log.info("Heartbeat self-ping sent to %s | Status: %s (Prevents Render Sleep)", target_url, res.status_code)
+        except Exception as exc:
+            log.warning("Heartbeat self-ping notice: %s", exc)
+        time.sleep(240) # Ping every 4 minutes to reset Render's 15m idle timer
+
 def autonomous_trading_loop():
     import main
     while True:
@@ -460,6 +472,9 @@ if __name__ == "__main__":
     import threading
     worker_thread = threading.Thread(target=autonomous_trading_loop, daemon=True)
     worker_thread.start()
+    
+    ping_thread = threading.Thread(target=self_ping_heartbeat_loop, daemon=True)
+    ping_thread.start()
     
     port = int(os.environ.get("PORT", CONFIG.get("webhook_port", 5000)))
     log.info("Starting TradingView, Forex, US Earnings & HKUDS AI-Trader Webhook Bridge Server on port %s...", port)
