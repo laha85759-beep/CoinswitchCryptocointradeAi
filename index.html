@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>CoinsAI • Quantitative Trading Terminal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=4.0">
+  <link rel="stylesheet" href="styles.css?v=5.0">
 </head>
 <body>
 
@@ -38,14 +38,24 @@
     </div>
   </header>
 
+  <!-- ═══════════════════ MOBILE TAB NAVIGATION ═══════════════════ -->
+  <nav class="mobile-nav-bar">
+    <button class="mob-tab-btn active" data-tab="all">⚡ ALL</button>
+    <button class="mob-tab-btn" data-tab="wallet">💼 CAPITAL</button>
+    <button class="mob-tab-btn" data-tab="trades">📈 TRADES</button>
+    <button class="mob-tab-btn" data-tab="heatmap">🗺️ HEATMAP</button>
+    <button class="mob-tab-btn" data-tab="analytics">📊 ANALYTICS</button>
+  </nav>
+
   <!-- ═══════════════════ MAIN CONTENT GRID ═══════════════════ -->
   <main class="dashboard">
 
     <!-- ──────── LEFT COLUMN ──────── -->
-    <section class="left-col">
+    <section class="left-col mob-section" id="sec-wallet">
       <div class="card">
         <div class="card-header">
           <span class="card-title">ALL-TIME PNL & CAPITAL</span>
+          <span class="tag">REAL-TIME</span>
         </div>
         <div class="wallet-body">
           <div class="wallet-main-stat">
@@ -78,10 +88,21 @@
           </div>
         </div>
       </div>
+
+      <!-- NEW GRAPHIC: Real-time Equity Performance Curve -->
+      <div class="card" style="margin-top: 12px;">
+        <div class="card-header">
+          <span class="card-title">EQUITY GROWTH GRAPHIC</span>
+          <span class="tag green">LIVE TREND</span>
+        </div>
+        <div class="chart-container">
+          <canvas id="equityChartCanvas" width="280" height="120"></canvas>
+        </div>
+      </div>
     </section>
 
     <!-- ──────── MIDDLE COLUMN ──────── -->
-    <section class="mid-col">
+    <section class="mid-col mob-section" id="sec-trades">
       <div class="card">
         <div class="card-header">
           <span class="card-title">LIVE POSITIONS & ORDER BOOK</span>
@@ -99,7 +120,7 @@
         </div>
       </div>
 
-      <div class="card" style="margin-top: 12px;">
+      <div class="card mob-section" id="sec-heatmap" style="margin-top: 12px;">
         <div class="card-header">
           <span class="card-title">DIRECTIONAL NEURAL MESH (HEATMAP • 50+ COINS)</span>
         </div>
@@ -113,10 +134,10 @@
     </section>
 
     <!-- ──────── RIGHT COLUMN ──────── -->
-    <section class="right-col">
+    <section class="right-col mob-section" id="sec-analytics">
       <div class="card">
         <div class="card-header">
-          <span class="card-title">SYSTEM ANALYTICS</span>
+          <span class="card-title">SYSTEM ANALYTICS & EXPOSURE</span>
         </div>
         <div class="adv-stats-grid">
           <div class="stat-block">
@@ -136,6 +157,18 @@
             <span class="stat-val red" id="eng-dn">0%</span>
           </div>
         </div>
+
+        <!-- NEW GRAPHIC: Exposure Balance Bar -->
+        <div class="exposure-graphic-box">
+          <div class="exposure-labels">
+            <span class="green">LONG 50%</span>
+            <span class="red">SHORT 50%</span>
+          </div>
+          <div class="exposure-bar-wrap">
+            <div class="exposure-bar-long" id="expBarLong" style="width: 50%;"></div>
+            <div class="exposure-bar-short" id="expBarShort" style="width: 50%;"></div>
+          </div>
+        </div>
       </div>
 
       <div class="card">
@@ -150,6 +183,6 @@
 
   </main>
 
-  <script src="app.js?v=4.0"></script>
+  <script src="app.js?v=5.0"></script>
 </body>
 </html>

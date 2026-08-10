@@ -80,6 +80,7 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
         updateText('#bal-cs-usdt', fmtNum(data.balances.cs_usdt, 2));
         updateText('#bal-cs-inr', fmtNum(data.balances.cs_inr, 2));
         updateText('#bal-delta-usdt', fmtNum(data.balances.delta_usdt, 2));
+        drawEquityChart(parseFloat(data.balances.total_capital_usdt || 0));
       }
 
       // Stats
@@ -150,14 +151,6 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
       `;
     }).join('');
   }
-
-  // Setup Heatmap search listener
-  document.addEventListener('DOMContentLoaded', () => {
-    const input = $('#heatSearch');
-    if (input) {
-      input.addEventListener('input', () => renderHeatmap(lastHeatmapCoins));
-    }
-  });
 
   function populateTrades(data) {
     const wrap = $('#trades-container');
