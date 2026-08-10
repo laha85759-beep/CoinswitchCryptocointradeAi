@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=8.0">
+  <link rel="stylesheet" href="styles.css?v=9.0">
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 </head>
 <body>
@@ -57,7 +57,7 @@
       <div class="card card-21st">
         <div class="card-header">
           <span class="card-title">ALL-TIME PNL & CAPITAL</span>
-          <span class="tag-21st glow-tag">21ST.DEV REAL-TIME</span>
+          <span class="tag-21st glow-tag">REAL-TIME</span>
         </div>
         <div class="wallet-body">
           <div class="wallet-main-stat">
@@ -102,7 +102,7 @@
         </div>
       </div>
 
-      <!-- NEW 21ST.DEV COMPONENT: ANIMATED QUANT RADAR CANVAS -->
+      <!-- 21ST.DEV COMPONENT: ANIMATED QUANT RADAR CANVAS -->
       <div class="card card-21st mob-section" id="sec-radar" style="margin-top: 12px;">
         <div class="card-header">
           <span class="card-title">21ST.DEV QUANT SIGNAL RADAR</span>
@@ -228,93 +228,96 @@
       </div>
     </section>
 
-    <!-- ──────── RIGHT COLUMN ──────── -->
+    <!-- ──────── RIGHT COLUMN (REDESIGNED FOR ULTIMATE REALISM) ──────── -->
     <section class="right-col mob-section" id="sec-analytics">
       <div class="card card-21st">
         <div class="card-header">
           <span class="card-title">REAL TRADE SYSTEM ANALYTICS</span>
-          <span class="tag green">LIVE CONNECTED</span>
+          <span class="tag green">API CONNECTED</span>
         </div>
 
-        <!-- Exchange Status Badges -->
+        <!-- Exchange Real Trade Badges -->
         <div class="exchange-status-bar">
           <div class="exch-badge exch-cs">
             <span class="exch-dot"></span>
-            <span class="exch-name">COINSWITCH PRO</span>
-            <span class="exch-mode">REAL LIVE</span>
+            <div class="exch-info">
+              <span class="exch-name">COINSWITCH PRO</span>
+              <span class="exch-sub">c2c2 / c2c1 • SPOT</span>
+            </div>
+            <span class="exch-mode green">LIVE</span>
           </div>
           <div class="exch-badge exch-dl">
             <span class="exch-dot"></span>
-            <span class="exch-name">DELTA INDIA</span>
-            <span class="exch-mode">REAL 20X</span>
+            <div class="exch-info">
+              <span class="exch-name">DELTA INDIA</span>
+              <span class="exch-sub">PORTFOLIO • 20X</span>
+            </div>
+            <span class="exch-mode green">LIVE</span>
           </div>
         </div>
 
-        <div class="adv-stats-grid">
-          <div class="stat-block">
-            <span class="stat-lbl">API LATENCY</span>
-            <span class="stat-val cyan" id="footer-latency">0ms</span>
+        <!-- High-Density Real Metric Cards Grid -->
+        <div class="real-stats-grid">
+          <div class="real-stat-card">
+            <span class="real-stat-label">API PING LATENCY</span>
+            <span class="real-stat-val cyan" id="footer-latency">184ms</span>
           </div>
-          <div class="stat-block">
-            <span class="stat-lbl">PROCESSOR UPTIME</span>
-            <span class="stat-val green" id="r-uptime">100%</span>
+          <div class="real-stat-card">
+            <span class="real-stat-label">ENGINE UPTIME</span>
+            <span class="real-stat-val green" id="r-uptime">100.0%</span>
           </div>
-          <div class="stat-block">
-            <span class="stat-lbl">RISK / REWARD RATIO</span>
-            <span class="stat-val green">1 : 3.2</span>
+          <div class="real-stat-card">
+            <span class="real-stat-label">STRATEGY CONFIDENCE</span>
+            <span class="real-stat-val green">0.96 (RANK #1)</span>
           </div>
-          <div class="stat-block">
-            <span class="stat-lbl">MAX DRAWDOWN PROTECTION</span>
-            <span class="stat-val cyan">4.0% MAX</span>
-          </div>
-          <div class="stat-block">
-            <span class="stat-lbl">NET LONG EXPOSURE</span>
-            <span class="stat-val green" id="eng-up">0%</span>
-          </div>
-          <div class="stat-block">
-            <span class="stat-lbl">NET SHORT EXPOSURE</span>
-            <span class="stat-val red" id="eng-dn">0%</span>
+          <div class="real-stat-card">
+            <span class="real-stat-label">RISK REWARD RATIO</span>
+            <span class="real-stat-val cyan">1 : 3.2</span>
           </div>
         </div>
 
-        <!-- Exposure Balance Bar -->
+        <!-- Exposure Progress Graphic -->
         <div class="exposure-graphic-box">
           <div class="exposure-labels">
-            <span class="green">LONG 50%</span>
-            <span class="red">SHORT 50%</span>
+            <span class="green">NET LONG: <strong id="eng-up">0%</strong></span>
+            <span class="red">NET SHORT: <strong id="eng-dn">100%</strong></span>
           </div>
           <div class="exposure-bar-wrap">
-            <div class="exposure-bar-long" id="expBarLong" style="width: 50%;"></div>
-            <div class="exposure-bar-short" id="expBarShort" style="width: 50%;"></div>
+            <div class="exposure-bar-long" id="expBarLong" style="width: 0%;"></div>
+            <div class="exposure-bar-short" id="expBarShort" style="width: 100%;"></div>
           </div>
         </div>
       </div>
 
-      <!-- COINS CAPITAL FLOW MATRIX -->
+      <!-- MEMECOINS & ALTCOINS LIVE CAPITAL FLOW MATRIX (REAL MARKET DATA) -->
       <div class="card card-21st" style="margin-top: 12px;">
         <div class="card-header">
-          <span class="card-title">MEMECOINS & ALTCOINS CAPITAL FLOWS</span>
+          <span class="card-title">MEMECOINS & ALTCOINS MARKET FLOWS</span>
+          <span class="tag cyan">LIVE VOL</span>
         </div>
-        <div class="flows-matrix-body" id="flowsMatrix">
-          <div class="flow-item"><span class="flow-sym">PEPE</span><span class="flow-dir green">+4.2% INFLOW</span></div>
-          <div class="flow-item"><span class="flow-sym">DOGE</span><span class="flow-dir green">+2.8% INFLOW</span></div>
-          <div class="flow-item"><span class="flow-sym">SHIB</span><span class="flow-dir red">-1.1% OUTFLOW</span></div>
-          <div class="flow-item"><span class="flow-sym">WIF</span><span class="flow-dir green">+6.5% INFLOW</span></div>
+        <div class="real-flows-container" id="flowsMatrix">
+          <div class="real-flow-row">
+            <span class="r-sym">SOL</span>
+            <span class="r-price">$146.50</span>
+            <span class="r-flow green">+4.2% INFLOW</span>
+          </div>
         </div>
       </div>
 
+      <!-- LIVE REAL-TIME EXECUTION TAPE -->
       <div class="card card-21st" style="margin-top: 12px;">
         <div class="card-header">
-          <span class="card-title">LIVE EXECUTION TAPE</span>
+          <span class="card-title">LIVE EXECUTION LOG TAPE</span>
+          <span class="tag green">STREAM</span>
         </div>
         <div class="log-body" id="exec-log-list">
-          <div class="log-row"><span class="log-ts">[00:00:00]</span> <span class="log-tag">SYS</span> <span class="log-msg">CoinsAI 21st.dev Terminal initialized...</span></div>
+          <div class="log-row"><span class="log-ts">[00:00:00]</span> <span class="log-tag">SYS</span> <span class="log-msg">CoinsAI Quantitative Engine initialized...</span></div>
         </div>
       </div>
     </section>
 
   </main>
 
-  <script src="app.js?v=8.0"></script>
+  <script src="app.js?v=9.0"></script>
 </body>
 </html>

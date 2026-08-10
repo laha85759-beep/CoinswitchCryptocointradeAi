@@ -272,7 +272,81 @@ body {
 .heat-cluster { background: #e0e7ff; border-color: #818cf8; }
 .heat-cluster .heat-val { background: #4f46e5; color: #fff; }
 
-/* ──────── EXCHANGE REAL TRADE STATUS BADGES ──────── */
+/* ──────── REAL TRADE SYSTEM ANALYTICS REDESIGN ──────── */
+.exchange-status-bar {
+  display: flex;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--bg-main);
+  border-bottom: 1px solid var(--border-color);
+}
+.exch-badge {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+}
+.exch-dot {
+  width: 7px;
+  height: 7px;
+  background: var(--accent-green);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--accent-green);
+}
+.exch-info { display: flex; flex-direction: column; }
+.exch-name { font-size: 10px; font-weight: 800; color: var(--text-main); }
+.exch-sub { font-size: 8px; color: var(--text-muted); }
+.exch-mode { font-size: 9px; font-weight: 800; margin-left: auto; }
+
+.real-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 10px;
+  background: var(--bg-card);
+}
+.real-stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+}
+.real-stat-label { font-size: 9px; font-weight: 700; color: var(--text-muted); font-family: var(--font-mono); }
+.real-stat-val { font-size: 11px; font-weight: 800; font-family: var(--font-mono); }
+
+/* ──────── REAL MARKET FLOWS CONTAINER ──────── */
+.real-flows-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  background: var(--bg-card);
+  max-height: 180px;
+  overflow-y: auto;
+}
+.real-flow-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+}
+.r-sym { font-size: 10px; font-weight: 800; color: var(--text-main); width: 45px; }
+.r-price { font-size: 10px; font-weight: 700; color: var(--text-muted); }
+.r-flow { font-size: 9px; font-weight: 800; }
+
+/* ──────── TECHNICAL INDICATOR SIGNAL GAUGE ──────── */
 .exchange-status-bar {
   display: flex;
   gap: 8px;
