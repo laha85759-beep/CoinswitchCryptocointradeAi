@@ -39,18 +39,25 @@
   --21st-green: #10b981;
 }
 
-/* 21st.dev COMPONENTS & GRAPHICS */
+/* 21st.dev COMPONENTS & DYNAMIC UI ANIMATIONS */
 .card-21st {
   background: rgba(255, 255, 255, 0.95) !important;
   backdrop-filter: blur(16px);
   border: 1px solid var(--21st-border) !important;
   box-shadow: 0 4px 20px var(--21st-glow), 0 1px 3px rgba(0, 0, 0, 0.05) !important;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: cardAmbientGlow 8s ease-in-out infinite alternate;
 }
 .card-21st:hover {
-  border-color: rgba(37, 99, 235, 0.5) !important;
-  box-shadow: 0 8px 30px rgba(37, 99, 235, 0.18), 0 2px 6px rgba(0, 0, 0, 0.08) !important;
-  transform: translateY(-1px);
+  border-color: rgba(37, 99, 235, 0.6) !important;
+  box-shadow: 0 10px 32px rgba(37, 99, 235, 0.22), 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+  transform: translateY(-2px);
+}
+
+@keyframes cardAmbientGlow {
+  0% { box-shadow: 0 4px 20px rgba(37, 99, 235, 0.12); }
+  50% { box-shadow: 0 4px 24px rgba(5, 150, 105, 0.18); }
+  100% { box-shadow: 0 4px 20px rgba(37, 99, 235, 0.12); }
 }
 
 .tag-21st {
@@ -63,11 +70,35 @@
   color: #1d4ed8;
   border: 1px solid #bfdbfe;
   box-shadow: 0 0 6px rgba(29, 78, 216, 0.2);
+  animation: tagPulse 3s infinite alternate;
 }
+
+@keyframes tagPulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.03); }
+}
+
 .glow-cyan { background: #ecfeff !important; color: #0891b2 !important; border-color: #a5f3fc !important; box-shadow: 0 0 8px rgba(8, 145, 178, 0.25) !important; }
 .glow-text { text-shadow: 0 0 12px rgba(37, 99, 235, 0.3); }
-.glow-green { text-shadow: 0 0 10px rgba(5, 150, 105, 0.4); }
-.glow-badge { box-shadow: 0 0 10px rgba(5, 150, 105, 0.3) !important; }
+.glow-green { text-shadow: 0 0 10px rgba(5, 150, 105, 0.4); animation: greenPulse 2s infinite alternate; }
+@keyframes greenPulse {
+  0% { text-shadow: 0 0 6px rgba(5, 150, 105, 0.3); }
+  100% { text-shadow: 0 0 14px rgba(5, 150, 105, 0.7); }
+}
+
+.glow-badge { animation: badgeGlowPulse 2s infinite alternate !important; }
+@keyframes badgeGlowPulse {
+  0% { box-shadow: 0 0 6px rgba(5, 150, 105, 0.3); }
+  100% { box-shadow: 0 0 14px rgba(5, 150, 105, 0.7); }
+}
+
+.log-row {
+  animation: logSlideIn 0.3s ease-out;
+}
+@keyframes logSlideIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 /* 21st.dev RADAR CANVAS CONTAINER */
 .radar-container {
