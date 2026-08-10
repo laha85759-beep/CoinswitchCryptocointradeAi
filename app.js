@@ -416,28 +416,27 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
         btn.classList.add('active');
         const targetTab = btn.getAttribute('data-tab');
 
-        const secWallet = $('#sec-wallet');
-        const secChart = $('#sec-chart');
-        const secAgents = $('#sec-agents');
-        const secTrades = $('#sec-trades');
-        const secHeatmap = $('#sec-heatmap');
-        const secAnalytics = $('#sec-analytics');
+        const sections = {
+          wallet: $('#sec-wallet'),
+          chart: $('#sec-chart'),
+          radar: $('#sec-radar'),
+          agents: $('#sec-agents'),
+          trades: $('#sec-trades'),
+          heatmap: $('#sec-heatmap'),
+          analytics: $('#sec-analytics'),
+          flows: $('#sec-flows')
+        };
 
         if (targetTab === 'all') {
-          if (secWallet) secWallet.style.display = '';
-          if (secChart) secChart.style.display = '';
-          if (secAgents) secAgents.style.display = '';
-          if (secTrades) secTrades.style.display = '';
-          if (secHeatmap) secHeatmap.style.display = '';
-          if (secAnalytics) secAnalytics.style.display = '';
+          Object.values(sections).forEach(sec => { if (sec) sec.style.display = ''; });
         } else {
-          if (secWallet) secWallet.style.display = targetTab === 'wallet' ? 'block' : 'none';
-          if (secChart) secChart.style.display = targetTab === 'chart' ? 'block' : 'none';
-          if (secAgents) secAgents.style.display = targetTab === 'agents' ? 'block' : 'none';
-          if (secTrades) secTrades.style.display = targetTab === 'trades' ? 'block' : 'none';
-          if (secHeatmap) secHeatmap.style.display = targetTab === 'heatmap' ? 'block' : 'none';
-          if (secAnalytics) secAnalytics.style.display = targetTab === 'analytics' ? 'block' : 'none';
+          Object.entries(sections).forEach(([key, sec]) => {
+            if (sec) sec.style.display = (targetTab === key) ? 'block' : 'none';
+          });
         }
+
+        // Trigger chart resize event on mobile view tab change
+        setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 120);
       });
     });
   }
