@@ -59,6 +59,71 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
   }
 
   let lastHeatmapCoins = [];
+  let equityHistory = [27.5, 27.52, 27.48, 27.6, 27.55, 27.65, 27.7, 27.68, 27.75];
+
+  function drawEquityChart(currentCapital) {
+    const canvas = document.getElementById('equityChartCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width = canvas.parentElement?.clientWidth || 280;
+    const height = canvas.height = 110;
+
+    if (currentCapital > 0) {
+      equityHistory.push(currentCapital);
+      if (equityHistory.length > 20) equityHistory.shift();
+    }
+
+    ctx.clearRect(0, 0, width, height);
+
+    // Draw Grid Lines
+    ctx.strokeStyle = '#e5e7eb';
+    ctx.lineWidth = 1;
+    for (let y = 20; y < height; y += 30) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
+
+    const min = Math.min(...equityHistory) * 0.995;
+    const max = Math.max(...equityHistory) * 1.005;
+    const range = max - min || 1;
+
+    const points = equityHistory.map((val, idx) => ({
+      x: (idx / (equityHistory.length - 1)) * (width - 20) + 10,
+      y: height - 15 - ((val - min) / range) * (height - 30)
+    }));
+
+    // Area Fill Gradient
+    const grad = ctx.createLinearGradient(0, 0, 0, height);
+    grad.addColorStop(0, 'rgba(5, 150, 105, 0.25)');
+    grad.addColorStop(1, 'rgba(5, 150, 105, 0.0)');
+
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, height);
+    points.forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.lineTo(points[points.length - 1].x, height);
+    ctx.closePath();
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Line Path
+    ctx.beginPath();
+    ctx.strokeStyle = '#059669';
+    ctx.lineWidth = 2;
+    points.forEach((p, idx) => {
+      if (idx === 0) ctx.moveTo(p.x, p.y);
+      else ctx.lineTo(p.x, p.y);
+    });
+    ctx.stroke();
+
+    // Glowing last point
+    const lastP = points[points.length - 1];
+    ctx.fillStyle = '#059669';
+    ctx.beginPath();
+    ctx.arc(lastP.x, lastP.y, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   // ═══════════════════ DATA PROCESSING ═══════════════════
   function processData(data, lagMs) {
