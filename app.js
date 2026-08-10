@@ -223,29 +223,37 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
     if (!wrap) return;
 
     let rows = [];
-    if (data.open_positions?.coinswitch) data.open_positions.coinswitch.forEach(p => rows.push({...p, ex: 'CS'}));
-    if (data.open_positions?.delta) data.open_positions.delta.forEach(p => rows.push({...p, ex: 'DL'}));
+    if (data.open_positions?.coinswitch && Array.isArray(data.open_positions.coinswitch)) {
+      data.open_positions.coinswitch.forEach(p => rows.push({...p, ex: 'CS'}));
+    }
+    if (data.open_positions?.delta && Array.isArray(data.open_positions.delta)) {
+      data.open_positions.delta.forEach(p => rows.push({...p, ex: 'DL'}));
+    }
 
     if (rows.length === 0) {
-      wrap.innerHTML = `<div class="empty-state">NO ACTIVE TRADES</div>`;
+      wrap.innerHTML = `<div class="empty-state">NO ACTIVE TRADES HELD</div>`;
       return;
     }
 
     wrap.innerHTML = rows.map(pos => {
-      const dirClass = (pos.direction || 'long').toLowerCase();
+      const dirStr = (pos.direction || 'long').toLowerCase();
+      const qtyVal = pos.qty || pos.quantity || 0;
       const pnl = parseFloat(pos.unrealized_pnl || 0);
       const pnlColor = pnl >= 0 ? 'green' : 'red';
       const sign = pnl >= 0 ? '+' : '';
+      const entryPrice = pos.entry_price || pos.price || 0;
+      const priceFmt = entryPrice > 10 ? fmtPrice(entryPrice, 2) : (entryPrice > 0.01 ? fmtPrice(entryPrice, 4) : '$' + Number(entryPrice).toFixed(6));
+
       return `
         <div class="trade-row">
           <div class="trade-sym-block">
             <span class="trade-sym">${pos.symbol}</span>
             <span class="tag">${pos.ex}</span>
-            <span class="trade-dir ${dirClass}">${pos.direction.toUpperCase()}</span>
+            <span class="trade-dir ${dirStr}">${dirStr.toUpperCase()}</span>
           </div>
-          <span class="trade-entry">${fmtPrice(pos.entry_price || 0, 4)}</span>
-          <span class="trade-size">${fmtNum(pos.quantity || 0, 4)}</span>
-          <span class="trade-pnl ${pnlColor}">${sign}$${fmtNum(pnl, 2)}</span>
+          <span class="trade-entry">${priceFmt}</span>
+          <span class="trade-size">${fmtNum(qtyVal, 2)}</span>
+          <span class="trade-pnl ${pnlColor}" style="text-align: right;">${sign}$${fmtNum(pnl, 2)}</span>
         </div>
       `;
     }).join('');
