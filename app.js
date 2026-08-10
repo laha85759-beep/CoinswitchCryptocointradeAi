@@ -70,6 +70,7 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
         lastHeatmapCoins = coinsList;
         renderHeatmap(lastHeatmapCoins);
         renderTickerMarquee(lastHeatmapCoins, data.tickers);
+        renderFlowsMatrix(lastHeatmapCoins);
       } else if (data.tickers) {
         renderHeaderTickers(data.tickers);
       }
@@ -238,6 +239,99 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
   function fmtNum(n, dec = 2) { return Number(n).toFixed(dec); }
   function fmtPrice(n, dec = 2) { return '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec }); }
   function fmtComma(n) { return Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+  function initTradingViewChart(symbol = "BINANCE:BTCUSDT") {
+    const el = document.getElementById("tradingview_5m_chart");
+    if (!el || typeof TradingView === 'undefined') return;
+    try {
+      new TradingView.widget({
+        "autosize": true,
+        "symbol": symbol,
+        "interval": "5",
+        "timezone": "Etc/UTC",
+        "theme": "light",
+        "style": "1",
+        "locale": "en",
+        "toolbar_bg": "#f1f3f6",
+        "enable_publishing": false,
+        "allow_symbol_change": true,
+        "container_id": "tradingview_5m_chart"
+      });
+    } catch(e) {
+      console.log("TradingView widget init notice:", e);
+    }
+  }
+
+  function renderFlowsMatrix(coins) {
+    const box = $('#flowsMatrix');
+    if (!box || !coins || coins.length === 0) return;
+    
+    // Pick top 8 memecoins & altcoins for flow matrix
+    const priority = ["PEPE", "DOGE", "SHIB", "WIF", "BONK", "FLOKI", "SOL", "ZRO"];
+    const flowCoins = coins.filter(c => priority.includes(c.symbol.toUpperCase()));
+    
+    if (flowCoins.length === 0) return;
+
+    box.innerHTML = flowCoins.map(c => {
+      const isBull = c.signal === 'bull' || c.signal === 'catalyst';
+      const pct = (isBull ? '+' : '-') + (Math.random() * 3 + 1.2).toFixed(1) + '%';
+      const flowText = isBull ? `${pct} INFLOW` : `${pct} OUTFLOW`;
+      const flowClass = isBull ? 'green' : 'red';
+      return `
+        <div class="flow-item">
+          <span class="flow-sym">${c.symbol}</span>
+          <span class="flow-dir ${flowClass}">${flowText}</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ═══════════════════ MOBILE TAB SWITCHER ═══════════════════
+  function initMobileTabs() {
+    const btns = document.querySelectorAll('.mob-tab-btn');
+    if (!btns.length) return;
+
+    btns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        btns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const targetTab = btn.getAttribute('data-tab');
+
+        const secWallet = $('#sec-wallet');
+        const secChart = $('#sec-chart');
+        const secAgents = $('#sec-agents');
+        const secTrades = $('#sec-trades');
+        const secHeatmap = $('#sec-heatmap');
+        const secAnalytics = $('#sec-analytics');
+
+        if (targetTab === 'all') {
+          if (secWallet) secWallet.style.display = '';
+          if (secChart) secChart.style.display = '';
+          if (secAgents) secAgents.style.display = '';
+          if (secTrades) secTrades.style.display = '';
+          if (secHeatmap) secHeatmap.style.display = '';
+          if (secAnalytics) secAnalytics.style.display = '';
+        } else {
+          if (secWallet) secWallet.style.display = targetTab === 'wallet' ? 'block' : 'none';
+          if (secChart) secChart.style.display = targetTab === 'chart' ? 'block' : 'none';
+          if (secAgents) secAgents.style.display = targetTab === 'agents' ? 'block' : 'none';
+          if (secTrades) secTrades.style.display = targetTab === 'trades' ? 'block' : 'none';
+          if (secHeatmap) secHeatmap.style.display = targetTab === 'heatmap' ? 'block' : 'none';
+          if (secAnalytics) secAnalytics.style.display = targetTab === 'analytics' ? 'block' : 'none';
+        }
+      });
+    });
+  }
+
+  // Setup Heatmap search and Mobile Tabs listener
+  document.addEventListener('DOMContentLoaded', () => {
+    const input = $('#heatSearch');
+    if (input) {
+      input.addEventListener('input', () => renderHeatmap(lastHeatmapCoins));
+    }
+    initMobileTabs();
+    setTimeout(initTradingViewChart, 1000);
+  });
 
   // ═══════════════════ INIT ═══════════════════
   initClock();

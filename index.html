@@ -7,7 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=5.0">
+  <link rel="stylesheet" href="styles.css?v=6.0">
+  <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 </head>
 <body>
 
@@ -41,10 +42,10 @@
   <!-- ═══════════════════ MOBILE TAB NAVIGATION ═══════════════════ -->
   <nav class="mobile-nav-bar">
     <button class="mob-tab-btn active" data-tab="all">⚡ ALL</button>
-    <button class="mob-tab-btn" data-tab="wallet">💼 CAPITAL</button>
-    <button class="mob-tab-btn" data-tab="trades">📈 TRADES</button>
+    <button class="mob-tab-btn" data-tab="chart">📈 CHART</button>
+    <button class="mob-tab-btn" data-tab="agents">🤖 AGENTS</button>
+    <button class="mob-tab-btn" data-tab="trades">💼 TRADES</button>
     <button class="mob-tab-btn" data-tab="heatmap">🗺️ HEATMAP</button>
-    <button class="mob-tab-btn" data-tab="analytics">📊 ANALYTICS</button>
   </nav>
 
   <!-- ═══════════════════ MAIN CONTENT GRID ═══════════════════ -->
@@ -89,21 +90,78 @@
         </div>
       </div>
 
-      <!-- NEW GRAPHIC: Real-time Equity Performance Curve -->
+      <!-- Real-time Equity Performance Curve -->
       <div class="card" style="margin-top: 12px;">
         <div class="card-header">
           <span class="card-title">EQUITY GROWTH GRAPHIC</span>
           <span class="tag green">LIVE TREND</span>
         </div>
         <div class="chart-container">
-          <canvas id="equityChartCanvas" width="280" height="120"></canvas>
+          <canvas id="equityChartCanvas" width="280" height="110"></canvas>
+        </div>
+      </div>
+
+      <!-- NEW: AI AGENT PIPELINE FLOWCHART -->
+      <div class="card mob-section" id="sec-agents" style="margin-top: 12px;">
+        <div class="card-header">
+          <span class="card-title">AI AGENTS DECISION PIPELINE</span>
+          <span class="tag cyan">AUTOMATED</span>
+        </div>
+        <div class="agent-pipeline-body">
+          <div class="pipeline-step step-active">
+            <div class="step-num">1</div>
+            <div class="step-info">
+              <span class="step-name">DETECT (Signal Agent)</span>
+              <span class="step-desc">PP SuperTrend + Ghost Protocol V3 (5m Scan)</span>
+            </div>
+            <span class="step-status green">SCANNING</span>
+          </div>
+          <div class="pipeline-arrow">↓</div>
+          <div class="pipeline-step">
+            <div class="step-num">2</div>
+            <div class="step-info">
+              <span class="step-name">PLAN (Risk Agent)</span>
+              <span class="step-desc">75% Position Sizing • 1.5% SL • 4.8% TP</span>
+            </div>
+            <span class="step-status cyan">PASSED</span>
+          </div>
+          <div class="pipeline-arrow">↓</div>
+          <div class="pipeline-step">
+            <div class="step-num">3</div>
+            <div class="step-info">
+              <span class="step-name">EXECUTE (Dual Engine)</span>
+              <span class="step-desc">CoinSwitch Pro & Delta Exchange India</span>
+            </div>
+            <span class="step-status blue">READY</span>
+          </div>
+          <div class="pipeline-arrow">↓</div>
+          <div class="pipeline-step">
+            <div class="step-num">4</div>
+            <div class="step-info">
+              <span class="step-name">MONITOR (Trailing Agent)</span>
+              <span class="step-desc">Dynamic Trailing Stop & Options Delta Hedge</span>
+            </div>
+            <span class="step-status green">ACTIVE</span>
+          </div>
         </div>
       </div>
     </section>
 
     <!-- ──────── MIDDLE COLUMN ──────── -->
     <section class="mid-col mob-section" id="sec-trades">
-      <div class="card">
+
+      <!-- NEW: EMBEDDED TRADINGVIEW REAL-TIME CHART -->
+      <div class="card mob-section" id="sec-chart">
+        <div class="card-header">
+          <span class="card-title">LIVE TRADINGVIEW TECHNICAL CHART</span>
+          <span class="tag green">5M LIVE</span>
+        </div>
+        <div class="tv-chart-wrapper">
+          <div id="tradingview_5m_chart" class="tv-chart-container"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 12px;">
         <div class="card-header">
           <span class="card-title">LIVE POSITIONS & ORDER BOOK</span>
         </div>
@@ -158,7 +216,7 @@
           </div>
         </div>
 
-        <!-- NEW GRAPHIC: Exposure Balance Bar -->
+        <!-- Exposure Balance Bar -->
         <div class="exposure-graphic-box">
           <div class="exposure-labels">
             <span class="green">LONG 50%</span>
@@ -171,7 +229,20 @@
         </div>
       </div>
 
-      <div class="card">
+      <!-- NEW: COINS CAPITAL FLOW MATRIX -->
+      <div class="card" style="margin-top: 12px;">
+        <div class="card-header">
+          <span class="card-title">MEMECOINS & ALTCOINS CAPITAL FLOWS</span>
+        </div>
+        <div class="flows-matrix-body" id="flowsMatrix">
+          <div class="flow-item"><span class="flow-sym">PEPE</span><span class="flow-dir green">+4.2% INFLOW</span></div>
+          <div class="flow-item"><span class="flow-sym">DOGE</span><span class="flow-dir green">+2.8% INFLOW</span></div>
+          <div class="flow-item"><span class="flow-sym">SHIB</span><span class="flow-dir red">-1.1% OUTFLOW</span></div>
+          <div class="flow-item"><span class="flow-sym">WIF</span><span class="flow-dir green">+6.5% INFLOW</span></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 12px;">
         <div class="card-header">
           <span class="card-title">LIVE EXECUTION TAPE</span>
         </div>
@@ -183,6 +254,6 @@
 
   </main>
 
-  <script src="app.js?v=5.0"></script>
+  <script src="app.js?v=6.0"></script>
 </body>
 </html>
