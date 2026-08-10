@@ -61,6 +61,9 @@ jobs:
           cd $GITHUB_WORKSPACE
           python main.py
 
+      - name: Ping Render UI to prevent sleep (24/7 Uptime)
+        run: curl -s https://coinswitch-quant-backend.onrender.com/ > /dev/null
+
       # ── Always save state, even on failure ─────────────────────────────────
       - name: Save trade state
         if: always()

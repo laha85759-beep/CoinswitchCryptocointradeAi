@@ -1,0 +1,37 @@
+services:
+  # ── UI Dashboard Web Service ──
+  - type: web
+    name: coinswitch-quant-backend
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn webhook_server:app --bind 0.0.0.0:$PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: WEBHOOK_SECRET
+        sync: false
+
+  # ── 24/7 Background Trading Worker ──
+  # This continuously runs the bot every 15 minutes natively on Render
+  - type: worker
+    name: coinswitch-quant-worker
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "while true; do python main.py; echo 'Cycle complete. Sleeping for 15m...'; sleep 900; done"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: PAPER_TRADING_MODE
+        value: "false"
+      - key: CS_API_KEY
+        sync: false
+      - key: CS_API_SECRET
+        sync: false
+      - key: DELTA_API_KEY
+        sync: false
+      - key: DELTA_API_SECRET
+        sync: false
+      - key: TELEGRAM_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
