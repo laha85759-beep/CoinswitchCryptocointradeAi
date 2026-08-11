@@ -716,8 +716,14 @@ body {
 .side-by-side-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  align-items: stretch;
   gap: 12px;
   margin-top: 12px;
+}
+.side-by-side-grid > .card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 @media (max-width: 1024px) {
   .side-by-side-grid { grid-template-columns: 1fr; }
@@ -727,11 +733,28 @@ body {
 .coin-perf-body, .volatility-body {
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   gap: 6px;
   padding: 10px;
   background: var(--bg-card);
-  max-height: 220px;
+  flex: 1;
   overflow-y: auto;
+}
+
+.heatmap-body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 6px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 2px;
 }
 
 .perf-row, .vol-row {
