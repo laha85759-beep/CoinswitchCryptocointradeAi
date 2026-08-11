@@ -568,7 +568,7 @@ def self_ping_heartbeat_loop():
     while True:
         try:
             res = requests.get(target_url, timeout=10)
-            log.info("Heartbeat self-ping sent to %s | Status: %s (Prevents Render Sleep)", target_url, res.status_code)
+            log.info("Heartbeat self-ping sent to %s | Status: %s (Prevents Render Sleep 24/7)", target_url, res.status_code)
         except Exception as exc:
             log.warning("Heartbeat self-ping notice: %s", exc)
         time.sleep(240) # Ping every 4 minutes to reset Render's 15m idle timer
@@ -585,14 +585,43 @@ def autonomous_trading_loop():
             time.sleep(60) # Wait 1 minute on crash
         time.sleep(900)
 
+# 24/7 DEDICATED LIVE TERMINAL MAINTENANCE & STREAMING DAEMON AGENT
+class TerminalLiveMaintenanceAgent:
+    """Dedicated background daemon agent that runs 24/7 to maintain live data streaming."""
+    _started = False
+    
+    @classmethod
+    def start_247_maintenance(cls):
+        if cls._started:
+            return
+        cls._started = True
+        
+        t = threading.Thread(target=cls._data_refresh_loop, daemon=True)
+        t.start()
+        
+        p = threading.Thread(target=self_ping_heartbeat_loop, daemon=True)
+        p.start()
+        
+        a = threading.Thread(target=autonomous_trading_loop, daemon=True)
+        a.start()
+        
+        log.info("🎯 24/7 DEDICATED TERMINAL LIVE MAINTENANCE AGENT STARTED")
+
+    @classmethod
+    def _data_refresh_loop(cls):
+        time.sleep(5)
+        while True:
+            try:
+                with app.test_request_context('/api/terminal-data'):
+                    get_terminal_data()
+            except Exception as exc:
+                log.debug("Maintenance daemon refresh notice: %s", exc)
+            time.sleep(3)
+
+# Auto-initialize 24/7 Dedicated Maintenance Agent on Flask app startup
+TerminalLiveMaintenanceAgent.start_247_maintenance()
+
 if __name__ == "__main__":
-    import threading
-    worker_thread = threading.Thread(target=autonomous_trading_loop, daemon=True)
-    worker_thread.start()
-    
-    ping_thread = threading.Thread(target=self_ping_heartbeat_loop, daemon=True)
-    ping_thread.start()
-    
     port = int(os.environ.get("PORT", CONFIG.get("webhook_port", 5000)))
     log.info("Starting TradingView, Forex, US Earnings & HKUDS AI-Trader Webhook Bridge Server on port %s...", port)
     app.run(host="0.0.0.0", port=port)
