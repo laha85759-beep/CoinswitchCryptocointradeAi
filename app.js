@@ -142,11 +142,12 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
 
       // Wallet
       if(data.balances) {
-        updateText('#total-capital', `$${fmtNum(data.balances.total_capital_usdt)}`);
-        updateText('#bal-cs-usdt', fmtNum(data.balances.cs_usdt, 2));
-        updateText('#bal-cs-inr', fmtNum(data.balances.cs_inr, 2));
-        updateText('#bal-delta-usdt', fmtNum(data.balances.delta_usdt, 2));
-        drawEquityChart(parseFloat(data.balances.total_capital_usdt || 0));
+        const totCap = parseFloat(data.balances.total_capital_usdt || 0);
+        updateText('#total-capital', `$${fmtNum(totCap, 2)}`);
+        updateText('#bal-cs-usdt', `$${fmtNum(data.balances.cs_usdt, 2)} USDT`);
+        updateText('#bal-cs-inr', `₹${fmtNum(data.balances.cs_inr, 2)} INR`);
+        updateText('#bal-delta-usdt', `$${fmtNum(data.balances.delta_usdt, 2)} USD`);
+        drawEquityChart(totCap);
       }
 
       // Stats
