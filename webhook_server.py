@@ -67,8 +67,20 @@ def serve_dashboard():
 def serve_static(filename):
     return send_from_directory(os.path.dirname(os.path.abspath(__file__)), filename)
 
+import threading
+
+LAST_API_CACHE_TIME = 0
+LAST_API_CACHE_DATA = None
+API_CACHE_LOCK = threading.Lock()
+
 @app.route("/api/terminal-data", methods=["GET"])
 def get_terminal_data():
+    global LAST_API_CACHE_TIME, LAST_API_CACHE_DATA
+    now = time.time()
+    with API_CACHE_LOCK:
+        if LAST_API_CACHE_DATA and (now - LAST_API_CACHE_TIME) < 3.0:
+            return jsonify(LAST_API_CACHE_DATA)
+
     try:
         # Fetch Real Live Balances for Both Exchanges
         cs_usdt = 5.25
@@ -105,7 +117,7 @@ def get_terminal_data():
         # Fetch ALL Tickers Once (Massive speedup)
         cs_tickers = {}
         try:
-            cs_tickers = cs_client.get_all_tickers("c2c2")
+            cs_tickers = cs_client.get_all_tickers("c2c2") if cs_client else {}
         except Exception:
             pass
             
@@ -389,7 +401,7 @@ def get_terminal_data():
         except Exception as exc:
             log.warning("Telegram notification notice: %s", exc)
 
-        return jsonify({
+        payload = {
             "status": "success",
             "balances": {
                 "cs_usdt": round(cs_usdt, 4),
@@ -424,7 +436,12 @@ def get_terminal_data():
                 "pair_value": pair_value,
                 "robustness": robustness
             }
-        }), 200
+        }
+        with API_CACHE_LOCK:
+            LAST_API_CACHE_DATA = payload
+            LAST_API_CACHE_TIME = time.time()
+            
+        return jsonify(payload), 200
     except Exception as exc:
         log.error("Failed to fetch terminal data: %s", exc)
         return jsonify({"error": str(exc)}), 500
