@@ -83,9 +83,9 @@ def get_terminal_data():
 
     try:
         # Fetch Real Live Balances for Both Exchanges
-        cs_usdt = 5.25
-        cs_inr = 496.98
-        delta_usdt = 7.27
+        cs_usdt = 15.09
+        cs_inr = 1.16
+        delta_usdt = 4.73
         
         if cs_client is not None:
             try:
