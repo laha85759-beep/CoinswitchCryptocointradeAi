@@ -511,17 +511,25 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
           radar: $('#sec-radar'),
           agents: $('#sec-agents'),
           trades: $('#sec-trades'),
+          daily: $('#sec-daily-trades'),
+          perf: $('#sec-coin-perf'),
           heatmap: $('#sec-heatmap'),
+          volatility: $('#sec-volatility-matrix'),
+          prebreakout: $('#sec-pre-breakout'),
           analytics: $('#sec-analytics'),
           flows: $('#sec-flows')
         };
 
         if (targetTab === 'all') {
           Object.values(sections).forEach(sec => { if (sec) sec.style.display = ''; });
+          const grids = document.querySelectorAll('.side-by-side-grid');
+          grids.forEach(g => g.style.display = '');
         } else {
           Object.entries(sections).forEach(([key, sec]) => {
             if (sec) sec.style.display = (targetTab === key) ? 'block' : 'none';
           });
+          const grids = document.querySelectorAll('.side-by-side-grid');
+          grids.forEach(g => g.style.display = 'contents');
         }
 
         // Trigger chart resize event on mobile view tab change
