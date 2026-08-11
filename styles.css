@@ -94,17 +94,83 @@ button:active, .mob-tab-btn:active, .flow-tab-btn:active, .heat-cell:active {
   100% { box-shadow: 0 4px 20px rgba(37, 99, 235, 0.12); }
 }
 
+/* ═══════════════════ ULTRA RICH GRAPHICS & KEYFRAME ANIMATIONS ═══════════════════ */
+@keyframes proGradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes pulseGlowRing {
+  0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(37, 99, 235, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+}
+
+@keyframes greenGlowRing {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
+  70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+@keyframes floatSubtle {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-3px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes shimmerPass {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.brand-badge {
+  position: relative;
+  border-radius: 50%;
+  padding: 2px;
+  background: linear-gradient(135deg, #2563eb, #06b6d4, #10b981);
+  background-size: 200% 200%;
+  animation: proGradientShift 4s ease infinite, pulseGlowRing 3s infinite;
+}
+
+.card-header {
+  padding: 8px 14px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.98) 0%, rgba(243,244,246,0.95) 100%) !important;
+  border-bottom: 1px solid rgba(37, 99, 235, 0.15) !important;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-title {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .tag-21st {
   font-family: var(--font-mono);
   font-size: 9px;
   font-weight: 800;
-  padding: 2px 6px;
-  border-radius: 3px;
-  background: #eff6ff;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
   color: #1d4ed8;
-  border: 1px solid #bfdbfe;
-  box-shadow: 0 0 6px rgba(29, 78, 216, 0.2);
+  border: 1px solid #93c5fd;
+  box-shadow: 0 2px 6px rgba(29, 78, 216, 0.15);
   animation: tagPulse 3s infinite alternate;
+}
+
+.glow-green-tag {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%) !important;
+  color: #047857 !important;
+  border-color: #6ee7b7 !important;
+  animation: greenGlowRing 2.5s infinite;
 }
 
 @keyframes tagPulse {
