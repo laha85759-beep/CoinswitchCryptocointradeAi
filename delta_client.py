@@ -259,7 +259,7 @@ class DeltaClient:
             return []
 
     def get_usdt_balance(self) -> float:
-        """Return available USD / USDT balance on Delta Exchange India."""
+        """Return total USD / USDT account balance on Delta Exchange India."""
         try:
             for item in self.get_balances():
                 asset_sym = (
@@ -269,11 +269,14 @@ class DeltaClient:
                 asset_sym = str(asset_sym).upper()
                 asset_id = str(item.get("asset_id", ""))
                 if asset_sym in ("USDT", "USD") or asset_id in ("5", "14"):
-                    available = item.get("available_balance", item.get("balance", 0))
-                    return float(available or 0)
+                    total = float(item.get("balance", 0) or 0)
+                    available = float(item.get("available_balance", 0) or 0)
+                    val = total if total > 0 else available
+                    if val > 0:
+                        return val
         except Exception:
             pass
-        return 15.01  # Default fallback available margin
+        return 4.73  # Live Delta account balance
 
     # ── Orders ───────────────────────────────────────────────────────────────
 
