@@ -359,7 +359,18 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
 
     let displayList = [];
 
-    if (currentFlowTab === 'rwa') {
+    if (currentFlowTab === 'us_macro') {
+      displayList = [
+        { symbol: "XAU/USD", price: 2435.80, signal: "bull" },
+        { symbol: "NASDAQ", price: 18540.20, signal: "bull" },
+        { symbol: "S&P 500", price: 5520.40, signal: "bull" },
+        { symbol: "DXY", price: 103.15, signal: "bear" },
+        { symbol: "NVDA", price: 128.50, signal: "bull" },
+        { symbol: "TSLA", price: 214.80, signal: "bull" },
+        { symbol: "AAPL", price: 224.30, signal: "bull" },
+        { symbol: "XAUT", price: 2438.10, signal: "bull" }
+      ];
+    } else if (currentFlowTab === 'rwa') {
       displayList = rwaSyms.map(sym => {
         const found = coins.find(c => c.symbol.toUpperCase() === sym);
         return found || { symbol: sym, price: sym === 'ONDO' ? 0.824 : (sym === 'PENDLE' ? 4.12 : (sym === 'LINK' ? 14.5 : 0.95)), signal: 'bull' };
@@ -379,12 +390,12 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
     } else {
       // ALL
       displayList = coins.length > 0 ? coins.slice(0, 10) : [
+        { symbol: 'XAU/USD', price: 2435.80, signal: 'bull' },
+        { symbol: 'NASDAQ', price: 18540.20, signal: 'bull' },
         { symbol: 'ONDO', price: 0.824, signal: 'bull' },
         { symbol: 'BTC-PERP', price: 65120, signal: 'bull' },
         { symbol: 'PEPE', price: 0.0000085, signal: 'bull' },
-        { symbol: 'SOL-PERP', price: 146.5, signal: 'bull' },
-        { symbol: 'OM', price: 1.12, signal: 'bear' },
-        { symbol: 'WIF', price: 1.84, signal: 'bull' }
+        { symbol: 'SOL-PERP', price: 146.5, signal: 'bull' }
       ];
     }
 
