@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=11.0">
+  <link rel="stylesheet" href="styles.css?v=12.0">
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 </head>
 <body>
@@ -216,44 +216,139 @@
         </div>
       </div>
 
-      <!-- ──────── DAILY PROFIT & DAILY LOSS TRADES SECTION ──────── -->
-      <div class="card card-21st mob-section" id="sec-daily-trades" style="margin-top: 12px;">
-        <div class="card-header">
-          <span class="card-title">DAILY PROFIT & LOSS TRADE BREAKDOWN</span>
-          <span class="tag-21st glow-tag">REAL-TIME HISTORY</span>
-        </div>
-        <div class="daily-trades-grid">
-          <!-- PROFIT TRADES COLUMN -->
-          <div class="daily-col profit-col">
-            <div class="daily-col-header green-bg">
-              <span>🟢 DAILY PROFIT TRADES</span>
-              <span id="daily-profit-count" class="daily-badge">0 TRADES</span>
+      <!-- ──────── SIDE-BY-SIDE SPLIT GRID: DAILY TRADES & COIN PERFORMANCE ──────── -->
+      <div class="side-by-side-grid">
+        <!-- LEFT: DAILY PROFIT & DAILY LOSS TRADES SECTION -->
+        <div class="card card-21st mob-section" id="sec-daily-trades">
+          <div class="card-header">
+            <span class="card-title">DAILY PROFIT & LOSS TRADE BREAKDOWN</span>
+            <span class="tag-21st glow-tag">REAL-TIME HISTORY</span>
+          </div>
+          <div class="daily-trades-grid">
+            <!-- PROFIT TRADES COLUMN -->
+            <div class="daily-col profit-col">
+              <div class="daily-col-header green-bg">
+                <span>🟢 DAILY PROFIT TRADES</span>
+                <span id="daily-profit-count" class="daily-badge">0 TRADES</span>
+              </div>
+              <div id="daily-profit-list" class="daily-trades-list">
+                <div class="empty-state">NO PROFIT TRADES YET</div>
+              </div>
             </div>
-            <div id="daily-profit-list" class="daily-trades-list">
-              <div class="empty-state">NO PROFIT TRADES YET</div>
+            <!-- LOSS TRADES COLUMN -->
+            <div class="daily-col loss-col">
+              <div class="daily-col-header red-bg">
+                <span>🔴 DAILY LOSS TRADES</span>
+                <span id="daily-loss-count" class="daily-badge">0 TRADES</span>
+              </div>
+              <div id="daily-loss-list" class="daily-trades-list">
+                <div class="empty-state">NO LOSS TRADES YET</div>
+              </div>
             </div>
           </div>
-          <!-- LOSS TRADES COLUMN -->
-          <div class="daily-col loss-col">
-            <div class="daily-col-header red-bg">
-              <span>🔴 DAILY LOSS TRADES</span>
-              <span id="daily-loss-count" class="daily-badge">0 TRADES</span>
+        </div>
+
+        <!-- RIGHT: COIN PERFORMANCE & MOMENTUM RANKINGS -->
+        <div class="card card-21st mob-section" id="sec-coin-perf">
+          <div class="card-header">
+            <span class="card-title">🏆 COIN PERFORMANCE & MOMENTUM RANKINGS</span>
+            <span class="tag-21st glow-tag">24H GAINERS</span>
+          </div>
+          <div class="coin-perf-body" id="coinPerfList">
+            <div class="perf-row">
+              <div class="perf-coin-info">
+                <span class="perf-rank">#1</span>
+                <span class="perf-sym">PEPE</span>
+                <span class="perf-tag green-tag">SUPER PUMP</span>
+              </div>
+              <div class="perf-stats">
+                <span class="perf-change green">+14.2%</span>
+                <span class="perf-vol">VOL 3.8x</span>
+              </div>
             </div>
-            <div id="daily-loss-list" class="daily-trades-list">
-              <div class="empty-state">NO LOSS TRADES YET</div>
+            <div class="perf-row">
+              <div class="perf-coin-info">
+                <span class="perf-rank">#2</span>
+                <span class="perf-sym">ONDO</span>
+                <span class="perf-tag cyan-tag">RWA LEADER</span>
+              </div>
+              <div class="perf-stats">
+                <span class="perf-change green">+8.6%</span>
+                <span class="perf-vol">VOL 2.5x</span>
+              </div>
+            </div>
+            <div class="perf-row">
+              <div class="perf-coin-info">
+                <span class="perf-rank">#3</span>
+                <span class="perf-sym">SOL</span>
+                <span class="perf-tag green-tag">BULLISH MA</span>
+              </div>
+              <div class="perf-stats">
+                <span class="perf-change green">+5.4%</span>
+                <span class="perf-vol">VOL 2.1x</span>
+              </div>
+            </div>
+            <div class="perf-row">
+              <div class="perf-coin-info">
+                <span class="perf-rank">#4</span>
+                <span class="perf-sym">WIF</span>
+                <span class="perf-tag yellow-tag">HIGH VOL</span>
+              </div>
+              <div class="perf-stats">
+                <span class="perf-change green">+4.1%</span>
+                <span class="perf-vol">VOL 1.9x</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="card card-21st mob-section" id="sec-heatmap" style="margin-top: 12px;">
-        <div class="card-header">
-          <span class="card-title">DIRECTIONAL NEURAL MESH (HEATMAP • 50+ COINS)</span>
+      <!-- ──────── SIDE-BY-SIDE SPLIT GRID: HEATMAP & VOLATILITY RISK MATRIX ──────── -->
+      <div class="side-by-side-grid">
+        <!-- LEFT: DIRECTIONAL NEURAL MESH HEATMAP -->
+        <div class="card card-21st mob-section" id="sec-heatmap">
+          <div class="card-header">
+            <span class="card-title">DIRECTIONAL NEURAL MESH (HEATMAP • 50+ COINS)</span>
+          </div>
+          <div class="heatmap-body">
+            <input type="text" id="heatSearch" placeholder="🔍 SEARCH COIN (BTC, ETH, SOL, PEPE, WIF...)..." class="heat-search-input" />
+            <div class="heatmap-grid" id="heatmapGrid">
+              <div class="heat-cell heat-bull"><span class="heat-sym">BTC</span><span class="heat-val">BULL</span></div>
+            </div>
+          </div>
         </div>
-        <div class="heatmap-body">
-          <input type="text" id="heatSearch" placeholder="🔍 SEARCH COIN (BTC, ETH, SOL, PEPE, WIF...)..." class="heat-search-input" />
-          <div class="heatmap-grid" id="heatmapGrid">
-            <div class="heat-cell heat-bull"><span class="heat-sym">BTC</span><span class="heat-val">BULL</span></div>
+
+        <!-- RIGHT: VOLATILITY & LIQUIDITY RISK MATRIX -->
+        <div class="card card-21st mob-section" id="sec-volatility-matrix">
+          <div class="card-header">
+            <span class="card-title">⚡ VOLATILITY & LIQUIDITY RISK MATRIX</span>
+            <span class="tag-21st glow-tag">ATR BUFFER</span>
+          </div>
+          <div class="volatility-body" id="volatilityList">
+            <div class="vol-row">
+              <span class="vol-sym">PEPE/USDT</span>
+              <span class="vol-atr red">ATR 4.8% (HIGH)</span>
+              <span class="vol-sl">STOP BUFFER: 2.5%</span>
+              <span class="vol-status green">OPTIMAL SIZING</span>
+            </div>
+            <div class="vol-row">
+              <span class="vol-sym">SOL/USDT</span>
+              <span class="vol-atr green">ATR 2.1% (LOW)</span>
+              <span class="vol-sl">STOP BUFFER: 1.5%</span>
+              <span class="vol-status green">OPTIMAL SIZING</span>
+            </div>
+            <div class="vol-row">
+              <span class="vol-sym">ONDO/USDT</span>
+              <span class="vol-atr cyan">ATR 3.2% (MED)</span>
+              <span class="vol-sl">STOP BUFFER: 1.8%</span>
+              <span class="vol-status green">OPTIMAL SIZING</span>
+            </div>
+            <div class="vol-row">
+              <span class="vol-sym">WIF/USDT</span>
+              <span class="vol-atr red">ATR 5.2% (HIGH)</span>
+              <span class="vol-sl">STOP BUFFER: 3.0%</span>
+              <span class="vol-status yellow">REDUCED SIZE</span>
+            </div>
           </div>
         </div>
       </div>
@@ -355,6 +450,6 @@
 
   </main>
 
-  <script src="app.js?v=11.0"></script>
+  <script src="app.js?v=12.0"></script>
 </body>
 </html>
