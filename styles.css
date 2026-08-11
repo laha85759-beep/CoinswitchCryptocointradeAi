@@ -651,6 +651,71 @@ body {
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
+/* ──────── DAILY PROFIT & LOSS TRADES STYLING ──────── */
+.daily-trades-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 10px;
+  background: var(--bg-card);
+}
+@media (max-width: 640px) {
+  .daily-trades-grid { grid-template-columns: 1fr; }
+}
+.daily-col {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.daily-col-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  border-bottom: 1px solid var(--border-color);
+}
+.daily-col-header.green-bg { background: rgba(5, 150, 105, 0.1); color: var(--accent-green); }
+.daily-col-header.red-bg { background: rgba(220, 38, 38, 0.1); color: var(--accent-red); }
+
+.daily-badge {
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 2px;
+  background: var(--bg-card);
+  border: 1px solid currentColor;
+}
+.daily-trades-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  max-height: 180px;
+  overflow-y: auto;
+  background: var(--bg-main);
+}
+.daily-trade-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+}
+.daily-trade-row.green-border { border-left: 3px solid var(--accent-green); }
+.daily-trade-row.red-border { border-left: 3px solid var(--accent-red); }
+
+.daily-sym-wrap { display: flex; align-items: center; gap: 6px; }
+.daily-sym { font-size: 10px; font-weight: 800; color: var(--text-main); }
+.daily-tag { font-size: 8px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
+.daily-pnl { font-size: 10px; font-weight: 800; }
+
 /* ──────── RESPONSIVE BREAKPOINTS (MOBILE FRIENDLY) ──────── */
 @media (max-width: 900px) {
   .dashboard { grid-template-columns: 1fr; gap: 8px; padding: 8px; }

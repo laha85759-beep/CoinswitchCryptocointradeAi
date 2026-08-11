@@ -324,6 +324,11 @@ def get_terminal_data():
             "shib": get_price("SHIB", 0.000015)
         }
 
+        # Load Closed Trades for Daily Profit & Daily Loss Sections
+        closed_history = load_json_safe("closed_trades.json", [])
+        daily_profit_trades = [t for t in closed_history if float(t.get("pnl_usdt", 0)) >= 0]
+        daily_loss_trades = [t for t in closed_history if float(t.get("pnl_usdt", 0)) < 0]
+
         return jsonify({
             "status": "success",
             "balances": {
@@ -344,6 +349,10 @@ def get_terminal_data():
                 "total_realized_pnl_usdt": round(total_pnl_usdt, 2),
                 "closed_trades_count": total_trades_count,
                 "daily_pnl": daily_pnl,
+            },
+            "daily_performance": {
+                "profit_trades": daily_profit_trades,
+                "loss_trades": daily_loss_trades
             },
             "execution_log": execution_log[-20:],
             "heatmap_coins": heatmap_coins,

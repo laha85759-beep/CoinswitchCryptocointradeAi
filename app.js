@@ -166,6 +166,7 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
 
       // Positions rendering
       populateTrades(data);
+      populateDailyTrades(data);
   }
 
   function renderTickerMarquee(coins, tickers) {
@@ -257,6 +258,55 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
         </div>
       `;
     }).join('');
+  }
+
+  function populateDailyTrades(data) {
+    const profitList = $('#daily-profit-list');
+    const lossList = $('#daily-loss-list');
+    const profitCount = $('#daily-profit-count');
+    const lossCount = $('#daily-loss-count');
+
+    if (!profitList || !lossList) return;
+
+    const profits = data.daily_performance?.profit_trades || [];
+    const losses = data.daily_performance?.loss_trades || [];
+
+    if (profitCount) profitCount.innerText = `${profits.length} TRADES`;
+    if (lossCount) lossCount.innerText = `${losses.length} TRADES`;
+
+    if (profits.length === 0) {
+      profitList.innerHTML = `<div class="empty-state">NO PROFIT TRADES YET</div>`;
+    } else {
+      profitList.innerHTML = profits.map(t => {
+        const pnl = parseFloat(t.pnl_usdt || 0);
+        return `
+          <div class="daily-trade-row green-border">
+            <div class="daily-sym-wrap">
+              <span class="daily-sym">${t.symbol}</span>
+              <span class="daily-tag">${t.reason || 'TAKE PROFIT'}</span>
+            </div>
+            <span class="daily-pnl green">+$${fmtNum(pnl, 2)} (+${t.pnl_pct || 0}%)</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    if (losses.length === 0) {
+      lossList.innerHTML = `<div class="empty-state">NO LOSS TRADES YET</div>`;
+    } else {
+      lossList.innerHTML = losses.map(t => {
+        const pnl = parseFloat(t.pnl_usdt || 0);
+        return `
+          <div class="daily-trade-row red-border">
+            <div class="daily-sym-wrap">
+              <span class="daily-sym">${t.symbol}</span>
+              <span class="daily-tag">${t.reason || 'STOP LOSS'}</span>
+            </div>
+            <span class="daily-pnl red">-$${fmtNum(Math.abs(pnl), 2)} (${t.pnl_pct || 0}%)</span>
+          </div>
+        `;
+      }).join('');
+    }
   }
 
   function addLogEntry(msg) {
@@ -556,5 +606,5 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
   // ═══════════════════ INIT ═══════════════════
   initClock();
   fetchRealData();
-  setInterval(fetchRealData, 5000);
+  setInterval(fetchRealData, 3000);
 })();

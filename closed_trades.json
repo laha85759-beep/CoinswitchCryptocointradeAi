@@ -1,0 +1,62 @@
+[
+  {
+    "symbol": "PEPE/USDT",
+    "exchange": "delta",
+    "direction": "long",
+    "entry_price": 0.00000812,
+    "exit_price": 0.00000865,
+    "qty": 500000,
+    "pnl_usdt": 0.265,
+    "pnl_pct": 6.52,
+    "reason": "TAKE PROFIT",
+    "closed_at": "2026-08-11T12:15:00Z"
+  },
+  {
+    "symbol": "SOL/USDT",
+    "exchange": "delta",
+    "direction": "long",
+    "entry_price": 142.50,
+    "exit_price": 146.80,
+    "qty": 0.1,
+    "pnl_usdt": 0.430,
+    "pnl_pct": 3.01,
+    "reason": "TRAILING STOP",
+    "closed_at": "2026-08-11T10:45:00Z"
+  },
+  {
+    "symbol": "ONDO/USDT",
+    "exchange": "delta",
+    "direction": "long",
+    "entry_price": 0.812,
+    "exit_price": 0.845,
+    "qty": 10.0,
+    "pnl_usdt": 0.330,
+    "pnl_pct": 4.06,
+    "reason": "TAKE PROFIT",
+    "closed_at": "2026-08-11T08:30:00Z"
+  },
+  {
+    "symbol": "WIF/USDT",
+    "exchange": "delta",
+    "direction": "short",
+    "entry_price": 1.92,
+    "exit_price": 1.95,
+    "qty": 5.0,
+    "pnl_usdt": -0.150,
+    "pnl_pct": -1.56,
+    "reason": "STOP LOSS",
+    "closed_at": "2026-08-11T06:20:00Z"
+  },
+  {
+    "symbol": "DOGE/USDT",
+    "exchange": "coinswitch",
+    "direction": "long",
+    "entry_price": 0.118,
+    "exit_price": 0.116,
+    "qty": 40.0,
+    "pnl_usdt": -0.080,
+    "pnl_pct": -1.69,
+    "reason": "STOP LOSS",
+    "closed_at": "2026-08-11T04:10:00Z"
+  }
+]
