@@ -734,10 +734,11 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 6px;
-  padding: 10px;
+  gap: 8px;
+  padding: 12px;
   background: var(--bg-card);
-  flex: 1;
+  height: 280px;
+  box-sizing: border-box;
   overflow-y: auto;
 }
 
@@ -746,13 +747,15 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  flex: 1;
+  height: 280px;
+  box-sizing: border-box;
 }
+
 .heatmap-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
   gap: 6px;
-  max-height: 280px;
+  flex: 1;
   overflow-y: auto;
   padding-right: 2px;
 }
@@ -824,8 +827,17 @@ body {
 .pre-vol { font-size: 9px; font-weight: 800; color: #38bdf8; background: rgba(6, 182, 212, 0.15); padding: 2px 6px; border-radius: 3px; border: 1px solid rgba(6, 182, 212, 0.3); }
 .pre-chg { font-size: 11px; font-weight: 800; }
 .pre-conf { font-size: 9px; font-weight: 800; color: #fbbf24; background: rgba(245, 158, 11, 0.15); padding: 2px 6px; border-radius: 3px; border: 1px solid rgba(245, 158, 11, 0.3); }
+.daily-trades-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 10px;
+  background: var(--bg-card);
+  height: 280px;
+  box-sizing: border-box;
+}
 @media (max-width: 640px) {
-  .daily-trades-grid { grid-template-columns: 1fr; }
+  .daily-trades-grid { grid-template-columns: 1fr; height: auto; }
 }
 .daily-col {
   display: flex;
@@ -833,6 +845,7 @@ body {
   border: 1px solid var(--border-color);
   border-radius: 4px;
   overflow: hidden;
+  height: 100%;
 }
 .daily-col-header {
   display: flex;
@@ -859,7 +872,7 @@ body {
   flex-direction: column;
   gap: 4px;
   padding: 6px;
-  max-height: 180px;
+  flex: 1;
   overflow-y: auto;
   background: var(--bg-main);
 }
