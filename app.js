@@ -168,6 +168,33 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
       // Positions rendering
       populateTrades(data);
       populateDailyTrades(data);
+      populatePreBreakoutSignals(data);
+  }
+
+  function populatePreBreakoutSignals(data) {
+    const list = $('#preBreakoutList');
+    if (!list) return;
+    const signals = data.pre_breakout_signals || [];
+    if (signals.length === 0) return;
+
+    list.innerHTML = signals.map(s => {
+      const isGreen = s.class === 'green' || s.type.includes('PUMP');
+      const sigColor = isGreen ? 'green' : 'red';
+      const chgSign = s.change_5m >= 0 ? '+' : '';
+      return `
+        <div class="pre-row">
+          <div class="pre-sym-wrap">
+            <span class="pre-sym">${s.symbol}</span>
+            <span class="pre-type ${sigColor}">${s.type}</span>
+          </div>
+          <div class="pre-metrics">
+            <span class="pre-vol">VOL ${s.vol_ratio}x</span>
+            <span class="pre-chg ${sigColor}">${chgSign}${s.change_5m}%</span>
+            <span class="pre-conf">CONF ${s.confidence}%</span>
+          </div>
+        </div>
+      `;
+    }).join('');
   }
 
   function renderTickerMarquee(coins, tickers) {
