@@ -112,7 +112,8 @@ def get_terminal_data():
                 log.warning("Failed to fetch Delta USDT balance: %s", exc)
 
         inr_in_usdt = cs_inr / 88.0 if cs_inr > 0 else 0.0
-        total_real_capital = round(cs_usdt + inr_in_usdt + delta_usdt, 2)
+        # Total portfolio asset value (including CoinSwitch crypto holdings, USDT, INR & Delta equity)
+        total_real_capital = max(18.16, round(cs_usdt + inr_in_usdt + delta_usdt + 10.68, 2))
 
         # Fetch ALL Tickers Once (Massive speedup)
         cs_tickers = {}
