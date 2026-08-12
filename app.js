@@ -514,6 +514,7 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
         const targetTab = btn.getAttribute('data-tab');
 
         const sections = {
+          aichat: $('#sec-ai-chat'),
           wallet: $('#sec-wallet'),
           chart: $('#sec-chart'),
           radar: $('#sec-radar'),
@@ -647,6 +648,16 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
   });
 
   // 🤖 CYBERPUNK COINSAI QUANT AI CHATBOT HANDLERS
+  window.toggleFloatingAiChat = function() {
+    const sec = document.getElementById('sec-ai-chat');
+    if (sec) {
+      sec.style.display = 'block';
+      sec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const input = document.getElementById('chatInput');
+      if (input) input.focus();
+    }
+  };
+
   window.handleChatKeyPress = function(e) {
     if (e.key === 'Enter') sendUserChatMessage();
   };
