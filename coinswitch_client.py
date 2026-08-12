@@ -225,7 +225,7 @@ class CoinSwitchClient:
                 if currency == "USDT":
                     available, locked, total = self._portfolio_balance(item)
                     log.info("USDT balance (exchange=%s): available=%.4f locked=%.4f total=%.4f", ex, available, locked, total)
-                    return available
+                    return total if total > 0 else available
             if portfolio:
                 currencies = [item.get("currency", "?") for item in portfolio[:10]]
                 log.info("No USDT in portfolio (exchange=%s). Currencies: %s", ex, currencies)
