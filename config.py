@@ -62,6 +62,9 @@ CONFIG = {
     "telegram_token":   os.getenv("TELEGRAM_TOKEN",   "8802671362:AAGJQdrqAnI4aVuuH3sxqwetBv9F35m_2V8"),
     "telegram_chat_id": os.getenv("TELEGRAM_CHAT_ID", "6207722743"),
 
+    # ── 1min.AI Multi-Model AI API ───────────────────────────────────────────
+    "onemin_ai_api_key": os.getenv("ONEMIN_AI_API_KEY", "5bbdd65d81492ca76dba5f864a7f0125e1bc0a2f6801c3a8134696d28327ffcd"),
+
     # ── Scanner ──────────────────────────────────────────────────────────────
     "quote_currency":        "USDT",
     "exchange":              "c2c2",    # CoinSwitch c2c2 = USDT pairs with candle data
