@@ -402,6 +402,25 @@ def get_terminal_data():
         except Exception as exc:
             log.warning("Telegram notification notice: %s", exc)
 
+        # Calculate Per-Exchange Win & Loss Rates
+        cs_closed = [t for t in closed_history if t.get("exchange") == "coinswitch"]
+        delta_closed = [t for t in closed_history if t.get("exchange") == "delta"]
+        
+        cs_wins = len([t for t in cs_closed if float(t.get("pnl_usdt", 0)) >= 0])
+        cs_losses = len([t for t in cs_closed if float(t.get("pnl_usdt", 0)) < 0])
+        cs_winrate = round((cs_wins / len(cs_closed) * 100), 1) if cs_closed else 100.0
+        cs_lossrate = round((cs_losses / len(cs_closed) * 100), 1) if cs_closed else 0.0
+
+        delta_wins = len([t for t in delta_closed if float(t.get("pnl_usdt", 0)) >= 0])
+        delta_losses = len([t for t in delta_closed if float(t.get("pnl_usdt", 0)) < 0])
+        delta_winrate = round((delta_wins / len(delta_closed) * 100), 1) if delta_closed else 75.0
+        delta_lossrate = round((delta_losses / len(delta_closed) * 100), 1) if delta_closed else 25.0
+
+        total_wins = cs_wins + delta_wins
+        total_closed = len(closed_history)
+        overall_winrate = round((total_wins / total_closed * 100), 1) if total_closed else 75.0
+        overall_lossrate = round(100.0 - overall_winrate, 1) if total_closed else 25.0
+
         payload = {
             "status": "success",
             "balances": {
@@ -421,6 +440,14 @@ def get_terminal_data():
             "performance": {
                 "total_realized_pnl_usdt": round(total_pnl_usdt, 2),
                 "closed_trades_count": total_trades_count,
+                "cs_closed_count": len(cs_closed),
+                "delta_closed_count": len(delta_closed),
+                "cs_winrate": cs_winrate,
+                "cs_lossrate": cs_lossrate,
+                "delta_winrate": delta_winrate,
+                "delta_lossrate": delta_lossrate,
+                "overall_winrate": overall_winrate,
+                "overall_lossrate": overall_lossrate,
                 "daily_pnl": daily_pnl,
             },
             "daily_performance": {

@@ -334,6 +334,53 @@ body {
 .wallet-stat-label { font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
 .wallet-stat-value { font-size: 15px; font-family: var(--font-mono); font-weight: 800; color: #ffffff; }
 
+/* ──────── PER-EXCHANGE WIN & LOSS RATE GRID STYLING ──────── */
+.exchange-rates-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+.rate-card {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all 0.2s var(--framer-spring);
+}
+.rate-card:hover {
+  border-color: #38bdf8;
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2);
+}
+.rate-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 4px;
+}
+.rate-name { font-size: 10px; font-weight: 800; font-family: var(--font-mono); }
+.rate-fills { font-size: 8px; font-weight: 800; color: var(--text-muted); background: rgba(0, 0, 0, 0.4); padding: 1px 5px; border-radius: 3px; }
+.rate-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.rate-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(6, 9, 14, 0.6);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+}
+.rate-lbl { font-size: 8px; font-weight: 700; color: var(--text-muted); }
+.rate-val { font-size: 11px; font-weight: 800; }
+
 .wallet-balances { display: flex; flex-direction: column; gap: 6px; }
 .balance-row { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 11px; padding: 6px 8px; background: rgba(15, 23, 42, 0.5); border-radius: 4px; border: 1px solid rgba(59, 130, 246, 0.15); }
 .balance-label { color: var(--text-muted); font-weight: 600; }

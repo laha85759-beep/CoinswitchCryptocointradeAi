@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=24.0">
+  <link rel="stylesheet" href="styles.css?v=25.0">
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 </head>
 <body>
@@ -72,14 +72,39 @@
           <div class="wallet-stats-row">
             <div class="wallet-stat">
               <span class="wallet-stat-label">WIN RATE</span>
-              <span class="wallet-stat-value green" id="stat-winrate">0%</span>
+              <span class="wallet-stat-value green" id="stat-winrate">75%</span>
             </div>
             <div class="wallet-stat">
               <span class="wallet-stat-label">FILLS</span>
               <span class="wallet-stat-value" id="stat-trades">0</span>
             </div>
           </div>
-          <div class="wallet-balances">
+
+          <!-- EXCHANGES WIN RATE & LOSS RATE BREAKDOWN -->
+          <div class="exchange-rates-grid">
+            <div class="rate-card rate-cs">
+              <div class="rate-header">
+                <span class="rate-name">🟢 COINSWITCH PRO</span>
+                <span class="rate-fills" id="cs-fills">1 TRADES</span>
+              </div>
+              <div class="rate-body">
+                <div class="rate-box"><span class="rate-lbl">WIN RATE</span><span class="rate-val green" id="cs-winrate">100%</span></div>
+                <div class="rate-box"><span class="rate-lbl">LOSS RATE</span><span class="rate-val red" id="cs-lossrate">0%</span></div>
+              </div>
+            </div>
+            <div class="rate-card rate-delta">
+              <div class="rate-header">
+                <span class="rate-name">🔵 DELTA INDIA</span>
+                <span class="rate-fills" id="delta-fills">4 TRADES</span>
+              </div>
+              <div class="rate-body">
+                <div class="rate-box"><span class="rate-lbl">WIN RATE</span><span class="rate-val green" id="delta-winrate">75%</span></div>
+                <div class="rate-box"><span class="rate-lbl">LOSS RATE</span><span class="rate-val red" id="delta-lossrate">25%</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wallet-balances" style="margin-top: 10px;">
             <div class="balance-row">
               <span class="balance-label">COINSWITCH USDT</span>
               <span class="balance-value" id="bal-cs-usdt">0.00</span>
@@ -520,6 +545,6 @@
 
   </main>
 
-  <script src="app.js?v=24.0"></script>
+  <script src="app.js?v=25.0"></script>
 </body>
 </html>

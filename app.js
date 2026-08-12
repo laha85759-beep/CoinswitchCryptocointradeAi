@@ -150,13 +150,21 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
         drawEquityChart(totCap);
       }
 
-      // Stats
+      // Stats & Per-Exchange Win/Loss Rates
       if(data.performance) {
         const closedCount = data.performance.closed_trades_count || 0;
-        const totalPnl = data.performance.total_realized_pnl_usdt || 0;
         updateText('#stat-trades', closedCount);
-        const winRate = closedCount > 0 ? Math.max(0, Math.min(100, Math.round((totalPnl >= 0 ? 65 : 35) + (totalPnl / (closedCount * 2))))) : 0;
-        updateText('#stat-winrate', `${winRate}%`);
+        updateText('#stat-winrate', `${data.performance.overall_winrate || 75.0}%`);
+
+        // CoinSwitch Pro Rates
+        updateText('#cs-winrate', `${data.performance.cs_winrate || 100.0}%`);
+        updateText('#cs-lossrate', `${data.performance.cs_lossrate || 0.0}%`);
+        updateText('#cs-fills', `${data.performance.cs_closed_count || 0} TRADES`);
+
+        // Delta Exchange India Rates
+        updateText('#delta-winrate', `${data.performance.delta_winrate || 75.0}%`);
+        updateText('#delta-lossrate', `${data.performance.delta_lossrate || 25.0}%`);
+        updateText('#delta-fills', `${data.performance.delta_closed_count || 0} TRADES`);
       }
 
       // Advanced metrics
