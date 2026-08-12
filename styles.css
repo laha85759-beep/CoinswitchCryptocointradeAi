@@ -1022,32 +1022,32 @@ body {
   background: #0369a1;
 }
 
-/* FLOATING CYBERPUNK AI ASSISTANT BUTTON */
+/* FLOATING CYBERPUNK AI ASSISTANT BUTTON (ALWAYS VISIBLE) */
 #floatingAiBtn {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 9999;
-  background: rgba(15, 23, 42, 0.95);
-  border: 1px solid #38bdf8;
-  color: #38bdf8;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 800;
-  padding: 10px 16px;
-  border-radius: 30px;
-  cursor: pointer;
-  box-shadow: 0 4px 20px rgba(56, 189, 248, 0.4);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.25s var(--framer-spring);
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important;
+  z-index: 999999 !important;
+  background: #0f172a !important;
+  border: 2px solid #38bdf8 !important;
+  color: #38bdf8 !important;
+  font-family: var(--font-mono) !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  padding: 12px 18px !important;
+  border-radius: 30px !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 25px rgba(56, 189, 248, 0.6) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  transition: all 0.25s var(--framer-spring) !important;
 }
 #floatingAiBtn:hover {
-  background: #0284c7;
-  color: #ffffff;
-  transform: translateY(-3px) scale(1.05);
-  box-shadow: 0 8px 25px rgba(56, 189, 248, 0.6);
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  transform: translateY(-3px) scale(1.05) !important;
+  box-shadow: 0 8px 30px rgba(56, 189, 248, 0.8) !important;
 }
 .daily-col-header.green-bg { background: rgba(5, 150, 105, 0.1); color: var(--accent-green); }
 .daily-col-header.red-bg { background: rgba(220, 38, 38, 0.1); color: var(--accent-red); }
