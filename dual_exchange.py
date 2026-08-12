@@ -226,9 +226,10 @@ class DualExecutionAgent:
                     "reason": f"delta_balance_{delta_balance:.2f}_too_low",
                     "symbol": symbol,
                 }
-            # 20x Leverage allows capital distribution across up to 3-5 concurrent positions
-            leverage = 20
-            max_pos_margin = max(3.0, (delta_balance * 0.35))  # Allocate ~35% margin per trade so multiple trades run in parallel
+            # Safer leverage (5x for volatile altcoins/memecoins, 10x for BTC/ETH) to prevent noise wicks from hitting SL
+            base_sym = symbol.split("/")[0].upper()
+            leverage = 10 if base_sym in ("BTC", "ETH") else 5
+            max_pos_margin = max(2.0, (delta_balance * 0.25))  # Allocate safe ~25% margin per trade
             position_usd = min(position_usd, max_pos_margin * leverage)
 
         # Dynamic risk-based lot size (contracts) considering contract_value & 20x leverage
