@@ -261,6 +261,11 @@ class SignalDetectorAgent:
         self.cfg = cfg
         self.audit = audit
         self.legacy_engine = SignalEngine(cfg["weights"])
+        try:
+            from onemin_ai_client import OneMinAIClient
+            self.onemin_ai = OneMinAIClient(cfg.get("onemin_ai_api_key"))
+        except Exception:
+            self.onemin_ai = None
 
     def classify(self, items: list[dict]) -> list[dict]:
         signals = []
