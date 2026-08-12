@@ -317,6 +317,7 @@ class DualExecutionAgent:
                     "filled_price": current_price,
                     "filled_qty": round(filled_qty or qty, 6),
                     "exchange": "delta",
+                    "leverage": leverage
                 }
                 self._record_delta_trade(approval, result, current_price, filled_qty or qty)
                 return result
@@ -403,6 +404,7 @@ class DualExecutionAgent:
         sl_val = round(price * 0.985, 4) if direction_str == "LONG" else round(price * 1.015, 4)
         tp_val = round(price * 1.048, 4) if direction_str == "LONG" else round(price * 0.952, 4)
 
+        lev_used = delta_result.get("leverage", 12)
         self.notifier.send(
             f"🚀 *LIVE DUAL TRADE OPENED* — `{symbol}`\n"
             f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -412,7 +414,7 @@ class DualExecutionAgent:
             f"🧠 *Kronos AI Verdict*: `{kronos_v}`\n"
             f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
             f"{cs_icon} *CoinSwitch Pro*: `{cs_status.upper()}`\n"
-            f"{delta_icon} *Delta India*: `{delta_status.upper()} (20x Leverage)`\n"
+            f"{delta_icon} *Delta India*: `{delta_status.upper()} ({lev_used}x Dynamic Leverage)`\n"
             f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
             f"🛑 *Hard Server SL*: `-${self.cfg['stop_loss_pct']}%` (`${sl_val}`)\n"
             f"🎯 *Take Profit*: `+{self.cfg['take_profit_pct']}%` (`${tp_val}`)\n"
