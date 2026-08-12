@@ -642,10 +642,78 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
     }
     initMobileTabs();
     initFlowTabs();
-    initLogTapeStream();
     setTimeout(initTradingViewChart, 1000);
     setTimeout(initQuantRadar, 500);
   });
+
+  // 🤖 CYBERPUNK COINSAI QUANT AI CHATBOT HANDLERS
+  window.handleChatKeyPress = function(e) {
+    if (e.key === 'Enter') sendUserChatMessage();
+  };
+
+  window.sendChatPrompt = function(promptText) {
+    const input = document.getElementById('chatInput');
+    if (input) {
+      input.value = promptText;
+      sendUserChatMessage();
+    }
+  };
+
+  window.sendUserChatMessage = async function() {
+    const input = document.getElementById('chatInput');
+    const wrap = document.getElementById('chatMessages');
+    if (!input || !wrap) return;
+    const msgText = input.value.trim();
+    if (!msgText) return;
+
+    // Append User Message
+    const userDiv = document.createElement('div');
+    userDiv.className = 'chat-msg user-msg';
+    userDiv.innerHTML = `<div class="msg-author">👤 TRADER</div><div class="msg-content">${escapeHtml(msgText)}</div>`;
+    wrap.appendChild(userDiv);
+    input.value = '';
+    wrap.scrollTop = wrap.scrollHeight;
+
+    // Append Typing Indicator
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'chat-msg bot-msg typing-msg';
+    typingDiv.innerHTML = `<div class="msg-author">🤖 COINSAI QUANT AI</div><div class="msg-content cyan">Analyzing live terminal data...</div>`;
+    wrap.appendChild(typingDiv);
+    wrap.scrollTop = wrap.scrollHeight;
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msgText })
+      });
+      const data = await res.json();
+      wrap.removeChild(typingDiv);
+
+      const botDiv = document.createElement('div');
+      botDiv.className = 'chat-msg bot-msg';
+      botDiv.innerHTML = `<div class="msg-author">🤖 COINSAI QUANT AI</div><div class="msg-content">${formatMarkdownText(data.reply || 'No response.')}</div>`;
+      wrap.appendChild(botDiv);
+      wrap.scrollTop = wrap.scrollHeight;
+    } catch (err) {
+      if (typingDiv.parentNode) wrap.removeChild(typingDiv);
+      const errDiv = document.createElement('div');
+      errDiv.className = 'chat-msg bot-msg';
+      errDiv.innerHTML = `<div class="msg-author">🤖 COINSAI QUANT AI</div><div class="msg-content red">Error connecting to AI assistant: ${err}</div>`;
+      wrap.appendChild(errDiv);
+      wrap.scrollTop = wrap.scrollHeight;
+    }
+  };
+
+  function escapeHtml(str) {
+    return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
+  }
+
+  function formatMarkdownText(str) {
+    return str.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+              .replace(/`([^`]+)`/g, '<code class="chat-code">$1</code>')
+              .replace(/\n/g, '<br>');
+  }
 
   // ═══════════════════ INIT ═══════════════════
   initClock();

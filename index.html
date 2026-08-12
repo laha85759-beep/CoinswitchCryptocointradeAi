@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=27.0">
+  <link rel="stylesheet" href="styles.css?v=28.0">
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 </head>
 <body>
@@ -541,10 +541,42 @@
           <div class="log-row"><span class="log-ts">[00:00:00]</span> <span class="log-tag">SYS</span> <span class="log-msg">CoinsAI Quantitative Engine initialized...</span></div>
         </div>
       </div>
+
+      <!-- 🤖 REAL-TIME CYBERPUNK COINSAI QUANT AI CHATBOT -->
+      <div class="card card-21st sec-target" id="sec-ai-chat" style="margin-top: 12px;">
+        <div class="card-header" style="justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="card-icon">🤖</span>
+            <span class="card-title">COINSAI QUANT AI CHATBOT • REAL-TIME DATA ASSISTANT</span>
+          </div>
+          <span class="tag glow-green">24/7 ONLINE</span>
+        </div>
+        <div class="card-body chat-card-body">
+          <div class="chat-messages-wrap" id="chatMessages">
+            <div class="chat-msg bot-msg">
+              <div class="msg-author">🤖 COINSAI QUANT AI</div>
+              <div class="msg-content">
+                Hello trader! I am your 24/7 Real-Time Quant AI Assistant. Ask me anything about your **wallet balances**, **active trades**, **win rates**, or **market signals**!
+              </div>
+            </div>
+          </div>
+          <div class="chat-chips-row">
+            <button class="chat-chip" onclick="sendChatPrompt('What is my wallet balance?')">💰 Balances</button>
+            <button class="chat-chip" onclick="sendChatPrompt('Show active open positions')">📊 Active Trades</button>
+            <button class="chat-chip" onclick="sendChatPrompt('Show my win rate on Delta and CoinSwitch')">📈 Win Rates</button>
+            <button class="chat-chip" onclick="sendChatPrompt('Any pre-breakout signals right now?')">🎯 Pre-Breakouts</button>
+          </div>
+          <div class="chat-input-wrap">
+            <input type="text" id="chatInput" placeholder="Ask AI Assistant anything about your live trades & balances..." onkeypress="handleChatKeyPress(event)" />
+            <button id="chatSendBtn" onclick="sendUserChatMessage()">SEND ↵</button>
+          </div>
+        </div>
+      </div>
+
     </section>
 
   </main>
 
-  <script src="app.js?v=27.0"></script>
+  <script src="app.js?v=28.0"></script>
 </body>
 </html>
