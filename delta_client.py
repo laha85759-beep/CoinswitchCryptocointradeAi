@@ -144,9 +144,16 @@ class DeltaClient:
         Priority: perpetual_futures > spot > others.
         """
         self._build_product_cache()
+        
+        # Direct match for options and exact symbols
+        sym_upper = symbol.upper()
+        if sym_upper in self._product_cache:
+            return int(self._product_cache[sym_upper]["id"])
+
         # Normalise: BTC/USDT → BTCUSD (Delta India convention)
         base = symbol.split("/")[0].upper()
         delta_sym = f"{base}USD"
+
 
         # Search cache for this symbol, prefer perpetual_futures
         best = None
