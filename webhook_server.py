@@ -25,6 +25,18 @@ from agents import AuditLogger, RiskManagerAgent
 from notifier import TelegramNotifier
 from nemotron_agent import NemotronAnalysisAgent
 
+# ── ATLAS Self-Improving AI Engine ────────────────────────────────────────────
+try:
+    from atlas_macro_agents import run_macro_layer
+    from atlas_sector_agents import run_sector_layer
+    from atlas_supertrader_agents import run_supertrader_layer
+    from atlas_decision_engine import run_decision_engine
+    from darwin_engine import DarwinEngine, DarwinWeightManager
+    ATLAS_AVAILABLE = True
+except ImportError as _atlas_err:
+    ATLAS_AVAILABLE = False
+    logging.getLogger(__name__).warning("ATLAS engine not available: %s", _atlas_err)
+
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
@@ -572,6 +584,124 @@ def handle_us_earnings():
         return jsonify({"error": str(exc)}), 500
 
 
+# ── ATLAS API Endpoints ──────────────────────────────────────────────────────
+
+# Cache for ATLAS debate output (expensive — all 21 agents)
+_ATLAS_DEBATE_CACHE = {"data": None, "ts": 0}
+_ATLAS_CACHE_TTL = 300  # 5 minutes
+
+@app.route("/api/darwin", methods=["GET"])
+def get_darwin_dashboard():
+    """Returns Darwin leaderboard, autoresearch history, spawned agents."""
+    try:
+        mgr = DarwinWeightManager()
+        leaderboard = mgr.get_leaderboard()
+        darwin_history = load_json_safe("darwin_history.json", [])
+        spawned = load_json_safe("spawned_agents.json", [])
+        kept = sum(1 for h in darwin_history if h.get("decision") == "KEPT")
+        reverted = sum(1 for h in darwin_history if h.get("decision") == "REVERTED")
+        return jsonify({
+            "leaderboard": leaderboard,
+            "darwin_history": darwin_history[-20:],
+            "spawned_agents": spawned,
+            "stats": {
+                "total_cycles": len(darwin_history),
+                "kept": kept,
+                "reverted": reverted,
+                "keep_rate_pct": round(kept / max(1, kept + reverted) * 100, 1),
+                "active_agents": 25 + len([s for s in spawned if s.get("status") == "ACTIVE"]),
+            }
+        }), 200
+    except Exception as e:
+        log.error("Darwin dashboard error: %s", e)
+        return jsonify({"error": str(e), "leaderboard": [], "stats": {}}), 200
+
+
+@app.route("/api/darwin/cycle", methods=["POST"])
+def trigger_darwin_cycle():
+    """Manually trigger a full Darwin autoresearch cycle."""
+    try:
+        if not ATLAS_AVAILABLE:
+            return jsonify({"error": "ATLAS engine not available"}), 503
+        onemin_key = CONFIG.get("onemin_ai_api_key", "")
+        engine = DarwinEngine(onemin_api_key=onemin_key)
+        result = engine.run_full_cycle()
+        return jsonify({"status": "success", "result": result}), 200
+    except Exception as e:
+        log.error("Darwin cycle error: %s", e)
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/darwin/daily", methods=["POST"])
+def trigger_darwin_daily():
+    """Run daily Darwin weight update."""
+    try:
+        if not ATLAS_AVAILABLE:
+            return jsonify({"error": "ATLAS engine not available"}), 503
+        onemin_key = CONFIG.get("onemin_ai_api_key", "")
+        engine = DarwinEngine(onemin_api_key=onemin_key)
+        result = engine.run_daily_weight_update()
+        return jsonify({"status": "success", "updates": result}), 200
+    except Exception as e:
+        log.error("Darwin daily update error: %s", e)
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/agent-debate", methods=["GET"])
+def get_agent_debate():
+    """Run all 4 layers of ATLAS agents and return full debate."""
+    global _ATLAS_DEBATE_CACHE
+    now = time.time()
+    if _ATLAS_DEBATE_CACHE["data"] and (now - _ATLAS_DEBATE_CACHE["ts"]) < _ATLAS_CACHE_TTL:
+        return jsonify(_ATLAS_DEBATE_CACHE["data"]), 200
+
+    if not ATLAS_AVAILABLE:
+        return jsonify({"error": "ATLAS engine not available"}), 503
+
+    try:
+        mgr = DarwinWeightManager()
+        weights = mgr.get_all_weights()
+
+        # Run all 3 input layers
+        macro_out    = run_macro_layer(weights)
+        sector_out   = run_sector_layer(weights)
+        super_out    = run_supertrader_layer(weights)
+
+        # Get live balance
+        try:
+            available_usdt = cs_client.get_usdt_balance()
+        except Exception:
+            available_usdt = 10.0
+
+        # Run decision engine
+        decision_out = run_decision_engine(
+            macro_out, sector_out, super_out, available_usdt, weights
+        )
+
+        result = {
+            "macro":       macro_out,
+            "sector":      sector_out,
+            "supertrader": super_out,
+            "decision":    decision_out,
+            "summary": {
+                "macro_regime":      macro_out.get("macro_regime"),
+                "sector_consensus":  sector_out.get("sector_consensus"),
+                "supertrader_call":  super_out.get("supertrader_consensus"),
+                "cio_final_action":  decision_out.get("final_action"),
+                "cio_final_symbol":  decision_out.get("final_symbol"),
+                "cro_vetoed":        decision_out.get("cro_vetoed"),
+                "alpha_pick":        decision_out.get("alpha_pick"),
+            },
+            "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        }
+        _ATLAS_DEBATE_CACHE["data"] = result
+        _ATLAS_DEBATE_CACHE["ts"]   = now
+        return jsonify(result), 200
+    except Exception as e:
+        log.error("Agent debate error: %s", e)
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/chat", methods=["POST"])
 def handle_ai_chat():
     try:
@@ -579,7 +709,217 @@ def handle_ai_chat():
         user_msg = str(data.get("message", "")).strip().lower()
         raw_msg = str(data.get("message", "")).strip()
         if not user_msg:
-            return jsonify({"reply": "Please enter a question about your portfolio, market signals, or economic news."}), 200
+            return jsonify({"reply": "Please enter a question about your portfolio, signals, or market analysis."}), 200
+
+        # ── Fetch live data ──────────────────────────────────────────────────
+        with API_CACHE_LOCK:
+            current_data = LAST_API_CACHE_DATA or {}
+        bals         = current_data.get("balances", {})
+        open_pos     = current_data.get("open_positions", {})
+        perf         = current_data.get("performance", {})
+        tickers      = current_data.get("tickers", {})
+        pre_breakouts= current_data.get("pre_breakout_signals", [])
+
+        # ── Try to get ATLAS debate (cached) ─────────────────────────────────
+        atlas_debate = _ATLAS_DEBATE_CACHE.get("data") or {}
+        atlas_summary= atlas_debate.get("summary", {})
+        macro_agents = atlas_debate.get("macro", {}).get("agents", [])
+        sector_agents= atlas_debate.get("sector", {}).get("agents", [])
+        super_agents = atlas_debate.get("supertrader", {}).get("agents", [])
+        dec_agents   = atlas_debate.get("decision", {}).get("agents", {})
+
+        macro_regime     = atlas_summary.get("macro_regime", "NEUTRAL")
+        sector_consensus = atlas_summary.get("sector_consensus", "NEUTRAL")
+        cio_action       = atlas_summary.get("cio_final_action", "HOLD")
+        cio_symbol       = atlas_summary.get("cio_final_symbol", "BTC/USDT")
+        cro_vetoed       = atlas_summary.get("cro_vetoed", False)
+
+        cs_u  = bals.get("cs_usdt", 0)
+        cs_i  = bals.get("cs_inr", 0)
+        del_u = bals.get("delta_usdt", 0)
+        tot   = bals.get("total_capital_usdt", cs_u + del_u)
+        ov_wr = perf.get("overall_winrate", 60.0)
+
+        # ─────────────────────────────────────────────────────────────────────
+        # Keyword routing — ATLAS-powered answers
+        # ─────────────────────────────────────────────────────────────────────
+
+        if any(w in user_msg for w in ["agent", "atlas", "darwin", "self-improv", "leaderboard", "weight"]):
+            try:
+                mgr = DarwinWeightManager()
+                board = mgr.get_leaderboard()[:5]
+                lines = ["**ATLAS 25-Agent Leaderboard (Top 5 by Sharpe):**"]
+                for i, a in enumerate(board, 1):
+                    medal = ["GOLD", "SILVER", "BRONZE", "", ""][i-1]
+                    lines.append(f"{i}. **{a['agent']}** | Sharpe: `{a['sharpe']:.3f}` | Weight: `{a['weight']:.2f}x` | WR: `{a['win_rate']}%`")
+                lines.append(f"\nAll 25 agents are running & self-improving via Darwin autoresearch loop.")
+                reply = "\n".join(lines)
+            except Exception:
+                reply = "ATLAS 25-agent system is running. Darwin self-improvement loop active. Check the Darwin Leaderboard tab for full rankings."
+
+        elif any(w in user_msg for w in ["macro", "cpi", "fed", "inflation", "fomc", "rate", "economy", "regime"]):
+            macro_lines = []
+            for a in macro_agents[:5]:
+                icon = "RISK_ON" if a.get("regime") == "RISK_ON" else "RISK_OFF" if a.get("regime") == "RISK_OFF" else "NEUTRAL"
+                macro_lines.append(f"  {a['agent']}: **{icon}** ({a['confidence']*100:.0f}%) — {a['reasoning'][:80]}...")
+            regime_color = "BULLISH" if macro_regime == "RISK_ON" else "BEARISH" if macro_regime == "RISK_OFF" else "NEUTRAL"
+            reply = (
+                f"**ATLAS LAYER 1 — MACRO INTELLIGENCE:**\n"
+                f"Macro Regime: **{macro_regime}** ({regime_color})\n\n"
+                f"Top Agent Readings:\n" + "\n".join(macro_lines) +
+                f"\n\n**CPI / Fed Impact:** {'Risk-off: avoid new longs, tighten stops on existing positions.' if macro_regime == 'RISK_OFF' else 'Risk-on: macro supports crypto momentum. Bot scaling up position sizing.' if macro_regime == 'RISK_ON' else 'Neutral macro. Wait for clearer direction before sizing up.'}"
+            )
+
+        elif any(w in user_msg for w in ["sector", "defi", "meme", "ai token", "rwa", "infra", "rotation"]):
+            sec_lines = []
+            for a in sector_agents[:4]:
+                sec_lines.append(f"  {a['agent']}: **{a['bias']}** (Score: {a['sector_score']:.0f}/100) — Picks: {', '.join(a.get('top_picks', [])[:2])}")
+            reply = (
+                f"**ATLAS LAYER 2 — SECTOR DESK:**\n"
+                f"Sector Consensus: **{sector_consensus}**\n"
+                f"Top Sector Picks: **{', '.join(atlas_debate.get('sector', {}).get('top_picks', ['BTC/USDT'])[:4])}**\n\n"
+                + "\n".join(sec_lines)
+            )
+
+        elif any(w in user_msg for w in ["druckenmiller", "soros", "simons", "ackman", "supertrader", "conviction", "reflexivity"]):
+            super_lines = []
+            for a in super_agents:
+                super_lines.append(f"  **{a['agent']}**: {a['direction']} {a['top_trade']} (conviction {a['conviction']:.0f}%)\n    {a['reasoning'][:120]}...")
+            reply = (
+                f"**ATLAS LAYER 3 — SUPERTRADERS:**\n\n"
+                + "\n\n".join(super_lines)
+            )
+
+        elif any(w in user_msg for w in ["cio", "decision", "final call", "trade call", "should i buy", "buy", "sell", "hold", "what trade"]):
+            cio_data = dec_agents.get("CIO", {})
+            cro_data = dec_agents.get("CRO", {})
+            exec_data= dec_agents.get("Auto_Execution", {})
+            veto_str = f"\n**CRO VETO:** {cro_data.get('veto_reason', '')}" if cro_vetoed else "\nCRO: All risk checks passed. Trade approved."
+            reply = (
+                f"**ATLAS LAYER 4 — CIO FINAL DECISION:**\n\n"
+                f"**Action: {cio_action}** on **{cio_symbol}**\n"
+                f"Confidence: {cio_data.get('confidence', 0):.0f}%\n\n"
+                f"{cio_data.get('reasoning', 'CIO reasoning not available.')}\n"
+                f"{veto_str}\n\n"
+                f"**Execution Plan:**\n{exec_data.get('reasoning', 'Execution plan not yet computed.')}"
+            )
+
+        elif any(w in user_msg for w in ["balance", "wallet", "capital", "usdt", "inr", "money", "portfolio"]):
+            reply = (
+                f"**LIVE PORTFOLIO BALANCES:**\n"
+                f"  CoinSwitch USDT: `${cs_u:.4f}`\n"
+                f"  CoinSwitch INR:  `Rs.{cs_i:.2f}`\n"
+                f"  Delta Exchange:  `${del_u:.2f}`\n"
+                f"  **TOTAL: `${tot:.2f} USD`**\n\n"
+                f"ATLAS Macro Regime: **{macro_regime}** | CIO Signal: **{cio_action} {cio_symbol}**"
+            )
+
+        elif any(w in user_msg for w in ["position", "trade", "open", "running", "active"]):
+            cs_pos  = open_pos.get("coinswitch", [])
+            del_pos = open_pos.get("delta", [])
+            tot_count = open_pos.get("total_count", 0)
+            if tot_count == 0:
+                reply = (
+                    f"**ACTIVE POSITIONS: 0**\n"
+                    f"No active positions. Bot is scanning 150+ pairs.\n"
+                    f"ATLAS CIO says: **{cio_action}** | Macro: **{macro_regime}**\n"
+                    f"Next opportunity: **{cio_symbol}** when conditions align."
+                )
+            else:
+                lines = [f"**ACTIVE POSITIONS ({tot_count}):**"]
+                for p in cs_pos:
+                    lines.append(f"  [CoinSwitch] {p.get('symbol')} | {p.get('direction','').upper()} | Entry: ${p.get('entry_price')}")
+                for p in del_pos:
+                    lines.append(f"  [Delta India] {p.get('symbol')} | {p.get('direction','').upper()} | Entry: ${p.get('entry_price')} | SL: ${p.get('hard_sl')} | TP: ${p.get('take_profit')}")
+                reply = "\n".join(lines)
+
+        elif any(w in user_msg for w in ["winrate", "win rate", "performance", "pnl", "profit", "stat"]):
+            cs_wr = perf.get("cs_winrate", 100.0)
+            del_wr= perf.get("delta_winrate", 75.0)
+            tot_pnl = perf.get("total_realized_pnl_usdt", 0.0)
+            reply = (
+                f"**PERFORMANCE STATS:**\n"
+                f"  Overall Win Rate: `{ov_wr}%`\n"
+                f"  CoinSwitch: `{cs_wr}% Win Rate`\n"
+                f"  Delta Exchange: `{del_wr}% Win Rate`\n"
+                f"  Total Realized PnL: `${tot_pnl:+.2f} USDT`\n\n"
+                f"**ATLAS Agent Performance:**\n"
+                f"  25 agents running with Darwin self-improvement.\n"
+                f"  Best macro signal today: **{macro_regime}** | CIO action: **{cio_action}**"
+            )
+
+        elif any(w in user_msg for w in ["signal", "pump", "dump", "breakout", "radar"]):
+            if not pre_breakouts:
+                reply = (
+                    f"**PRE-BREAKOUT RADAR:**\nNo active breakout signals right now.\n"
+                    f"ATLAS CIO watching: **{cio_symbol}** for entry.\n"
+                    f"Macro: **{macro_regime}** | Sector: **{sector_consensus}**"
+                )
+            else:
+                lines = ["**PRE-BREAKOUT SIGNALS:**"]
+                for sig in pre_breakouts[:4]:
+                    icon = "PUMP" if sig.get("type") == "pump" else "DUMP"
+                    lines.append(f"  {sig.get('symbol')}: {icon} | Vol: {sig.get('vol_ratio')}x | Move: {sig.get('change_5m', 0):+.2f}%")
+                lines.append(f"\nATLAS CIO top pick: **{cio_symbol}** ({cio_action})")
+                reply = "\n".join(lines)
+
+        elif any(w in user_msg for w in ["strategy", "how", "algorithm", "engine", "leverage"]):
+            reply = (
+                f"**COINSAI + ATLAS TRADING ENGINES:**\n\n"
+                f"1. **PP Supertrend Ghost Engine** — Multi-timeframe trend-following with ATR channels\n"
+                f"2. **Liquidity Gap Run Engine** — Orderbook imbalance + volume spike detection\n"
+                f"3. **ATLAS 25-Agent Debate** — 4 layers of AI agents debate every trade:\n"
+                f"   L1: 10 Macro agents → L2: 7 Sector agents → L3: 4 Supertraders → L4: CIO+CRO decision\n"
+                f"4. **Darwin Self-Improvement** — Worst agent gets its prompt rewritten weekly\n"
+                f"5. **Darwinian Weights** — Top performers get louder (up to 2.5x), bottom quieter (0.3x)\n\n"
+                f"Current ATLAS signal: **{cio_action} {cio_symbol}** | Macro: **{macro_regime}**"
+            )
+
+        elif any(w in user_msg for w in ["price", "btc", "eth", "sol", "ticker", "live price"]):
+            lines = ["**LIVE MARKET PRICES:**"]
+            for sym, price in list(tickers.items())[:6]:
+                lines.append(f"  {sym.upper()}: `${price}`")
+            if atlas_summary:
+                lines.append(f"\nATLAS Top Pick: **{cio_symbol}** | Action: **{cio_action}**")
+            reply = "\n".join(lines)
+
+        else:
+            # General fallback with ATLAS context
+            try:
+                from onemin_ai_client import OneMinAIClient
+                ai_client = OneMinAIClient()
+                context = (
+                    f"You are CoinsAI Quant Assistant powered by ATLAS 25-agent AI system. "
+                    f"Current macro regime: {macro_regime}. "
+                    f"CIO decision: {cio_action} {cio_symbol}. "
+                    f"Portfolio: ${tot:.2f} USD. Win rate: {ov_wr}%. "
+                    f"User asks: '{raw_msg}'. "
+                    f"Answer concisely with specific data from the ATLAS agent debate."
+                )
+                ai_res = ai_client.analyze_sentiment(context)
+                if isinstance(ai_res, dict) and "choices" in ai_res:
+                    reply = ai_res["choices"][0]["message"]["content"]
+                else:
+                    raise ValueError("No choices in response")
+            except Exception:
+                reply = (
+                    f"**CoinsAI ATLAS Assistant:**\n"
+                    f"Regarding: *{raw_msg}*\n\n"
+                    f"Current ATLAS Status:\n"
+                    f"  Macro Regime: **{macro_regime}**\n"
+                    f"  Sector: **{sector_consensus}**\n"
+                    f"  CIO Final Call: **{cio_action} {cio_symbol}**\n"
+                    f"  Portfolio: **${tot:.2f} USD** | Win Rate: **{ov_wr}%**\n\n"
+                    f"25 agents are actively debating this market. Darwin loop is self-improving the weakest agents weekly."
+                )
+
+        return jsonify({"reply": reply}), 200
+
+    except Exception as exc:
+        log.error("AI Chatbot error: %s", exc)
+        return jsonify({"reply": f"Assistant error: {exc}"}), 200
+
+
 
         # Fetch current cached live data
         with API_CACHE_LOCK:

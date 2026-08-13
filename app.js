@@ -726,8 +726,146 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
               .replace(/\n/g, '<br>');
   }
 
+  // ═══════════════════ DARWIN ATLAS LEADERBOARD JS ═══════════════════
+
+  // Load Darwin leaderboard (weights + history)
+  async function loadDarwinLeaderboard() {
+    try {
+      const res = await fetch('/api/darwin');
+      if (!res.ok) return;
+      const data = await res.json();
+      renderDarwinTable(data.leaderboard || []);
+      renderDarwinHistory(data.darwin_history || []);
+      renderSpawnedAgents(data.spawned_agents || []);
+      const stats = data.stats || {};
+      const el = id => document.getElementById(id);
+      if (el('darwin-cycles'))    el('darwin-cycles').textContent    = stats.total_cycles || 0;
+      if (el('darwin-keep-rate')) el('darwin-keep-rate').textContent = (stats.keep_rate_pct || 0) + '%';
+      if (el('darwin-active-agents')) el('darwin-active-agents').textContent = (stats.active_agents || 25) + ' ACTIVE';
+    } catch(e) {}
+  }
+
+  function renderDarwinTable(agents) {
+    const tbody = document.getElementById('darwin-table-body');
+    if (!tbody) return;
+    if (!agents || agents.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#555;padding:12px;">No agent data yet. Run a debate.</td></tr>';
+      return;
+    }
+    const ranks = ['darwin-rank-gold','darwin-rank-silver','darwin-rank-bronze'];
+    tbody.innerHTML = agents.map((a, i) => {
+      const rankClass = i < 3 ? ranks[i] : '';
+      const rankNum = i < 3 ? ['🥇','🥈','🥉'][i] : (i+1);
+      const weight = parseFloat(a.weight || 1);
+      const wClass = weight >= 1.5 ? 'darwin-weight-high' : weight <= 0.5 ? 'darwin-weight-low' : 'darwin-weight-mid';
+      const sharpe = parseFloat(a.sharpe || 0);
+      const wr = a.win_rate || 0;
+      const statusBadge = weight >= 1.5 ? '<span class="darwin-badge-active">TOP</span>' :
+                          weight <= 0.5 ? '<span class="darwin-badge-reverted">LOW</span>' :
+                          '<span class="darwin-badge-kept">OK</span>';
+      return `<tr>
+        <td class="${rankClass}">${rankNum}</td>
+        <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${a.agent}">${a.agent.replace(/_/g,' ')}</td>
+        <td class="${wClass}">${weight.toFixed(2)}×</td>
+        <td style="color:${sharpe > 0 ? '#4ade80' : sharpe < 0 ? '#f87171' : '#94a3b8'}">${sharpe.toFixed(3)}</td>
+        <td>${wr}%</td>
+        <td>${statusBadge}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function renderDarwinHistory(history) {
+    const el = document.getElementById('darwin-history-list');
+    if (!el) return;
+    if (!history || history.length === 0) {
+      el.innerHTML = '<div style="color:#555;font-size:11px;padding:8px;">No autoresearch cycles yet.</div>';
+      return;
+    }
+    el.innerHTML = history.slice(-5).reverse().map(h => {
+      const badgeClass = h.decision === 'KEPT' ? 'darwin-badge-kept' : 
+                         h.decision === 'REVERTED' ? 'darwin-badge-reverted' :
+                         'darwin-badge-testing';
+      const badge = h.decision || h.status || 'PENDING';
+      const ts = (h.started_at || '').substring(0,10);
+      return `<div class="darwin-history-item">
+        <span class="${badgeClass}">${badge}</span>
+        <span style="color:#38bdf8;">${(h.agent||'?').replace(/_/g,' ')}</span>
+        <span style="color:#475569;">Sharpe: ${(h.sharpe_before||0).toFixed(3)} → ${h.sharpe_after != null ? h.sharpe_after.toFixed(3) : '...'}</span>
+        <span style="margin-left:auto;color:#334155;">${ts}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function renderSpawnedAgents(agents) {
+    const el = document.getElementById('spawned-agents-list');
+    if (!el) return;
+    if (!agents || agents.length === 0) {
+      el.innerHTML = '<div style="color:#555;font-size:11px;padding:8px;">No auto-spawned agents yet.</div>';
+      return;
+    }
+    el.innerHTML = agents.map(a => `
+      <div class="darwin-history-item">
+        <span class="darwin-badge-active">SPAWNED</span>
+        <span style="color:#38bdf8;">${(a.name||'?').replace(/_/g,' ')}</span>
+        <span style="color:#475569;">${a.trigger||''}</span>
+        <span style="margin-left:auto;color:#334155;">${(a.spawned_at||'').substring(0,10)}</span>
+      </div>`).join('');
+  }
+
+  // Run all 25 agents + show results in Darwin panel
+  window.triggerDarwinDebate = async function() {
+    const btn = document.getElementById('darwin-debate-btn');
+    const macroEl = document.getElementById('darwin-macro-regime');
+    const sectorEl = document.getElementById('darwin-sector');
+    const cioEl = document.getElementById('darwin-cio-call');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ RUNNING...'; }
+    if (macroEl) macroEl.textContent = 'RUNNING...';
+
+    try {
+      const res = await fetch('/api/agent-debate');
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      
+      const s = data.summary || {};
+      const macroColor = s.macro_regime === 'RISK_ON' ? '#4ade80' : s.macro_regime === 'RISK_OFF' ? '#f87171' : '#94a3b8';
+      const cioColor   = s.cio_final_action === 'BUY' ? '#4ade80' : s.cio_final_action === 'SELL' ? '#f87171' : '#94a3b8';
+
+      if (macroEl) { macroEl.textContent = s.macro_regime || '--'; macroEl.style.color = macroColor; }
+      if (sectorEl) sectorEl.textContent = s.sector_consensus || '--';
+      if (cioEl) { 
+        cioEl.textContent = `${s.cio_final_action || '--'} ${s.cio_final_symbol || ''}`;
+        cioEl.style.color = cioColor;
+      }
+      
+      // Render leaderboard from Darwin weights
+      await loadDarwinLeaderboard();
+      
+      // Show success toast
+      const toast = document.createElement('div');
+      toast.style.cssText = 'position:fixed;top:60px;right:12px;background:#0f4c81;border:1px solid #38bdf8;color:#e2e8f0;font-family:monospace;font-size:11px;padding:8px 14px;border-radius:4px;z-index:9999;';
+      toast.textContent = `✅ ATLAS DEBATE COMPLETE: ${s.cio_final_action} ${s.cio_final_symbol}`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+
+    } catch(err) {
+      if (macroEl) macroEl.textContent = 'ERROR';
+      console.error('Darwin debate error:', err);
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = '▶ RUN DEBATE'; }
+    }
+  };
+
+  // Handle Darwin tab in mobile nav
+  document.querySelectorAll('.mob-tab-btn[data-tab="darwin"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      loadDarwinLeaderboard();
+    });
+  });
+
   // ═══════════════════ INIT ═══════════════════
   initClock();
   fetchRealData();
   setInterval(fetchRealData, 3000);
+  // Load Darwin leaderboard data on startup
+  setTimeout(loadDarwinLeaderboard, 2000);
 })();

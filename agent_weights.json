@@ -1,0 +1,102 @@
+{
+  "BTC_Dominance": {
+    "weight": 1.0, "sharpe_rolling": 0.0, "trades_tracked": 0,
+    "wins": 0, "losses": 0, "total_return_pct": 0.0, "last_updated": "2026-08-13T08:30:00+00:00"
+  },
+  "Fed_Fear_Index": {
+    "weight": 1.0, "sharpe_rolling": 0.0, "trades_tracked": 0,
+    "wins": 0, "losses": 0, "total_return_pct": 0.0, "last_updated": "2026-08-13T08:30:00+00:00"
+  },
+  "Global_Liquidity": {
+    "weight": 1.0, "sharpe_rolling": 0.0, "trades_tracked": 0,
+    "wins": 0, "losses": 0, "total_return_pct": 0.0, "last_updated": "2026-08-13T08:30:00+00:00"
+  },
+  "Stablecoin_Flow": {
+    "weight": 1.0, "sharpe_rolling": 0.0, "trades_tracked": 0,
+    "wins": 0, "losses": 0, "total_return_pct": 0.0, "last_updated": "2026-08-13T08:30:00+00:00"
+  },
+  "Miner_Sentiment": {
+    "weight": 1.0, "sharpe_rolling": 0.0, "trades_tracked": 0,
+    "wins": 0, "losses": 0, "total_return_pct": 0.0, "last_updated": "2026-08-13T08:30:00+00:00"
+  },
+  "Fear_Greed_Index": {
+    "weight": 1.2, "sharpe_rolling": 0.0, "trades_tracked": 0,
+    "wins": 0, "losses": 0, "total_return_pct": 0.0, "last_updated": "2026-08-13T08:30:00+00:00"
+  },
+  "Regulation_Risk": {
+    "weight": 1.0, "sharpe_rolling": 0.0, "trades_tracked": 0,
+    "wins": 0, "losses": 0, "total_return_pct": 0.0, "last_updated": "2026-08-13T08:30:00+00:00"
+  },
+  "OnChain_Flow": {
+    "weight": 1.1, "sharpe_rolling": 0.0, "trades_tracked": 0,
+    "wins": 0, "losses": 0, "total_return_pct": 0.0, "last_updated": "2026-08-13T08:30:00+00:00"
+  },
+  "Volatility_Regime": {
+    "weight": 1.1, "sharpe_rolling": 0.0, "trades_tracked": 0,
+    "wins": 0, "losses": 0, "total_return_pct": 0.0, "last_updated": "2026-08-13T08:30:00+00:00"
+  },
+  "Institutional_Flow": {
+    "weight": 1.0, "sharpe_rolling": 0.0, "trades_tracked": 0,
+    "wins": 0, "losses": 0, "total_return_pct": 0.0, "last_updated": "2026-08-13T08:30:00+00:00"
+  },
+  "L1_BlueChips": {
+    "weight": 1.2, "sharpe_rolling": 0.0, "trades_tracked": 0,
+    "wins": 0, "losses": 0, "total_return_pct": 0.0, "last_updated": "2026-08-13T08:30:00+00:00"
+  },
+  "DeFi_Desk": {
+    "weight": 1.0, "sharpe_rolling": 0.0, "trades_tracked": 0,
+    "wins": 0, "losses": 0, "total_return_pct": 0.0, "last_updated": "2026-08-13T08:30:00+00:00"
+  },
+  "AI_Meme_Desk": {
+    "weight": 0.8, "sharpe_rolling": 0.0, "trades_tracked": 0,
+    "wins": 0, "losses": 0, "total_return_pct": 0.0, "last_updated": "2026-08-13T08:30:00+00:00"
+  },
+  "RWA_Desk": {
+    "weight": 0.9, "sharpe_rolling": 0.0, "trades_tracked": 0,
+    "wins": 0, "losses": 0, "total_return_pct": 0.0, "last_updated": "2026-08-13T08:30:00+00:00"
+  },
+  "Infra_Chains_Desk": {
+    "weight": 1.0, "sharpe_rolling": 0.0, "trades_tracked": 0,
+    "wins": 0, "losses": 0, "total_return_pct": 0.0, "last_updated": "2026-08-13T08:30:00+00:00"
+  },
+  "Gaming_Desk": {
+    "weight": 0.7, "sharpe_rolling": 0.0, "trades_tracked": 0,
+    "wins": 0, "losses": 0, "total_return_pct": 0.0, "last_updated": "2026-08-13T08:30:00+00:00"
+  },
+  "Relationship_Mapper": {
+    "weight": 1.1, "sharpe_rolling": 0.0, "trades_tracked": 0,
+    "wins": 0, "losses": 0, "total_return_pct": 0.0, "last_updated": "2026-08-13T08:30:00+00:00"
+  },
+  "Druckenmiller_Crypto": {
+    "weight": 1.3, "sharpe_rolling": 0.0, "trades_tracked": 0,
+    "wins": 0, "losses": 0, "total_return_pct": 0.0, "last_updated": "2026-08-13T08:30:00+00:00"
+  },
+  "Soros_Reflexivity": {
+    "weight": 1.2, "sharpe_rolling": 0.0, "trades_tracked": 0,
+    "wins": 0, "losses": 0, "total_return_pct": 0.0, "last_updated": "2026-08-13T08:30:00+00:00"
+  },
+  "Simons_Quant": {
+    "weight": 1.4, "sharpe_rolling": 0.0, "trades_tracked": 0,
+    "wins": 0, "losses": 0, "total_return_pct": 0.0, "last_updated": "2026-08-13T08:30:00+00:00"
+  },
+  "Ackman_Conviction": {
+    "weight": 1.1, "sharpe_rolling": 0.0, "trades_tracked": 0,
+    "wins": 0, "losses": 0, "total_return_pct": 0.0, "last_updated": "2026-08-13T08:30:00+00:00"
+  },
+  "CRO_Risk": {
+    "weight": 1.5, "sharpe_rolling": 0.0, "trades_tracked": 0,
+    "wins": 0, "losses": 0, "total_return_pct": 0.0, "last_updated": "2026-08-13T08:30:00+00:00"
+  },
+  "Alpha_Discovery": {
+    "weight": 1.0, "sharpe_rolling": 0.0, "trades_tracked": 0,
+    "wins": 0, "losses": 0, "total_return_pct": 0.0, "last_updated": "2026-08-13T08:30:00+00:00"
+  },
+  "Auto_Execution": {
+    "weight": 1.0, "sharpe_rolling": 0.0, "trades_tracked": 0,
+    "wins": 0, "losses": 0, "total_return_pct": 0.0, "last_updated": "2026-08-13T08:30:00+00:00"
+  },
+  "CIO_Synthesizer": {
+    "weight": 1.5, "sharpe_rolling": 0.0, "trades_tracked": 0,
+    "wins": 0, "losses": 0, "total_return_pct": 0.0, "last_updated": "2026-08-13T08:30:00+00:00"
+  }
+}

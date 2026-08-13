@@ -42,6 +42,7 @@
   <nav class="mobile-nav-bar card-21st">
     <button class="mob-tab-btn active" data-tab="all">⚡ ALL</button>
     <button class="mob-tab-btn" data-tab="aichat">💬 AI CHAT</button>
+    <button class="mob-tab-btn" data-tab="darwin">🧬 DARWIN AI</button>
     <button class="mob-tab-btn" data-tab="wallet">💰 WALLET</button>
     <button class="mob-tab-btn" data-tab="chart">📈 CHART</button>
     <button class="mob-tab-btn" data-tab="radar">🎯 RADAR</button>
@@ -148,12 +149,89 @@
           <div class="chat-chips-row">
             <button class="chat-chip" onclick="sendChatPrompt('What is my wallet balance?')">💰 Balances</button>
             <button class="chat-chip" onclick="sendChatPrompt('Show active open positions')">📊 Active Trades</button>
-            <button class="chat-chip" onclick="sendChatPrompt('Show my win rate on Delta and CoinSwitch')">📈 Win Rates</button>
-            <button class="chat-chip" onclick="sendChatPrompt('Any pre-breakout signals right now?')">🎯 Pre-Breakouts</button>
+            <button class="chat-chip" onclick="sendChatPrompt('What is the macro regime right now?')">🌐 Macro Regime</button>
+            <button class="chat-chip" onclick="sendChatPrompt('What is the CIO final decision?')">🎯 CIO Decision</button>
+            <button class="chat-chip" onclick="sendChatPrompt('Show ATLAS agent leaderboard')">🧬 Darwin Agents</button>
+            <button class="chat-chip" onclick="sendChatPrompt('Any pre-breakout signals right now?')">⚡ Pre-Breakouts</button>
           </div>
           <div class="chat-input-wrap">
             <input type="text" id="chatInput" placeholder="Ask AI Assistant anything about your live trades..." onkeypress="handleChatKeyPress(event)" />
             <button id="chatSendBtn" onclick="sendUserChatMessage()">SEND ↵</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 🧬 DARWIN ATLAS SELF-IMPROVING AI LEADERBOARD -->
+      <div class="card card-21st sec-target" id="sec-darwin" data-tab-target="darwin" style="margin-top: 12px;">
+        <div class="card-header" style="justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="card-icon">🧬</span>
+            <span class="card-title">ATLAS 25-AGENT DARWIN LEADERBOARD</span>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <span class="tag glow-green" id="darwin-active-agents">25 ACTIVE</span>
+            <button onclick="triggerDarwinDebate()" class="darwin-btn" id="darwin-debate-btn" title="Run all 25 agents now">▶ RUN DEBATE</button>
+          </div>
+        </div>
+        <div class="card-body" style="padding:10px 8px 8px;">
+
+          <!-- Darwin Stats Bar -->
+          <div class="darwin-stats-bar" id="darwin-stats-bar">
+            <div class="darwin-stat">
+              <span class="darwin-stat-label">MACRO</span>
+              <span class="darwin-stat-value" id="darwin-macro-regime">LOADING</span>
+            </div>
+            <div class="darwin-stat">
+              <span class="darwin-stat-label">SECTOR</span>
+              <span class="darwin-stat-value" id="darwin-sector">---</span>
+            </div>
+            <div class="darwin-stat">
+              <span class="darwin-stat-label">CIO CALL</span>
+              <span class="darwin-stat-value glow-text" id="darwin-cio-call">---</span>
+            </div>
+            <div class="darwin-stat">
+              <span class="darwin-stat-label">CYCLES</span>
+              <span class="darwin-stat-value" id="darwin-cycles">0</span>
+            </div>
+            <div class="darwin-stat">
+              <span class="darwin-stat-label">KEEP RATE</span>
+              <span class="darwin-stat-value" id="darwin-keep-rate">0%</span>
+            </div>
+          </div>
+
+          <!-- Agent Leaderboard Table -->
+          <div style="overflow-x:auto;margin-top:8px;">
+            <table class="darwin-table" id="darwin-leaderboard-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>AGENT</th>
+                  <th>WEIGHT</th>
+                  <th>SHARPE</th>
+                  <th>WIN%</th>
+                  <th>STATUS</th>
+                </tr>
+              </thead>
+              <tbody id="darwin-table-body">
+                <tr><td colspan="6" style="text-align:center;color:#666;padding:16px;">Click ▶ RUN DEBATE to load agent data</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Darwin History -->
+          <div style="margin-top:10px;">
+            <div class="darwin-section-label">AUTORESEARCH HISTORY (Last 5 Cycles)</div>
+            <div id="darwin-history-list" class="darwin-history-list">
+              <div style="color:#555;font-size:11px;padding:8px;">No autoresearch cycles yet. System will auto-run weekly.</div>
+            </div>
+          </div>
+
+          <!-- Spawned Agents -->
+          <div style="margin-top:8px;" id="spawned-agents-section">
+            <div class="darwin-section-label">AUTO-SPAWNED SPECIALIST AGENTS</div>
+            <div id="spawned-agents-list" class="darwin-history-list">
+              <div style="color:#555;font-size:11px;padding:8px;">No agents spawned yet. System spawns when knowledge gaps detected 3x.</div>
+            </div>
           </div>
         </div>
       </div>

@@ -1097,6 +1097,158 @@ body {
   
   .heatmap-grid { grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); }
   .heat-sym { font-size: 9px; }
+/* ═══════════════════════════════════════════════════════════════════
+   ATLAS DARWIN LEADERBOARD STYLES
+   ═══════════════════════════════════════════════════════════════════ */
+
+.darwin-btn {
+  background: linear-gradient(135deg, #0f4c81 0%, #1e6fad 100%);
+  border: 1px solid #38bdf8;
+  color: #38bdf8;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.darwin-btn:hover {
+  background: rgba(56,189,248,0.15);
+  box-shadow: 0 0 10px rgba(56,189,248,0.4);
+  transform: scale(1.03);
+}
+.darwin-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Darwin stats bar */
+.darwin-stats-bar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.darwin-stat {
+  flex: 1;
+  min-width: 70px;
+  background: rgba(6,9,14,0.8);
+  border: 1px solid rgba(56,189,248,0.15);
+  border-radius: 4px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.darwin-stat-label {
+  font-size: 8px;
+  color: #64748b;
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.darwin-stat-value {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+/* Agent leaderboard table */
+.darwin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+.darwin-table th {
+  background: rgba(15,76,129,0.4);
+  color: #38bdf8;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid rgba(56,189,248,0.2);
+}
+.darwin-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  color: #cbd5e1;
+  vertical-align: middle;
+}
+.darwin-table tr:hover td {
+  background: rgba(56,189,248,0.04);
+}
+.darwin-rank-gold   { color: #fbbf24; font-weight: 700; }
+.darwin-rank-silver { color: #94a3b8; font-weight: 700; }
+.darwin-rank-bronze { color: #c2602d; font-weight: 700; }
+
+.darwin-weight-high { color: #4ade80; }
+.darwin-weight-low  { color: #f87171; }
+.darwin-weight-mid  { color: #94a3b8; }
+
+.darwin-badge-testing  { background: rgba(251,191,36,0.2); color:#fbbf24; padding:2px 5px; border-radius:3px; font-size:8px; }
+.darwin-badge-kept     { background: rgba(74,222,128,0.2); color:#4ade80; padding:2px 5px; border-radius:3px; font-size:8px; }
+.darwin-badge-reverted { background: rgba(248,113,113,0.2); color:#f87171; padding:2px 5px; border-radius:3px; font-size:8px; }
+.darwin-badge-active   { background: rgba(56,189,248,0.2); color:#38bdf8; padding:2px 5px; border-radius:3px; font-size:8px; }
+
+/* Darwin history list */
+.darwin-section-label {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.1em;
+  color: #38bdf8;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(56,189,248,0.15);
+  padding-bottom: 4px;
+}
+.darwin-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 130px;
+  overflow-y: auto;
+}
+.darwin-history-item {
+  background: rgba(6,9,14,0.7);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 3px;
+  padding: 5px 8px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Agent debate live feed */
+.atlas-layer-header {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: #38bdf8;
+  text-transform: uppercase;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(56,189,248,0.1);
+  margin-bottom: 4px;
+}
+.agent-debate-card {
+  background: rgba(6,9,14,0.8);
+  border: 1px solid rgba(56,189,248,0.1);
+  border-radius: 4px;
+  padding: 6px 8px;
+  margin-bottom: 4px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+.agent-regime-on   { color: #4ade80; font-weight: 700; }
+.agent-regime-off  { color: #f87171; font-weight: 700; }
+.agent-regime-neu  { color: #94a3b8; }
   .heat-price { font-size: 8px; }
 
   /* Touch optimizations */
