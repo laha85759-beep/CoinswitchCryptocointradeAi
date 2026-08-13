@@ -203,7 +203,7 @@ class OptionsHedgeAgent:
         return plan
 
     def execute_plan(self, plan: dict) -> dict:
-        """Executes the hedged options legs on Delta Exchange India."""
+        """Executes the hedged options legs on Delta Exchange India (REAL TRADE ONLY)."""
         if not plan:
             return {"status": "error", "reason": "invalid_plan"}
 
@@ -216,9 +216,12 @@ class OptionsHedgeAgent:
                 order_type="market_order",
                 quantity=1
             )
+            # Ensure we got a valid order response from the live API
+            if not call_order or not (call_order.get("id") or call_order.get("order_id")):
+                raise ValueError("No valid order ID returned from Delta API for Call leg")
         except Exception as exc:
-            log.warning("Call leg market order attempt by symbol failed, trying direct paper order: %s", exc)
-            call_order = {"id": f"OPT-CALL-{call_leg['product_id']}"}
+            log.error("Delta Call leg order execution FAILED: %s", exc)
+            return {"status": "error", "reason": f"call_leg_failed:{exc}"}
 
         # Place Put Leg
         put_leg = plan["put_leg"]
@@ -229,14 +232,23 @@ class OptionsHedgeAgent:
                 order_type="market_order",
                 quantity=1
             )
+            # Ensure we got a valid order response from the live API
+            if not put_order or not (put_order.get("id") or put_order.get("order_id")):
+                raise ValueError("No valid order ID returned from Delta API for Put leg")
         except Exception as exc:
-            log.warning("Put leg market order attempt by symbol failed, trying direct paper order: %s", exc)
-            put_order = {"id": f"OPT-PUT-{put_leg['product_id']}"}
+            log.error("Delta Put leg order execution FAILED: %s", exc)
+            # In a production environment, if one leg fails, we should ideally alert the user
+            if self.notifier:
+                self.notifier.send(
+                    f"⚠️ *DELTA HEDGE ALARM*\n"
+                    f"Call leg filled (`{call_order.get('id')}`), but Put leg (`{put_leg['symbol']}`) FAILED: `{exc}`. Check account status immediately."
+                )
+            return {"status": "error", "reason": f"put_leg_failed:{exc}"}
 
-        plan["call_order_id"] = call_order.get("id") or call_order.get("order_id", "paper_call")
-        plan["put_order_id"] = put_order.get("id") or put_order.get("order_id", "paper_put")
+        plan["call_order_id"] = call_order.get("id") or call_order.get("order_id")
+        plan["put_order_id"] = put_order.get("id") or put_order.get("order_id")
 
-        # Save to open options positions
+        # Save to open options positions (Only real trades reach here)
         open_opts = load_json(OPTIONS_TRADES_FILE, [])
         open_opts.append(plan)
         save_json(OPTIONS_TRADES_FILE, open_opts)
@@ -256,6 +268,7 @@ class OptionsHedgeAgent:
             )
 
         return {"status": "filled", "plan": plan}
+
 
 
 class OptionsMonitorAgent:
