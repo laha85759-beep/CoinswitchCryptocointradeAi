@@ -651,12 +651,16 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
   window.toggleFloatingAiChat = function() {
     const sec = document.getElementById('sec-ai-chat');
     if (sec) {
-      sec.style.display = 'block';
-      sec.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      const input = document.getElementById('chatInput');
-      if (input) input.focus();
+      if (sec.style.display === 'none' || sec.style.display === '') {
+        sec.style.display = 'block';
+        const input = document.getElementById('chatInput');
+        if (input) input.focus();
+      } else {
+        sec.style.display = 'none';
+      }
     }
   };
+
 
   window.handleChatKeyPress = function(e) {
     if (e.key === 'Enter') sendUserChatMessage();
