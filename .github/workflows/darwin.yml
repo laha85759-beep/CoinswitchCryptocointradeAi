@@ -1,27 +1,19 @@
-name: CoinSwitch Momentum Trading Bot
+name: Darwin Self-Improvement Loop
 
 on:
   schedule:
-    - cron: "*/15 * * * *"   # Every 15 minutes, 24/7 — 96 cycles/day
-  workflow_dispatch:           # Manual trigger from GitHub Actions UI
-
-# Cancel any in-progress run if a new one starts (prevents overlap)
-concurrency:
-  group: trading-bot
-  cancel-in-progress: false   # Never cancel — let the running cycle finish
+    - cron: "5 0 * * *"      # Daily weights update: every day at 00:05 UTC
+    - cron: "0 1 * * 0"      # Weekly cycle: every Sunday at 01:00 UTC
+  workflow_dispatch:          # Manual trigger
 
 jobs:
-  trade:
+  darwin:
     runs-on: ubuntu-latest
-    timeout-minutes: 13       # Slightly more than 15-min schedule window
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       # ── Restore persisted state between runs ────────────────────────────────
-      # State files persist open trades, processed signals, PnL, circuit
-      # breaker, and Darwin weights across the 15-minute GitHub Actions cycles.
       - name: Restore trade state
         id: cache-restore
         uses: actions/cache/restore@v4
@@ -50,7 +42,8 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run trading bot
+      - name: Run Daily Weight Update
+        if: github.event.schedule == '5 0 * * *' || github.event_name == 'workflow_dispatch'
         env:
           CS_API_KEY:           ${{ secrets.CS_API_KEY }}
           CS_API_SECRET:        ${{ secrets.CS_API_SECRET }}
@@ -59,14 +52,21 @@ jobs:
           TELEGRAM_TOKEN:       ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID:     ${{ secrets.TELEGRAM_CHAT_ID }}
           ONEMIN_AI_API_KEY:    ${{ secrets.ONEMIN_AI_API_KEY }}
-          PAPER_TRADING_MODE:   'false' # ENFORCE REAL MONEY TRADING ONLY
-          WATCHLIST:            ${{ vars.WATCHLIST || '' }}
-        run: |
-          cd $GITHUB_WORKSPACE
-          python main.py
+          PAPER_TRADING_MODE:   'false'
+        run: python darwin_engine.py --daily
 
-      - name: Ping Render UI to prevent sleep (24/7 Uptime)
-        run: curl -s https://coinsai-terminal.onrender.com/ > /dev/null
+      - name: Run Weekly Autoresearch Cycle
+        if: github.event.schedule == '0 1 * * 0' || github.event_name == 'workflow_dispatch'
+        env:
+          CS_API_KEY:           ${{ secrets.CS_API_KEY }}
+          CS_API_SECRET:        ${{ secrets.CS_API_SECRET }}
+          DELTA_API_KEY:        ${{ secrets.DELTA_API_KEY }}
+          DELTA_API_SECRET:     ${{ secrets.DELTA_API_SECRET }}
+          TELEGRAM_TOKEN:       ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID:     ${{ secrets.TELEGRAM_CHAT_ID }}
+          ONEMIN_AI_API_KEY:    ${{ secrets.ONEMIN_AI_API_KEY }}
+          PAPER_TRADING_MODE:   'false'
+        run: python darwin_engine.py --cycle
 
       # ── Always save state, even on failure ─────────────────────────────────
       - name: Save trade state
@@ -85,16 +85,3 @@ jobs:
             darwin_history.json
             spawned_agents.json
           key: trade-state-${{ runner.os }}-${{ github.run_id }}
-
-      # ── Upload logs for debugging ───────────────────────────────────────────
-      - name: Upload logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: bot-logs-${{ github.run_number }}
-          path: |
-            bot.log
-            agent_audit.jsonl
-          retention-days: 7
-          if-no-files-found: ignore
-

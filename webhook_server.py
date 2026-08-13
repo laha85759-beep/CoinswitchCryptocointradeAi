@@ -94,56 +94,92 @@ def get_terminal_data():
             return jsonify(LAST_API_CACHE_DATA)
 
     try:
-        # Fetch Real Live Balances for Both Exchanges
-        cs_usdt = 12.34
-        cs_inr = 0.0
-        delta_usdt = 4.73
-        
+        # ── Fetch REAL Live Balances from Both Exchanges ──
+        # Default to 0.0 — never show fake numbers if API fails
+        cs_usdt  = 0.0
+        cs_inr   = 0.0
+        delta_usdt = 0.0
+        cs_balance_error   = None
+        delta_balance_error = None
+
         if cs_client is not None:
             try:
                 b_u = float(cs_client.get_usdt_balance())
-                if b_u >= 0: cs_usdt = b_u
+                if b_u >= 0:
+                    cs_usdt = b_u
             except Exception as exc:
-                log.warning("Failed to fetch CoinSwitch USDT balance: %s", exc)
-                
+                cs_balance_error = str(exc)
+                log.warning("CoinSwitch USDT balance error: %s", exc)
+
             try:
                 b_i = float(cs_client.get_inr_balance())
-                if b_i >= 0: cs_inr = b_i
+                if b_i >= 0:
+                    cs_inr = b_i
             except Exception as exc:
-                log.warning("Failed to fetch CoinSwitch INR balance: %s", exc)
+                log.warning("CoinSwitch INR balance error: %s", exc)
 
         if delta_client is not None:
             try:
                 delta_bal = delta_client.get_usdt_balance()
                 if isinstance(delta_bal, dict):
-                    b_d = float(delta_bal.get("available_balance", 0.0) or delta_bal.get("balance", 0.0) or delta_bal.get("result", {}).get("balance", 0.0) or 0.0)
-                    if b_d > 0: delta_usdt = b_d
+                    b_d = float(
+                        delta_bal.get("available_balance", 0.0) or
+                        delta_bal.get("balance", 0.0) or
+                        delta_bal.get("result", {}).get("balance", 0.0) or 0.0
+                    )
+                    if b_d > 0:
+                        delta_usdt = b_d
                 elif isinstance(delta_bal, (int, float)):
-                    if float(delta_bal) > 0: delta_usdt = float(delta_bal)
+                    if float(delta_bal) > 0:
+                        delta_usdt = float(delta_bal)
             except Exception as exc:
-                log.warning("Failed to fetch Delta USDT balance: %s", exc)
+                delta_balance_error = str(exc)
+                log.warning("Delta USDT balance error: %s", exc)
 
         inr_in_usdt = cs_inr / 88.0 if cs_inr > 0 else 0.0
-        # Total portfolio asset value (including CoinSwitch crypto holdings, USDT, INR & Delta equity)
-        total_real_capital = max(18.16, round(cs_usdt + inr_in_usdt + delta_usdt + 10.68, 2))
+        # REAL total — no artificial floor, no phantom balances
+        total_real_capital = round(cs_usdt + inr_in_usdt + delta_usdt, 2)
 
-        # Fetch ALL Tickers Once (Massive speedup)
+        # ── Fetch ALL Tickers Once (Massive speedup)
         cs_tickers = {}
         try:
             cs_tickers = cs_client.get_all_tickers("c2c2") if cs_client else {}
         except Exception:
             pass
-            
-        # Helper to get price from the single snapshot
+
+        # ── Live price fallback: CoinGecko if CS ticker not available
+        _cg_prices = {}
+        try:
+            import requests as _req
+            _r = _req.get(
+                "https://api.coingecko.com/api/v3/simple/price",
+                params={"ids": "bitcoin,ethereum,solana,ripple", "vs_currencies": "usd"},
+                timeout=5
+            )
+            if _r.status_code == 200:
+                _cg = _r.json()
+                _cg_prices = {
+                    "BTC": _cg.get("bitcoin", {}).get("usd", 0),
+                    "ETH": _cg.get("ethereum", {}).get("usd", 0),
+                    "SOL": _cg.get("solana", {}).get("usd", 0),
+                    "XRP": _cg.get("ripple", {}).get("usd", 0),
+                }
+        except Exception:
+            pass
+
+        # Helper to get price from CS ticker snapshot, fallback to CoinGecko live
         def get_price(sym_base: str, default: float) -> float:
             target = f"{sym_base}/USDT"
             p = float(cs_tickers.get(target, {}).get("lastPrice", 0) or 0)
-            return p if p > 0 else default
+            if p > 0:
+                return p
+            cg = _cg_prices.get(sym_base, 0)
+            return cg if cg > 0 else default
 
-        btc_price = get_price("BTC", 65105.0)
-        eth_price = get_price("ETH", 2740.0)
-        sol_price = get_price("SOL", 145.0)
-        xrp_price = get_price("XRP", 0.58)
+        btc_price = get_price("BTC", 0.0)
+        eth_price = get_price("ETH", 0.0)
+        sol_price = get_price("SOL", 0.0)
+        xrp_price = get_price("XRP", 0.0)
 
         # Load Real Open & Closed Trades
         open_cs = load_json_safe("open_trades_cs.json", [])
@@ -186,7 +222,7 @@ def get_terminal_data():
             total_pnl_usdt += float(stats.get("realized_pnl_usdt", 0.0))
             total_trades_count += int(stats.get("closed_trades", 0))
 
-        total_real_capital = (cs_usdt + (cs_inr / 88.0)) + delta_usdt
+        total_real_capital = round(cs_usdt + (cs_inr / 88.0) + delta_usdt, 2)
 
         # Load last 30 execution log entries from agent_audit.jsonl
         execution_log = []
@@ -805,7 +841,7 @@ def handle_ai_chat():
             )
 
         elif any(w in user_msg for w in ["balance", "wallet", "capital", "usdt", "inr", "money", "portfolio"]):
-            reply = (
+        reply = (
                 f"**LIVE PORTFOLIO BALANCES:**\n"
                 f"  CoinSwitch USDT: `${cs_u:.4f}`\n"
                 f"  CoinSwitch INR:  `Rs.{cs_i:.2f}`\n"
@@ -920,145 +956,6 @@ def handle_ai_chat():
         return jsonify({"reply": f"Assistant error: {exc}"}), 200
 
 
-
-        # Fetch current cached live data
-        with API_CACHE_LOCK:
-            current_data = LAST_API_CACHE_DATA or {}
-
-        bals = current_data.get("balances", {})
-        open_pos = current_data.get("open_positions", {})
-        perf = current_data.get("performance", {})
-        tickers = current_data.get("tickers", {})
-        pre_breakouts = current_data.get("pre_breakout_signals", [])
-
-        # Intelligently process intent using real live system data
-        if any(w in user_msg for w in ["cpi", "inflation", "fed", "news", "fomc", "rate", "macro", "economy", "impact"]):
-            reply = (
-                "📰 **CPI & MACRO NEWS IMPACT ANALYSIS:**\n\n"
-                "• **What is CPI?** The Consumer Price Index (CPI) measures inflation. It is the single most critical economic report monitored by the US Federal Reserve.\n\n"
-                "• **Higher CPI (Hot Inflation):** Increases chances of Fed rate hikes or delayed rate cuts. Strengthens US Dollar (DXY) and creates downward volatility spikes in Bitcoin (BTC) & risk assets.\n\n"
-                "• **Lower CPI (Cooling Inflation):** Signals dovish Fed policy & future rate cuts. Capital flows into crypto, sparking strong bullish rallies in BTC, ETH, and altcoins.\n\n"
-                "⚙️ **How CoinsAI Bot Navigates CPI Releases:**\n"
-                "1. **Pre-News Risk Shield:** Sets trailing stop-losses and lock-in targets to defend open equity.\n"
-                "2. **Smart Dynamic Leverage (5x-20x):** Automatically adjusts leverage down to 5x-8x during macro news wicks to prevent premature liquidation, then scales up to **20x** once direction is confirmed!\n"
-                "3. **Pre-Breakout Radar:** Continuously scans 150+ pairs for post-news volume surges to capture early momentum."
-            )
-
-        elif any(w in user_msg for w in ["balance", "wallet", "capital", "usdt", "inr", "money"]):
-            cs_u = bals.get("cs_usdt", 12.34)
-            cs_i = bals.get("cs_inr", 0.0)
-            del_u = bals.get("delta_usdt", 4.73)
-            tot = bals.get("total_capital_usdt", 18.16)
-            reply = (
-                f"💰 **LIVE PORTFOLIO BALANCES:**\n"
-                f"• **CoinSwitch USDT:** `${cs_u:.4f} USDT` ($12.34 locked in BONK Buy Order)\n"
-                f"• **CoinSwitch INR:** `₹{cs_i:.2f} INR`\n"
-                f"• **Delta Exchange Equity:** `${del_u:.2f} USD`\n"
-                f"• **TOTAL PORTFOLIO ASSETS:** `${tot:.2f} USD`"
-            )
-
-        elif any(w in user_msg for w in ["position", "trade", "open", "running", "active"]):
-            cs_pos = open_pos.get("coinswitch", [])
-            del_pos = open_pos.get("delta", [])
-            tot_count = open_pos.get("total_count", 0)
-            if tot_count == 0:
-                reply = "📉 **ACTIVE POSITIONS:**\nCurrently no active positions open. The bot is actively scanning for momentum breakouts across 150+ pairs."
-            else:
-                lines = [f"📊 **ACTIVE POSITIONS ({tot_count} Active):**"]
-                for p in cs_pos:
-                    lines.append(f"• 🟢 **[CoinSwitch]** `{p.get('symbol')}` | Side: `{p.get('direction').upper()}` | Entry: `${p.get('entry_price')}`")
-                for p in del_pos:
-                    lines.append(f"• 🔵 **[Delta India]** `{p.get('symbol')}` | Side: `{p.get('direction').upper()}` | Entry: `${p.get('entry_price')}` | SL: `${p.get('hard_sl')}` | TP: `${p.get('take_profit')}`")
-                reply = "\n".join(lines)
-
-        elif any(w in user_msg for w in ["winrate", "win rate", "loss rate", "profit", "pnl", "stat", "performance"]):
-            cs_wr = perf.get("cs_winrate", 100.0)
-            cs_lr = perf.get("cs_lossrate", 0.0)
-            del_wr = perf.get("delta_winrate", 75.0)
-            del_lr = perf.get("delta_lossrate", 25.0)
-            ov_wr = perf.get("overall_winrate", 75.0)
-            tot_pnl = perf.get("total_realized_pnl_usdt", 0.0)
-            reply = (
-                f"📈 **PERFORMANCE & WIN/LOSS RATES:**\n"
-                f"• **Overall Win Rate:** `{ov_wr}%`\n"
-                f"• **CoinSwitch Pro:** `{cs_wr}% Win Rate` | `{cs_lr}% Loss Rate`\n"
-                f"• **Delta Exchange India:** `{del_wr}% Win Rate` | `{del_lr}% Loss Rate`\n"
-                f"• **Total Realized PnL:** `${tot_pnl:+.2f} USDT`"
-            )
-
-        elif any(w in user_msg for w in ["pre-breakout", "radar", "pump", "dump", "signal"]):
-            if not pre_breakouts:
-                reply = "🎯 **PRE-BREAKOUT RADAR:**\nNo early pre-breakout volume spikes detected right now. Scanning 150+ pairs continuously."
-            else:
-                lines = ["🎯 **PRE-BREAKOUT PUMP & DUMP RADAR:**"]
-                for sig in pre_breakouts[:4]:
-                    icon = "🚀 PUMP" if sig.get("type") == "pump" else "📉 DUMP"
-                    lines.append(f"• `{sig.get('symbol')}`: {icon} Radar | Vol Ratio: `{sig.get('vol_ratio')}x` | Velocity: `{sig.get('change_5m'):+.2f}%`")
-                reply = "\n".join(lines)
-
-        elif any(w in user_msg for w in ["strategy", "how bot work", "how it trade", "algorithm", "leverage", "engine"]):
-            reply = (
-                "⚡ **COINSAI QUANTITATIVE TRADING ENGINES:**\n\n"
-                "1. **PP Supertrend Ghost Engine:** Multi-timeframe trend-following algorithm using ATR channels and volume velocity.\n"
-                "2. **Liquidity Gap Run Engine:** Scans for orderbook imbalance gaps and volume spikes to catch explosive breakout runs.\n"
-                "3. **Smart Dynamic Adaptive Leverage Engine (5x-20x):**\n"
-                "   • **20x Max Leverage:** Applied on high-conviction breakout signals (Confidence ≥90%, Volume Ratio ≥3.0x).\n"
-                "   • **12x Leverage:** Applied on strong trend setups (Confidence ≥82%, Volume Ratio ≥2.0x).\n"
-                "   • **8x Leverage:** Applied on volatile altcoins to protect against stop-out wicks.\n"
-                "4. **24/7 Automated Monitoring:** Scans 150+ pairs continuously with trailing stop-loss protection."
-            )
-
-        elif any(w in user_msg for w in ["coinswitch", "delta", "exchange", "difference", "compare"]):
-            cs_wr = perf.get("cs_winrate", 100.0)
-            del_wr = perf.get("delta_winrate", 75.0)
-            reply = (
-                "🏛️ **COINSWITCH PRO vs DELTA EXCHANGE INDIA:**\n\n"
-                f"• **🟢 CoinSwitch Pro (Spot):**\n"
-                f"  - Trading Type: Spot INR / USDT pairs.\n"
-                f"  - Performance: `{cs_wr}% Win Rate` (100% Win Rate, 0% Loss Rate).\n"
-                f"  - Capital: `${bals.get('cs_usdt', 12.34):.2f} USDT` ($12.34 locked in BONK order) + `₹{bals.get('cs_inr', 0.0):.2f} INR`.\n\n"
-                f"• **🔵 Delta Exchange India (Derivatives):**\n"
-                f"  - Trading Type: USDT Futures & Options with Dynamic 5x-20x Leverage.\n"
-                f"  - Performance: `{del_wr}% Win Rate` (75% Win Rate, 25% Loss Rate).\n"
-                f"  - Equity: `${bals.get('delta_usdt', 4.73):.2f} USD`."
-            )
-
-        elif any(w in user_msg for w in ["price", "btc", "eth", "sol", "pepe", "wif", "doge", "ondo", "ticker"]):
-            lines = ["⚡ **LIVE MARKET TICKERS:**"]
-            for sym, price in list(tickers.items())[:6]:
-                lines.append(f"• `{sym.upper()}`: `${price}`")
-            reply = "\n".join(lines)
-
-        else:
-            # Invoke 1min.AI client for intelligent general market queries
-            from onemin_ai_client import OneMinAIClient
-            ai_client = OneMinAIClient()
-            ai_res = ai_client.analyze_sentiment(
-                f"You are CoinsAI Quant Assistant. User asks: '{raw_msg}'. "
-                f"Live Portfolio Net Worth: ${bals.get('total_capital_usdt', 18.16):.2f} USD. "
-                f"Overall Win Rate: {perf.get('overall_winrate', 75.0)}%. "
-                f"Provide a concise, professional 3-bullet response explaining the answer and its impact on crypto trading."
-            )
-            if isinstance(ai_res, dict) and "choices" in ai_res:
-                try:
-                    reply = ai_res["choices"][0]["message"]["content"]
-                except Exception:
-                    reply = f"🤖 **CoinsAI Quant Assistant:**\nRegarding your question: *{raw_msg}*\n\nMarket analysis indicates macro news & inflation indicators heavily influence crypto liquidity. CoinsAI bot employs Smart Dynamic Leverage (5x-20x) and trailing stop-losses to protect assets during news events."
-            else:
-                reply = (
-                    f"🤖 **CoinsAI Quant Assistant:**\nRegarding your question: *{raw_msg}*\n\n"
-                    f"• **Portfolio Status:** `${bals.get('total_capital_usdt', 18.16):.2f} USD Net Worth` | `{perf.get('overall_winrate', 75.0)}% Win Rate`.\n"
-                    f"• **Market Impact:** Macro news & economic data drive short-term price volatility in BTC and altcoins.\n"
-                    f"• **Trading Risk Shield:** The bot automatically adjusts leverage (5x-20x) and activates trailing stop-losses to protect equity during high-volatility news events."
-                )
-
-        return jsonify({"reply": reply}), 200
-
-        return jsonify({"reply": reply}), 200
-
-    except Exception as exc:
-        log.error("AI Chatbot error: %s", exc)
-        return jsonify({"reply": f"AI Assistant notice: {exc}"}), 200
 
 
 @app.route("/ai-trader", methods=["POST"])
