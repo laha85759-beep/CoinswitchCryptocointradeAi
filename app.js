@@ -52,11 +52,19 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
     if (!el) return;
     function tick() {
       const now = new Date();
-      el.textContent = `${String(now.getUTCHours()).padStart(2, '0')}:${String(now.getUTCMinutes()).padStart(2, '0')}:${String(now.getUTCSeconds()).padStart(2, '0')} UTC`;
+      // Calculate IST (UTC + 5 hours 30 mins)
+      const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const istTime = new Date(utcTime + (3600000 * 5.5));
+      
+      const istStr = `${String(istTime.getHours()).padStart(2, '0')}:${String(istTime.getMinutes()).padStart(2, '0')}:${String(istTime.getSeconds()).padStart(2, '0')} IST`;
+      const utcStr = `${String(now.getUTCHours()).padStart(2, '0')}:${String(now.getUTCMinutes()).padStart(2, '0')}:${String(now.getUTCSeconds()).padStart(2, '0')} UTC`;
+      
+      el.textContent = `${istStr} | ${utcStr}`;
     }
     tick();
     setInterval(tick, 1000);
   }
+
 
   let lastHeatmapCoins = [];
   let equityHistory = [27.5, 27.52, 27.48, 27.6, 27.55, 27.65, 27.7, 27.68, 27.75];
