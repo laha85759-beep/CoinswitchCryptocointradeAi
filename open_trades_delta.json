@@ -1,112 +1,17 @@
 [
   {
-    "symbol": "BTC/USDT",
-    "coin": "BTC",
+    "direction": "long",
+    "entry_price": 208.0,
+    "exchange": "delta",
+    "hard_sl": 204.88,
+    "highest_profit_pct": 0.0,
+    "opened_at": "2026-08-14T05:44:39.968836+00:00",
+    "order_id": "synced_api",
+    "peak_price": 208.0,
     "qty": 1.0,
-    "quantity": 1.0,
-    "entry_price": 64106.5,
-    "direction": "long",
-    "unrealized_pnl": -0.144,
-    "exchange": "delta",
-    "paper": false
-  },
-  {
-    "symbol": "ETH/USDT",
-    "coin": "ETH",
-    "qty": 1.0,
-    "quantity": 1.0,
-    "entry_price": 1874.05,
-    "direction": "long",
-    "unrealized_pnl": 0.011,
-    "exchange": "delta",
-    "paper": false
-  },
-  {
-    "symbol": "SOL/USDT",
-    "coin": "SOL",
-    "qty": 1.0,
-    "quantity": 1.0,
-    "entry_price": 75.768,
-    "direction": "long",
-    "unrealized_pnl": 0.28,
-    "exchange": "delta",
-    "paper": false
-  },
-  {
-    "symbol": "WIF/USDT",
-    "coin": "WIF",
-    "qty": 52.0,
-    "quantity": 52.0,
-    "entry_price": 0.144,
-    "direction": "long",
-    "unrealized_pnl": -0.0104,
-    "exchange": "delta",
-    "paper": false
-  },
-  {
-    "symbol": "ONDO/USDT",
-    "coin": "ONDO",
-    "qty": 21.0,
-    "quantity": 21.0,
-    "entry_price": 0.3472,
-    "direction": "long",
-    "unrealized_pnl": -0.21,
-    "exchange": "delta",
-    "paper": false
-  },
-  {
-    "symbol": "FARTCOIN/USDT",
-    "coin": "FARTCOIN",
-    "qty": 110.0,
-    "quantity": 110.0,
-    "entry_price": 0.13555,
-    "direction": "long",
-    "unrealized_pnl": 0.0825,
-    "exchange": "delta",
-    "paper": false
-  },
-  {
-    "symbol": "VIRTUAL/USDT",
-    "coin": "VIRTUAL",
-    "qty": 13.0,
-    "quantity": 13.0,
-    "entry_price": 0.5563,
-    "direction": "long",
-    "unrealized_pnl": 0.0338,
-    "exchange": "delta",
-    "paper": false
-  },
-  {
-    "symbol": "TRUMP/USDT",
-    "coin": "TRUMP",
-    "qty": 5.0,
-    "quantity": 5.0,
-    "entry_price": 1.499,
-    "direction": "long",
-    "unrealized_pnl": -0.003,
-    "exchange": "delta",
-    "paper": false
-  },
-  {
-    "symbol": "HYPE/USDT",
-    "coin": "HYPE",
-    "qty": 1.0,
-    "quantity": 1.0,
-    "entry_price": 54.27,
-    "direction": "long",
-    "unrealized_pnl": 0.082,
-    "exchange": "delta",
-    "paper": false
-  },
-  {
-    "symbol": "XAUT/USDT",
-    "coin": "XAUT",
-    "qty": 1.0,
-    "quantity": 1.0,
-    "entry_price": 4341.1,
-    "direction": "short",
-    "unrealized_pnl": 0.0002,
-    "exchange": "delta",
-    "paper": false
+    "symbol": "C-BTC-63600-150826",
+    "take_profit": 217.984,
+    "trail_active": false,
+    "trough_price": 208.0
   }
 ]

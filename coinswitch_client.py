@@ -28,6 +28,7 @@ class CoinSwitchClient:
         self.session = requests.Session()
         self.rate_limit_delay = rate_limit_delay
         self._last_request_at = 0.0
+        self._symbol_exchange_map = {}  # symbol -> exchange cache
 
     def _sign(self, method: str, path: str, params: dict = None) -> tuple:
         method = method.upper()
@@ -99,6 +100,7 @@ class CoinSwitchClient:
             try:
                 tickers = self.get_all_tickers(ex)
                 for sym, data in tickers.items():
+                    self._symbol_exchange_map[sym] = data.get("exchange", ex)
                     if sym not in merged:
                         merged[sym] = data
                     else:
@@ -120,7 +122,15 @@ class CoinSwitchClient:
 
     def get_ticker_price(self, symbol: str) -> float:
         """Get last price. Uses multi-ticker snapshot for reliability."""
-        for ex in ("c2c2", "c2c1"):
+        if not self._symbol_exchange_map:
+            try:
+                self.get_all_tickers_multi()
+            except Exception:
+                pass
+        cached_exchange = self._symbol_exchange_map.get(symbol)
+        exchanges_to_try = [cached_exchange] if cached_exchange else ["c2c2", "c2c1"]
+
+        for ex in exchanges_to_try:
             try:
                 tickers = self.get_all_tickers(ex)
                 price = float(tickers.get(symbol, {}).get("lastPrice", 0) or 0)
@@ -140,7 +150,14 @@ class CoinSwitchClient:
         """Historical OHLCV candles with dynamic exchange conversion."""
         end = int(time.time() * 1000)
         start = end - (limit * interval_minutes * 60 * 1000)
-        exchanges_to_try = [exchange, "c2c1" if exchange == "c2c2" else "c2c2"]
+        
+        if not self._symbol_exchange_map:
+            try:
+                self.get_all_tickers_multi()
+            except Exception:
+                pass
+        cached_exchange = self._symbol_exchange_map.get(symbol)
+        exchanges_to_try = [cached_exchange] if cached_exchange else [exchange, "c2c1" if exchange == "c2c2" else "c2c2"]
 
         for ex in exchanges_to_try:
             try:
@@ -281,7 +298,13 @@ class CoinSwitchClient:
             else:
                 price = 1.0
 
-        primary_exchange = "c2c2" if symbol.upper().endswith("/USDT") or symbol.upper().endswith("USDT") else exchange
+        if not self._symbol_exchange_map:
+            try:
+                self.get_all_tickers_multi()
+            except Exception:
+                pass
+        cached_exchange = self._symbol_exchange_map.get(symbol)
+        primary_exchange = cached_exchange if cached_exchange else ("c2c2" if symbol.upper().endswith("/USDT") or symbol.upper().endswith("USDT") else exchange)
         exchanges_to_try = [primary_exchange, "c2c1" if primary_exchange == "c2c2" else "c2c2"]
 
         last_exc = None

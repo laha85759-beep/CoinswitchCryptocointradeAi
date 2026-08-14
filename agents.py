@@ -487,8 +487,8 @@ class RiskManagerAgent:
             return float(self.cfg["paper_portfolio_usdt"])
         cs_bal = 0.0
         try:
-            usdt = max(float(self.client.get_usdt_balance()), 0.0)
-            inr_in_usdt = max(float(self.client.get_inr_balance()), 0.0) / 88.0
+            usdt = max(float(self.cs_client.get_usdt_balance()), 0.0)
+            inr_in_usdt = max(float(self.cs_client.get_inr_balance()), 0.0) / 88.0
             cs_bal = usdt + inr_in_usdt
         except Exception as exc:
             log.warning("CS balance failed: %s", exc)
