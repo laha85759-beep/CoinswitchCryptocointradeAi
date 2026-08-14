@@ -120,7 +120,6 @@ class CoinSwitchClient:
 
     def get_ticker_price(self, symbol: str) -> float:
         """Get last price. Uses multi-ticker snapshot for reliability."""
-        # c2c2 has USDT pairs; fallback to c2c1
         for ex in ("c2c2", "c2c1"):
             try:
                 tickers = self.get_all_tickers(ex)
@@ -136,27 +135,31 @@ class CoinSwitchClient:
         symbol: str,
         interval_minutes: int = 5,
         limit: int = 100,
-        exchange: str = "c2c2",   # candles available on c2c2
+        exchange: str = "c2c2",
     ) -> list:
-        """Historical OHLCV candles.
-        interval_minutes: 1, 5, 15, 60, 1440
-        """
+        """Historical OHLCV candles with dynamic exchange conversion."""
         end = int(time.time() * 1000)
         start = end - (limit * interval_minutes * 60 * 1000)
-        try:
-            data = self._request(
-                "GET", "/trade/api/v2/candles",
-                params={
-                    "exchange": exchange,
-                    "symbol": symbol,
-                    "interval": str(interval_minutes),
-                    "start_time": str(start),
-                    "end_time": str(end),
-                },
-            )
-            return data.get("data", [])
-        except Exception:
-            return []
+        exchanges_to_try = [exchange, "c2c1" if exchange == "c2c2" else "c2c2"]
+
+        for ex in exchanges_to_try:
+            try:
+                data = self._request(
+                    "GET", "/trade/api/v2/candles",
+                    params={
+                        "exchange": ex,
+                        "symbol": symbol,
+                        "interval": str(interval_minutes),
+                        "start_time": str(start),
+                        "end_time": str(end),
+                    },
+                )
+                candles = data.get("data", [])
+                if candles:
+                    return candles
+            except Exception:
+                continue
+        return []
 
     @staticmethod
     def _portfolio_balance(item: dict) -> tuple[float, float, float]:

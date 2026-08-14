@@ -316,9 +316,14 @@ class DeltaClient:
         if product_id is None:
             raise ValueError(f"Symbol {symbol} not found on Delta Exchange India")
 
-        # Automatically apply desired leverage (default 20x) on Delta Exchange India
-        if leverage and leverage > 1:
+        # Automatically apply desired leverage (default 20x) on Delta Exchange India (only for futures/non-options)
+        product_info = self._product_cache.get(symbol.upper(), {})
+        contract_type = product_info.get("contract_type", "")
+        is_option = contract_type in ("call_options", "put_options") or "option" in contract_type.lower()
+
+        if leverage and leverage > 1 and not is_option:
             self.set_leverage(product_id, leverage)
+
 
         size = max(1, int(round(quantity)))
 
