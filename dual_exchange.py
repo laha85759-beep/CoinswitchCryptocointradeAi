@@ -670,6 +670,24 @@ class DualMonitorAgent:
             "stop_loss": "🛑 HARD STOP LOSS (-1.5%)",
         }.get(reason, reason.upper())
 
+        # Append to closed_trades.json for UI history
+        closed_file = "closed_trades.json"
+        closed_history = load_json(closed_file, [])
+        closed_record = {
+            "symbol": trade["symbol"],
+            "exchange": "delta",
+            "direction": trade.get("direction", "long"),
+            "entry_price": float(trade["entry_price"]),
+            "exit_price": float(current),
+            "qty": float(trade.get("qty", 0)),
+            "pnl_usdt": pnl_usdt,
+            "pnl_pct": round(pnl_pct, 2),
+            "reason": reason_label,
+            "closed_at": utc_now().isoformat() + "Z"
+        }
+        closed_history.append(closed_record)
+        save_json(closed_file, closed_history)
+
         self.notifier.send(
             f"{'🟢' if pnl_pct >= 0 else '🔴'} *DELTA TRADE CLOSED ({icon})* — `{trade['symbol']}`\n"
             f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"

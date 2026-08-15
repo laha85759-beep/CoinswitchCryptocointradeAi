@@ -10,9 +10,11 @@ class NemotronAnalysisAgent:
     to analyze trade signals and ensure high-probability trade execution.
     """
     def __init__(self, api_key: str = "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"):
+        import httpx
         self.client = OpenAI(
             base_url="https://integrate.api.nvidia.com/v1",
-            api_key=api_key
+            api_key=api_key,
+            http_client=httpx.Client()
         )
         self.model = "nvidia/nemotron-3-ultra-550b-a55b"
 

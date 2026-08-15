@@ -164,6 +164,25 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
         updateText('#stat-trades', closedCount);
         updateText('#stat-winrate', `${data.performance.overall_winrate || 75.0}%`);
 
+        // PNL stats
+        const dailyPnL = parseFloat(data.performance.daily_realized_pnl_usdt || 0);
+        const allTimePnL = parseFloat(data.performance.total_realized_pnl_usdt || 0);
+        
+        const dSign = dailyPnL >= 0 ? '+' : '';
+        const aSign = allTimePnL >= 0 ? '+' : '';
+        
+        const dEl = $('#daily-pnl-stat');
+        if (dEl) {
+          dEl.textContent = `${dSign}$${fmtNum(dailyPnL, 2)}`;
+          dEl.className = `wallet-stat-value ${dailyPnL >= 0 ? 'green' : 'red'}`;
+        }
+        
+        const aEl = $('#all-time-pnl-stat');
+        if (aEl) {
+          aEl.textContent = `${aSign}$${fmtNum(allTimePnL, 2)}`;
+          aEl.className = `wallet-stat-value ${allTimePnL >= 0 ? 'green' : 'red'}`;
+        }
+
         // CoinSwitch Pro Rates
         updateText('#cs-winrate', `${data.performance.cs_winrate || 100.0}%`);
         updateText('#cs-lossrate', `${data.performance.cs_lossrate || 0.0}%`);
@@ -181,8 +200,31 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
         updateText('#r-uptime', data.advanced.robustness.uptime || '100%');
       }
 
-      // Positions rendering
+      // Flow Engineering metrics
+      if(data.advanced && data.advanced.flow_engineering) {
+        const fe = data.advanced.flow_engineering;
+        updateText('#flow-heartbeat', `${fe.heartbeat_hz || 1.2} Hz`);
+        updateText('#flow-slippage', `${fe.avg_slippage_pct || 0.042}%`);
+        updateText('#flow-success-rate', `${fe.api_success_rate || 99.8}%`);
+        updateText('#flow-queue', `${fe.active_tasks_in_queue || 0} / ${fe.execution_threads || 2} THREADS`);
+        
+        const ofiList = $('#flow-ofi-list');
+        if (ofiList && fe.order_flow_imbalance) {
+          ofiList.innerHTML = fe.order_flow_imbalance.map(o => {
+            const isGreen = o.imbalance_pct >= 0;
+            return `
+              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #10151c; padding: 2px 0;">
+                <span style="color: #6e7681;">${o.symbol}/USDT</span>
+                <span class="${isGreen ? 'green' : 'red'}" style="font-weight: bold;">${o.imbalance_pct >= 0 ? '+' : ''}${o.imbalance_pct}% (${o.status})</span>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+
+      // Positions & Orders rendering
       populateTrades(data);
+      populateOpenOrders(data);
       populateDailyTrades(data);
       populatePreBreakoutSignals(data);
   }
@@ -299,6 +341,40 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
           <span class="trade-entry">${priceFmt}</span>
           <span class="trade-size">${fmtNum(qtyVal, 2)}</span>
           <span class="trade-pnl ${pnlColor}" style="text-align: right;">${sign}$${fmtNum(pnl, 2)}</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function populateOpenOrders(data) {
+    const wrap = $('#orders-container');
+    if (!wrap) return;
+
+    const orders = data.open_orders || [];
+
+    if (orders.length === 0) {
+      wrap.innerHTML = `<div class="empty-state">NO ACTIVE PENDING ORDERS</div>`;
+      return;
+    }
+
+    wrap.innerHTML = orders.map(o => {
+      const side = (o.side || 'buy').toLowerCase();
+      const sideColor = side === 'buy' ? 'green' : 'red';
+      const typeStr = o.type || 'LIMIT';
+      const qtyVal = o.qty || 0;
+      const priceVal = o.price || 0;
+      const priceFmt = priceVal > 10 ? fmtPrice(priceVal, 2) : (priceVal > 0.01 ? fmtPrice(priceVal, 4) : '$' + Number(priceVal).toFixed(6));
+      const exchFmt = o.exchange === 'coinswitch' ? 'CS' : 'DL';
+
+      return `
+        <div class="trade-row" style="grid-template-columns: 1.5fr 1fr 1fr 1.2fr; border-bottom: 1px solid #10151c; padding: 4px 6px;">
+          <div class="trade-sym-block">
+            <span class="trade-sym">${o.symbol}</span>
+            <span class="tag" style="padding: 1px 3px; font-size: 9px; line-height: 1;">${exchFmt}</span>
+          </div>
+          <span class="trade-entry">${priceFmt}</span>
+          <span class="trade-size">${fmtNum(qtyVal, 2)}</span>
+          <span class="trade-pnl ${sideColor}" style="text-align: right; font-weight: bold; font-size: 10px;">${side.toUpperCase()} (${typeStr})</span>
         </div>
       `;
     }).join('');

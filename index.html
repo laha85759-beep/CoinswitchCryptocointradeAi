@@ -68,7 +68,7 @@
     <section class="left-col mob-section" id="sec-wallet">
       <div class="card card-21st">
         <div class="card-header">
-          <span class="card-title">ALL-TIME PNL & CAPITAL</span>
+          <span class="card-title">REALIZED PNL & CAPITAL</span>
           <span class="tag-21st glow-tag">REAL-TIME</span>
         </div>
         <div class="wallet-body">
@@ -77,6 +77,16 @@
             <span class="wallet-value glow-text" id="total-capital">$0.00</span>
           </div>
           <div class="wallet-stats-row">
+            <div class="wallet-stat">
+              <span class="wallet-stat-label">DAILY PNL</span>
+              <span class="wallet-stat-value green" id="daily-pnl-stat">+$0.00</span>
+            </div>
+            <div class="wallet-stat">
+              <span class="wallet-stat-label">ALL-TIME PNL</span>
+              <span class="wallet-stat-value green" id="all-time-pnl-stat">+$0.00</span>
+            </div>
+          </div>
+          <div class="wallet-stats-row" style="margin-top: 8px;">
             <div class="wallet-stat">
               <span class="wallet-stat-label">WIN RATE</span>
               <span class="wallet-stat-value green" id="stat-winrate">75%</span>
@@ -315,17 +325,29 @@
 
       <div class="card card-21st" style="margin-top: 12px;">
         <div class="card-header">
-          <span class="card-title">LIVE POSITIONS & ORDER BOOK</span>
+          <span class="card-title">LIVE POSITIONS & ACTIVE PENDING ORDERS</span>
         </div>
         <div class="positions-body">
+          <div style="font-size: 11px; color: #ff0080; font-weight: bold; margin-bottom: 6px; padding: 2px 6px; border-bottom: 1px solid #1a232d; letter-spacing: 0.5px; text-transform: uppercase;">◎ Open Positions</div>
           <div class="positions-header">
             <span>SYMBOL / EXCH</span>
             <span>ENTRY PRICE</span>
             <span>SIZE</span>
             <span style="text-align: right;">UNREALIZED PNL</span>
           </div>
-          <div id="trades-container">
+          <div id="trades-container" style="margin-bottom: 12px;">
             <div class="empty-state">NO POSITIONS HELD</div>
+          </div>
+
+          <div style="font-size: 11px; color: #00e5ff; font-weight: bold; margin-top: 10px; margin-bottom: 6px; padding: 2px 6px; border-bottom: 1px solid #1a232d; letter-spacing: 0.5px; text-transform: uppercase;">◎ Active Pending Orders</div>
+          <div class="positions-header" style="grid-template-columns: 1.5fr 1fr 1fr 1.2fr; border-bottom: 1px solid #1a232d;">
+            <span>SYMBOL / EXCH</span>
+            <span>ORDER PRICE</span>
+            <span>QTY</span>
+            <span style="text-align: right;">SIDE / TYPE</span>
+          </div>
+          <div id="orders-container">
+            <div class="empty-state">NO ACTIVE PENDING ORDERS</div>
           </div>
         </div>
       </div>
@@ -591,6 +613,35 @@
           <div class="exposure-bar-wrap">
             <div class="exposure-bar-long" id="expBarLong" style="width: 0%;"></div>
             <div class="exposure-bar-short" id="expBarShort" style="width: 100%;"></div>
+          </div>
+        </div>
+
+        <!-- Flow Engineering Metrics Panel -->
+        <div style="font-size: 11px; color: #ff0080; font-weight: bold; margin-top: 15px; margin-bottom: 6px; padding: 4px 6px; border-bottom: 1px solid #1a232d; letter-spacing: 0.5px; text-transform: uppercase;">◎ Flow Engineering & Execution Metrics</div>
+        <div class="real-stats-grid" id="flow-engineering-grid" style="grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 10px;">
+          <div class="real-stat-card" style="padding: 6px 8px;">
+            <span class="real-stat-label">HEARTBEAT FREQ</span>
+            <span class="real-stat-val green" id="flow-heartbeat">1.2 Hz</span>
+          </div>
+          <div class="real-stat-card" style="padding: 6px 8px;">
+            <span class="real-stat-label">EXECUTION SLIPPAGE</span>
+            <span class="real-stat-val yellow" id="flow-slippage">0.042%</span>
+          </div>
+          <div class="real-stat-card" style="padding: 6px 8px;">
+            <span class="real-stat-label">API SUCCESS RATE</span>
+            <span class="real-stat-val green" id="flow-success-rate">99.8%</span>
+          </div>
+          <div class="real-stat-card" style="padding: 6px 8px;">
+            <span class="real-stat-label">QUEUE / CONCURRENCY</span>
+            <span class="real-stat-val cyan" id="flow-queue">0 / 2 THREADS</span>
+          </div>
+        </div>
+
+        <!-- Order Flow Imbalance OFI display -->
+        <div class="ofi-block" style="background: #06090c; border: 1px solid #1a232d; padding: 6px 10px; border-radius: 2px;">
+          <span class="real-stat-label" style="margin-bottom: 4px; display: block; font-weight: bold; font-size: 10px;">ORDER FLOW IMBALANCE (OFI)</span>
+          <div id="flow-ofi-list" style="display: flex; flex-direction: column; gap: 4px; font-size: 11px;">
+            <!-- Populated by JS -->
           </div>
         </div>
       </div>
