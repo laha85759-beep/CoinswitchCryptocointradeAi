@@ -291,7 +291,7 @@ class DeltaClient:
         """Set leverage for a specific product on Delta Exchange India (e.g. 10x, 20x, 50x)."""
         try:
             body = {"leverage": str(leverage)}
-            res = self._request("POST", f"/v2/products/{product_id}/leverage", body=body)
+            res = self._request("POST", f"/v2/products/{product_id}/orders/leverage", body=body)
             log.info("Delta set_leverage %sx for product_id=%s: %s", leverage, product_id, res.get("success", True))
             return res
         except Exception as exc:
