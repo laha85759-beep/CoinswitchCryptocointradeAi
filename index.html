@@ -54,6 +54,7 @@
     <button class="mob-tab-btn" data-tab="volatility">⚡ RISK MATRIX</button>
     <button class="mob-tab-btn" data-tab="prebreakout">🎯 PRE-BREAKOUT</button>
     <button class="mob-tab-btn" data-tab="flows">🌊 FLOWS</button>
+    <button class="mob-tab-btn" data-tab="admin">⚙️ ADMIN</button>
   </nav>
 
   <!-- FLOATING CYBERPUNK AI ASSISTANT BUTTON -->
@@ -678,6 +679,75 @@
         </div>
       </div>
 
+    </section>
+
+    <!-- ──────── ADMIN CONTROL PANEL SECTION ──────── -->
+    <section class="mob-section sec-target" id="sec-admin" style="display: none; margin-top: 12px; grid-column: span 3;">
+      <div class="card card-21st">
+        <div class="card-header">
+          <span class="card-title">⚙️ ADMIN CONTROL PANEL</span>
+          <span class="tag-21st glow-tag bg-magenta">SYSTEM ROOT</span>
+        </div>
+        <div class="card-body">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+            
+            <!-- Column 1: Bot Actions -->
+            <div class="admin-panel-card">
+              <h3 class="cyan" style="margin-top:0;">🤖 SYSTEM ACTIONS</h3>
+              <p class="muted">Execute manual triggers and emergency state operations.</p>
+              <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
+                <button class="btn-action btn-pulse" onclick="adminTriggerCycle()" style="background: var(--glow-green-bg); border-color: var(--theme-green); color: #00ff88;">
+                  🚀 TRIGGER AUTONOMOUS CYCLE
+                </button>
+                <button class="btn-action" onclick="adminResetTrades()" style="background: rgba(255, 51, 85, 0.1); border-color: #ff3355; color: #ff3355;">
+                  🗑️ RESET TRADES STATE FILES
+                </button>
+              </div>
+            </div>
+
+            <!-- Column 2: Live Configuration -->
+            <div class="admin-panel-card">
+              <h3 class="magenta" style="margin-top:0;">🔧 RISK & TRADING SETTINGS</h3>
+              <form id="adminSettingsForm" onsubmit="adminUpdateSettings(event)" style="display: flex; flex-direction: column; gap: 12px;">
+                <div class="form-row">
+                  <label for="admin-paper-trading">Simulated Paper Mode</label>
+                  <select id="admin-paper-trading">
+                    <option value="true">ENABLED (Simulated)</option>
+                    <option value="false">DISABLED (Real Money)</option>
+                  </select>
+                </div>
+                <div class="form-row">
+                  <label for="admin-capital-pct">Max Capital % Per Trade</label>
+                  <input type="number" id="admin-capital-pct" min="1" max="100" />
+                </div>
+                <div class="form-row">
+                  <label for="admin-max-trades">Max Concurrent Trades</label>
+                  <input type="number" id="admin-max-trades" min="1" max="50" />
+                </div>
+                <div class="form-row">
+                  <label for="admin-hard-sl">Stop Loss (SL) %</label>
+                  <input type="number" id="admin-hard-sl" step="0.1" min="0.1" max="20" />
+                </div>
+                <div class="form-row">
+                  <label for="admin-take-profit">Take Profit (TP) %</label>
+                  <input type="number" id="admin-take-profit" step="0.1" min="0.1" max="50" />
+                </div>
+                <div class="form-row">
+                  <label for="admin-options">Options Hedging Agent</label>
+                  <select id="admin-options">
+                    <option value="true">ENABLED</option>
+                    <option value="false">DISABLED</option>
+                  </select>
+                </div>
+                <button type="submit" class="btn-action" style="background: var(--glow-cyan-bg); border-color: var(--theme-cyan); color: #00e5ff; margin-top: 8px;">
+                  💾 SAVE SETTINGS
+                </button>
+              </form>
+            </div>
+
+          </div>
+        </div>
+      </div>
     </section>
 
   </main>

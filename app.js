@@ -610,11 +610,14 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
           volatility: $('#sec-volatility-matrix'),
           prebreakout: $('#sec-pre-breakout'),
           analytics: $('#sec-analytics'),
-          flows: $('#sec-flows')
+          flows: $('#sec-flows'),
+          admin: $('#sec-admin')
         };
 
         if (targetTab === 'all') {
           Object.values(sections).forEach(sec => { if (sec) sec.style.display = ''; });
+          // Make sure admin section is hidden on 'all' view unless selected specifically to keep layout clean
+          if (sections.admin) sections.admin.style.display = 'none';
           const grids = document.querySelectorAll('.side-by-side-grid');
           grids.forEach(g => g.style.display = '');
         } else {
@@ -947,6 +950,90 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
   document.querySelectorAll('.mob-tab-btn[data-tab="darwin"]').forEach(btn => {
     btn.addEventListener('click', () => {
       loadDarwinLeaderboard();
+    });
+  });
+
+  // ═══════════════════ ADMIN PANEL FUNCTIONS ═══════════════════
+  async function fetchAdminSettings() {
+    try {
+      const res = await fetch('/api/admin/settings');
+      const data = await res.json();
+      if (data.status === 'success' && data.settings) {
+        const s = data.settings;
+        $('#admin-paper-trading').value = String(s.paper_trading_mode);
+        $('#admin-capital-pct').value = s.max_capital_pct;
+        $('#admin-max-trades').value = s.max_open_trades;
+        $('#admin-hard-sl').value = s.hard_sl_pct;
+        $('#admin-take-profit').value = s.take_profit_pct;
+        $('#admin-options').value = String(s.options_enabled);
+      }
+    } catch (err) {
+      console.error('Failed to fetch admin settings:', err);
+    }
+  }
+
+  window.adminUpdateSettings = async function(event) {
+    if (event) event.preventDefault();
+    const payload = {
+      paper_trading_mode: $('#admin-paper-trading').value === 'true',
+      max_capital_pct: parseInt($('#admin-capital-pct').value, 10),
+      max_open_trades: parseInt($('#admin-max-trades').value, 10),
+      hard_sl_pct: parseFloat($('#admin-hard-sl').value),
+      take_profit_pct: parseFloat($('#admin-take-profit').value),
+      options_enabled: $('#admin-options').value === 'true'
+    };
+
+    try {
+      const res = await fetch('/api/admin/update-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        alert('✅ Settings saved & persisted successfully!');
+      } else {
+        alert('❌ Error saving settings: ' + data.message);
+      }
+    } catch (err) {
+      alert('❌ Connection error: ' + err.message);
+    }
+  };
+
+  window.adminTriggerCycle = async function() {
+    if (!confirm('Are you sure you want to run the autonomous trading cycle immediately?')) return;
+    try {
+      const res = await fetch('/api/admin/trigger-cycle', { method: 'POST' });
+      const data = await res.json();
+      if (data.status === 'success') {
+        alert('🚀 Cycle triggered successfully. Check execution logs in a few moments!');
+      } else {
+        alert('❌ Error triggering cycle: ' + data.message);
+      }
+    } catch (err) {
+      alert('❌ Connection error: ' + err.message);
+    }
+  };
+
+  window.adminResetTrades = async function() {
+    if (!confirm('🚨 WARNING: This will reset both open_trades_cs.json and open_trades_delta.json to empty arrays. Active positions will no longer be tracked. Continue?')) return;
+    try {
+      const res = await fetch('/api/admin/reset-trades', { method: 'POST' });
+      const data = await res.json();
+      if (data.status === 'success') {
+        alert('🧹 State files reset successfully!');
+      } else {
+        alert('❌ Error resetting state files: ' + data.message);
+      }
+    } catch (err) {
+      alert('❌ Connection error: ' + err.message);
+    }
+  };
+
+  // Bind click event for Admin Tab
+  document.querySelectorAll('.mob-tab-btn[data-tab="admin"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      fetchAdminSettings();
     });
   });
 

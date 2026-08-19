@@ -1140,8 +1140,92 @@ class TerminalLiveMaintenanceAgent:
                 log.debug("Maintenance daemon refresh notice: %s", exc)
             time.sleep(3)
 
+# ── Admin Panel API Endpoints ────────────────────────────────────────────────
+@app.route("/api/admin/settings", methods=["GET"])
+def get_admin_settings():
+    return jsonify({
+        "status": "success",
+        "settings": {
+            "paper_trading_mode": CONFIG.get("paper_trading_mode", False),
+            "max_capital_pct": CONFIG.get("max_capital_pct", 40),
+            "max_open_trades": CONFIG.get("max_open_trades", 10),
+            "hard_sl_pct": CONFIG.get("hard_sl_pct", 2.0),
+            "take_profit_pct": CONFIG.get("take_profit_pct", 4.8),
+            "options_enabled": CONFIG.get("options_enabled", True)
+        }
+    }), 200
+
+@app.route("/api/admin/update-settings", methods=["POST"])
+def update_admin_settings():
+    try:
+        data = request.get_json(force=True) if request.data else {}
+        updates = {}
+        
+        # Validate and apply updates
+        if "paper_trading_mode" in data:
+            updates["paper_trading_mode"] = bool(data["paper_trading_mode"])
+        if "max_capital_pct" in data:
+            updates["max_capital_pct"] = int(data["max_capital_pct"])
+        if "max_open_trades" in data:
+            updates["max_open_trades"] = int(data["max_open_trades"])
+        if "hard_sl_pct" in data:
+            updates["hard_sl_pct"] = float(data["hard_sl_pct"])
+        if "take_profit_pct" in data:
+            updates["take_profit_pct"] = float(data["take_profit_pct"])
+        if "options_enabled" in data:
+            updates["options_enabled"] = bool(data["options_enabled"])
+            
+        CONFIG.update(updates)
+        
+        # Persist updates to config_override.json
+        override_path = os.path.join(os.path.dirname(__file__), "config_override.json")
+        with open(override_path, "w") as f:
+            json.dump(updates, f, indent=4)
+            
+        log.info("Admin settings updated and persisted: %s", updates)
+        return jsonify({"status": "success", "settings": CONFIG}), 200
+    except Exception as exc:
+        log.error("Failed to update admin settings: %s", exc)
+        return jsonify({"status": "error", "message": str(exc)}), 500
+
+@app.route("/api/admin/trigger-cycle", methods=["POST"])
+def trigger_admin_cycle():
+    try:
+        import main
+        def run_cycle_async():
+            log.info("Admin manual trigger: Starting cycle...")
+            try:
+                main.run()
+                log.info("Admin manual trigger: Cycle complete.")
+            except Exception as e:
+                log.error("Admin manual trigger: Cycle failed: %s", e)
+                
+        threading.Thread(target=run_cycle_async, daemon=True).start()
+        return jsonify({"status": "success", "message": "Autonomous cycle triggered."}), 200
+    except Exception as exc:
+        return jsonify({"status": "error", "message": str(exc)}), 500
+
+@app.route("/api/admin/reset-trades", methods=["POST"])
+def reset_admin_trades():
+    try:
+        cs_path = os.path.join(os.path.dirname(__file__), "open_trades_cs.json")
+        delta_path = os.path.join(os.path.dirname(__file__), "open_trades_delta.json")
+        
+        with open(cs_path, "w") as f:
+            f.write("[]")
+        with open(delta_path, "w") as f:
+            f.write("[]")
+            
+        log.info("Admin trades state files cleared successfully.")
+        return jsonify({"status": "success", "message": "Trades state files reset."}), 200
+    except Exception as exc:
+        log.error("Failed to reset trades state: %s", exc)
+        return jsonify({"status": "error", "message": str(exc)}), 500
+
 # Auto-initialize 24/7 Dedicated Maintenance Agent on Flask app startup
 TerminalLiveMaintenanceAgent.start_247_maintenance()
+
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", CONFIG.get("webhook_port", 5000)))

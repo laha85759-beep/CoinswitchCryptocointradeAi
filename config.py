@@ -194,3 +194,17 @@ CONFIG = {
 CONFIG["http_proxy"] = os.environ.pop("HTTP_PROXY", os.environ.pop("http_proxy", None))
 CONFIG["https_proxy"] = os.environ.pop("HTTPS_PROXY", os.environ.pop("https_proxy", None))
 
+# ── Load config override if exists ──
+_override_path = os.path.join(os.path.dirname(__file__), "config_override.json")
+if os.path.isfile(_override_path):
+    try:
+        with open(_override_path) as _f:
+            import json
+            _overrides = json.load(_f)
+            CONFIG.update(_overrides)
+    except Exception:
+        pass
+
+
+
+
