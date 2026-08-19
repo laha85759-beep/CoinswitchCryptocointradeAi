@@ -1,1 +1,33 @@
-[]
+[
+  {
+    "strategy": "long_straddle",
+    "asset": "XAUT",
+    "spot_price_at_entry": 4366.22,
+    "call_leg": {
+      "symbol": "C-XAUT-4370-150826",
+      "product_id": 146556,
+      "strike": 4370.0,
+      "entry_premium": 1.1
+    },
+    "put_leg": {
+      "symbol": "P-XAUT-4370-150826",
+      "product_id": 146546,
+      "strike": 4370.0,
+      "entry_premium": 7.9
+    },
+    "total_premium_paid": 9.0,
+    "peak_combined_value": 9.78,
+    "mandatory_risk": {
+      "stop_loss_premium": 4.5,
+      "stop_loss_pct": 50.0,
+      "take_profit_premium": 18.0,
+      "take_profit_pct": 100.0,
+      "max_possible_loss": 9.0,
+      "unlimited_profit": true
+    },
+    "opened_at": "2026-08-15T08:11:02.036799+00:00",
+    "status": "active",
+    "call_order_id": 1473478839,
+    "put_order_id": 1473478854
+  }
+]
