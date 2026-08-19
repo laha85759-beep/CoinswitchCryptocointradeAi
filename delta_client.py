@@ -49,6 +49,17 @@ class DeltaClient:
         self.api_key = api_key
         self.api_secret = api_secret
         self.session = requests.Session()
+        
+        # Configure proxy settings specifically for Delta Exchange India
+        from config import CONFIG
+        h_proxy = CONFIG.get("http_proxy")
+        s_proxy = CONFIG.get("https_proxy")
+        if h_proxy or s_proxy:
+            self.session.proxies = {
+                "http": h_proxy,
+                "https": s_proxy
+            }
+            
         self.rate_limit_delay = rate_limit_delay
         self._last_request_at = 0.0
         self._product_cache: dict[str, dict] = {}   # symbol → product info

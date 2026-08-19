@@ -189,3 +189,8 @@ CONFIG = {
     "options_stop_loss_pct":   _float_env("OPTIONS_STOP_LOSS_PCT", 50.0),   # -50% SL on options premium
     "options_take_profit_pct": _float_env("OPTIONS_TAKE_PROFIT_PCT", 100.0), # +100% TP on options premium
 }
+
+# ── Isolate proxy configuration to prevent affecting other clients (CoinSwitch / Telegram) ──
+CONFIG["http_proxy"] = os.environ.pop("HTTP_PROXY", os.environ.pop("http_proxy", None))
+CONFIG["https_proxy"] = os.environ.pop("HTTPS_PROXY", os.environ.pop("https_proxy", None))
+
