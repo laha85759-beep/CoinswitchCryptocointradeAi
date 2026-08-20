@@ -1176,18 +1176,30 @@ def update_admin_settings():
         data = request.get_json(force=True) if request.data else {}
         updates = {}
         
-        # Validate and apply updates
-        if "paper_trading_mode" in data:
+        # Validate and apply updates safely
+        if "paper_trading_mode" in data and data["paper_trading_mode"] is not None:
             updates["paper_trading_mode"] = bool(data["paper_trading_mode"])
-        if "max_capital_pct" in data:
-            updates["max_capital_pct"] = int(data["max_capital_pct"])
-        if "max_open_trades" in data:
-            updates["max_open_trades"] = int(data["max_open_trades"])
-        if "hard_sl_pct" in data:
-            updates["hard_sl_pct"] = float(data["hard_sl_pct"])
-        if "take_profit_pct" in data:
-            updates["take_profit_pct"] = float(data["take_profit_pct"])
-        if "options_enabled" in data:
+        if "max_capital_pct" in data and data["max_capital_pct"] not in (None, ""):
+            try:
+                updates["max_capital_pct"] = int(data["max_capital_pct"])
+            except (ValueError, TypeError):
+                pass
+        if "max_open_trades" in data and data["max_open_trades"] not in (None, ""):
+            try:
+                updates["max_open_trades"] = int(data["max_open_trades"])
+            except (ValueError, TypeError):
+                pass
+        if "hard_sl_pct" in data and data["hard_sl_pct"] not in (None, ""):
+            try:
+                updates["hard_sl_pct"] = float(data["hard_sl_pct"])
+            except (ValueError, TypeError):
+                pass
+        if "take_profit_pct" in data and data["take_profit_pct"] not in (None, ""):
+            try:
+                updates["take_profit_pct"] = float(data["take_profit_pct"])
+            except (ValueError, TypeError):
+                pass
+        if "options_enabled" in data and data["options_enabled"] is not None:
             updates["options_enabled"] = bool(data["options_enabled"])
             
         CONFIG.update(updates)

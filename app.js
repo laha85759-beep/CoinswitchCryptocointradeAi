@@ -954,18 +954,35 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
   });
 
   // ═══════════════════ ADMIN PANEL FUNCTIONS ═══════════════════
+  async function fetchJson(url, options = {}) {
+    const res = await fetch(url, options);
+    if (!res.ok) {
+      let msg = `HTTP Error ${res.status}`;
+      try {
+        const errData = await res.json();
+        if (errData && errData.message) msg += `: ${errData.message}`;
+      } catch (e) {
+        try {
+          const txt = await res.text();
+          if (txt) msg += `: ${txt.slice(0, 100)}`;
+        } catch (e2) {}
+      }
+      throw new Error(msg);
+    }
+    return res.json();
+  }
+
   async function fetchAdminSettings() {
     try {
-      const res = await fetch('/api/admin/settings');
-      const data = await res.json();
+      const data = await fetchJson('/api/admin/settings');
       if (data.status === 'success' && data.settings) {
         const s = data.settings;
-        $('#admin-paper-trading').value = String(s.paper_trading_mode);
-        $('#admin-capital-pct').value = s.max_capital_pct;
-        $('#admin-max-trades').value = s.max_open_trades;
-        $('#admin-hard-sl').value = s.hard_sl_pct;
-        $('#admin-take-profit').value = s.take_profit_pct;
-        $('#admin-options').value = String(s.options_enabled);
+        if ($('#admin-paper-trading')) $('#admin-paper-trading').value = String(s.paper_trading_mode);
+        if ($('#admin-capital-pct')) $('#admin-capital-pct').value = s.max_capital_pct;
+        if ($('#admin-max-trades')) $('#admin-max-trades').value = s.max_open_trades;
+        if ($('#admin-hard-sl')) $('#admin-hard-sl').value = s.hard_sl_pct;
+        if ($('#admin-take-profit')) $('#admin-take-profit').value = s.take_profit_pct;
+        if ($('#admin-options')) $('#admin-options').value = String(s.options_enabled);
       }
     } catch (err) {
       console.error('Failed to fetch admin settings:', err);
@@ -974,22 +991,33 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
 
   window.adminUpdateSettings = async function(event) {
     if (event) event.preventDefault();
+    
+    // Add validation before sending
+    const maxCapitalRaw = $('#admin-capital-pct').value;
+    const maxTradesRaw = $('#admin-max-trades').value;
+    const hardSlRaw = $('#admin-hard-sl').value;
+    const takeProfitRaw = $('#admin-take-profit').value;
+    
+    if (!maxCapitalRaw || !maxTradesRaw || !hardSlRaw || !takeProfitRaw) {
+      alert('❌ Error: All fields must be filled in before saving settings.');
+      return;
+    }
+    
     const payload = {
       paper_trading_mode: $('#admin-paper-trading').value === 'true',
-      max_capital_pct: parseInt($('#admin-capital-pct').value, 10),
-      max_open_trades: parseInt($('#admin-max-trades').value, 10),
-      hard_sl_pct: parseFloat($('#admin-hard-sl').value),
-      take_profit_pct: parseFloat($('#admin-take-profit').value),
+      max_capital_pct: parseInt(maxCapitalRaw, 10),
+      max_open_trades: parseInt(maxTradesRaw, 10),
+      hard_sl_pct: parseFloat(hardSlRaw),
+      take_profit_pct: parseFloat(takeProfitRaw),
       options_enabled: $('#admin-options').value === 'true'
     };
 
     try {
-      const res = await fetch('/api/admin/update-settings', {
+      const data = await fetchJson('/api/admin/update-settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      const data = await res.json();
       if (data.status === 'success') {
         alert('✅ Settings saved & persisted successfully!');
       } else {
@@ -1003,8 +1031,7 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
   window.adminTriggerCycle = async function() {
     if (!confirm('Are you sure you want to run the autonomous trading cycle immediately?')) return;
     try {
-      const res = await fetch('/api/admin/trigger-cycle', { method: 'POST' });
-      const data = await res.json();
+      const data = await fetchJson('/api/admin/trigger-cycle', { method: 'POST' });
       if (data.status === 'success') {
         alert('🚀 Cycle triggered successfully. Check execution logs in a few moments!');
       } else {
@@ -1018,8 +1045,7 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
   window.adminResetTrades = async function() {
     if (!confirm('🚨 WARNING: This will reset both open_trades_cs.json and open_trades_delta.json to empty arrays. Active positions will no longer be tracked. Continue?')) return;
     try {
-      const res = await fetch('/api/admin/reset-trades', { method: 'POST' });
-      const data = await res.json();
+      const data = await fetchJson('/api/admin/reset-trades', { method: 'POST' });
       if (data.status === 'success') {
         alert('🧹 State files reset successfully!');
       } else {
