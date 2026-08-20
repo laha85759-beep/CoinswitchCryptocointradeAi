@@ -48,6 +48,21 @@ notifier = TelegramNotifier(CONFIG.get("telegram_bot_token", ""), CONFIG.get("te
 audit = AuditLogger(CONFIG.get("log_file", "trading.log"))
 
 dual_executor = DualExecutionAgent(CONFIG, cs_client, delta_client, notifier, audit)
+
+# ── Thread-safe API caching to prevent Render OOM/SIGKILL crashes ──
+import threading
+_API_CACHE = {
+    "balances": {"data": None, "ts": 0.0},
+    "tickers": {"data": None, "ts": 0.0},
+    "positions": {"data": None, "ts": 0.0},
+    "orders": {"data": None, "ts": 0.0},
+}
+_API_CACHE_LOCK = threading.Lock()
+CACHE_TTL_BALANCES = 15.0   # Cache balances for 15 seconds
+CACHE_TTL_TICKERS = 10.0    # Cache tickers for 10 seconds
+CACHE_TTL_POSITIONS = 8.0   # Cache positions for 8 seconds
+CACHE_TTL_ORDERS = 8.0      # Cache open orders for 8 seconds
+
 risk_manager = RiskManagerAgent(CONFIG, cs_client, audit, delta_client=delta_client)
 nemotron_analyzer = NemotronAnalysisAgent()
 
@@ -90,7 +105,8 @@ def get_terminal_data():
     global LAST_API_CACHE_TIME, LAST_API_CACHE_DATA
     now = time.time()
     with API_CACHE_LOCK:
-        if LAST_API_CACHE_DATA and (now - LAST_API_CACHE_TIME) < 3.0:
+        # Cache terminal data for 10.0 seconds to prevent Render OOM / Rate limiting
+        if LAST_API_CACHE_DATA and (now - LAST_API_CACHE_TIME) < 10.0:
             return jsonify(LAST_API_CACHE_DATA)
 
     try:
@@ -1218,18 +1234,14 @@ def update_admin_settings():
 @app.route("/api/admin/trigger-cycle", methods=["POST"])
 def trigger_admin_cycle():
     try:
-        import main
-        def run_cycle_async():
-            log.info("Admin manual trigger: Starting cycle...")
-            try:
-                main.run()
-                log.info("Admin manual trigger: Cycle complete.")
-            except Exception as e:
-                log.error("Admin manual trigger: Cycle failed: %s", e)
-                
-        threading.Thread(target=run_cycle_async, daemon=True).start()
-        return jsonify({"status": "success", "message": "Autonomous cycle triggered."}), 200
+        # Create a trigger flag file on disk for the worker process to pick up
+        flag_path = os.path.join(os.path.dirname(__file__), "trigger_cycle.flag")
+        with open(flag_path, "w") as f:
+            f.write("trigger")
+        log.info("Manual cycle trigger flag file created at %s", flag_path)
+        return jsonify({"status": "success", "message": "Autonomous cycle trigger queued."}), 200
     except Exception as exc:
+        log.error("Failed to queue cycle trigger: %s", exc)
         return jsonify({"status": "error", "message": str(exc)}), 500
 
 @app.route("/api/admin/reset-trades", methods=["POST"])
