@@ -215,8 +215,8 @@ def get_terminal_data():
                             "exchange": "delta",
                             "paper": False
                         })
-                if parsed_positions:
-                    open_delta = parsed_positions
+                # Trust the live positions list from Delta API (even if it is empty)
+                open_delta = parsed_positions
             except Exception as exc:
                 log.warning("Failed to fetch live Delta positions: %s", exc)
 
@@ -299,15 +299,30 @@ def get_terminal_data():
                         payload = entry.get("payload", {})
                         results = payload.get("results", [])
                         for r in results:
-                            execution_log.append({
-                                "agent": agent,
-                                "timestamp": r.get("timestamp", ts),
-                                "symbol": r.get("symbol", ""),
-                                "status": r.get("status", ""),
-                                "reason": r.get("reason", ""),
-                                "filled_price": r.get("filled_price", 0),
-                                "exchange": "delta" if "delta" in str(r) else "coinswitch",
-                            })
+                            if "coinswitch" in r and "delta" in r:
+                                # Split DualExecutionAgent result into separate lines for each exchange
+                                for exch in ("coinswitch", "delta"):
+                                    ex_res = r.get(exch) or {}
+                                    if ex_res:
+                                        execution_log.append({
+                                            "agent": agent,
+                                            "timestamp": r.get("timestamp", ts),
+                                            "symbol": r.get("symbol", ""),
+                                            "status": ex_res.get("status", ""),
+                                            "reason": ex_res.get("reason", ""),
+                                            "filled_price": ex_res.get("filled_price", 0),
+                                            "exchange": exch,
+                                        })
+                            else:
+                                execution_log.append({
+                                    "agent": agent,
+                                    "timestamp": r.get("timestamp", ts),
+                                    "symbol": r.get("symbol", ""),
+                                    "status": r.get("status", ""),
+                                    "reason": r.get("reason", ""),
+                                    "filled_price": r.get("filled_price", 0),
+                                    "exchange": "delta" if "delta" in str(r) else "coinswitch",
+                                })
                     except Exception:
                         pass
             except Exception:
