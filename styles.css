@@ -750,9 +750,9 @@ body {
   transition: width 0.4s ease;
 }
 
-/* ──────── MOBILE NAVIGATION BAR ──────── */
+/* ──────── MOBILE & DESKTOP NAVIGATION BAR ──────── */
 .mobile-nav-bar {
-  display: none;
+  display: flex;
   position: sticky;
   top: 0;
   z-index: 1000;
