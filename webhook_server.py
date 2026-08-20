@@ -220,13 +220,21 @@ def get_terminal_data():
                             sym_name = prod_sym
                         
                         entry_p = float(pos.get("entry_price", 0) or 0)
-                        unrealized = float(pos.get("unrealized_pnl", 0) or 0)
+                        # Delta returns unrealized_cashflow for perpetuals — fall back to unrealized_pnl
+                        unrealized_raw = pos.get("unrealized_cashflow") or pos.get("unrealized_pnl") or 0
+                        unrealized = float(unrealized_raw or 0)
+                        liq_price = float(pos.get("liquidation_price", 0) or 0)
+                        mark_price = float(pos.get("mark_price", 0) or 0)
+                        margin = float(pos.get("margin", 0) or 0)
                         parsed_positions.append({
                             "symbol": sym_name,
                             "direction": "long" if sz > 0 else "short",
                             "qty": abs(sz),
                             "quantity": abs(sz),
                             "entry_price": entry_p,
+                            "mark_price": round(mark_price, 4),
+                            "liquidation_price": round(liq_price, 4),
+                            "margin_used": round(margin, 4),
                             "unrealized_pnl": round(unrealized, 4),
                             "exchange": "delta",
                             "paper": False

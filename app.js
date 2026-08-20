@@ -330,9 +330,24 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
       const sign = pnl >= 0 ? '+' : '';
       const entryPrice = pos.entry_price || pos.price || 0;
       const priceFmt = entryPrice > 10 ? fmtPrice(entryPrice, 2) : (entryPrice > 0.01 ? fmtPrice(entryPrice, 4) : '$' + Number(entryPrice).toFixed(6));
+      const markPrice = parseFloat(pos.mark_price || 0);
+      const liqPrice = parseFloat(pos.liquidation_price || 0);
+      const marginUsed = parseFloat(pos.margin_used || 0);
+
+      // Extra info row for Delta positions
+      let extraRow = '';
+      if (pos.ex === 'DL' && markPrice > 0) {
+        const markFmt = markPrice > 10 ? fmtPrice(markPrice, 2) : '$' + markPrice.toFixed(4);
+        const liqFmt = liqPrice > 0 ? (liqPrice > 10 ? fmtPrice(liqPrice, 2) : '$' + liqPrice.toFixed(4)) : 'N/A';
+        extraRow = `<div style="grid-column:1/-1;font-size:9px;color:#888;padding:1px 4px 3px;">
+          Mark: <b style="color:#aaa">${markFmt}</b> &nbsp;|&nbsp;
+          Liq: <b style="color:#e55">${liqFmt}</b> &nbsp;|&nbsp;
+          Margin: <b style="color:#aaa">$${fmtNum(marginUsed, 3)}</b>
+        </div>`;
+      }
 
       return `
-        <div class="trade-row">
+        <div class="trade-row" style="flex-wrap:wrap;">
           <div class="trade-sym-block">
             <span class="trade-sym">${pos.symbol}</span>
             <span class="tag">${pos.ex}</span>
@@ -341,6 +356,7 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
           <span class="trade-entry">${priceFmt}</span>
           <span class="trade-size">${fmtNum(qtyVal, 2)}</span>
           <span class="trade-pnl ${pnlColor}" style="text-align: right;">${sign}$${fmtNum(pnl, 2)}</span>
+          ${extraRow}
         </div>
       `;
     }).join('');
