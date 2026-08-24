@@ -194,6 +194,14 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
         updateText('#delta-fills', `${data.performance.delta_closed_count || 0} TRADES`);
       }
 
+      // Update Telegram Channel URLs dynamically
+      if (data.telegram_channel_url) {
+        const hLink = $('#headerTgLink');
+        const mLink = $('#mainTgBannerLink');
+        if (hLink) hLink.href = data.telegram_channel_url;
+        if (mLink) mLink.href = data.telegram_channel_url;
+      }
+
       // Advanced metrics
       updateText('#footer-latency', `${lagMs}ms`);
       if(data.advanced && data.advanced.robustness) {
@@ -1096,7 +1104,8 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
       delta_api_key: $('#cred-delta-key').value,
       delta_api_secret: $('#cred-delta-secret').value,
       telegram_token: $('#cred-tg-token').value,
-      telegram_chat_id: $('#cred-tg-chat').value
+      telegram_chat_id: $('#cred-tg-chat').value,
+      telegram_channel_url: $('#cred-tg-channel') ? $('#cred-tg-channel').value : ''
     };
 
     try {

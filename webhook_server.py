@@ -622,6 +622,7 @@ def get_terminal_data():
 
         payload = {
             "status": "success",
+            "telegram_channel_url": CONFIG.get("telegram_channel_url", "https://t.me/CoinsAiOfficial"),
             "balances": {
                 "cs_usdt": round(cs_usdt, 4),
                 "cs_inr": round(cs_inr, 2),
@@ -1312,6 +1313,8 @@ def update_admin_credentials():
             updates["telegram_token"] = data["telegram_token"].strip()
         if "telegram_chat_id" in data and data["telegram_chat_id"].strip():
             updates["telegram_chat_id"] = str(data["telegram_chat_id"]).strip()
+        if "telegram_channel_url" in data and data["telegram_channel_url"].strip():
+            updates["telegram_channel_url"] = str(data["telegram_channel_url"]).strip()
 
         CONFIG.update(updates)
 

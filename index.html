@@ -32,6 +32,7 @@
     </div>
 
     <div class="header-right">
+      <a id="headerTgLink" href="https://t.me/CoinsAiOfficial" target="_blank" class="live-badge glow-badge" style="text-decoration: none; color: #00e5ff; border-color: #00e5ff; background: rgba(0, 229, 255, 0.1); margin-right: 6px;">📢 JOIN TELEGRAM</a>
       <span class="pulse-dot"></span>
       <span class="live-badge glow-badge">CONNECTED</span>
       <span class="utc-clock" id="live-utc-clock">00:00:00 UTC</span>
@@ -65,9 +66,33 @@
   <!-- ═══════════════════ MAIN CONTENT GRID ═══════════════════ -->
   <main class="dashboard">
 
+    <!-- 📢 OFFICIAL TELEGRAM SIGNAL & UPDATES CHANNEL BANNER -->
+    <div class="card card-21st" style="grid-column: span 3; background: linear-gradient(135deg, #0c1015 0%, #150a1a 100%); border-color: #ff0080; box-shadow: 0 0 15px rgba(255,0,128,0.25);">
+      <div class="card-header" style="justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,0,128,0.3);">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 20px;">📢</span>
+          <span class="card-title" style="color: #ff0080; font-weight: 800; letter-spacing: 0.5px;">OFFICIAL TELEGRAM SIGNAL & LIVE UPDATES CHANNEL</span>
+        </div>
+        <span class="tag-21st glow-tag bg-magenta" style="background: rgba(255,0,128,0.2); color: #ff3399; border-color: #ff0080;">24/7 LIVE ALERTS</span>
+      </div>
+      <div class="card-body" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 16px;">
+        <div style="flex: 1; min-width: 260px;">
+          <p style="margin: 0; color: #d0d7de; font-size: 12px; line-height: 1.5;">
+            Join our official Telegram community to receive instant 24/7 trade execution alerts, Kronos AI predictions, market signals, and live daily PnL performance reports directly on your phone!
+          </p>
+        </div>
+        <div>
+          <a id="mainTgBannerLink" href="https://t.me/CoinsAiOfficial" target="_blank" class="btn-action btn-pulse" style="display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(90deg, #ff0080 0%, #00e5ff 100%); border: none; color: #ffffff; font-weight: 800; font-size: 12px; padding: 10px 20px; border-radius: 4px; text-decoration: none; box-shadow: 0 0 15px rgba(255, 0, 128, 0.4);">
+            <span>🚀 JOIN TELEGRAM CHANNEL NOW</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
     <!-- ──────── LEFT COLUMN ──────── -->
     <section class="left-col mob-section" id="sec-wallet">
       <div class="card card-21st">
+        <div class="card-header">
         <div class="card-header">
           <span class="card-title">REALIZED PNL & CAPITAL</span>
           <span class="tag-21st glow-tag">REAL-TIME</span>
@@ -799,6 +824,10 @@
                     <label for="cred-tg-chat">Telegram Chat ID</label>
                     <input type="text" id="cred-tg-chat" placeholder="Optional Telegram Chat ID..." />
                   </div>
+                  <div class="form-row">
+                    <label for="cred-tg-channel">Telegram Channel Link</label>
+                    <input type="text" id="cred-tg-channel" placeholder="e.g. https://t.me/CoinsAiOfficial" />
+                  </div>
                   <button type="submit" class="btn-action" style="background: var(--glow-green-bg); border-color: var(--theme-green); color: #00ff88; margin-top: 8px;">
                     🔐 SAVE & AUTHENTICATE API KEYS
                   </button>
@@ -848,6 +877,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=36.0"></script>
+  <script src="app.js?v=37.0"></script>
 </body>
 </html>

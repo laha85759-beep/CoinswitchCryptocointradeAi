@@ -137,6 +137,7 @@ CONFIG = {
     "poll_interval_sec":   _int_env("POLL_INTERVAL_SEC", 900),
     "paper_trading_mode":  _bool_env("PAPER_TRADING_MODE", False),
     "paper_portfolio_usdt": _float_env("PAPER_PORTFOLIO_USDT", 1000.0),
+    "telegram_channel_url": os.getenv("TELEGRAM_CHANNEL_URL", "https://t.me/CoinsAiOfficial"),
 
     # ── Signal detector thresholds ────────────────────────────────────────────
     # 5m move ≥ 0.5% = genuine momentum candle (altcoins move 0.5-2% easily)
