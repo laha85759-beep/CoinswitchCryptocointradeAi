@@ -1072,6 +1072,70 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
     }
   };
 
+  // 🚨 Emergency Panic Close All Positions across both exchanges
+  window.adminPanicCloseAll = async function() {
+    if (!confirm('🚨 EMERGENCY WARNING: Are you sure you want to Market Close ALL open positions immediately across CoinSwitch & Delta?')) return;
+    try {
+      const data = await fetchJson('/api/admin/panic-close-all', { method: 'POST' });
+      if (data.status === 'success') {
+        alert('🚨 EMERGENCY PANIC CLOSE ALL EXECUTED SUCCESSFULLY!');
+      } else {
+        alert('❌ Panic close error: ' + data.message);
+      }
+    } catch (err) {
+      alert('❌ Connection error: ' + err.message);
+    }
+  };
+
+  // 🔑 User API Credentials Save Handler
+  window.adminUpdateCredentials = async function(event) {
+    if (event) event.preventDefault();
+    const payload = {
+      api_key: $('#cred-cs-key').value,
+      api_secret: $('#cred-cs-secret').value,
+      delta_api_key: $('#cred-delta-key').value,
+      delta_api_secret: $('#cred-delta-secret').value,
+      telegram_token: $('#cred-tg-token').value,
+      telegram_chat_id: $('#cred-tg-chat').value
+    };
+
+    try {
+      const data = await fetchJson('/api/admin/credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (data.status === 'success') {
+        alert('🔐 API Credentials updated & authenticated successfully!');
+      } else {
+        alert('❌ Error updating credentials: ' + data.message);
+      }
+    } catch (err) {
+      alert('❌ Connection error: ' + err.message);
+    }
+  };
+
+  // 📈 Interactive TradingView Widget Loader
+  window.loadTvChart = function(symbol) {
+    const container = $('#tv_chart_container');
+    if (!container) return;
+    const cleanSym = symbol ? symbol.toUpperCase().replace('/', '') : 'BTCUSDT';
+    
+    container.innerHTML = `
+      <iframe
+        src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_chart&symbol=BINANCE%3A${cleanSym}&interval=15&hidesidetoolbar=0&symboledit=1&saveimage=1&toolbarbg=06090c&theme=dark&style=1&timezone=Etc%2FUTC"
+        style="width: 100%; height: 100%; border: none;"
+        allowtransparency="true"
+        scrolling="no">
+      </iframe>
+    `;
+  };
+
+  // Auto-init TradingView chart when tab shown
+  setTimeout(() => {
+    if (window.loadTvChart) window.loadTvChart('BTCUSDT');
+  }, 1000);
+
   // Bind click event for Admin Tab
   document.querySelectorAll('.mob-tab-btn[data-tab="admin"]').forEach(btn => {
     btn.addEventListener('click', () => {

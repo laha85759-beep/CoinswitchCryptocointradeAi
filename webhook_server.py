@@ -1182,8 +1182,14 @@ class TerminalLiveMaintenanceAgent:
         else:
             a = threading.Thread(target=autonomous_trading_loop, daemon=True)
             a.start()
-            log.info("🎯 Autonomous trading loop started on primary backend worker.")
-        
+        # Start Interactive Telegram Command Bot
+        try:
+            from telegram_bot import TelegramCommandBot
+            tg_bot = TelegramCommandBot(CONFIG, cs_client, delta_client)
+            tg_bot.start_polling()
+        except Exception as tg_exc:
+            log.warning("Telegram Bot initialization notice: %s", tg_exc)
+
         log.info("🎯 24/7 DEDICATED TERMINAL LIVE MAINTENANCE AGENT STARTED")
 
     @classmethod
@@ -1285,6 +1291,61 @@ def reset_admin_trades():
         return jsonify({"status": "success", "message": "Trades state files reset."}), 200
     except Exception as exc:
         log.error("Failed to reset trades state: %s", exc)
+        return jsonify({"status": "error", "message": str(exc)}), 500
+
+@app.route("/api/admin/credentials", methods=["POST"])
+def update_admin_credentials():
+    global cs_client, delta_client
+    try:
+        data = request.json or {}
+        updates = {}
+
+        if "api_key" in data and data["api_key"].strip():
+            updates["api_key"] = data["api_key"].strip()
+        if "api_secret" in data and data["api_secret"].strip():
+            updates["api_secret"] = data["api_secret"].strip()
+        if "delta_api_key" in data and data["delta_api_key"].strip():
+            updates["delta_api_key"] = data["delta_api_key"].strip()
+        if "delta_api_secret" in data and data["delta_api_secret"].strip():
+            updates["delta_api_secret"] = data["delta_api_secret"].strip()
+        if "telegram_token" in data and data["telegram_token"].strip():
+            updates["telegram_token"] = data["telegram_token"].strip()
+        if "telegram_chat_id" in data and data["telegram_chat_id"].strip():
+            updates["telegram_chat_id"] = str(data["telegram_chat_id"]).strip()
+
+        CONFIG.update(updates)
+
+        # Re-initialize API clients dynamically with new credentials
+        if CONFIG.get("api_key") and CONFIG.get("api_secret"):
+            cs_client = CoinSwitchClient(CONFIG["api_key"], CONFIG["api_secret"])
+        if CONFIG.get("delta_api_key") and CONFIG.get("delta_api_secret"):
+            delta_client = DeltaClient(CONFIG["delta_api_key"], CONFIG["delta_api_secret"])
+
+        # Persist to config_override.json
+        override_path = os.path.join(os.path.dirname(__file__), "config_override.json")
+        existing = {}
+        if os.path.exists(override_path):
+            with open(override_path, "r") as f:
+                existing = json.load(f)
+        existing.update(updates)
+        with open(override_path, "w") as f:
+            json.dump(existing, f, indent=4)
+
+        log.info("User API credentials updated and re-initialized successfully!")
+        return jsonify({"status": "success", "message": "API credentials updated & authenticated successfully!"}), 200
+    except Exception as exc:
+        log.error("Failed to update user API credentials: %s", exc)
+        return jsonify({"status": "error", "message": str(exc)}), 500
+
+@app.route("/api/admin/panic-close-all", methods=["POST"])
+def panic_close_all_positions():
+    try:
+        from telegram_bot import TelegramCommandBot
+        bot = TelegramCommandBot(CONFIG, cs_client, delta_client)
+        bot._handle_close_all(chat_id=CONFIG.get("telegram_chat_id"))
+        return jsonify({"status": "success", "message": "Emergency PANIC CLOSE ALL executed across both exchanges."}), 200
+    except Exception as exc:
+        log.error("Panic close all failed: %s", exc)
         return jsonify({"status": "error", "message": str(exc)}), 500
 
 # Auto-initialize 24/7 Dedicated Maintenance Agent on Flask app startup

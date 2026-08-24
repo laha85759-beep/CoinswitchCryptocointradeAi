@@ -681,74 +681,134 @@
 
     </section>
 
-    <!-- ──────── ADMIN CONTROL PANEL SECTION ──────── -->
-    <section class="mob-section sec-target" id="sec-admin" style="display: none; margin-top: 12px; grid-column: span 3;">
-      <div class="card card-21st">
-        <div class="card-header">
-          <span class="card-title">⚙️ ADMIN CONTROL PANEL</span>
-          <span class="tag-21st glow-tag bg-magenta">SYSTEM ROOT</span>
-        </div>
-        <div class="card-body">
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
-            
-            <!-- Column 1: Bot Actions -->
-            <div class="admin-panel-card">
-              <h3 class="cyan" style="margin-top:0;">🤖 SYSTEM ACTIONS</h3>
-              <p class="muted">Execute manual triggers and emergency state operations.</p>
-              <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
-                <button class="btn-action btn-pulse" onclick="adminTriggerCycle()" style="background: var(--glow-green-bg); border-color: var(--theme-green); color: #00ff88;">
-                  🚀 TRIGGER AUTONOMOUS CYCLE
-                </button>
-                <button class="btn-action" onclick="adminResetTrades()" style="background: rgba(255, 51, 85, 0.1); border-color: #ff3355; color: #ff3355;">
-                  🗑️ RESET TRADES STATE FILES
-                </button>
-              </div>
+      <!-- ──────── INTERACTIVE TRADINGVIEW CHART & ENTRY/SL/TP OVERLAY SECTION ──────── -->
+      <section class="mob-section sec-target" id="sec-chart" style="display: none; margin-top: 12px; grid-column: span 3;">
+        <div class="card card-21st">
+          <div class="card-header" style="justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="card-title">📈 TRADINGVIEW REAL-TIME CHART & ENTRY/SL/TP OVERLAY</span>
+              <span class="tag green">LIVE TICKER</span>
             </div>
-
-            <!-- Column 2: Live Configuration -->
-            <div class="admin-panel-card">
-              <h3 class="magenta" style="margin-top:0;">🔧 RISK & TRADING SETTINGS</h3>
-              <form id="adminSettingsForm" onsubmit="adminUpdateSettings(event)" style="display: flex; flex-direction: column; gap: 12px;">
-                <div class="form-row">
-                  <label for="admin-paper-trading">Simulated Paper Mode</label>
-                  <select id="admin-paper-trading">
-                    <option value="true">ENABLED (Simulated)</option>
-                    <option value="false">DISABLED (Real Money)</option>
-                  </select>
-                </div>
-                <div class="form-row">
-                  <label for="admin-capital-pct">Max Capital % Per Trade</label>
-                  <input type="number" id="admin-capital-pct" min="1" max="100" />
-                </div>
-                <div class="form-row">
-                  <label for="admin-max-trades">Max Concurrent Trades</label>
-                  <input type="number" id="admin-max-trades" min="1" max="50" />
-                </div>
-                <div class="form-row">
-                  <label for="admin-hard-sl">Stop Loss (SL) %</label>
-                  <input type="number" id="admin-hard-sl" step="0.1" min="0.1" max="20" />
-                </div>
-                <div class="form-row">
-                  <label for="admin-take-profit">Take Profit (TP) %</label>
-                  <input type="number" id="admin-take-profit" step="0.1" min="0.1" max="50" />
-                </div>
-                <div class="form-row">
-                  <label for="admin-options">Options Hedging Agent</label>
-                  <select id="admin-options">
-                    <option value="true">ENABLED</option>
-                    <option value="false">DISABLED</option>
-                  </select>
-                </div>
-                <button type="submit" class="btn-action" style="background: var(--glow-cyan-bg); border-color: var(--theme-cyan); color: #00e5ff; margin-top: 8px;">
-                  💾 SAVE SETTINGS
-                </button>
-              </form>
+            <div style="display: flex; gap: 6px;">
+              <button class="flow-tab-btn active" onclick="loadTvChart('BTCUSDT')">BTC</button>
+              <button class="flow-tab-btn" onclick="loadTvChart('ETHUSDT')">ETH</button>
+              <button class="flow-tab-btn" onclick="loadTvChart('SOLUSDT')">SOL</button>
+              <button class="flow-tab-btn" onclick="loadTvChart('XRPUSDT')">XRP</button>
             </div>
-
+          </div>
+          <div class="card-body" style="padding: 0;">
+            <!-- TradingView Widget Container -->
+            <div id="tv_chart_container" style="height: 480px; width: 100%; border-radius: 4px; overflow: hidden;"></div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+
+      <!-- ──────── ADMIN CONTROL PANEL SECTION ──────── -->
+      <section class="mob-section sec-target" id="sec-admin" style="display: none; margin-top: 12px; grid-column: span 3;">
+        <div class="card card-21st">
+          <div class="card-header">
+            <span class="card-title">⚙️ ADMIN CONTROL PANEL</span>
+            <span class="tag-21st glow-tag bg-magenta">SYSTEM ROOT</span>
+          </div>
+          <div class="card-body">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+              
+              <!-- Column 1: Bot Actions & Emergency Controls -->
+              <div class="admin-panel-card">
+                <h3 class="cyan" style="margin-top:0;">🤖 SYSTEM ACTIONS</h3>
+                <p class="muted">Execute manual triggers and emergency state operations.</p>
+                <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
+                  <button class="btn-action btn-pulse" onclick="adminTriggerCycle()" style="background: var(--glow-green-bg); border-color: var(--theme-green); color: #00ff88;">
+                    🚀 TRIGGER AUTONOMOUS CYCLE
+                  </button>
+                  <button class="btn-action" onclick="adminPanicCloseAll()" style="background: rgba(255, 51, 85, 0.2); border-color: #ff3355; color: #ff3355; font-weight: bold; font-size: 12px;">
+                    🚨 EMERGENCY PANIC CLOSE ALL
+                  </button>
+                  <button class="btn-action" onclick="adminResetTrades()" style="background: rgba(255, 200, 0, 0.1); border-color: #ffaa00; color: #ffaa00;">
+                    🗑️ RESET TRADES STATE FILES
+                  </button>
+                </div>
+              </div>
+
+              <!-- Column 2: Live Risk & Trading Settings -->
+              <div class="admin-panel-card">
+                <h3 class="magenta" style="margin-top:0;">🔧 RISK & TRADING SETTINGS</h3>
+                <form id="adminSettingsForm" onsubmit="adminUpdateSettings(event)" style="display: flex; flex-direction: column; gap: 12px;">
+                  <div class="form-row">
+                    <label for="admin-paper-trading">Simulated Paper Mode</label>
+                    <select id="admin-paper-trading">
+                      <option value="true">ENABLED (Simulated)</option>
+                      <option value="false">DISABLED (Real Money)</option>
+                    </select>
+                  </div>
+                  <div class="form-row">
+                    <label for="admin-capital-pct">Max Capital % Per Trade</label>
+                    <input type="number" id="admin-capital-pct" min="1" max="100" />
+                  </div>
+                  <div class="form-row">
+                    <label for="admin-max-trades">Max Concurrent Trades</label>
+                    <input type="number" id="admin-max-trades" min="1" max="50" />
+                  </div>
+                  <div class="form-row">
+                    <label for="admin-hard-sl">Stop Loss (SL) %</label>
+                    <input type="number" id="admin-hard-sl" step="0.1" min="0.1" max="20" />
+                  </div>
+                  <div class="form-row">
+                    <label for="admin-take-profit">Take Profit (TP) %</label>
+                    <input type="number" id="admin-take-profit" step="0.1" min="0.1" max="50" />
+                  </div>
+                  <div class="form-row">
+                    <label for="admin-options">Options Hedging Agent</label>
+                    <select id="admin-options">
+                      <option value="true">ENABLED</option>
+                      <option value="false">DISABLED</option>
+                    </select>
+                  </div>
+                  <button type="submit" class="btn-action" style="background: var(--glow-cyan-bg); border-color: var(--theme-cyan); color: #00e5ff; margin-top: 8px;">
+                    💾 SAVE SETTINGS
+                  </button>
+                </form>
+              </div>
+
+              <!-- Column 3: User API Credentials Section -->
+              <div class="admin-panel-card">
+                <h3 class="green" style="margin-top:0;">🔑 MY API CREDENTIALS</h3>
+                <p class="muted">Enter your personal CoinSwitch & Delta API keys below to authenticate and run live trades.</p>
+                <form id="adminCredentialsForm" onsubmit="adminUpdateCredentials(event)" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+                  <div class="form-row">
+                    <label for="cred-cs-key">CoinSwitch API Key</label>
+                    <input type="password" id="cred-cs-key" placeholder="Enter CoinSwitch Key..." />
+                  </div>
+                  <div class="form-row">
+                    <label for="cred-cs-secret">CoinSwitch Secret</label>
+                    <input type="password" id="cred-cs-secret" placeholder="Enter CoinSwitch Secret..." />
+                  </div>
+                  <div class="form-row">
+                    <label for="cred-delta-key">Delta API Key</label>
+                    <input type="password" id="cred-delta-key" placeholder="Enter Delta Key..." />
+                  </div>
+                  <div class="form-row">
+                    <label for="cred-delta-secret">Delta Secret</label>
+                    <input type="password" id="cred-delta-secret" placeholder="Enter Delta Secret..." />
+                  </div>
+                  <div class="form-row">
+                    <label for="cred-tg-token">Telegram Bot Token</label>
+                    <input type="password" id="cred-tg-token" placeholder="Optional Telegram Token..." />
+                  </div>
+                  <div class="form-row">
+                    <label for="cred-tg-chat">Telegram Chat ID</label>
+                    <input type="text" id="cred-tg-chat" placeholder="Optional Telegram Chat ID..." />
+                  </div>
+                  <button type="submit" class="btn-action" style="background: var(--glow-green-bg); border-color: var(--theme-green); color: #00ff88; margin-top: 8px;">
+                    🔐 SAVE & AUTHENTICATE API KEYS
+                  </button>
+                </form>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </section>
 
   </main>
 
@@ -788,6 +848,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=35.0"></script>
+  <script src="app.js?v=36.0"></script>
 </body>
 </html>
