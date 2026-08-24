@@ -52,18 +52,8 @@ IST = timezone(timedelta(hours=5, minutes=30))
 
 
 def _send_monday_resumption_notice(notifier: TelegramNotifier) -> None:
-    today = datetime.now(timezone.utc).date().isoformat()
-    last_date = ""
-    if os.path.exists(MONDAY_NOTICE_FILE):
-        with open(MONDAY_NOTICE_FILE, encoding="utf-8") as f:
-            last_date = f.read().strip()
-    if last_date != today:
-        notifier.send(
-            "*🟢 WEEKEND RESUMPTION*\n"
-            "Markets are open — bot is back online on both exchanges."
-        )
-        with open(MONDAY_NOTICE_FILE, "w", encoding="utf-8") as f:
-            f.write(today)
+    # Disabled: Crypto markets trade 24/7/365 without weekend breaks.
+    pass
 
 
 def _is_weekend_utc() -> bool:

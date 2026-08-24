@@ -1163,8 +1163,16 @@ class TerminalLiveMaintenanceAgent:
         p = threading.Thread(target=self_ping_heartbeat_loop, daemon=True)
         p.start()
         
-        a = threading.Thread(target=autonomous_trading_loop, daemon=True)
-        a.start()
+        # Only start autonomous trading loop on primary backend worker to prevent duplicate Telegram alerts
+        render_service = os.environ.get("RENDER_SERVICE_NAME", "").lower()
+        disable_trading = os.environ.get("DISABLE_TRADING_LOOP", "").lower() == "true"
+        
+        if render_service == "coinsai-terminal" or disable_trading:
+            log.info("🎯 Terminal UI service initialized — Autonomous trading loop delegated to primary backend worker.")
+        else:
+            a = threading.Thread(target=autonomous_trading_loop, daemon=True)
+            a.start()
+            log.info("🎯 Autonomous trading loop started on primary backend worker.")
         
         log.info("🎯 24/7 DEDICATED TERMINAL LIVE MAINTENANCE AGENT STARTED")
 
