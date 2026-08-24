@@ -614,6 +614,12 @@ def get_terminal_data():
         overall_winrate = round((total_wins / total_closed * 100), 1) if total_closed else 75.0
         overall_lossrate = round(100.0 - overall_winrate, 1) if total_closed else 25.0
 
+        # Load Stage 1 Yield & Trading Budget
+        yield_info = load_json_safe("earned_yield.json", {
+            "total_yield_earned_usdt": 0.0,
+            "available_trading_budget_usdt": 0.0
+        })
+
         payload = {
             "status": "success",
             "balances": {
@@ -621,6 +627,10 @@ def get_terminal_data():
                 "cs_inr": round(cs_inr, 2),
                 "delta_usdt": round(delta_usdt, 2),
                 "total_capital_usdt": round(total_real_capital, 2),
+            },
+            "earned_yield": {
+                "total_harvested_usdt": round(float(yield_info.get("total_yield_earned_usdt", 0.0)), 4),
+                "available_budget_usdt": round(float(yield_info.get("available_trading_budget_usdt", 0.0)), 4)
             },
             "tickers": all_tickers,
             "open_positions": {

@@ -212,6 +212,17 @@ def run() -> None:
     else:
         circuit_breaker.record_success()
 
+    # ── Step 2.4: Stage 1 Funding Yield Harvester & Interest-Only Budget Manager ──
+    try:
+        from funding_harvester import FundingHarvesterAgent
+        harvester = FundingHarvesterAgent(CONFIG, delta_client, notifier, audit)
+        yield_data = harvester.scan_and_collect_yield()
+        avail_budget = yield_data.get("available_trading_budget_usdt", 0.0)
+        log.info("FundingHarvester: Stage 1 Total Yield Earned: $%.4f | Available Trading Budget: $%.4f USDT",
+                 yield_data.get("total_yield_earned_usdt", 0.0), avail_budget)
+    except Exception as harvest_exc:
+        log.warning("FundingHarvester notice: %s", harvest_exc)
+
     # ── Step 2.5: Forex Factory Economic News Execution ──────────────────────
     try:
         from forex_factory_agent import ForexFactoryNewsAgent
