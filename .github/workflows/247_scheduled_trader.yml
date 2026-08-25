@@ -1,0 +1,49 @@
+name: CoinsAI 24/7 Scheduled Trading Bot Daemon
+
+on:
+  schedule:
+    # Runs every 15 minutes 24/7 automatically
+    - cron: '*/15 * * * *'
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  run-trading-agent-cycle:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout Code Repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install Core Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests urllib3 pandas numpy cryptography flask pyjwt
+
+    - name: Execute Live 24/7 Trading Agent Cycle
+      env:
+        COINSWITCH_API_KEY: ${{ secrets.COINSWITCH_API_KEY }}
+        COINSWITCH_API_SECRET: ${{ secrets.COINSWITCH_API_SECRET }}
+        DELTA_API_KEY: ${{ secrets.DELTA_API_KEY }}
+        DELTA_API_SECRET: ${{ secrets.DELTA_API_SECRET }}
+        TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      run: |
+        python main.py
+
+    - name: Commit & Persist Updated Open Trades & Yield State
+      run: |
+        git config --global user.name 'CoinsAI Bot Daemon'
+        git config --global user.email 'bot@coinsai.internal'
+        git add open_trades_cs.json open_trades_delta.json open_options.json earned_yield.json daily_pnl.json 2>/dev/null || true
+        git diff-index --quiet HEAD || git commit -m "auto: 24/7 GitHub Actions agent state update"
+        git push || true
