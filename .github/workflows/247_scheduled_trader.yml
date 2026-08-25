@@ -31,8 +31,10 @@ jobs:
 
     - name: Execute Live 24/7 Trading Agent Cycle
       env:
-        COINSWITCH_API_KEY: ${{ secrets.COINSWITCH_API_KEY }}
-        COINSWITCH_API_SECRET: ${{ secrets.COINSWITCH_API_SECRET }}
+        CS_API_KEY: ${{ secrets.CS_API_KEY }}
+        CS_API_SECRET: ${{ secrets.CS_API_SECRET }}
+        COINSWITCH_API_KEY: ${{ secrets.CS_API_KEY }}
+        COINSWITCH_API_SECRET: ${{ secrets.CS_API_SECRET }}
         DELTA_API_KEY: ${{ secrets.DELTA_API_KEY }}
         DELTA_API_SECRET: ${{ secrets.DELTA_API_SECRET }}
         TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
