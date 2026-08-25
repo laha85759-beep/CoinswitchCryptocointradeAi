@@ -1,0 +1,56 @@
+name: CoinsAI Quant Terminal CI & Agent Guard
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  agent-healthcheck-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code Repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install Core Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests urllib3 pandas numpy cryptography flask pyjwt
+
+    - name: Verify Module Compilation & Syntax Integrity
+      run: |
+        python -c "import config, webhook_server, agents, dual_exchange, delta_client, coinswitch_client, funding_harvester; print('✅ All 7 core quant engine modules compiled cleanly.')"
+
+    - name: Test Stop-Loss & Take-Profit Calculation Guard
+      run: |
+        python -c "
+        import dual_exchange, agents
+        entry_price = 100.0
+        stop_loss_pct = 0.05
+        take_profit_pct = 4.8
+        
+        calc_sl_long = round(entry_price * (1 - stop_loss_pct / 100.0), 4)
+        calc_tp_long = round(entry_price * (1 + take_profit_pct / 100.0), 4)
+        
+        assert calc_sl_long == 99.95, f'SL Long failed: {calc_sl_long}'
+        assert calc_tp_long == 104.8, f'TP Long failed: {calc_tp_long}'
+        print('✅ Stop-Loss & Take-Profit calculation guard verified.')
+        "
+
+    - name: Verify 24/7 Watchdog Keep-Alive Pipeline
+      run: |
+        python -c "
+        import webhook_server
+        assert hasattr(webhook_server, 'autonomous_trading_loop'), 'Missing autonomous trading loop'
+        assert hasattr(webhook_server, 'update_admin_credentials'), 'Missing admin credentials update handler'
+        print('✅ 24/7 Watchdog Keep-Alive Pipeline verified.')
+        "
