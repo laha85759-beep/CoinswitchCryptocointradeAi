@@ -289,12 +289,13 @@ class DeltaClient:
                 if asset_sym in ("USDT", "USD") or asset_id in ("5", "14"):
                     total = float(item.get("balance", 0) or 0)
                     available = float(item.get("available_balance", 0) or 0)
-                    val = total if total > 0 else available
+                    # Always prefer available (unlocked) balance for new trade placement
+                    val = available if available > 0 else total
                     if val > 0:
                         return val
-        except Exception:
-            pass
-        return 4.73  # Live Delta account balance
+        except Exception as exc:
+            log.warning("Delta balance error: %s", exc)
+        return 0.0
 
     # ── Orders ───────────────────────────────────────────────────────────────
 

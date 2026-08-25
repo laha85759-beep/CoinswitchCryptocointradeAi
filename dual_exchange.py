@@ -241,13 +241,21 @@ class DualExecutionAgent:
             else:
                 leverage = 8   # Safe 8x Leverage on volatile altcoin setups
 
-            # Force max margin to not exceed 90% of available balance to prevent insufficient margin rejections
-            max_pos_margin = min(delta_balance * 0.90, max(2.5, (delta_balance * 0.30)))
+            # Force max margin to not exceed 85% of available balance to guarantee order fill success
+            max_pos_margin = delta_balance * 0.85
             position_usd = min(position_usd, max_pos_margin * leverage)
+        else:
+            leverage = 20
 
-        # Dynamic risk-based lot size (contracts) considering contract_value & 20x leverage
+        # Dynamic risk-based lot size (contracts) considering contract_value & leverage
         contract_notional = current_price * contract_val
-        num_contracts = max(1, int(position_usd / contract_notional)) if contract_notional > 0 else 1
+        if contract_notional > 0:
+            max_contracts_for_balance = int((delta_balance * 0.85 * leverage) / contract_notional) if delta_balance > 0 else 1
+            calculated_contracts = int(position_usd / contract_notional)
+            num_contracts = max(1, min(calculated_contracts, max_contracts_for_balance))
+        else:
+            num_contracts = 1
+
         qty = float(num_contracts)
 
         if qty <= 0:

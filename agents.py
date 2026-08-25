@@ -376,12 +376,13 @@ class RiskManagerAgent:
 
     def evaluate(self, signals: list[dict], execution_halted: bool = False) -> list[dict]:
         approvals = []
+        cached_portfolio = self._portfolio_usdt()
         for signal in signals:
-            approvals.append(self._evaluate_one(signal, execution_halted))
+            approvals.append(self._evaluate_one(signal, execution_halted, cached_portfolio_usdt=cached_portfolio))
         self.audit.write("RiskManager", {"count": len(approvals), "approvals": approvals})
         return approvals
 
-    def _evaluate_one(self, signal: dict, execution_halted: bool) -> dict:
+    def _evaluate_one(self, signal: dict, execution_halted: bool, cached_portfolio_usdt: float = None) -> dict:
         symbol = signal["symbol"]
         if execution_halted:
             return risk_reject(signal, "circuit_breaker_halted_execution")
@@ -431,7 +432,7 @@ class RiskManagerAgent:
         if len([t for t in trades if t.get("paper", False) == self.cfg["paper_trading_mode"]]) >= max_open_trades:
             return risk_reject(signal, "max_open_trades_reached")
 
-        portfolio_usdt = self._portfolio_usdt()
+        portfolio_usdt = cached_portfolio_usdt if cached_portfolio_usdt is not None else self._portfolio_usdt()
         if portfolio_usdt <= 0:
             return risk_reject(signal, "zero_portfolio_balance")
 
