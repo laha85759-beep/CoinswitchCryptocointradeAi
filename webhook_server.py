@@ -1154,6 +1154,11 @@ def autonomous_trading_loop():
             log.info("Autonomous agent cycle complete. Sleeping for 15 minutes...")
         except Exception as e:
             log.error(f"Error in autonomous loop: {e}")
+            try:
+                if notifier:
+                    notifier.send_emergency_alert("Autonomous Trading Engine Loop Exception", str(e))
+            except Exception as n_exc:
+                log.warning("Failed to send immediate Telegram error alert: %s", n_exc)
             time.sleep(60) # Wait 1 minute on crash
         time.sleep(900)
 
