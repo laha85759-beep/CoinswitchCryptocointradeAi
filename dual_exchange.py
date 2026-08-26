@@ -30,6 +30,8 @@ from agents import (
     pct_change,
     save_json,
     utc_iso,
+    utc_now,
+    DAILY_PNL_FILE,
 )
 from coinswitch_client import CoinSwitchClient
 from delta_client import DeltaClient
@@ -635,7 +637,8 @@ class DualMonitorAgent:
             "closed": total_closed,
             "timestamp": utc_iso(),
         }
-        self.audit.write("DualMonitorAgent", report)
+        if self.audit:
+            self.audit.write("DualMonitorAgent", report)
         log.info(
             "DualMonitor: open=%s closed_this_cycle=%s",
             total_open, len(total_closed),
