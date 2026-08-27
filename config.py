@@ -161,10 +161,11 @@ CONFIG = {
     "max_position_pct":         _float_env("MAX_POSITION_PCT",          75.0),  # ~$10.50 / ₹924 INR position size (clears CoinSwitch $10 min quote filter)
     "max_total_exposure_pct":   _float_env("MAX_TOTAL_EXPOSURE_PCT",    98.0),
     "max_trades_per_hour":      _int_env("MAX_TRADES_PER_HOUR",         10),
-    # min_confidence=0.50: ensures high-probability momentum breakout signals only
-    "min_confidence":           _float_env("MIN_CONFIDENCE",             0.50),
-    "stop_loss_pct":            _float_env("STOP_LOSS_PCT",              1.5),  # Optimal -1.5% SL for momentum breakouts
-    "take_profit_pct":          _float_env("TAKE_PROFIT_PCT",            4.8),  # High +4.8% TP (1:3+ Risk-Reward ratio)
+    # min_confidence=0.75: Ultra-high conviction filter for small account preservation
+    "min_confidence":           _float_env("MIN_CONFIDENCE",             0.75),
+    "stop_loss_pct":            _float_env("STOP_LOSS_PCT",              2.5),  # -2.5% Breathing Stop Loss (prevents noise stop-outs)
+    "take_profit_pct":          _float_env("TAKE_PROFIT_PCT",            6.0),  # +6.0% TP (High 1:2.4 Risk-to-Reward Ratio)
+    "small_account_leverage":   _int_env("SMALL_ACCOUNT_LEVERAGE",       10),   # 10x leverage for small capital (< $10 USDT) to reduce liquidation sensitivity
     "scalp_lot_multiplier":     _float_env("SCALP_LOT_MULTIPLIER",       2.5),  # QuickScalpAgent uses 2.5x larger lot size
     # daily_max_drawdown=4%: on $100 that's $4 max daily loss before halt
     "daily_max_drawdown_pct":   _float_env("DAILY_MAX_DRAWDOWN_PCT",     4.0),
