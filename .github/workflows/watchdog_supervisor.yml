@@ -1,0 +1,52 @@
+name: CoinsAI Watchdog & System Supervisor Daemon
+
+on:
+  schedule:
+    # Runs every 10 minutes 24/7 automatically for double redundancy
+    - cron: '*/10 * * * *'
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  run-watchdog-supervisor:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout Code Repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install Core Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests urllib3 pandas numpy cryptography flask pyjwt
+
+    - name: Execute Watchdog Health & Auto-Healing Check
+      env:
+        CS_API_KEY: ${{ secrets.CS_API_KEY }}
+        CS_API_SECRET: ${{ secrets.CS_API_SECRET }}
+        COINSWITCH_API_KEY: ${{ secrets.CS_API_KEY }}
+        COINSWITCH_API_SECRET: ${{ secrets.CS_API_SECRET }}
+        DELTA_API_KEY: ${{ secrets.DELTA_API_KEY }}
+        DELTA_API_SECRET: ${{ secrets.DELTA_API_SECRET }}
+        TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      run: |
+        python watchdog_supervisor.py
+        python main.py
+
+    - name: Commit & Persist Watchdog Health State
+      run: |
+        git config --global user.name 'CoinsAI Watchdog Daemon'
+        git config --global user.email 'watchdog@coinsai.internal'
+        git add watchdog_status.json open_trades_cs.json open_trades_delta.json earned_yield.json daily_pnl.json 2>/dev/null || true
+        git diff-index --quiet HEAD || git commit -m "auto: 24/7 Watchdog Supervisor state sync"
+        git push || true
