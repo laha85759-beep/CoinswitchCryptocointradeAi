@@ -2,32 +2,32 @@
   {
     "strategy": "long_straddle",
     "asset": "XAUT",
-    "spot_price_at_entry": 4366.22,
+    "spot_price_at_entry": 4607.18,
     "call_leg": {
-      "symbol": "C-XAUT-4370-150826",
-      "product_id": 146556,
-      "strike": 4370.0,
-      "entry_premium": 1.1
+      "symbol": "C-XAUT-4610-260826",
+      "product_id": 149200,
+      "strike": 4610.0,
+      "entry_premium": 23.0
     },
     "put_leg": {
-      "symbol": "P-XAUT-4370-150826",
-      "product_id": 146546,
-      "strike": 4370.0,
-      "entry_premium": 7.9
+      "symbol": "P-XAUT-4610-260826",
+      "product_id": 149190,
+      "strike": 4610.0,
+      "entry_premium": 31.9
     },
-    "total_premium_paid": 9.0,
-    "peak_combined_value": 9.78,
+    "total_premium_paid": 54.9,
+    "peak_combined_value": 54.9,
     "mandatory_risk": {
-      "stop_loss_premium": 4.5,
+      "stop_loss_premium": 27.45,
       "stop_loss_pct": 50.0,
-      "take_profit_premium": 18.0,
+      "take_profit_premium": 109.8,
       "take_profit_pct": 100.0,
-      "max_possible_loss": 9.0,
+      "max_possible_loss": 54.9,
       "unlimited_profit": true
     },
-    "opened_at": "2026-08-15T08:11:02.036799+00:00",
+    "opened_at": "2026-08-25T14:04:30.729151+00:00",
     "status": "active",
-    "call_order_id": 1473478839,
-    "put_order_id": 1473478854
+    "call_order_id": 1496163317,
+    "put_order_id": 1496163404
   }
 ]
