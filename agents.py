@@ -115,128 +115,134 @@ class DataCollectorAgent:
         return self.scanner._top_symbols()
 
     def collect(self) -> list[dict]:
-        out = []
         symbols = self.symbols()
         log.info("Data Collector: collecting %s symbols", len(symbols))
         if not symbols:
             log.warning("Data Collector: 0 symbols returned from scanner. Check CoinSwitch API / c2c2 tickers.")
             self.audit.write("DataCollector", {"count": 0, "items": [], "error": "zero_symbols_from_scanner"})
-            return out
+            return []
         try:
             tickers = self.client.get_all_tickers(self.cfg.get("exchange", "c2c2"))
         except Exception as exc:
             log.warning("Ticker snapshot failed: %s", exc)
             tickers = {}
-        for symbol in symbols:
-            try:
-                df = self.scanner._ohlcv(symbol)
-                if df is None or len(df) < 15:
-                    out.append({"symbol": symbol, "error": "insufficient_ohlcv", "timestamp": utc_iso()})
-                    continue
 
-                close = df["close"].astype(float)
-                high = df["high"].astype(float)
-                low = df["low"].astype(float)
-                volume = df["volume"].astype(float)
-                price = float(close.iloc[-1])
-
-                change_5m = pct_change(close.iloc[-1], close.iloc[-2])
-                change_1h = pct_change(close.iloc[-1], close.iloc[-13]) if len(close) >= 13 else 0.0
-                change_4h = pct_change(close.iloc[-1], close.iloc[-49]) if len(close) >= 49 else 0.0
-                change_24h = pct_change(close.iloc[-1], close.iloc[-1 - min(len(close) - 1, 288)])
-
-                # Volume z-score over 84-candle window (7h of 5m candles)
-                vol_window = volume.tail(min(len(volume), 84))
-                vol_mean = float(vol_window.mean() or 0)
-                vol_std = float(vol_window.std() or 0)
-                volume_zscore = 0.0 if vol_std <= 0 else float((volume.iloc[-1] - vol_mean) / vol_std)
-
-                rolling_avg = float(volume.tail(20).mean() or 0)
-                volume_ratio = 1.0 if rolling_avg <= 0 else float(volume.iloc[-1] / rolling_avg)
-
-                # Technical Analysis calculations using Python 'ta' library
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        out = []
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            future_to_sym = {executor.submit(self._collect_one, symbol, tickers): symbol for symbol in symbols}
+            for future in as_completed(future_to_sym):
                 try:
-                    import ta
-                    atr = float(ta.volatility.AverageTrueRange(high, low, close, window=14).average_true_range().iloc[-1] or 0.0)
-                    macd_diff = float(ta.trend.MACD(close).macd_diff().iloc[-1] or 0.0)
-                    rsi_val = float(ta.momentum.RSIIndicator(close, window=14).rsi().iloc[-1] or 50.0)
-                    bb = ta.volatility.BollingerBands(close, window=20, window_dev=2)
-                    bb_pband = float(bb.bollinger_pband().iloc[-1] or 0.5)
-                except Exception:
-                    tr = pd.concat([high - low, (high - close.shift(1)).abs(), (low - close.shift(1)).abs()], axis=1).max(axis=1)
-                    atr = float(tr.ewm(span=14, adjust=False).mean().iloc[-1])
-                    macd_diff = 0.0
-                    rsi_val = 50.0
-                    bb_pband = 0.5
-
-                atr_pct = (atr / price * 100) if price > 0 else 0.0
-
-                orderbook_imbalance = synthetic_imbalance(change_5m, volume_ratio)
-                trade_freq_5m = int(max(1, round(volume_ratio * 100)))
-
-                ticker = tickers.get(symbol, {})
-                # c2c2 has empty quoteVolume — compute from baseVolume * price
-                quote_volume = safe_float(ticker.get("quoteVolume"))
-                if quote_volume <= 0:
-                    base_vol = safe_float(ticker.get("baseVolume"))
-                    quote_volume = base_vol * price if base_vol > 0 else 0.0
-                if quote_volume <= 0:
-                    quote_volume = float(volume.tail(min(len(volume), 288)).sum()) * price
-
-                item = {
-                    "symbol": symbol,
-                    "price": price,
-                    "change_5m": round(change_5m, 4),
-                    "change_1h": round(change_1h, 4),
-                    "change_4h": round(change_4h, 4),
-                    "change_24h": round(change_24h, 4),
-                    "volume_24h": round(quote_volume, 4),
-                    "volume_zscore": round(volume_zscore, 4),
-                    "volume_ratio": round(volume_ratio, 4),
-                    "atr_pct": round(atr_pct, 4),
-                    "orderbook_imbalance": round(orderbook_imbalance, 4),
-                    "trade_freq_5m": trade_freq_5m,
-                    "trade_freq_ratio": round(volume_ratio, 4),
-                    "timestamp": utc_iso(),
-                    "data_notes": ["orderbook_imbalance_and_trade_frequency_are_ohlcv_proxies"],
-                }
-
-                # ── PP SuperTrend + Reversal Zone Finder [Ghost Protocol] V3 ──────
-                try:
-                    from pp_supertrend_ghost import PPSuperTrendGhostEngine
-                    pp_engine = PPSuperTrendGhostEngine()
-                    item["pp_supertrend_ghost"] = pp_engine.analyze(df)
+                    res = future.result()
+                    if res:
+                        out.append(res)
                 except Exception as exc:
-                    log.debug("PP SuperTrend Ghost analysis failed for %s: %s", symbol, exc)
+                    sym = future_to_sym[future]
+                    out.append({"symbol": sym, "error": str(exc), "timestamp": utc_iso()})
 
-                # ── SMC Liquidity Gap & Liquidity Run Strategy Engine ────────────
-                try:
-                    from liquidity_gap_run_engine import LiquidityGapRunEngine
-                    liq_engine = LiquidityGapRunEngine()
-                    item["liquidity_gap_run"] = liq_engine.analyze(df)
-                except Exception as exc:
-                    log.debug("Liquidity Gap & Run analysis failed for %s: %s", symbol, exc)
-
-                # ── Consolidation + Breakout detection (1h candles) ──────────
-                try:
-                    df_1h = self.scanner._ohlcv_1h(symbol, 48)
-                    if df_1h is not None and len(df_1h) >= 24:
-                        consol = self.consol_engine.detect(df_1h, df)
-                        if consol is not None:
-                            item["consolidation_breakout"] = consol
-                            log.info(
-                                "Consolidation breakout detected: %s | %s | strength=%s",
-                                symbol, consol["type"], consol.get("strength", 0),
-                            )
-                except Exception as exc:
-                    log.debug("Consolidation check failed for %s: %s", symbol, exc)
-
-                out.append(item)
-            except Exception as exc:
-                out.append({"symbol": symbol, "error": str(exc), "timestamp": utc_iso()})
-
-        self.audit.write("DataCollector", {"count": len(out), "items": out})
+        if self.audit:
+            self.audit.write("DataCollector", {"count": len(out), "items": out})
         return out
+
+    def _collect_one(self, symbol: str, tickers: dict) -> dict:
+        try:
+            time.sleep(0.1)  # Throttling delay to respect CoinSwitch API rate limit
+            df = self.scanner._ohlcv(symbol)
+            if df is None or len(df) < 15:
+                return {"symbol": symbol, "error": "insufficient_ohlcv", "timestamp": utc_iso()}
+
+            close = df["close"].astype(float)
+            high = df["high"].astype(float)
+            low = df["low"].astype(float)
+            volume = df["volume"].astype(float)
+            price = float(close.iloc[-1])
+
+            change_5m = pct_change(close.iloc[-1], close.iloc[-2])
+            change_1h = pct_change(close.iloc[-1], close.iloc[-13]) if len(close) >= 13 else 0.0
+            change_4h = pct_change(close.iloc[-1], close.iloc[-49]) if len(close) >= 49 else 0.0
+            change_24h = pct_change(close.iloc[-1], close.iloc[-1 - min(len(close) - 1, 288)])
+
+            vol_window = volume.tail(min(len(volume), 84))
+            vol_mean = float(vol_window.mean() or 0)
+            vol_std = float(vol_window.std() or 0)
+            volume_zscore = 0.0 if vol_std <= 0 else float((volume.iloc[-1] - vol_mean) / vol_std)
+
+            rolling_avg = float(volume.tail(20).mean() or 0)
+            volume_ratio = 1.0 if rolling_avg <= 0 else float(volume.iloc[-1] / rolling_avg)
+
+            try:
+                import ta
+                atr = float(ta.volatility.AverageTrueRange(high, low, close, window=14).average_true_range().iloc[-1] or 0.0)
+                macd_diff = float(ta.trend.MACD(close).macd_diff().iloc[-1] or 0.0)
+                rsi_val = float(ta.momentum.RSIIndicator(close, window=14).rsi().iloc[-1] or 50.0)
+                bb = ta.volatility.BollingerBands(close, window=20, window_dev=2)
+                bb_pband = float(bb.bollinger_pband().iloc[-1] or 0.5)
+            except Exception:
+                tr = pd.concat([high - low, (high - close.shift(1)).abs(), (low - close.shift(1)).abs()], axis=1).max(axis=1)
+                atr = float(tr.ewm(span=14, adjust=False).mean().iloc[-1])
+                macd_diff = 0.0
+                rsi_val = 50.0
+                bb_pband = 0.5
+
+            atr_pct = (atr / price * 100) if price > 0 else 0.0
+            orderbook_imbalance = synthetic_imbalance(change_5m, volume_ratio)
+            trade_freq_5m = int(max(1, round(volume_ratio * 100)))
+
+            ticker = tickers.get(symbol, {})
+            quote_volume = safe_float(ticker.get("quoteVolume"))
+            if quote_volume <= 0:
+                base_vol = safe_float(ticker.get("baseVolume"))
+                quote_volume = base_vol * price if base_vol > 0 else 0.0
+            if quote_volume <= 0:
+                quote_volume = float(volume.tail(min(len(volume), 288)).sum()) * price
+
+            item = {
+                "symbol": symbol,
+                "price": price,
+                "change_5m": round(change_5m, 4),
+                "change_1h": round(change_1h, 4),
+                "change_4h": round(change_4h, 4),
+                "change_24h": round(change_24h, 4),
+                "volume_24h": round(quote_volume, 4),
+                "volume_zscore": round(volume_zscore, 4),
+                "volume_ratio": round(volume_ratio, 4),
+                "atr_pct": round(atr_pct, 4),
+                "orderbook_imbalance": round(orderbook_imbalance, 4),
+                "trade_freq_5m": trade_freq_5m,
+                "trade_freq_ratio": round(volume_ratio, 4),
+                "rsi_14": round(rsi_val, 2),
+                "macd_diff": round(macd_diff, 6),
+                "bb_pband": round(bb_pband, 4),
+                "timestamp": utc_iso(),
+                "data_notes": ["orderbook_imbalance_and_trade_frequency_are_ohlcv_proxies"],
+            }
+
+            try:
+                from pp_supertrend_ghost import PPSuperTrendGhostEngine
+                pp_engine = PPSuperTrendGhostEngine()
+                item["pp_supertrend_ghost"] = pp_engine.analyze(df)
+            except Exception as exc:
+                log.debug("PP SuperTrend Ghost analysis failed for %s: %s", symbol, exc)
+
+            try:
+                from liquidity_gap_run_engine import LiquidityGapRunEngine
+                liq_engine = LiquidityGapRunEngine()
+                item["liquidity_gap_run"] = liq_engine.analyze(df)
+            except Exception as exc:
+                log.debug("Liquidity Gap & Run analysis failed for %s: %s", symbol, exc)
+
+            try:
+                df_1h = self.scanner._ohlcv_1h(symbol, 48)
+                if df_1h is not None and len(df_1h) >= 24:
+                    consol = self.consol_engine.detect(df_1h, df)
+                    if consol is not None:
+                        item["consolidation_breakout"] = consol
+            except Exception as exc:
+                log.debug("Consolidation check failed for %s: %s", symbol, exc)
+
+            return item
+        except Exception as exc:
+            return {"symbol": symbol, "error": str(exc), "timestamp": utc_iso()}
 
 
 class SignalDetectorAgent:
@@ -349,7 +355,8 @@ class SignalDetectorAgent:
             cause = suspected_cause(item, high_volume, trade_spike)
             signals.append(self._signal(symbol, signal, confidence, cause, item))
 
-        self.audit.write("SignalDetector", {"count": len(signals), "signals": signals})
+        if self.audit:
+            self.audit.write("SignalDetector", {"count": len(signals), "signals": signals})
         return signals
 
     def _signal(self, symbol: str, signal: str, confidence: float, cause: str, supporting: dict) -> dict:
