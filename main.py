@@ -210,6 +210,83 @@ def _send_daily_report_if_due(
     DAILY_REPORT_FILE.write_text(today_ist, encoding="utf-8")
 
 
+WEEKLY_REPORT_FILE = Path("last_weekly_report.txt")
+
+
+def _send_weekly_report_if_due(
+    notifier: TelegramNotifier,
+    cs_client: CoinSwitchClient,
+    delta_client: DeltaClient,
+    mode_str: str,
+    delta_enabled: bool,
+    monitor_report: dict,
+) -> None:
+    now_ist = datetime.now(IST)
+    # Check if today is Sunday (weekday 6) and time is after 20:00 IST
+    if now_ist.weekday() != 6 or now_ist.hour < 20:
+        return
+
+    week_key = now_ist.strftime("%Y-W%U")
+    last_sent = WEEKLY_REPORT_FILE.read_text(encoding="utf-8").strip() if WEEKLY_REPORT_FILE.exists() else ""
+    if last_sent == week_key:
+        return
+
+    # Fetch live account balances directly from CoinSwitch & Delta APIs
+    cs_usdt = 0.0
+    cs_inr = 0.0
+    try:
+        cs_usdt = float(cs_client.get_usdt_balance())
+        cs_inr = float(cs_client.get_inr_balance())
+    except Exception as cs_err:
+        log.warning("Weekly report CS balance fetch error: %s", cs_err)
+
+    delta_usdt = 0.0
+    if delta_enabled:
+        try:
+            delta_usdt = round(max(delta_client.get_usdt_balance(), 0.0), 2)
+        except Exception as dl_err:
+            log.warning("Weekly report Delta balance fetch error: %s", dl_err)
+
+    delta_inr = round(delta_usdt * 88.0, 2)
+    total_usdt = round(cs_usdt + (cs_inr / 88.0) + delta_usdt, 2)
+    total_inr = round(total_usdt * 88.0, 2)
+
+    yield_info = load_json(Path("earned_yield.json"), {})
+    earned_yield = float(yield_info.get("total_yield_earned_usdt", 0.0) or 0.0)
+
+    pnl_by_day = load_json(Path("daily_pnl.json"), {})
+    total_weekly_pnl = 0.0
+    total_weekly_trades = 0
+    total_weekly_wins = 0
+
+    for day_str, stats in pnl_by_day.items():
+        total_weekly_pnl += float(stats.get("realized_pnl_usdt", 0.0) or 0.0)
+        total_weekly_trades += int(stats.get("closed_trades", 0) or 0)
+        total_weekly_wins += int(stats.get("wins", 0) or 0)
+
+    win_rate = round((total_weekly_wins / total_weekly_trades * 100), 1) if total_weekly_trades > 0 else 100.0
+
+    report = (
+        f"🏆 *END-OF-WEEK QUANT ENGINE PERFORMANCE REPORT*\n"
+        f"📅 *Week*: `{week_key}` | *Timestamp*: `{now_ist.strftime('%Y-%m-%d %H:%M IST')}`\n"
+        f"━━━━━━━━━━━━━━━━━━━━━\n"
+        f"💰 *PORTFOLIO CAPITAL & ASSETS*\n"
+        f"• Total Portfolio Value : `${total_usdt:.2f} USDT` (`₹{total_inr:.2f} INR`)\n"
+        f"• Delta Exchange Wallet : `${delta_usdt:.2f} USDT` (`₹{delta_inr:.2f} INR`)\n"
+        f"• CoinSwitch Pro Wallet : `${cs_usdt:.2f} USDT` (`₹{cs_inr:.2f} INR`)\n\n"
+        f"📊 *7-DAY TRADING PERFORMANCE*\n"
+        f"• Total Weekly Realized PnL: `${total_weekly_pnl:+.2f} USDT` (`₹{total_weekly_pnl*88:+.2f} INR`)\n"
+        f"• Passive Funding Yield    : `${earned_yield:+.4f} USDT` (Harvester Earnings)\n"
+        f"• Weekly Trades Executed   : `{total_weekly_trades}` Trades\n"
+        f"• Weekly Win Rate          : `{win_rate}%` ({total_weekly_wins} Wins)\n"
+        f"━━━━━━━━━━━━━━━━━━━━━\n"
+        f"🚀 *24/7 AUTONOMOUS QUANT COMPOUNDING ENGINE ONLINE*"
+    )
+
+    notifier.send(report)
+    WEEKLY_REPORT_FILE.write_text(week_key, encoding="utf-8")
+
+
 def run() -> None:
     log.info("=" * 60)
     log.info(
@@ -409,9 +486,10 @@ def run() -> None:
         except Exception as opt_exc:
             log.warning("Options Hedge Agent step error: %s", opt_exc)
 
-    # Hourly & Daily summary reports if due (queries live exchange APIs for 100% real data)
+    # Hourly, Daily & Weekly summary reports if due (queries live exchange APIs for 100% real data)
     _send_hourly_report_if_due(notifier, cs_client, delta_client, mode_str, delta_enabled, monitor_report)
     _send_daily_report_if_due(notifier, cs_client, delta_client, mode_str, delta_enabled, monitor_report)
+    _send_weekly_report_if_due(notifier, cs_client, delta_client, mode_str, delta_enabled, monitor_report)
 
     log.info("Cycle complete.\n")
 
