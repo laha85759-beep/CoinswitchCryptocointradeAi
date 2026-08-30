@@ -1,1 +1,21 @@
-[]
+[
+  {
+    "direction": "short",
+    "entry_price": 0.5393,
+    "exchange": "delta",
+    "hard_sl": 0.555242,
+    "opened_at": "2026-08-30T04:50:22.735206+00:00",
+    "order_id": "1505278161",
+    "paper": false,
+    "peak_price": 0.5393,
+    "product_id": 55661,
+    "qty": 4.0,
+    "signal_id": "SPXUSD-SHORT-1788065422",
+    "symbol": "SPXUSD",
+    "take_profit": 0.509198,
+    "trail_active": false,
+    "trailing_stop": null,
+    "trough_price": 0.5393,
+    "usdt_used": 2.1668
+  }
+]
