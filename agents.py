@@ -29,6 +29,7 @@ import pandas as pd
 from coinswitch_client import CoinSwitchClient
 from notifier import TelegramNotifier
 from scanner import MarketScanner, SignalEngine, ConsolidationBreakoutEngine
+from nvidia_nemotron_agent import NVIDIANemotronAgent
 
 log = logging.getLogger(__name__)
 
@@ -267,6 +268,7 @@ class SignalDetectorAgent:
         self.cfg = cfg
         self.audit = audit
         self.legacy_engine = SignalEngine(cfg["weights"])
+        self.nvidia_nemotron = NVIDIANemotronAgent(cfg)
         try:
             from onemin_ai_client import OneMinAIClient
             self.onemin_ai = OneMinAIClient(cfg.get("onemin_ai_api_key"))

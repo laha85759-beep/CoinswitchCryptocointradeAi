@@ -185,6 +185,11 @@ CONFIG = {
     "short_selling_enabled": _bool_env("SHORT_SELLING_ENABLED", True),
     "short_exchanges": ["delta"],
 
+    # ── NVIDIA Nemotron 550B AI Model Endpoint ──────────────────────────────────
+    "nvidia_api_key":   os.getenv("NVIDIA_API_KEY", "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"),
+    "nvidia_base_url":  os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1"),
+    "nvidia_model":     os.getenv("NVIDIA_MODEL", "nvidia/nemotron-3-ultra-550b-a55b"),
+
     # ── Options Hedge Agent ───────────────────────────────────────────────────
     "options_enabled":         _bool_env("OPTIONS_ENABLED", True),
     "options_assets":          ["ETH", "BTC", "XAUT", "SOL", "XRP", "DOGE", "MNT"],
