@@ -131,9 +131,6 @@ class ContinuousDiagnosticsAgent:
             if len(live_engine_pos) > 0:
                 p = live_engine_pos[0]
                 pos_detail_str = f"1 Active Trade ({p.get('product_symbol')} {p.get('size')} Contracts)"
-            elif len(delta_open) > 0:
-                p = delta_open[0]
-                pos_detail_str = f"1 Active Trade ({p.get('symbol')} {p.get('direction').upper()})"
 
             msg = (
                 f"🩺 *24/7 DEDICATED DIAGNOSTICS AGENT: HOURLY REPORT*\n"

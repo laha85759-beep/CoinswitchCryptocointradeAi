@@ -556,6 +556,7 @@ class DualMonitorAgent:
                         continue
                     valid_trades.append(t)
                 delta_trades = valid_trades
+                save_json(DELTA_TRADES_FILE, delta_trades)
                 
             except Exception as sync_exc:
                 log.debug("Delta live position sync notice: %s", sync_exc)
