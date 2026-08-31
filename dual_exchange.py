@@ -590,11 +590,14 @@ class DualMonitorAgent:
                         log.info("Delta trail ACTIVATED for %s at +%.2f%%", trade["symbol"], pnl_pct)
 
                     if trade.get("trail_active"):
-                        # Adaptive High-Watermark Peak Profit Locker:
-                        # - On parabolic spikes (>=8% pnl), tightens trail distance to 0.5% to lock 95%+ of peak high watermark!
+                        # Adaptive High-Watermark Peak Profit Locker & Ultra-Parabolic Rocket Engine:
+                        # - On massive volume explosions (>=15% pnl / 150%+ margin profit), tightens trail distance to 0.3% to hug peak high watermark!
+                        # - On parabolic spikes (>=8% pnl), tightens trail distance to 0.5%.
                         # - On strong moves (>=4% pnl), tightens trail distance to 0.8%.
                         # - On standard moves (>=1.2% pnl), trail distance is 1.2%.
-                        if pnl_pct >= 8.0:
+                        if pnl_pct >= 15.0:
+                            trail_distance_pct = 0.3
+                        elif pnl_pct >= 8.0:
                             trail_distance_pct = 0.5
                         elif pnl_pct >= 4.0:
                             trail_distance_pct = 0.8
