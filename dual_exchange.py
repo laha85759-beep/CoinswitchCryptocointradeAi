@@ -590,12 +590,10 @@ class DualMonitorAgent:
                         log.info("Delta trail ACTIVATED for %s at +%.2f%%", trade["symbol"], pnl_pct)
 
                     if trade.get("trail_active"):
-                        # Chandelier Exit Trailing Stop
+                        # Chandelier Exit Trailing Stop (Tightens to 1.0% on parabolic surges >= 5% to capture peak $2.20+ gains)
                         atr_pct = float(trade.get("atr_pct", 1.0))
                         if atr_pct <= 0: atr_pct = 1.0
-                        trail_distance_pct = atr_pct * 1.5
-                        # Cap the trail distance between 1% and 5% to prevent crazy stops
-                        trail_distance_pct = max(1.0, min(5.0, trail_distance_pct))
+                        trail_distance_pct = 1.0 if pnl_pct >= 5.0 else max(1.0, min(3.0, atr_pct * 1.2))
                         
                         if direction == "long":
                             new_stop = round(float(trade["peak_price"]) * (1 - trail_distance_pct / 100.0), 8)
