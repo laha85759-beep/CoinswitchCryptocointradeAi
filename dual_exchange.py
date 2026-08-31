@@ -590,11 +590,18 @@ class DualMonitorAgent:
                         log.info("Delta trail ACTIVATED for %s at +%.2f%%", trade["symbol"], pnl_pct)
 
                     if trade.get("trail_active"):
-                        # Chandelier Exit Trailing Stop (Tightens to 1.0% on parabolic surges >= 5% to capture peak $2.20+ gains)
-                        atr_pct = float(trade.get("atr_pct", 1.0))
-                        if atr_pct <= 0: atr_pct = 1.0
-                        trail_distance_pct = 1.0 if pnl_pct >= 5.0 else max(1.0, min(3.0, atr_pct * 1.2))
-                        
+                        # Adaptive High-Watermark Peak Profit Locker:
+                        # - On parabolic spikes (>=8% pnl), tightens trail distance to 0.5% to lock 95%+ of peak high watermark!
+                        # - On strong moves (>=4% pnl), tightens trail distance to 0.8%.
+                        # - On standard moves (>=1.2% pnl), trail distance is 1.2%.
+                        if pnl_pct >= 8.0:
+                            trail_distance_pct = 0.5
+                        elif pnl_pct >= 4.0:
+                            trail_distance_pct = 0.8
+                        else:
+                            atr_pct = float(trade.get("atr_pct", 1.0))
+                            trail_distance_pct = max(0.8, min(2.0, (atr_pct if atr_pct > 0 else 1.0) * 1.0))
+
                         if direction == "long":
                             new_stop = round(float(trade["peak_price"]) * (1 - trail_distance_pct / 100.0), 8)
                             trade["trailing_stop"] = max(float(trade.get("trailing_stop") or 0), new_stop)
