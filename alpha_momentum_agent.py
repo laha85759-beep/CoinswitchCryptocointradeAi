@@ -52,12 +52,15 @@ class AlphaMomentumSniperAgent:
                         if vol_usd < 50000 or price <= 0:
                             continue
 
-                        # Calculate Alpha Profit Potential Score
-                        vol_score = min(1.0, math.log10(vol_usd) / 8.0) if vol_usd > 0 else 0.0
-                        mom_score = min(1.0, abs(chg_24h) / 30.0)
-                        funding_bonus = 0.20 if funding < -0.05 else 0.0
+                        # Calculate Alpha Profit Potential Score (Normalized for both Pumps & Market Dumps)
+                        vol_score = min(1.0, math.log10(vol_usd) / 7.5) if vol_usd > 0 else 0.0
+                        mom_score = min(1.0, abs(chg_24h) / 15.0)  # 15% move gives 1.0 full momentum score
 
-                        alpha_score = round((vol_score * 0.40) + (mom_score * 0.40) + funding_bonus, 3)
+                        # Funding yield bonus: Shorts get bonus when longs pay positive funding; Longs get bonus when shorts pay negative funding
+                        direction = "long" if chg_24h > 0 else "short"
+                        funding_bonus = 0.20 if (direction == "long" and funding < -0.03) or (direction == "short" and funding > 0.03) else 0.05
+
+                        alpha_score = round((vol_score * 0.45) + (mom_score * 0.45) + funding_bonus, 3)
 
                         if alpha_score >= 0.35:
                             direction = "long" if chg_24h > 0 else "short"

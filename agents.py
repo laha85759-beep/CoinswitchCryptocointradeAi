@@ -873,26 +873,24 @@ def confidence_score(item: dict, matched_conditions: int, trend_aligned: bool = 
     Confidence score 0.0–1.0.
 
     Components:
-      35% — move strength  (how big is the 5m/1h price move)
+      40% — move strength  (normalized on 1.2% 5m or 2.5% 1h move for high dump sensitivity)
       30% — volume strength (how strong is the volume spike)
-      25% — condition match (how many of 4 conditions fired)
+      20% — condition match (how many of 4 conditions fired)
       10% — trend alignment (4h candle in same direction)
-
-    Tuned so:
-      3/4 conditions + moderate volume → ~0.45–0.55
-      4/4 conditions + strong volume   → ~0.65–0.80
     """
-    move_strength = min(1.0, max(
-        abs(float(item.get("change_5m", 0))) / 3.0,
-        abs(float(item.get("change_1h", 0))) / 5.0,
-    ))
-    volume_strength = min(1.0, max(0.0, float(item.get("volume_zscore", 0)) / 3.0))
+    move_5m = abs(float(item.get("change_5m", 0)))
+    move_1h = abs(float(item.get("change_1h", 0)))
+
+    # Sensitive move strength normalization: 1.2% 5m move or 2.5% 1h move gives 1.0 max strength
+    move_strength = min(1.0, max(move_5m / 1.2, move_1h / 2.5))
+    volume_strength = min(1.0, max(0.0, float(item.get("volume_zscore", 0)) / 2.0))
     condition_strength = matched_conditions / 4.0
     trend_bonus = 0.10 if trend_aligned else 0.0
+
     raw = (
-        0.35 * move_strength
+        0.40 * move_strength
         + 0.30 * volume_strength
-        + 0.25 * condition_strength
+        + 0.20 * condition_strength
         + trend_bonus
     )
     return min(1.0, max(0.0, raw))
