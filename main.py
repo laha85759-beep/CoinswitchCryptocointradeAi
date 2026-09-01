@@ -417,25 +417,26 @@ def run() -> None:
     try:
         from alpha_momentum_agent import AlphaMomentumSniperAgent
         alpha_agent = AlphaMomentumSniperAgent(CONFIG, cs_client, delta_client)
-        top_alpha = alpha_agent.select_top_alpha_trade()
-        if top_alpha and top_alpha.get("alpha_score", 0) >= CONFIG.get("min_confidence", 0.75):
-            sym = top_alpha["symbol"]
-            # Convert DELTA futures symbol to standard symbol format if needed
-            std_sym = sym[:-3] + "/USDT" if sym.endswith("USD") else sym
-            alpha_signal = {
-                "symbol": std_sym,
-                "signal": top_alpha["direction"],
-                "confidence": float(top_alpha["alpha_score"]),
-                "suspected_cause": top_alpha.get("reason", "alpha_momentum_surge"),
-                "supporting_data": {
-                    "price": top_alpha.get("price", 0.0),
-                    "volume_24h": top_alpha.get("volume_usd", 0.0),
-                    "change_24h": top_alpha.get("change_24h", 0.0),
+        top_alphas = alpha_agent.select_top_alpha_trades(limit=3)
+        for top_alpha in top_alphas:
+            if top_alpha and top_alpha.get("alpha_score", 0) >= CONFIG.get("min_confidence", 0.75):
+                sym = top_alpha["symbol"]
+                # Convert DELTA futures symbol to standard symbol format if needed
+                std_sym = sym[:-3] + "/USDT" if sym.endswith("USD") else sym
+                alpha_signal = {
+                    "symbol": std_sym,
+                    "signal": top_alpha["direction"],
+                    "confidence": float(top_alpha["alpha_score"]),
+                    "suspected_cause": top_alpha.get("reason", "alpha_momentum_surge"),
+                    "supporting_data": {
+                        "price": top_alpha.get("price", 0.0),
+                        "volume_24h": top_alpha.get("volume_usd", 0.0),
+                        "change_24h": top_alpha.get("change_24h", 0.0),
+                    }
                 }
-            }
-            signals.append(alpha_signal)
-            log.info("AlphaMomentumSniperAgent: Injected top 24/7 alpha target %s (%s, score %.3f) into execution pipeline",
-                     std_sym, top_alpha["direction"].upper(), top_alpha["alpha_score"])
+                signals.append(alpha_signal)
+                log.info("AlphaMomentumSniperAgent: Injected multi-coin alpha target %s (%s, score %.3f) into execution pipeline",
+                         std_sym, top_alpha["direction"].upper(), top_alpha["alpha_score"])
     except Exception as alpha_exc:
         log.warning("AlphaMomentumSniperAgent notice: %s", alpha_exc)
 

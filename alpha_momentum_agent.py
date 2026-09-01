@@ -93,3 +93,12 @@ class AlphaMomentumSniperAgent:
                      top["symbol"], top["direction"].upper(), top["alpha_score"], top["change_24h"])
             return top
         return None
+
+    def select_top_alpha_trades(self, limit: int = 3) -> List[Dict[str, Any]]:
+        """Selects top N multi-coin alpha targets across both Long Pumps and Short Breakdowns."""
+        targets = self.scan_all_markets_for_alpha()
+        top_n = targets[:limit]
+        for t in top_n:
+            log.info("AlphaMomentumSniperAgent MULTI-COIN TARGET: %s (%s) | Alpha Score: %s | 24h: %+0.2f%%",
+                     t["symbol"], t["direction"].upper(), t["alpha_score"], t["change_24h"])
+        return top_n

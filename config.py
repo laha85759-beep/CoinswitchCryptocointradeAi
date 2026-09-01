@@ -157,9 +157,9 @@ CONFIG = {
     "watch_condition_count":       _int_env("WATCH_CONDITION_COUNT",       2),
 
     # ── Risk manager limits ───────────────────────────────────────────────────
-    # Backtested optimal: max_position_pct=20 reduces risk per trade
-    "max_position_pct":         _float_env("MAX_POSITION_PCT",          75.0),  # ~$10.50 / ₹924 INR position size (clears CoinSwitch $10 min quote filter)
-    "max_total_exposure_pct":   _float_env("MAX_TOTAL_EXPOSURE_PCT",    98.0),
+    "max_position_pct":         _float_env("MAX_POSITION_PCT",          30.0),  # 30% per trade (allocates capital across 3 concurrent multi-coin trades)
+    "max_open_trades":          _int_env("MAX_OPEN_TRADES",                3),  # Up to 3 concurrent multi-coin trades (never blocked by a single coin!)
+    "max_total_exposure_pct":   _float_env("MAX_TOTAL_EXPOSURE_PCT",    90.0),
     "max_trades_per_hour":      _int_env("MAX_TRADES_PER_HOUR",         10),
     # min_confidence=0.75: Ultra-high conviction filter for small account preservation
     "min_confidence":           _float_env("MIN_CONFIDENCE",             0.75),
