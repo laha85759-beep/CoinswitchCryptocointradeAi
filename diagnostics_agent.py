@@ -161,6 +161,15 @@ class ContinuousDiagnosticsAgent:
 def run_diagnostics() -> None:
     agent = ContinuousDiagnosticsAgent()
     diag = agent.run_hourly_diagnostics()
+
+    try:
+        from telegram_diagnostic_explainer import TelegramDiagnosticExplainerAgent
+        explainer = TelegramDiagnosticExplainerAgent()
+        explainer.run_audit_and_notify_telegram()
+        print("[PASS] TelegramDiagnosticExplainerAgent successfully sent detailed trade explanation to Telegram!")
+    except Exception as exp_exc:
+        print(f"[NOTICE] TelegramDiagnosticExplainerAgent notice: {exp_exc}")
+
     print("\n==================================================================")
     print("     DEDICATED 24/7 DIAGNOSTICS AGENT EXECUTION SUMMARY            ")
     print("==================================================================")
