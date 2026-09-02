@@ -585,31 +585,42 @@ class DualMonitorAgent:
                         max(float(trade.get("highest_profit_pct", 0)), pnl_pct), 4
                     )
 
-                    if not trade.get("trail_active") and pnl_pct >= self.cfg["trail_activation_pct"]:
+                    # Instant Trailing Stop Activation on Entry (>= 0.1% profit)
+                    if not trade.get("trail_active") and pnl_pct >= float(self.cfg.get("trail_activation_pct", 0.2)):
                         trade["trail_active"] = True
-                        log.info("Delta trail ACTIVATED for %s at +%.2f%%", trade["symbol"], pnl_pct)
+                        log.info("Delta trail INSTANTLY ACTIVATED for %s at +%.2f%% profit", trade["symbol"], pnl_pct)
 
                     if trade.get("trail_active"):
                         # Adaptive High-Watermark Peak Profit Locker & Ultra-Parabolic Rocket Engine:
-                        # - On massive volume explosions (>=15% pnl / 150%+ margin profit), tightens trail distance to 0.3% to hug peak high watermark!
+                        # - On massive volume explosions (>=15% pnl), tightens trail distance to 0.3% to hug peak high watermark!
                         # - On parabolic spikes (>=8% pnl), tightens trail distance to 0.5%.
                         # - On strong moves (>=4% pnl), tightens trail distance to 0.8%.
-                        # - On standard moves (>=1.2% pnl), trail distance is 1.2%.
+                        # - On early moves (>=0.5% pnl), trail distance tightens to 0.4% so break-even profit is locked immediately!
                         if pnl_pct >= 15.0:
                             trail_distance_pct = 0.3
                         elif pnl_pct >= 8.0:
                             trail_distance_pct = 0.5
                         elif pnl_pct >= 4.0:
                             trail_distance_pct = 0.8
+                        elif pnl_pct >= 0.5:
+                            trail_distance_pct = 0.4  # Immediate Break-Even + Profit Protection Lock!
                         else:
-                            atr_pct = float(trade.get("atr_pct", 1.0))
-                            trail_distance_pct = max(0.8, min(2.0, (atr_pct if atr_pct > 0 else 1.0) * 1.0))
+                            atr_pct = float(trade.get("atr_pct", 0.5))
+                            trail_distance_pct = max(0.3, min(1.0, (atr_pct if atr_pct > 0 else 0.5) * 0.8))
 
+                        entry_p = float(trade["entry_price"])
                         if direction == "long":
                             new_stop = round(float(trade["peak_price"]) * (1 - trail_distance_pct / 100.0), 8)
+                            # Immediate Break-Even Protection: Once profit >= 0.5%, stop MUST be at least entry_p * 1.001 (+0.1% profit)
+                            if pnl_pct >= 0.5:
+                                new_stop = max(new_stop, round(entry_p * 1.001, 8))
                             trade["trailing_stop"] = max(float(trade.get("trailing_stop") or 0), new_stop)
                         else:
-                            new_stop = round(float(trade.get("trough_price", trade.get("peak_price", trade["entry_price"]))) * (1 + trail_distance_pct / 100.0), 8)
+                            trough_p = float(trade.get("trough_price", trade.get("peak_price", entry_p)))
+                            new_stop = round(trough_p * (1 + trail_distance_pct / 100.0), 8)
+                            # Immediate Break-Even Protection for Shorts: Once profit >= 0.5%, stop MUST be at least entry_p * 0.999 (+0.1% profit)
+                            if pnl_pct >= 0.5:
+                                new_stop = min(new_stop, round(entry_p * 0.999, 8))
                             current_stop = float(trade.get("trailing_stop") or float('inf'))
                             trade["trailing_stop"] = min(current_stop, new_stop)
 
