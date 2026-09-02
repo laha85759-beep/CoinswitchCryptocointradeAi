@@ -52,7 +52,10 @@ class AlphaMomentumSniperAgent:
                         if vol_usd < 50000 or price <= 0:
                             continue
 
-                        # Heatmap Zone Classification (Catalyst, Cluster, Bull, Bear)
+                        # Calculate Alpha Profit Potential Score & Heatmap Classification
+                        vol_score = min(1.0, math.log10(vol_usd) / 7.5) if vol_usd > 0 else 0.0
+                        mom_score = min(1.0, abs(chg_24h) / 15.0)  # 15% move gives 1.0 full momentum score
+
                         heatmap_zone = "neutral"
                         if vol_usd >= 1_000_000 and abs(chg_24h) >= 10.0:
                             heatmap_zone = "catalyst"  # Major volume explosion + price movement
