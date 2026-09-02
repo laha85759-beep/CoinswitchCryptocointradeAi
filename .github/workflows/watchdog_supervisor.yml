@@ -2,8 +2,8 @@ name: CoinsAI Watchdog & System Supervisor Daemon
 
 on:
   schedule:
-    # Runs every 10 minutes 24/7 automatically for double redundancy
-    - cron: '*/10 * * * *'
+    # Runs every 5 minutes 24/7 automatically for double redundancy
+    - cron: '*/5 * * * *'
   push:
     branches: [ main ]
   workflow_dispatch:
