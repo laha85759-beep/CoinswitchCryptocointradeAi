@@ -17,6 +17,8 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+IST = timezone(timedelta(hours=5, minutes=30))
+
 from agents import (
     AuditLogger,
     CircuitBreaker,
