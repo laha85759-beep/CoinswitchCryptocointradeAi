@@ -101,7 +101,7 @@ def _send_hourly_report_if_due(
         f"━━━━━━━━━━━━━━━━━━━━━\n"
         f"💰 *TOTAL PORTFOLIO ASSETS*\n"
         f"• Total Capital : `${total_usdt:.2f} USDT` (`₹{total_inr:.2f} INR`)\n"
-        f"• CoinSwitch    : `${cs_usdt:.2f} USDT` (`₹{cs_inr:.2f} INR`)\n"
+        f"• CoinSwitch    : `${(cs_inr / 88.0) + cs_usdt:.2f} USDT` (`₹{cs_inr:.2f} INR`)\n"
         f"• Delta Exchange: `${delta_usdt:.2f} USDT` (`₹{delta_inr:.2f} INR`)\n\n"
         f"📈 *ACTIVE OPEN POSITIONS*: `{total_open}` Positions\n"
         f"• CoinSwitch Spot : `{cs_open}` Positions\n"

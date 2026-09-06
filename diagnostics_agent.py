@@ -142,7 +142,7 @@ class ContinuousDiagnosticsAgent:
                 f"• Trading System Status: `BOTH EXCHANGES 100% READY TO TRADE [PASS]`\n\n"
                 f"💰 *REAL-TIME DUAL-EXCHANGE WALLET EQUITY*\n"
                 f"• Delta Exchange USDT: `${delta_usdt:.4f} USDT` 🟢\n"
-                f"• CoinSwitch Pro INR : `Rs.{cs_inr:.2f} INR` (`${cs_usdt:.2f} USDT`) 🟢\n"
+                f"• CoinSwitch Pro INR : `Rs.{cs_inr:.2f} INR` (`${cs_inr / 88.0:.2f} USDT`) 🟢\n"
                 f"• Total Portfolio Value: `${total_usdt:.2f} USDT` (`Rs.{total_inr:.2f} INR`)\n\n"
                 f"📊 *POSITIONS & STRATEGY ENGINE*\n"
                 f"• Active Positions   : `{pos_detail_str}`\n"
