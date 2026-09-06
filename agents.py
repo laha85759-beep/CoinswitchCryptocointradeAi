@@ -66,7 +66,7 @@ def save_json(path: Path, data: Any) -> None:
 
 class AuditLogger:
     def __init__(self, path: Path = AUDIT_LOG_FILE):
-        self.path = path
+        self.path = Path(path) if isinstance(path, (str, Path)) else path
 
     def write(self, agent: str, payload: dict) -> None:
         row = {"timestamp": utc_iso(), "agent": agent, "payload": payload}
