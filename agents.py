@@ -110,10 +110,14 @@ class DataCollectorAgent:
         self.consol_engine = ConsolidationBreakoutEngine(cfg)
 
     def symbols(self) -> list[str]:
-        watchlist = [s.strip().upper() for s in self.cfg.get("watchlist", []) if s.strip()]
-        if watchlist:
-            return [s if "/" in s else f"{s}/{self.cfg['quote_currency']}" for s in watchlist]
-        return self.scanner._top_symbols()
+        # Filter top 15 highest volume/momentum symbols to respect CoinSwitch API rate limits
+        try:
+            syms = self.scanner._top_symbols()[:15]
+            if syms:
+                return syms
+        except Exception:
+            pass
+        return ["BTC/USDT", "ETH/USDT", "SOL/USDT", "DOGE/USDT", "PEPE/USDT", "SHIB/USDT", "RENDER/USDT", "FLOKI/USDT", "BONK/USDT", "AVAX/USDT"]
 
     def collect(self) -> list[dict]:
         symbols = self.symbols()
@@ -147,7 +151,7 @@ class DataCollectorAgent:
 
     def _collect_one(self, symbol: str, tickers: dict) -> dict:
         try:
-            time.sleep(0.1)  # Throttling delay to respect CoinSwitch API rate limit
+            time.sleep(0.3)  # Throttling delay to respect CoinSwitch API rate limit
             df = self.scanner._ohlcv(symbol)
             if df is None or len(df) < 15:
                 return {"symbol": symbol, "error": "insufficient_ohlcv", "timestamp": utc_iso()}
