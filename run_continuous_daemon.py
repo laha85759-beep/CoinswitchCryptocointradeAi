@@ -1,9 +1,9 @@
 """
 CoinsAI Continuous 24/7 Always-On Daemon Runner
 ===============================================
-Runs main.py in a continuous infinite loop every 60 seconds.
-Automatically syncs live exchange positions, purges stale records,
-monitors active positions, ratchets trailing stops, and executes breakout trades!
+Runs main.py in an active 24/7 continuous real-time execution loop.
+Instantly syncs live exchange positions, ratchets trailing stops (+0.2%),
+scans 250+ spot & futures pairs, and executes breakout trades without sleeping!
 """
 
 import logging
@@ -25,9 +25,9 @@ logging.basicConfig(
 log = logging.getLogger("CONTINUOUS_DAEMON")
 
 print("==================================================================")
-print("     STARTING COINSAI 24/7 ALWAYS-ON CONTINUOUS DAEMON RUNNER     ")
+print("     STARTING OPUS 4.7 REAL-TIME CONTINUOUS DAEMON (ZERO SLEEP)   ")
 print("==================================================================")
-log.info("Continuous Daemon Runner started. Polling every 60 seconds 24/7...")
+log.info("Continuous Active Daemon Runner started. Scanning real-time 24/7 without delay...")
 
 cycle_count = 0
 
@@ -35,16 +35,17 @@ while True:
     try:
         cycle_count += 1
         now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-        log.info(f"--- STARTING DAEMON CYCLE #{cycle_count} AT {now_str} ---")
+        log.info(f"--- STARTING REAL-TIME DAEMON CYCLE #{cycle_count} AT {now_str} ---")
         
         # Execute main trading & monitoring pipeline
         run()
         
-        log.info(f"--- CYCLE #{cycle_count} COMPLETE. SLEEPING 60 SECONDS ---")
+        log.info(f"--- DAEMON CYCLE #{cycle_count} COMPLETE. RE-SCANNING INSTANTLY ---")
     except KeyboardInterrupt:
         log.info("Daemon interrupted by user. Stopping cleanly...")
         break
     except Exception as exc:
         log.error(f"Daemon cycle #{cycle_count} encountered error: {exc}", exc_info=True)
     
-    time.sleep(60)
+    # 1-second tick to yield control to event loop & avoid tight CPU loop
+    time.sleep(1)

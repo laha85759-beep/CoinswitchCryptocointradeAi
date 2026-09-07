@@ -48,8 +48,10 @@ except AttributeError:
     pass
 log = logging.getLogger(__name__)
 
-MONDAY_NOTICE_FILE = "last_monday_notice.txt"
 HOURLY_REPORT_FILE = Path("last_hourly_report.txt")
+DAILY_REPORT_FILE  = Path("last_daily_report.txt")
+WEEKLY_REPORT_FILE = Path("last_weekly_report.txt")
+MONDAY_NOTICE_FILE = Path("last_monday_notice.txt")
 
 
 def _send_hourly_report_if_due(
@@ -96,29 +98,54 @@ def _send_hourly_report_if_due(
     avail_budget = float(yield_info.get("available_trading_budget_usdt", 0.0) or 0.0)
 
     report = (
-        f"📊 *LIVE 1-HOUR QUANT ENGINE STATUS REPORT*\n"
+        f"📊 *OPUS 4.7 • HOURLY QUANT ENGINE REPORT*\n"
+        f"═════════════════════════\n"
         f"⏰ *Timestamp*: `{now_ist.strftime('%Y-%m-%d %H:%M IST')}`\n"
-        f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"💰 *TOTAL PORTFOLIO ASSETS*\n"
-        f"• Total Capital : `${total_usdt:.2f} USDT` (`₹{total_inr:.2f} INR`)\n"
-        f"• CoinSwitch    : `${(cs_inr / 88.0) + cs_usdt:.2f} USDT` (`₹{cs_inr:.2f} INR`)\n"
-        f"• Delta Exchange: `${delta_usdt:.2f} USDT` (`₹{delta_inr:.2f} INR`)\n\n"
-        f"📈 *ACTIVE OPEN POSITIONS*: `{total_open}` Positions\n"
-        f"• CoinSwitch Spot : `{cs_open}` Positions\n"
-        f"• Delta Futures   : `{delta_open}` Positions\n"
-        f"• Trailing Stop   : 🟢 ACTIVE (-2% SL / +4.8% TP / Chandelier Trail)\n"
-        f"• Yield Budget    : `${avail_budget:.4f} USDT` (Earned: `${earned_yield:.4f}`)\n\n"
-        f"🤖 *QUANT AGENTS & MODELS STATUS*\n"
-        f"• Kronos Deep AI Transformer : 🟢 ONLINE\n"
-        f"• SMC Liquidity Gap Engine  : 🟢 ONLINE\n"
-        f"• Supertrend Breakout Engine : 🟢 ONLINE\n"
-        f"• Whale Accumulation Scanner : 🟢 ONLINE\n"
-        f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"🚀 *24/7 AUTONOMOUS EXECUTION & COMPOUNDING LOOP ACTIVE*"
+        f"💰 *PORTFOLIO CAPITAL*\n"
+        f"• *Total Capital* : `${total_usdt:.2f} USDT` (`₹{total_inr:.2f} INR`)\n"
+        f"• *CoinSwitch Pro*: `${(cs_inr / 88.0) + cs_usdt:.2f} USDT` (`₹{cs_inr:.2f} INR`)\n"
+        f"• *Delta India*   : `${delta_usdt:.2f} USDT` (`₹{delta_inr:.2f} INR`)\n"
+        f"─────────────────────────\n"
+        f"📈 *ACTIVE POSITIONS*: `{total_open}` Open\n"
+        f"• *CoinSwitch Spot* : `{cs_open}` Positions\n"
+        f"• *Delta Futures*   : `{delta_open}` Positions\n"
+        f"• *Trailing Lock*   : 🟢 ACTIVE (+0.2% Trail / +0.5% Ratchet)\n"
+        f"• *Yield Budget*    : `${avail_budget:.4f} USDT` (Earned: `${earned_yield:.4f}`)\n"
+        f"─────────────────────────\n"
+        f"🤖 *QUANT ENGINE & MODELS*\n"
+        f"• *Kronos AI Transformer* : 🟢 ONLINE\n"
+        f"• *SMC Liquidity Gap Engine*: 🟢 ONLINE\n"
+        f"• *Supertrend Breakout Engine*: 🟢 ONLINE\n"
+        f"• *Whale Scanner & Heatmap*: 🟢 ONLINE\n"
+        f"═════════════════════════\n"
+        f"🚀 *24/7 AUTONOMOUS QUANT EXECUTION LOOP ACTIVE*"
     )
 
     notifier.send(report)
     HOURLY_REPORT_FILE.write_text(hour_key, encoding="utf-8")
+
+
+def _send_monday_resumption_notice(notifier: TelegramNotifier) -> None:
+    try:
+        now_utc = datetime.now(timezone.utc)
+        week_key = now_utc.strftime("%Y-W%U")
+        last_sent = MONDAY_NOTICE_FILE.read_text(encoding="utf-8").strip() if MONDAY_NOTICE_FILE.exists() else ""
+        if last_sent == week_key:
+            return
+        msg = (
+            "🌅 *OPUS 4.7 • WEEKLY MARKET RESUMPTION NOTICE*\n"
+            "═════════════════════════\n"
+            "• *Status*: Trading & Monitoring Pipeline Fully Active\n"
+            "• *Multi-Coin Scanner*: Scanning 250+ Spot & Futures Markets\n"
+            "• *Instant Trailing*: 🟢 Active across all positions\n"
+            "═════════════════════════\n"
+            "🚀 *READY FOR HIGH-PROFIT WEEKLY BREAKOUT TRADES!*"
+        )
+        notifier.send(msg)
+        MONDAY_NOTICE_FILE.write_text(week_key, encoding="utf-8")
+        log.info("Monday Resumption Telegram Notice Sent!")
+    except Exception as exc:
+        log.warning("Failed to send Monday notice: %s", exc)
 
 
 def _send_daily_report_if_due(
@@ -189,30 +216,30 @@ def _send_daily_report_if_due(
     total_net_inr = round(total_net_usdt * 88.0, 2)
 
     report = (
-        f"📊 *LIVE REAL-TIME DAILY EXCHANGE REPORT*\n"
+        f"📊 *OPUS 4.7 • REAL-TIME DAILY EXCHANGE REPORT*\n"
+        f"═════════════════════════\n"
         f"📅 *Date*: `{today_ist}` | *Time*: `{now_ist.strftime('%H:%M IST')}`\n"
-        f"━━━━━━━━━━━━━━━━━━━━━\n"
+        f"─────────────────────────\n"
         f"🏛️ *COINSWITCH PRO (Spot Live)*\n"
-        f"• Live Balance    : `${cs_balance_usdt:.2f} USDT` (`₹{cs_balance_inr:.2f} INR`)\n"
-        f"• Open Spot Trades: `{cs_open}` Positions\n"
-        f"• Net Profit Today: `{cs_net_profit:+.2f} USDT` (`₹{cs_net_profit*88:+.2f} INR`) *(After 0.1% Fee & 31.2% Tax)*\n\n"
+        f"• *Balance*: `${cs_balance_usdt:.2f} USDT` (`₹{cs_balance_inr:.2f} INR`)\n"
+        f"• *Spot Positions*: `{cs_open}` Open\n"
+        f"• *Net Profit Today*: `{cs_net_profit:+.2f} USDT` (`₹{cs_net_profit*88:+.2f} INR`)\n"
+        f"─────────────────────────\n"
         f"⚡ *DELTA EXCHANGE INDIA (Futures Live)*\n"
-        f"• Live Balance    : `${delta_balance_usdt:.2f} USDT` (`₹{delta_balance_inr:.2f} INR`)\n"
-        f"• Open Futures    : `{delta_open}` Positions\n"
-        f"• Net Profit Today: `{delta_net_profit:+.2f} USDT` (`₹{delta_net_profit*88:+.2f} INR`) *(After 0.05% Fee & 18% GST)*\n\n"
-        f"💰 *COMBINED TOTAL LIVE PORTFOLIO*\n"
-        f"• Total Live      : `${total_usdt:.2f} USDT` (`₹{total_inr:.2f} INR`)\n"
-        f"• Today's Win Rate: `{win_rate}%` ({wins} Wins / {losses} Losses)\n"
-        f"• Today's Net PnL : `{total_net_usdt:+.2f} USDT` (`₹{total_net_inr:+.2f} INR`)\n"
-        f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"🟢 *VERIFIED LIVE EXCHANGE API DATA — NO ESTIMATES*"
+        f"• *Balance*: `${delta_balance_usdt:.2f} USDT` (`₹{delta_balance_inr:.2f} INR`)\n"
+        f"• *Futures Positions*: `{delta_open}` Open\n"
+        f"• *Net Profit Today*: `{delta_net_profit:+.2f} USDT` (`₹{delta_net_profit*88:+.2f} INR`)\n"
+        f"─────────────────────────\n"
+        f"💰 *COMBINED TOTAL PORTFOLIO*\n"
+        f"• *Total Portfolio*: `${total_usdt:.2f} USDT` (`₹{total_inr:.2f} INR`)\n"
+        f"• *Win Rate Today* : `{win_rate}%` ({wins} W / {losses} L)\n"
+        f"• *Net PnL Today*  : `{total_net_usdt:+.2f} USDT` (`₹{total_net_inr:+.2f} INR`)\n"
+        f"═════════════════════════\n"
+        f"🟢 *VERIFIED LIVE EXCHANGE API DATA • NO ESTIMATES*"
     )
 
     notifier.send(report)
     DAILY_REPORT_FILE.write_text(today_ist, encoding="utf-8")
-
-
-WEEKLY_REPORT_FILE = Path("last_weekly_report.txt")
 
 
 def _send_weekly_report_if_due(

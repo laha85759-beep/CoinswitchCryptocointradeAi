@@ -417,20 +417,21 @@ class DualExecutionAgent:
 
         lev_used = delta_result.get("leverage", 12)
         self.notifier.send(
-            f"🚀 *LIVE DUAL TRADE OPENED* — `{symbol}`\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"📊 *Direction*: `{dir_icon}`\n"
+            f"⚡ *OPUS 4.7 • DUAL TRADE SIGNAL EXECUTED*\n"
+            f"═════════════════════════\n"
+            f"📍 *Asset Pair*: `{symbol}`\n"
+            f"📈 *Direction*: `{dir_icon}`\n"
             f"💵 *Entry Price*: `${price}`\n"
-            f"💰 *Position Size*: `${size:.2f} USDT`\n"
-            f"🧠 *Kronos AI Verdict*: `{kronos_v}`\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"{cs_icon} *CoinSwitch Pro*: `{cs_status.upper()}`\n"
-            f"{delta_icon} *Delta India*: `{delta_status.upper()} ({lev_used}x Dynamic Leverage)`\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"💰 *Position Capital*: `${size:.2f} USDT`\n"
+            f"🧠 *AI Conviction*: `{kronos_v}`\n"
+            f"─────────────────────────\n"
+            f"🏛️ *CoinSwitch Pro*: {cs_icon} `{cs_status.upper()}`\n"
+            f"⚡ *Delta Exchange India*: {delta_icon} `{delta_status.upper()} ({lev_used}x Leverage)`\n"
+            f"─────────────────────────\n"
             f"🛑 *Hard Server SL*: `-${self.cfg['stop_loss_pct']}%` (`${sl_val}`)\n"
             f"🎯 *Take Profit*: `+{self.cfg['take_profit_pct']}%` (`${tp_val}`)\n"
-            f"🛡️ *Trailing Stop*: `+{self.cfg['trail_activation_pct']}% Activation`\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━━━━"
+            f"🛡️ *Trailing Lock*: `+{self.cfg['trail_activation_pct']}% Instant Activation`\n"
+            f"═════════════════════════"
         )
 
 
@@ -721,16 +722,17 @@ class DualMonitorAgent:
         save_json(closed_file, closed_history)
 
         self.notifier.send(
-            f"{'🟢' if pnl_pct >= 0 else '🔴'} *DELTA TRADE CLOSED ({icon})* — `{trade['symbol']}`\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"🎯 *Exit Reason*: `{reason_label}`\n"
+            f"{'🟢' if pnl_pct >= 0 else '🔴'} *OPUS 4.7 • POSITION CLOSED ({icon})*\n"
+            f"═════════════════════════\n"
+            f"📍 *Asset Pair*: `{trade['symbol']}`\n"
+            f"🎯 *Exit Trigger*: `{reason_label}`\n"
             f"📈 *Direction*: `{trade.get('direction', 'LONG').upper()}`\n"
             f"💵 *Entry*: `${trade['entry_price']}` ➔ *Exit*: `${current}`\n"
-            f"💰 *Net Trade P&L*: `{pnl_pct:+.2f}%` (`{pnl_sign}{pnl_usdt:.2f} USDT`)\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"🏛️ *Exchange*: `Delta Exchange India (20x)`\n"
-            f"🕒 *Exit Time*: `{timestamp}`\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━━━━"
+            f"💰 *Realized Net P&L*: `{pnl_pct:+.2f}%` (`{pnl_sign}${abs(pnl_usdt):.2f} USDT`)\n"
+            f"─────────────────────────\n"
+            f"⚡ *Exchange*: `Delta Exchange India (10x)`\n"
+            f"🕒 *Timestamp*: `{timestamp}`\n"
+            f"═════════════════════════"
         )
         log.info(
             "DELTA CLOSED %s | reason=%s | pnl=%.2f%% | pnl_usdt=%.2f",

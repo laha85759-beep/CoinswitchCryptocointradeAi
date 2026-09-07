@@ -37,9 +37,12 @@ class TelegramNotifier:
         TelegramNotifier._last_emergency_time = now
 
         formatted = (
-            f"🚨 *IMMEDIATE EMERGENCY SYSTEM ALERT* 🚨\n\n"
-            f"*System Component:* {title}\n"
-            f"*Error Details:*\n`{str(details)[:300]}`\n\n"
-            f"⚡ *Auto-Recovery:* Dedicated watchdog is maintaining 24/7 recovery."
+            f"🚨 *SYSTEM ALERT • EMERGENCY EXCEPTION*\n"
+            f"═════════════════════════\n"
+            f"📍 *Component*: `{title}`\n"
+            f"⚠️ *Diagnostic Detail*:\n`{str(details)[:300]}`\n"
+            f"─────────────────────────\n"
+            f"🛡️ *Auto-Recovery*: Active Watchdog maintaining 24/7 daemon loop.\n"
+            f"═════════════════════════"
         )
         self.send(formatted)
