@@ -134,6 +134,22 @@ def get_terminal_data():
             except Exception as exc:
                 log.warning("CoinSwitch INR balance error: %s", exc)
 
+        # Also calculate total CoinSwitch portfolio value in INR (including all coin holdings)
+        cs_portfolio_inr = cs_inr
+        if cs_client is not None:
+            try:
+                port = cs_client.get_portfolio()
+                tot_val = 0.0
+                for item in port:
+                    val = float(item.get("current_value", 0) or item.get("invested_value", 0) or 0)
+                    if item.get("currency") == "INR":
+                        val = float(item.get("main_balance", 0) or 0)
+                    tot_val += val
+                if tot_val > 0:
+                    cs_portfolio_inr = max(cs_portfolio_inr, tot_val)
+            except Exception:
+                pass
+
         if delta_client is not None:
             try:
                 delta_bal = delta_client.get_usdt_balance()
@@ -152,9 +168,15 @@ def get_terminal_data():
                 delta_balance_error = str(exc)
                 log.warning("Delta USDT balance error: %s", exc)
 
-        inr_in_usdt = cs_inr / 88.0 if cs_inr > 0 else 0.0
-        # REAL total — no artificial floor, no phantom balances
+        inr_in_usdt = cs_portfolio_inr / 88.0 if cs_portfolio_inr > 0 else 0.0
+        # REAL total capital — sum of Delta balance and CoinSwitch portfolio
         total_real_capital = round(cs_usdt + inr_in_usdt + delta_usdt, 2)
+        if total_real_capital <= 0 and _API_CACHE["balances"]["data"]:
+            cached_b = _API_CACHE["balances"]["data"]
+            total_real_capital = float(cached_b.get("total_capital_usdt", 0.0))
+            cs_usdt = float(cached_b.get("cs_usdt", cs_usdt))
+            cs_inr = float(cached_b.get("cs_inr", cs_inr))
+            delta_usdt = float(cached_b.get("delta_usdt", delta_usdt))
 
         # ── Fetch ALL Tickers Once (Massive speedup)
         cs_tickers = {}
