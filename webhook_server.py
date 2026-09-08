@@ -185,6 +185,18 @@ def get_terminal_data():
         except Exception:
             pass
 
+        delta_tickers = {}
+        if delta_client is not None:
+            try:
+                dt_res = delta_client._request("GET", "/v2/tickers")
+                dt_list = dt_res.get("result", []) if isinstance(dt_res, dict) else (dt_res if isinstance(dt_res, list) else [])
+                for item in dt_list:
+                    psym = str(item.get("symbol", "")).upper()
+                    base = psym.replace("USDT", "").replace("USD", "")
+                    delta_tickers[base] = {"price": float(item.get("mark_price") or item.get("close") or 0)}
+            except Exception:
+                pass
+
         # ── Live price fallback: CoinGecko if CS ticker not available
         _cg_prices = {}
         try:
