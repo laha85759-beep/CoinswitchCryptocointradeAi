@@ -278,6 +278,31 @@ def get_terminal_data():
             except Exception as exc:
                 log.warning("Failed to fetch live Delta positions: %s", exc)
 
+        # Also populate non-dust CoinSwitch spot holdings as live positions
+        if cs_client is not None and not open_cs:
+            try:
+                portfolio = cs_client.get_portfolio()
+                for item in portfolio:
+                    curr = str(item.get("currency", "")).upper()
+                    if curr not in ("USDT", "INR", ""):
+                        bal = float(item.get("main_balance", 0) or 0)
+                        val = float(item.get("current_value", 0) or 0)
+                        if bal > 0 and val > 0.1:
+                            open_cs.append({
+                                "symbol": f"{curr}/USDT",
+                                "direction": "long",
+                                "qty": bal,
+                                "quantity": bal,
+                                "entry_price": round(val / bal, 4) if bal > 0 else 0,
+                                "mark_price": round(val / bal, 4) if bal > 0 else 0,
+                                "unrealized_pnl": 0.0,
+                                "margin_used": round(val, 2),
+                                "exchange": "coinswitch",
+                                "paper": False
+                            })
+            except Exception as cs_spot_err:
+                log.warning("Failed to parse CoinSwitch spot portfolio: %s", cs_spot_err)
+
         # Fetch LIVE Active Open Orders from both exchanges
         open_orders = []
 

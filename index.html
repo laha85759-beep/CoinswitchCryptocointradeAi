@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=41.0">
+  <link rel="stylesheet" href="styles.css?v=42.0">
   <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 </head>
@@ -318,30 +318,38 @@
 
       <!-- 🧬 3D HOLOGRAPHIC AI QUANT CORE (THREE.JS / WEBGL) -->
       <div class="card card-21st three-model-card" id="sec-3d-model">
-        <div class="card-header" style="justify-content: space-between; align-items: center;">
+        <div class="card-header" style="justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
           <div style="display: flex; align-items: center; gap: 8px;">
             <span class="pulse-dot glow"></span>
-            <span class="card-title">3D HOLOGRAPHIC QUANT CORE & NEURAL TOPOLOGY</span>
+            <span class="card-title" id="threeCardTitle">3D HOLOGRAPHIC QUANT ENGINE</span>
           </div>
-          <div style="display: flex; gap: 8px; align-items: center;">
-            <span class="tag-21st glow-tag" id="threeModelMode">WEBGL 60FPS</span>
-            <button class="three-mode-btn" onclick="toggle3DCoreMode()" title="Toggle Neural Matrix Mode">⚡ MODE</button>
+          <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+            <div class="three-model-selector">
+              <button class="three-sel-btn active" data-model="hypercube" onclick="switch3DModel('hypercube')">⚛️ HYPERCUBE</button>
+              <button class="three-sel-btn" data-model="brain" onclick="switch3DModel('brain')">🧠 NEURAL BRAIN</button>
+              <button class="three-sel-btn" data-model="helix" onclick="switch3DModel('helix')">📊 CANDLE HELIX</button>
+            </div>
+            <button class="three-mode-btn" onclick="toggle3DCoreMode()" title="Toggle Speed & Shader Flux">⚡ FLUX</button>
           </div>
         </div>
         <div class="three-canvas-wrapper" id="threeCanvasWrap">
           <canvas id="threeJsCanvas"></canvas>
           <div class="three-overlay-hud">
             <div class="three-hud-badge">
+              <span class="hud-label">3D MODEL</span>
+              <span class="hud-val cyan" id="hudModelName">4D TESSERACT</span>
+            </div>
+            <div class="three-hud-badge">
               <span class="hud-label">QUANT CORE</span>
               <span class="hud-val green" id="hudCoreState">SYNCHRONIZED</span>
             </div>
             <div class="three-hud-badge">
-              <span class="hud-label">NEURAL MATRIX</span>
+              <span class="hud-label">NEURAL TOPOLOGY</span>
               <span class="hud-val cyan" id="hudNodes">1,024 ACTIVE</span>
             </div>
             <div class="three-hud-badge">
               <span class="hud-label">INTERACTION</span>
-              <span class="hud-val magenta">DRAG TO ROTATE</span>
+              <span class="hud-val magenta">DRAG TO ORBIT</span>
             </div>
           </div>
         </div>

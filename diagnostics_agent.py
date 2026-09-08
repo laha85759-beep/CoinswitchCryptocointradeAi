@@ -124,37 +124,8 @@ class ContinuousDiagnosticsAgent:
             "min_required": self.cfg["min_confidence"],
         }
 
-        # 4. Dispatch Hourly Telegram Report if Due
-        last_sent = HOURLY_DIAG_FILE.read_text(encoding="utf-8").strip() if HOURLY_DIAG_FILE.exists() else ""
-        if last_sent != hour_key:
-            pos_detail_str = "0 Active Positions"
-            if len(live_engine_pos) > 0:
-                p = live_engine_pos[0]
-                pos_detail_str = f"1 Active Trade ({p.get('product_symbol')} {p.get('size')} Contracts)"
-
-            msg = (
-                f"🏛️ *COINSAI DUAL-EXCHANGE 24/7 LIVE BALANCE & STATUS TRACKER*\n"
-                f"⏰ *Timestamp*: `{now_ist.strftime('%Y-%m-%d %H:%M IST')}`\n"
-                f"━━━━━━━━━━━━━━━━━━━━━\n"
-                f"🏛️ *API & DUAL-EXCHANGE STATUS*\n"
-                f"• CoinSwitch Pro API : `ONLINE & AUTHORIZED` [PASS]\n"
-                f"• Delta Exchange API: `ONLINE & AUTHORIZED` [PASS]\n"
-                f"• Trading System Status: `BOTH EXCHANGES 100% READY TO TRADE [PASS]`\n\n"
-                f"💰 *REAL-TIME DUAL-EXCHANGE WALLET EQUITY*\n"
-                f"• Delta Exchange USDT: `${delta_usdt:.4f} USDT` 🟢\n"
-                f"• CoinSwitch Pro INR : `Rs.{cs_inr:.2f} INR` (`${cs_inr / 88.0:.2f} USDT`) 🟢\n"
-                f"• Total Portfolio Value: `${total_usdt:.2f} USDT` (`Rs.{total_inr:.2f} INR`)\n\n"
-                f"📊 *POSITIONS & STRATEGY ENGINE*\n"
-                f"• Active Positions   : `{pos_detail_str}`\n"
-                f"• Multi-Trade Capacity: `3 Concurrent Open Slots` (Unlocked)\n"
-                f"• Top Market Candidate: `{diag['strategy']['top_candidate']}` ({diag['strategy']['top_signal'].upper()})\n"
-                f"• Conviction Score   : `{diag['strategy']['top_confidence']}` (Threshold: `{diag['strategy']['min_required']}`)\n"
-                f"━━━━━━━━━━━━━━━━━━━━━\n"
-                f"🚀 *BOTH EXCHANGES FULLY AUTHORIZED & AUTOMATED 24/7*"
-            )
-            self.notifier.send(msg)
-            HOURLY_DIAG_FILE.write_text(hour_key, encoding="utf-8")
-            log.info("Hourly Telegram Diagnostic Report Sent!")
+        # 4. Hourly diagnostics logged internally (Telegram reports scheduled for Morning & End of Day only)
+        log.info("Hourly Diagnostics Check Completed: Total Capital = $%.2f USDT, Top Candidate = %s", total_usdt, diag['strategy']['top_candidate'])
 
         return diag
 

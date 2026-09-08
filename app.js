@@ -319,51 +319,65 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
 
     let rows = [];
     if (data.open_positions?.coinswitch && Array.isArray(data.open_positions.coinswitch)) {
-      data.open_positions.coinswitch.forEach(p => rows.push({...p, ex: 'CS'}));
+      data.open_positions.coinswitch.forEach(p => rows.push({...p, ex: 'CS', exName: 'CS SPOT'}));
     }
     if (data.open_positions?.delta && Array.isArray(data.open_positions.delta)) {
-      data.open_positions.delta.forEach(p => rows.push({...p, ex: 'DL'}));
+      data.open_positions.delta.forEach(p => rows.push({...p, ex: 'DL', exName: 'DELTA PERP'}));
     }
 
     if (rows.length === 0) {
-      wrap.innerHTML = `<div class="empty-state">NO ACTIVE TRADES HELD</div>`;
+      wrap.innerHTML = `
+        <div class="empty-state" style="padding: 16px 8px; text-align: center; color: var(--text-dim);">
+          <div style="font-size: 11px; color: var(--accent-green); font-weight: 700; margin-bottom: 4px;">🟢 0 OPEN POSITIONS • 100% MARGIN AVAILABLE</div>
+          <div style="font-size: 9px; color: var(--text-dim);">24/7 autonomous dual-exchange scanner active across 250+ spot & futures markets</div>
+        </div>
+      `;
       return;
     }
 
     wrap.innerHTML = rows.map(pos => {
       const dirStr = (pos.direction || 'long').toLowerCase();
+      const isLong = dirStr === 'long';
       const qtyVal = pos.qty || pos.quantity || 0;
       const pnl = parseFloat(pos.unrealized_pnl || 0);
       const pnlColor = pnl >= 0 ? 'green' : 'red';
       const sign = pnl >= 0 ? '+' : '';
       const entryPrice = pos.entry_price || pos.price || 0;
-      const priceFmt = entryPrice > 10 ? fmtPrice(entryPrice, 2) : (entryPrice > 0.01 ? fmtPrice(entryPrice, 4) : '$' + Number(entryPrice).toFixed(6));
-      const markPrice = parseFloat(pos.mark_price || 0);
+      const markPrice = parseFloat(pos.mark_price || entryPrice || 0);
       const liqPrice = parseFloat(pos.liquidation_price || 0);
       const marginUsed = parseFloat(pos.margin_used || 0);
 
-      // Extra info row for Delta positions
+      const pnlPct = entryPrice > 0 ? (((markPrice - entryPrice) / entryPrice) * 100 * (isLong ? 1 : -1)) : 0;
+      const priceFmt = entryPrice > 10 ? fmtPrice(entryPrice, 2) : (entryPrice > 0.01 ? fmtPrice(entryPrice, 4) : '$' + Number(entryPrice).toFixed(6));
+      const markFmt = markPrice > 10 ? fmtPrice(markPrice, 2) : (markPrice > 0.01 ? fmtPrice(markPrice, 4) : '$' + Number(markPrice).toFixed(6));
+
+      // Extra info row for positions
       let extraRow = '';
       if (pos.ex === 'DL' && markPrice > 0) {
-        const markFmt = markPrice > 10 ? fmtPrice(markPrice, 2) : '$' + markPrice.toFixed(4);
         const liqFmt = liqPrice > 0 ? (liqPrice > 10 ? fmtPrice(liqPrice, 2) : '$' + liqPrice.toFixed(4)) : 'N/A';
-        extraRow = `<div style="grid-column:1/-1;font-size:9px;color:#888;padding:1px 4px 3px;">
-          Mark: <b style="color:#aaa">${markFmt}</b> &nbsp;|&nbsp;
-          Liq: <b style="color:#e55">${liqFmt}</b> &nbsp;|&nbsp;
-          Margin: <b style="color:#aaa">$${fmtNum(marginUsed, 3)}</b>
+        extraRow = `<div style="grid-column:1/-1;font-size:9px;color:#94a3b8;padding:4px 6px;margin-top:4px;background:rgba(6,9,14,0.6);border-radius:3px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;">
+          <span>Mark: <b style="color:#00e5ff">${markFmt}</b></span>
+          <span>Liq: <b style="color:#ff3355">${liqFmt}</b></span>
+          <span>Margin: <b style="color:#f8fafc">$${fmtNum(marginUsed, 2)}</b></span>
+          <span style="color:#10b981;font-weight:700;">🟢 AUTO-TRAILING ON</span>
+        </div>`;
+      } else if (pos.ex === 'CS') {
+        extraRow = `<div style="grid-column:1/-1;font-size:9px;color:#94a3b8;padding:4px 6px;margin-top:4px;background:rgba(6,9,14,0.6);border-radius:3px;display:flex;justify-content:space-between;">
+          <span>Holding Value: <b style="color:#00e5ff">$${fmtNum(marginUsed, 2)}</b></span>
+          <span style="color:#10b981;font-weight:700;">🟢 SPOT SECURED</span>
         </div>`;
       }
 
       return `
-        <div class="trade-row" style="flex-wrap:wrap;">
+        <div class="trade-row" style="flex-wrap:wrap;border-left:3px solid ${isLong ? '#10b981' : '#ff3355'};background:rgba(13,19,31,0.9);margin-bottom:6px;padding:8px 10px;border-radius:4px;">
           <div class="trade-sym-block">
-            <span class="trade-sym">${pos.symbol}</span>
-            <span class="tag">${pos.ex}</span>
-            <span class="trade-dir ${dirStr}">${dirStr.toUpperCase()}</span>
+            <span class="trade-sym" style="font-size:12px;font-weight:800;color:#f8fafc;">${pos.symbol}</span>
+            <span class="tag" style="background:rgba(0,229,255,0.15);color:#00e5ff;border-color:#00e5ff;">${pos.exName}</span>
+            <span class="trade-dir ${dirStr}" style="font-weight:800;">${isLong ? '🟢 LONG' : '🔴 SHORT'}</span>
           </div>
-          <span class="trade-entry">${priceFmt}</span>
-          <span class="trade-size">${fmtNum(qtyVal, 2)}</span>
-          <span class="trade-pnl ${pnlColor}" style="text-align: right;">${sign}$${fmtNum(pnl, 2)}</span>
+          <span class="trade-entry" style="font-family:var(--font-mono);font-size:11px;">Entry: <b>${priceFmt}</b></span>
+          <span class="trade-size" style="font-family:var(--font-mono);font-size:11px;">Size: <b>${fmtNum(qtyVal, 2)}</b></span>
+          <span class="trade-pnl ${pnlColor}" style="text-align:right;font-size:12px;font-weight:800;">${sign}$${fmtNum(pnl, 2)} <small style="font-size:9px;opacity:0.8;">(${sign}${pnlPct.toFixed(2)}%)</small></span>
           ${extraRow}
         </div>
       `;
@@ -1339,27 +1353,240 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
     animate();
   }
 
-  // ═══════════════════ THREE.JS 3D HOLOGRAPHIC QUANT CORE ═══════════════════
+  // ═══════════════════ THREE.JS 3D MULTI-MODEL QUANT STUDIO ═══════════════════
   let threeCoreModeIndex = 0;
+  let current3DModelKey = 'hypercube';
+  let activeSceneGroup = null;
+  let threeSceneInstance = null;
+  let threeRendererInstance = null;
+  let threeCameraInstance = null;
+
   const THREE_MODES = [
     { name: "WEBGL 60FPS", speed: 1.0, state: "SYNCHRONIZED", nodes: "1,024 ACTIVE" },
-    { name: "NEURAL MATRIX", speed: 2.2, state: "HYPER-FLUX", nodes: "2,048 BOOSTED" },
-    { name: "QUANTUM SINGULARITY", speed: 3.5, state: "SUPERCONDUCTING", nodes: "4,096 MAXIMUM" }
+    { name: "NEURAL FLUX", speed: 2.2, state: "HYPER-FLUX", nodes: "2,048 BOOSTED" },
+    { name: "QUANTUM OVERCLOCK", speed: 3.5, state: "SUPERCONDUCTING", nodes: "4,096 MAXIMUM" }
   ];
+
+  const MODEL_META = {
+    hypercube: { name: "4D QUANTUM TESSERACT", nodes: "1,024 ACTIVE" },
+    brain: { name: "NEURAL SYNAPSE BRAIN", nodes: "2,480 SYNAPSES" },
+    helix: { name: "CANDLESTICK PRICE HELIX", nodes: "512 TICKS" }
+  };
 
   window.toggle3DCoreMode = function() {
     threeCoreModeIndex = (threeCoreModeIndex + 1) % THREE_MODES.length;
     const mode = THREE_MODES[threeCoreModeIndex];
-    const modeBadge = document.getElementById('threeModelMode');
     const hudState = document.getElementById('hudCoreState');
     const hudNodes = document.getElementById('hudNodes');
-    if (modeBadge) modeBadge.textContent = mode.name;
     if (hudState) {
       hudState.textContent = mode.state;
       hudState.className = 'hud-val ' + (threeCoreModeIndex === 0 ? 'green' : (threeCoreModeIndex === 1 ? 'cyan' : 'magenta'));
     }
     if (hudNodes) hudNodes.textContent = mode.nodes;
   };
+
+  window.switch3DModel = function(modelKey) {
+    if (!MODEL_META[modelKey]) return;
+    current3DModelKey = modelKey;
+
+    // Update active button
+    document.querySelectorAll('.three-sel-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-model') === modelKey);
+    });
+
+    const hudModel = document.getElementById('hudModelName');
+    const hudNodes = document.getElementById('hudNodes');
+    if (hudModel) hudModel.textContent = MODEL_META[modelKey].name;
+    if (hudNodes) hudNodes.textContent = MODEL_META[modelKey].nodes;
+
+    if (threeSceneInstance) {
+      buildActive3DModel(threeSceneInstance);
+    }
+  };
+
+  function buildActive3DModel(scene) {
+    if (activeSceneGroup) {
+      scene.remove(activeSceneGroup);
+      activeSceneGroup.traverse(child => {
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) {
+          if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+          else child.material.dispose();
+        }
+      });
+    }
+
+    activeSceneGroup = new THREE.Group();
+    scene.add(activeSceneGroup);
+
+    if (current3DModelKey === 'hypercube') {
+      // ── MODEL 1: 4D QUANTUM TESSERACT HYPERCUBE ──
+      // Outer Cube
+      const outerGeo = new THREE.BoxGeometry(3.6, 3.6, 3.6);
+      const outerMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff, wireframe: true, transparent: true, opacity: 0.5 });
+      const outerCube = new THREE.Mesh(outerGeo, outerMat);
+      activeSceneGroup.add(outerCube);
+
+      // Inner Cube
+      const innerGeo = new THREE.BoxGeometry(1.8, 1.8, 1.8);
+      const innerMat = new THREE.MeshBasicMaterial({ color: 0xff0080, wireframe: true, transparent: true, opacity: 0.75 });
+      const innerCube = new THREE.Mesh(innerGeo, innerMat);
+      activeSceneGroup.add(innerCube);
+
+      // 8 Struts connecting outer & inner vertices
+      const strutMat = new THREE.LineBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.6 });
+      const corners = [-1, 1];
+      corners.forEach(x => {
+        corners.forEach(y => {
+          corners.forEach(z => {
+            const points = [
+              new THREE.Vector3(x * 1.8, y * 1.8, z * 1.8),
+              new THREE.Vector3(x * 0.9, y * 0.9, z * 0.9)
+            ];
+            const strutGeo = new THREE.BufferGeometry().setFromPoints(points);
+            activeSceneGroup.add(new THREE.Line(strutGeo, strutMat));
+          });
+        });
+      });
+
+      // Central Quantum Core Node
+      const coreGeo = new THREE.SphereGeometry(0.7, 32, 32);
+      const coreMat = new THREE.MeshStandardMaterial({
+        color: 0x00ff88,
+        emissive: 0x004422,
+        emissiveIntensity: 0.9,
+        roughness: 0.2,
+        metalness: 0.8
+      });
+      const core = new THREE.Mesh(coreGeo, coreMat);
+      core.name = "quantumCore";
+      activeSceneGroup.add(core);
+
+      // Orbiting Gyro Torus Ring
+      const ringGeo = new THREE.TorusGeometry(3.2, 0.02, 16, 100);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0xffd700, transparent: true, opacity: 0.7 });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.name = "gyroRing";
+      ring.rotation.x = Math.PI / 3;
+      activeSceneGroup.add(ring);
+
+    } else if (current3DModelKey === 'brain') {
+      // ── MODEL 2: 3D NEURAL SYNAPSE AI CORTEX (BRAIN) ──
+      const brainGroup = new THREE.Group();
+      activeSceneGroup.add(brainGroup);
+
+      const neuronCount = 320;
+      const positions = [];
+      const colors = [];
+      const neuronMeshPositions = [];
+
+      for (let i = 0; i < neuronCount; i++) {
+        // Double ellipsoid for left & right brain hemispheres
+        const hemisphere = Math.random() > 0.5 ? 1 : -1;
+        const u = Math.random();
+        const v = Math.random();
+        const theta = u * 2.0 * Math.PI;
+        const phi = Math.acos(2.0 * v - 1.0);
+        const r = 1.6 + Math.random() * 0.8;
+
+        const x = (r * Math.sin(phi) * Math.cos(theta) * 0.85) + (hemisphere * 0.75);
+        const y = r * Math.sin(phi) * Math.sin(theta) * 1.1;
+        const z = r * Math.cos(phi) * 1.4;
+
+        positions.push(x, y, z);
+        neuronMeshPositions.push(new THREE.Vector3(x, y, z));
+
+        const isLeft = hemisphere > 0;
+        colors.push(isLeft ? 0.0 : 1.0, isLeft ? 0.9 : 0.0, isLeft ? 1.0 : 0.5);
+      }
+
+      const pGeo = new THREE.BufferGeometry();
+      pGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      pGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+      const pMat = new THREE.PointsMaterial({ size: 0.09, vertexColors: true, transparent: true, opacity: 0.9 });
+      const pointCloud = new THREE.Points(pGeo, pMat);
+      pointCloud.name = "brainPoints";
+      brainGroup.add(pointCloud);
+
+      // Synapse connection paths
+      const linePositions = [];
+      for (let i = 0; i < neuronMeshPositions.length; i++) {
+        for (let j = i + 1; j < neuronMeshPositions.length; j++) {
+          const dist = neuronMeshPositions[i].distanceTo(neuronMeshPositions[j]);
+          if (dist < 0.65) {
+            linePositions.push(
+              neuronMeshPositions[i].x, neuronMeshPositions[i].y, neuronMeshPositions[i].z,
+              neuronMeshPositions[j].x, neuronMeshPositions[j].y, neuronMeshPositions[j].z
+            );
+          }
+        }
+      }
+
+      const lineGeo = new THREE.BufferGeometry();
+      lineGeo.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+      const lineMat = new THREE.LineBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.25 });
+      brainGroup.add(new THREE.LineSegments(lineGeo, lineMat));
+
+      // Glowing Pineal AI Node
+      const pinealGeo = new THREE.IcosahedronGeometry(0.5, 2);
+      const pinealMat = new THREE.MeshStandardMaterial({ color: 0xff0080, emissive: 0xff0080, emissiveIntensity: 1.0 });
+      const pineal = new THREE.Mesh(pinealGeo, pinealMat);
+      pineal.name = "quantumCore";
+      brainGroup.add(pineal);
+
+    } else if (current3DModelKey === 'helix') {
+      // ── MODEL 3: 3D CRYPTO PRICE HELIX & CANDLESTICK MATRIX ──
+      const helixGroup = new THREE.Group();
+      activeSceneGroup.add(helixGroup);
+
+      const steps = 60;
+      const radius = 1.8;
+      const height = 4.5;
+      const candleBoxGeo = new THREE.BoxGeometry(0.12, 0.4, 0.12);
+      const greenMat = new THREE.MeshStandardMaterial({ color: 0x00ff88, emissive: 0x003318, emissiveIntensity: 0.7 });
+      const redMat = new THREE.MeshStandardMaterial({ color: 0xff3355, emissive: 0x330008, emissiveIntensity: 0.7 });
+
+      const strand1Pts = [];
+      const strand2Pts = [];
+
+      for (let i = 0; i < steps; i++) {
+        const t = (i / steps) * Math.PI * 4;
+        const y = ((i / steps) - 0.5) * height;
+        const x1 = Math.cos(t) * radius;
+        const z1 = Math.sin(t) * radius;
+        const x2 = Math.cos(t + Math.PI) * radius;
+        const z2 = Math.sin(t + Math.PI) * radius;
+
+        strand1Pts.push(new THREE.Vector3(x1, y, z1));
+        strand2Pts.push(new THREE.Vector3(x2, y, z2));
+
+        // Floating 3D Candlestick Boxes along strand 1
+        if (i % 3 === 0) {
+          const isBull = Math.sin(i * 1.5) > 0;
+          const candle = new THREE.Mesh(candleBoxGeo, isBull ? greenMat : redMat);
+          candle.position.set(x1, y, z1);
+          candle.rotation.y = t;
+          helixGroup.add(candle);
+        }
+      }
+
+      // Strand Lines
+      const s1Geo = new THREE.BufferGeometry().setFromPoints(strand1Pts);
+      const s1Mat = new THREE.LineBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.7 });
+      helixGroup.add(new THREE.Line(s1Geo, s1Mat));
+
+      const s2Geo = new THREE.BufferGeometry().setFromPoints(strand2Pts);
+      const s2Mat = new THREE.LineBasicMaterial({ color: 0xff0080, transparent: true, opacity: 0.7 });
+      helixGroup.add(new THREE.Line(s2Geo, s2Mat));
+
+      // Central Price Singularity
+      const coreGeo = new THREE.OctahedronGeometry(0.7, 0);
+      const coreMat = new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0x553300, emissiveIntensity: 0.9 });
+      const core = new THREE.Mesh(coreGeo, coreMat);
+      core.name = "quantumCore";
+      helixGroup.add(core);
+    }
+  }
 
   function initThreeJsModel() {
     const canvas = document.getElementById('threeJsCanvas');
@@ -1370,11 +1597,14 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
     }
 
     const scene = new THREE.Scene();
+    threeSceneInstance = scene;
+
     const width = container.clientWidth || 600;
     const height = container.clientHeight || 220;
 
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-    camera.position.z = 9.5;
+    camera.position.z = 9.0;
+    threeCameraInstance = camera;
 
     const renderer = new THREE.WebGLRenderer({
       canvas: canvas,
@@ -1384,107 +1614,24 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
     });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    threeRendererInstance = renderer;
 
-    // Group to hold all rotating elements
-    const coreGroup = new THREE.Group();
-    scene.add(coreGroup);
-
-    // 1. Outer Wireframe Icosahedron (Quantum Lattice)
-    const icoGeo = new THREE.IcosahedronGeometry(2.3, 1);
-    const icoMat = new THREE.MeshBasicMaterial({
-      color: 0x00e5ff,
-      wireframe: true,
-      transparent: true,
-      opacity: 0.45
-    });
-    const icosahedron = new THREE.Mesh(icoGeo, icoMat);
-    coreGroup.add(icosahedron);
-
-    // 2. Inner Solid Glowing Nucleus (Singularity Sphere)
-    const nucleusGeo = new THREE.SphereGeometry(1.0, 32, 32);
-    const nucleusMat = new THREE.MeshStandardMaterial({
-      color: 0x00ff88,
-      roughness: 0.1,
-      metalness: 0.9,
-      emissive: 0x003318,
-      emissiveIntensity: 0.8
-    });
-    const nucleus = new THREE.Mesh(nucleusGeo, nucleusMat);
-    coreGroup.add(nucleus);
-
-    // 3. Nested Gyroscopic Orbiting Torus Rings
-    const ring1Geo = new THREE.TorusGeometry(3.0, 0.025, 16, 100);
-    const ring1Mat = new THREE.MeshBasicMaterial({ color: 0xff0080, transparent: true, opacity: 0.75 });
-    const ring1 = new THREE.Mesh(ring1Geo, ring1Mat);
-    ring1.rotation.x = Math.PI / 3;
-    coreGroup.add(ring1);
-
-    const ring2Geo = new THREE.TorusGeometry(3.4, 0.025, 16, 100);
-    const ring2Mat = new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.75 });
-    const ring2 = new THREE.Mesh(ring2Geo, ring2Mat);
-    ring2.rotation.y = Math.PI / 4;
-    ring2.rotation.x = -Math.PI / 6;
-    coreGroup.add(ring2);
-
-    const ring3Geo = new THREE.TorusGeometry(3.8, 0.02, 16, 100);
-    const ring3Mat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.6 });
-    const ring3 = new THREE.Mesh(ring3Geo, ring3Mat);
-    ring3.rotation.z = Math.PI / 2.5;
-    coreGroup.add(ring3);
-
-    // 4. Surrounding 3D Neural Swarm Particle Field
-    const particleCount = 450;
-    const particleGeo = new THREE.BufferGeometry();
-    const positions = new Float32Array(particleCount * 3);
-    const colors = new Float32Array(particleCount * 3);
-
-    const colorPalette = [
-      new THREE.Color(0x00e5ff),
-      new THREE.Color(0xff0080),
-      new THREE.Color(0x00ff88),
-      new THREE.Color(0xffd700)
-    ];
-
-    for (let i = 0; i < particleCount; i++) {
-      const radius = 2.0 + Math.random() * 3.2;
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos((Math.random() * 2) - 1);
-
-      positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
-      positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
-      positions[i * 3 + 2] = radius * Math.cos(phi);
-
-      const color = colorPalette[Math.floor(Math.random() * colorPalette.length)];
-      colors[i * 3] = color.r;
-      colors[i * 3 + 1] = color.g;
-      colors[i * 3 + 2] = color.b;
-    }
-
-    particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    particleGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-    const particleMat = new THREE.PointsMaterial({
-      size: 0.06,
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.85
-    });
-    const particleSystem = new THREE.Points(particleGeo, particleMat);
-    coreGroup.add(particleSystem);
-
-    // 5. Lighting
-    const ambientLight = new THREE.AmbientLight(0x0a192f, 1.8);
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0x0a192f, 2.0);
     scene.add(ambientLight);
 
-    const cyanLight = new THREE.PointLight(0x00e5ff, 3, 20);
+    const cyanLight = new THREE.PointLight(0x00e5ff, 3.5, 25);
     cyanLight.position.set(5, 5, 5);
     scene.add(cyanLight);
 
-    const pinkLight = new THREE.PointLight(0xff0080, 3, 20);
+    const pinkLight = new THREE.PointLight(0xff0080, 3.5, 25);
     pinkLight.position.set(-5, -5, 5);
     scene.add(pinkLight);
 
-    // 6. Interactive Drag / Orbit Controls
+    // Build the default 3D model
+    buildActive3DModel(scene);
+
+    // Interactive Drag / Orbit Controls
     let isDragging = false;
     let prevMouseX = 0;
     let prevMouseY = 0;
@@ -1511,7 +1658,6 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
       isDragging = false;
     });
 
-    // Resize Handler
     function handleResize() {
       if (!container || !renderer || !camera) return;
       const newWidth = container.clientWidth;
@@ -1522,7 +1668,7 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
     }
     window.addEventListener('resize', handleResize);
 
-    // 7. 60 FPS Render Loop with Harmonic Pulsing
+    // 60 FPS Harmonic Render Loop
     let clock = new THREE.Clock();
     function renderThreeScene() {
       requestAnimationFrame(renderThreeScene);
@@ -1530,23 +1676,24 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
       const elapsedTime = clock.getElapsedTime();
       const currentSpeed = THREE_MODES[threeCoreModeIndex].speed;
 
-      // Inertia drag rotation
-      coreGroup.rotation.y += (targetRotationY - coreGroup.rotation.y) * 0.08 + (0.005 * currentSpeed);
-      coreGroup.rotation.x += (targetRotationX - coreGroup.rotation.x) * 0.08;
+      if (activeSceneGroup) {
+        // Inertia drag rotation
+        activeSceneGroup.rotation.y += (targetRotationY - activeSceneGroup.rotation.y) * 0.08 + (0.007 * currentSpeed);
+        activeSceneGroup.rotation.x += (targetRotationX - activeSceneGroup.rotation.x) * 0.08;
 
-      // Independent ring rotations
-      ring1.rotation.x += 0.012 * currentSpeed;
-      ring1.rotation.y += 0.008 * currentSpeed;
-      ring2.rotation.y += 0.015 * currentSpeed;
-      ring2.rotation.z += 0.009 * currentSpeed;
-      ring3.rotation.z += 0.018 * currentSpeed;
+        // Core Pulse
+        const core = activeSceneGroup.getObjectByName("quantumCore");
+        if (core) {
+          const pulseScale = 1.0 + Math.sin(elapsedTime * 3.0 * currentSpeed) * 0.1;
+          core.scale.set(pulseScale, pulseScale, pulseScale);
+        }
 
-      // Harmonic Nucleus Pulse
-      const pulseScale = 1.0 + Math.sin(elapsedTime * 2.5 * currentSpeed) * 0.08;
-      nucleus.scale.set(pulseScale, pulseScale, pulseScale);
-
-      // Particle Drift
-      particleSystem.rotation.y -= 0.003 * currentSpeed;
+        // Gyro Ring
+        const ring = activeSceneGroup.getObjectByName("gyroRing");
+        if (ring) {
+          ring.rotation.z += 0.015 * currentSpeed;
+        }
+      }
 
       renderer.render(scene, camera);
     }

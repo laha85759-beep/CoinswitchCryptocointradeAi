@@ -48,13 +48,13 @@ except AttributeError:
     pass
 log = logging.getLogger(__name__)
 
-HOURLY_REPORT_FILE = Path("last_hourly_report.txt")
-DAILY_REPORT_FILE  = Path("last_daily_report.txt")
-WEEKLY_REPORT_FILE = Path("last_weekly_report.txt")
-MONDAY_NOTICE_FILE = Path("last_monday_notice.txt")
+MORNING_REPORT_FILE = Path("last_morning_report.txt")
+DAILY_REPORT_FILE   = Path("last_daily_report.txt")
+WEEKLY_REPORT_FILE  = Path("last_weekly_report.txt")
+MONDAY_NOTICE_FILE  = Path("last_monday_notice.txt")
 
 
-def _send_hourly_report_if_due(
+def _send_morning_report_if_due(
     notifier: TelegramNotifier,
     cs_client: CoinSwitchClient,
     delta_client: DeltaClient,
@@ -63,10 +63,13 @@ def _send_hourly_report_if_due(
     monitor_report: dict,
 ) -> None:
     now_ist = datetime.now(IST)
-    hour_key = now_ist.strftime("%Y-%m-%d-%H")
+    # Morning report window: 08:00 to 11:59 IST
+    if now_ist.hour < 8 or now_ist.hour >= 12:
+        return
 
-    last_sent = HOURLY_REPORT_FILE.read_text(encoding="utf-8").strip() if HOURLY_REPORT_FILE.exists() else ""
-    if last_sent == hour_key:
+    today_ist = now_ist.date().isoformat()
+    last_sent = MORNING_REPORT_FILE.read_text(encoding="utf-8").strip() if MORNING_REPORT_FILE.exists() else ""
+    if last_sent == today_ist:
         return
 
     # Fetch live account balances directly from CoinSwitch & Delta APIs
@@ -76,14 +79,14 @@ def _send_hourly_report_if_due(
         cs_usdt = float(cs_client.get_usdt_balance())
         cs_inr = float(cs_client.get_inr_balance())
     except Exception as cs_err:
-        log.warning("Hourly report CS balance fetch error: %s", cs_err)
+        log.warning("Morning report CS balance fetch error: %s", cs_err)
 
     delta_usdt = 0.0
     if delta_enabled:
         try:
             delta_usdt = round(max(delta_client.get_usdt_balance(), 0.0), 2)
         except Exception as dl_err:
-            log.warning("Hourly report Delta balance fetch error: %s", dl_err)
+            log.warning("Morning report Delta balance fetch error: %s", dl_err)
 
     delta_inr = round(delta_usdt * 88.0, 2)
     total_usdt = round(cs_usdt + (cs_inr / 88.0) + delta_usdt, 2)
@@ -98,9 +101,9 @@ def _send_hourly_report_if_due(
     avail_budget = float(yield_info.get("available_trading_budget_usdt", 0.0) or 0.0)
 
     report = (
-        f"📊 *OPUS 4.7 • HOURLY QUANT ENGINE REPORT*\n"
+        f"🌅 *OPUS 4.7 • MORNING QUANT MARKET BRIEFING*\n"
         f"═════════════════════════\n"
-        f"⏰ *Timestamp*: `{now_ist.strftime('%Y-%m-%d %H:%M IST')}`\n"
+        f"⏰ *Date & Time*: `{now_ist.strftime('%Y-%m-%d %H:%M IST')}`\n"
         f"💰 *PORTFOLIO CAPITAL*\n"
         f"• *Total Capital* : `${total_usdt:.2f} USDT` (`₹{total_inr:.2f} INR`)\n"
         f"• *CoinSwitch Pro*: `${(cs_inr / 88.0) + cs_usdt:.2f} USDT` (`₹{cs_inr:.2f} INR`)\n"
@@ -118,11 +121,12 @@ def _send_hourly_report_if_due(
         f"• *Supertrend Breakout Engine*: 🟢 ONLINE\n"
         f"• *Whale Scanner & Heatmap*: 🟢 ONLINE\n"
         f"═════════════════════════\n"
-        f"🚀 *24/7 AUTONOMOUS QUANT EXECUTION LOOP ACTIVE*"
+        f"🚀 *24/7 AUTONOMOUS CLOUD EXECUTION ACTIVE*"
     )
 
     notifier.send(report)
-    HOURLY_REPORT_FILE.write_text(hour_key, encoding="utf-8")
+    MORNING_REPORT_FILE.write_text(today_ist, encoding="utf-8")
+    log.info("Morning Telegram Report Sent!")
 
 
 def _send_monday_resumption_notice(notifier: TelegramNotifier) -> None:
@@ -541,8 +545,8 @@ def run() -> None:
         except Exception as opt_exc:
             log.warning("Options Hedge Agent step error: %s", opt_exc)
 
-    # Hourly, Daily & Weekly summary reports if due (queries live exchange APIs for 100% real data)
-    _send_hourly_report_if_due(notifier, cs_client, delta_client, mode_str, delta_enabled, monitor_report)
+    # Morning, End-of-Day & Weekly summary reports if due (queries live exchange APIs for 100% real data)
+    _send_morning_report_if_due(notifier, cs_client, delta_client, mode_str, delta_enabled, monitor_report)
     _send_daily_report_if_due(notifier, cs_client, delta_client, mode_str, delta_enabled, monitor_report)
     _send_weekly_report_if_due(notifier, cs_client, delta_client, mode_str, delta_enabled, monitor_report)
 
