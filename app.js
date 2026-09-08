@@ -1339,9 +1339,224 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
     animate();
   }
 
+  // ═══════════════════ THREE.JS 3D HOLOGRAPHIC QUANT CORE ═══════════════════
+  let threeCoreModeIndex = 0;
+  const THREE_MODES = [
+    { name: "WEBGL 60FPS", speed: 1.0, state: "SYNCHRONIZED", nodes: "1,024 ACTIVE" },
+    { name: "NEURAL MATRIX", speed: 2.2, state: "HYPER-FLUX", nodes: "2,048 BOOSTED" },
+    { name: "QUANTUM SINGULARITY", speed: 3.5, state: "SUPERCONDUCTING", nodes: "4,096 MAXIMUM" }
+  ];
+
+  window.toggle3DCoreMode = function() {
+    threeCoreModeIndex = (threeCoreModeIndex + 1) % THREE_MODES.length;
+    const mode = THREE_MODES[threeCoreModeIndex];
+    const modeBadge = document.getElementById('threeModelMode');
+    const hudState = document.getElementById('hudCoreState');
+    const hudNodes = document.getElementById('hudNodes');
+    if (modeBadge) modeBadge.textContent = mode.name;
+    if (hudState) {
+      hudState.textContent = mode.state;
+      hudState.className = 'hud-val ' + (threeCoreModeIndex === 0 ? 'green' : (threeCoreModeIndex === 1 ? 'cyan' : 'magenta'));
+    }
+    if (hudNodes) hudNodes.textContent = mode.nodes;
+  };
+
+  function initThreeJsModel() {
+    const canvas = document.getElementById('threeJsCanvas');
+    const container = document.getElementById('threeCanvasWrap');
+    if (!canvas || !container || typeof THREE === 'undefined') {
+      console.log('Three.js or 3D canvas not available, skipping 3D core init');
+      return;
+    }
+
+    const scene = new THREE.Scene();
+    const width = container.clientWidth || 600;
+    const height = container.clientHeight || 220;
+
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+    camera.position.z = 9.5;
+
+    const renderer = new THREE.WebGLRenderer({
+      canvas: canvas,
+      alpha: true,
+      antialias: true,
+      powerPreference: "high-performance"
+    });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    // Group to hold all rotating elements
+    const coreGroup = new THREE.Group();
+    scene.add(coreGroup);
+
+    // 1. Outer Wireframe Icosahedron (Quantum Lattice)
+    const icoGeo = new THREE.IcosahedronGeometry(2.3, 1);
+    const icoMat = new THREE.MeshBasicMaterial({
+      color: 0x00e5ff,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.45
+    });
+    const icosahedron = new THREE.Mesh(icoGeo, icoMat);
+    coreGroup.add(icosahedron);
+
+    // 2. Inner Solid Glowing Nucleus (Singularity Sphere)
+    const nucleusGeo = new THREE.SphereGeometry(1.0, 32, 32);
+    const nucleusMat = new THREE.MeshStandardMaterial({
+      color: 0x00ff88,
+      roughness: 0.1,
+      metalness: 0.9,
+      emissive: 0x003318,
+      emissiveIntensity: 0.8
+    });
+    const nucleus = new THREE.Mesh(nucleusGeo, nucleusMat);
+    coreGroup.add(nucleus);
+
+    // 3. Nested Gyroscopic Orbiting Torus Rings
+    const ring1Geo = new THREE.TorusGeometry(3.0, 0.025, 16, 100);
+    const ring1Mat = new THREE.MeshBasicMaterial({ color: 0xff0080, transparent: true, opacity: 0.75 });
+    const ring1 = new THREE.Mesh(ring1Geo, ring1Mat);
+    ring1.rotation.x = Math.PI / 3;
+    coreGroup.add(ring1);
+
+    const ring2Geo = new THREE.TorusGeometry(3.4, 0.025, 16, 100);
+    const ring2Mat = new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.75 });
+    const ring2 = new THREE.Mesh(ring2Geo, ring2Mat);
+    ring2.rotation.y = Math.PI / 4;
+    ring2.rotation.x = -Math.PI / 6;
+    coreGroup.add(ring2);
+
+    const ring3Geo = new THREE.TorusGeometry(3.8, 0.02, 16, 100);
+    const ring3Mat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.6 });
+    const ring3 = new THREE.Mesh(ring3Geo, ring3Mat);
+    ring3.rotation.z = Math.PI / 2.5;
+    coreGroup.add(ring3);
+
+    // 4. Surrounding 3D Neural Swarm Particle Field
+    const particleCount = 450;
+    const particleGeo = new THREE.BufferGeometry();
+    const positions = new Float32Array(particleCount * 3);
+    const colors = new Float32Array(particleCount * 3);
+
+    const colorPalette = [
+      new THREE.Color(0x00e5ff),
+      new THREE.Color(0xff0080),
+      new THREE.Color(0x00ff88),
+      new THREE.Color(0xffd700)
+    ];
+
+    for (let i = 0; i < particleCount; i++) {
+      const radius = 2.0 + Math.random() * 3.2;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos((Math.random() * 2) - 1);
+
+      positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+      positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+      positions[i * 3 + 2] = radius * Math.cos(phi);
+
+      const color = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+      colors[i * 3] = color.r;
+      colors[i * 3 + 1] = color.g;
+      colors[i * 3 + 2] = color.b;
+    }
+
+    particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    particleGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    const particleMat = new THREE.PointsMaterial({
+      size: 0.06,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.85
+    });
+    const particleSystem = new THREE.Points(particleGeo, particleMat);
+    coreGroup.add(particleSystem);
+
+    // 5. Lighting
+    const ambientLight = new THREE.AmbientLight(0x0a192f, 1.8);
+    scene.add(ambientLight);
+
+    const cyanLight = new THREE.PointLight(0x00e5ff, 3, 20);
+    cyanLight.position.set(5, 5, 5);
+    scene.add(cyanLight);
+
+    const pinkLight = new THREE.PointLight(0xff0080, 3, 20);
+    pinkLight.position.set(-5, -5, 5);
+    scene.add(pinkLight);
+
+    // 6. Interactive Drag / Orbit Controls
+    let isDragging = false;
+    let prevMouseX = 0;
+    let prevMouseY = 0;
+    let targetRotationX = 0;
+    let targetRotationY = 0;
+
+    container.addEventListener('pointerdown', (e) => {
+      isDragging = true;
+      prevMouseX = e.clientX;
+      prevMouseY = e.clientY;
+    });
+
+    window.addEventListener('pointermove', (e) => {
+      if (!isDragging) return;
+      const deltaX = e.clientX - prevMouseX;
+      const deltaY = e.clientY - prevMouseY;
+      targetRotationY += deltaX * 0.008;
+      targetRotationX += deltaY * 0.008;
+      prevMouseX = e.clientX;
+      prevMouseY = e.clientY;
+    });
+
+    window.addEventListener('pointerup', () => {
+      isDragging = false;
+    });
+
+    // Resize Handler
+    function handleResize() {
+      if (!container || !renderer || !camera) return;
+      const newWidth = container.clientWidth;
+      const newHeight = container.clientHeight;
+      camera.aspect = newWidth / newHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(newWidth, newHeight);
+    }
+    window.addEventListener('resize', handleResize);
+
+    // 7. 60 FPS Render Loop with Harmonic Pulsing
+    let clock = new THREE.Clock();
+    function renderThreeScene() {
+      requestAnimationFrame(renderThreeScene);
+
+      const elapsedTime = clock.getElapsedTime();
+      const currentSpeed = THREE_MODES[threeCoreModeIndex].speed;
+
+      // Inertia drag rotation
+      coreGroup.rotation.y += (targetRotationY - coreGroup.rotation.y) * 0.08 + (0.005 * currentSpeed);
+      coreGroup.rotation.x += (targetRotationX - coreGroup.rotation.x) * 0.08;
+
+      // Independent ring rotations
+      ring1.rotation.x += 0.012 * currentSpeed;
+      ring1.rotation.y += 0.008 * currentSpeed;
+      ring2.rotation.y += 0.015 * currentSpeed;
+      ring2.rotation.z += 0.009 * currentSpeed;
+      ring3.rotation.z += 0.018 * currentSpeed;
+
+      // Harmonic Nucleus Pulse
+      const pulseScale = 1.0 + Math.sin(elapsedTime * 2.5 * currentSpeed) * 0.08;
+      nucleus.scale.set(pulseScale, pulseScale, pulseScale);
+
+      // Particle Drift
+      particleSystem.rotation.y -= 0.003 * currentSpeed;
+
+      renderer.render(scene, camera);
+    }
+    renderThreeScene();
+  }
+
   // ═══════════════════ INIT ═══════════════════
   initClock();
   init3DCanvas();
+  setTimeout(initThreeJsModel, 200);
   initTradingViewChart("BINANCE:BTCUSDT", "5", "BTC/USDT");
   fetchRealData();
   setInterval(fetchRealData, 3000);

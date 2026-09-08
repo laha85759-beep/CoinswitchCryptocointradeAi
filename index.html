@@ -7,7 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=40.0">
+  <link rel="stylesheet" href="styles.css?v=41.0">
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 </head>
 <body>
@@ -314,6 +315,37 @@
 
     <!-- ──────── MIDDLE COLUMN ──────── -->
     <section class="mid-col mob-section" id="sec-trades">
+
+      <!-- 🧬 3D HOLOGRAPHIC AI QUANT CORE (THREE.JS / WEBGL) -->
+      <div class="card card-21st three-model-card" id="sec-3d-model">
+        <div class="card-header" style="justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="pulse-dot glow"></span>
+            <span class="card-title">3D HOLOGRAPHIC QUANT CORE & NEURAL TOPOLOGY</span>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <span class="tag-21st glow-tag" id="threeModelMode">WEBGL 60FPS</span>
+            <button class="three-mode-btn" onclick="toggle3DCoreMode()" title="Toggle Neural Matrix Mode">⚡ MODE</button>
+          </div>
+        </div>
+        <div class="three-canvas-wrapper" id="threeCanvasWrap">
+          <canvas id="threeJsCanvas"></canvas>
+          <div class="three-overlay-hud">
+            <div class="three-hud-badge">
+              <span class="hud-label">QUANT CORE</span>
+              <span class="hud-val green" id="hudCoreState">SYNCHRONIZED</span>
+            </div>
+            <div class="three-hud-badge">
+              <span class="hud-label">NEURAL MATRIX</span>
+              <span class="hud-val cyan" id="hudNodes">1,024 ACTIVE</span>
+            </div>
+            <div class="three-hud-badge">
+              <span class="hud-label">INTERACTION</span>
+              <span class="hud-val magenta">DRAG TO ROTATE</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- EMBEDDED TRADINGVIEW REAL-TIME 3D QUANT CHART -->
       <div class="card card-21st mob-section chart-3d-card" id="sec-chart">

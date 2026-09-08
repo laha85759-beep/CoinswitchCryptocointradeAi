@@ -113,6 +113,89 @@ button:active, .mob-tab-btn:active, .flow-tab-btn:active, .heat-cell:active {
   box-shadow: 0 14px 40px rgba(0, 229, 255, 0.15), 0 0 20px rgba(255, 0, 128, 0.12) !important;
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   3D HOLOGRAPHIC QUANT CORE & THREE.JS WEBGL CANVAS STYLES
+   ═══════════════════════════════════════════════════════════════════ */
+.three-model-card {
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, rgba(13, 19, 31, 0.95) 0%, rgba(6, 9, 14, 0.98) 100%) !important;
+  border: 1px solid rgba(0, 229, 255, 0.35) !important;
+  box-shadow: 0 0 25px rgba(0, 229, 255, 0.15), inset 0 0 15px rgba(0, 229, 255, 0.05) !important;
+}
+.three-canvas-wrapper {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  overflow: hidden;
+  background: radial-gradient(circle at center, rgba(0, 229, 255, 0.08) 0%, rgba(6, 9, 14, 0.95) 75%);
+  border-radius: 6px;
+  cursor: grab;
+  touch-action: none;
+}
+.three-canvas-wrapper:active {
+  cursor: grabbing;
+}
+#threeJsCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.three-overlay-hud {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  pointer-events: none;
+  z-index: 10;
+}
+.three-hud-badge {
+  background: rgba(6, 9, 14, 0.88);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+}
+.three-hud-badge .hud-label {
+  font-size: 8px;
+  color: #64748b;
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.three-hud-badge .hud-val {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+.three-hud-badge .hud-val.green { color: #10b981; text-shadow: 0 0 8px rgba(16, 185, 129, 0.5); }
+.three-hud-badge .hud-val.cyan { color: #00e5ff; text-shadow: 0 0 8px rgba(0, 229, 255, 0.5); }
+.three-hud-badge .hud-val.magenta { color: #ff0080; text-shadow: 0 0 8px rgba(255, 0, 128, 0.5); }
+.three-mode-btn {
+  background: rgba(0, 229, 255, 0.12);
+  border: 1px solid #00e5ff;
+  color: #00e5ff;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.three-mode-btn:hover {
+  background: #00e5ff;
+  color: #06090e;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.8);
+}
+
 @keyframes framerEntrance {
   0% { opacity: 0; transform: translateY(12px) scale(0.98); }
   100% { opacity: 1; transform: translateY(0) scale(1); }
