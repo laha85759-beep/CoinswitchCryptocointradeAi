@@ -57,21 +57,60 @@ button:active, .mob-tab-btn:active, .flow-tab-btn:active, .heat-cell:active {
   transition: transform 0.1s var(--framer-spring) !important;
 }
 
-/* PRO MAX Card Container Specifications */
+/* 3D PARTICLE BACKGROUND CANVAS */
+.bg-3d-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.55;
+}
+
+/* 3D CARD PERSPECTIVE & SPECULAR SHEEN (DRIBBLE 3D / MOTION.DEV) */
+.dashboard, .left-col, .mid-col, .right-col {
+  perspective: 1200px;
+}
+
 .card, .card-21st {
+  position: relative;
   background: var(--pro-glass-bg) !important;
   backdrop-filter: var(--pro-glass-blur) !important;
   -webkit-backdrop-filter: var(--pro-glass-blur) !important;
   border: 1px solid var(--pro-glass-border) !important;
   box-shadow: var(--pro-shadow-md) !important;
-  border-radius: 6px !important;
-  transition: all 0.35s var(--pro-spring-bounce) !important;
-  animation: framerEntrance 0.5s var(--framer-ease-out) forwards, cardAmbientGlow 8s ease-in-out infinite alternate;
+  border-radius: 8px !important;
+  transform-style: preserve-3d;
+  will-change: transform, box-shadow;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease !important;
+  animation: framerEntrance 0.5s var(--framer-ease-out) forwards;
+  overflow: hidden;
 }
+
+/* Dynamic Specular Sheen Highlight */
+.card::before, .card-21st::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle 300px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 255, 255, 0.08) 0%, transparent 80%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 2;
+}
+
+.card:hover::before, .card-21st:hover::before {
+  opacity: 1;
+}
+
 .card:hover, .card-21st:hover {
-  border-color: rgba(37, 99, 235, 0.55) !important;
-  box-shadow: var(--pro-shadow-lg) !important;
-  transform: translateY(-2px) scale(1.002) !important;
+  border-color: rgba(0, 229, 255, 0.5) !important;
+  box-shadow: 0 14px 40px rgba(0, 229, 255, 0.15), 0 0 20px rgba(255, 0, 128, 0.12) !important;
 }
 
 @keyframes framerEntrance {
@@ -670,18 +709,100 @@ body {
 .step-status { font-size: 8px; font-weight: 800; font-family: var(--font-mono); padding: 1px 4px; border-radius: 2px; }
 .pipeline-arrow { text-align: center; color: var(--border-heavy); font-size: 10px; line-height: 10px; }
 
-/* ──────── TRADINGVIEW CHART WIDGET ──────── */
+/* ──────── TRADINGVIEW PRO 3D CHART WIDGET ──────── */
+.chart-header-pro {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chart-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.chart-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tv-tf-selector {
+  display: flex;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.tv-tf-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.tv-tf-btn:hover {
+  color: var(--text-main);
+  background: rgba(59, 130, 246, 0.15);
+}
+.tv-tf-btn.active {
+  color: #00e5ff;
+  background: rgba(0, 229, 255, 0.2);
+  box-shadow: inset 0 0 8px rgba(0, 229, 255, 0.3);
+}
+
+.tv-coins-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: rgba(10, 15, 24, 0.9);
+  border-bottom: 1px solid var(--border-color);
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+}
+.tv-coin-pill {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+}
+.tv-coin-pill:hover {
+  border-color: #00e5ff;
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.25);
+}
+.tv-coin-pill.active {
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.25) 0%, rgba(255, 0, 128, 0.25) 100%);
+  border-color: #00e5ff;
+  color: #00e5ff;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.4);
+}
+
 .tv-chart-wrapper {
   width: 100%;
-  height: 320px;
-  background: #ffffff;
-  border-top: 1px solid var(--border-color);
+  height: 400px;
+  background: #06090e;
   position: relative;
   overflow: hidden;
 }
 .tv-chart-container {
   width: 100%;
   height: 100%;
+  background: #06090e;
 }
 
 /* ──────── COINS CAPITAL FLOW MATRIX ──────── */

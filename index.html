@@ -7,10 +7,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=38.0">
+  <link rel="stylesheet" href="styles.css?v=39.0">
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 </head>
 <body>
+
+  <!-- 3D INTERACTIVE PARTICLE CYBER MESH CANVAS (MOTION.DEV / DRIBBLE 3D) -->
+  <canvas id="bg3dCanvas" class="bg-3d-canvas"></canvas>
 
   <!-- ═══════════════════ 21ST.DEV GLASSMOPHISM HEADER ═══════════════════ -->
   <header class="header-bar card-21st">
@@ -313,12 +316,38 @@
     <!-- ──────── MIDDLE COLUMN ──────── -->
     <section class="mid-col mob-section" id="sec-trades">
 
-      <!-- EMBEDDED TRADINGVIEW REAL-TIME CHART WITH TECHNICAL INDICATORS -->
-      <div class="card card-21st mob-section" id="sec-chart">
-        <div class="card-header">
-          <span class="card-title">LIVE TRADINGVIEW CHART & TECHNICAL INDICATORS</span>
-          <span class="tag green">5M LIVE</span>
+      <!-- EMBEDDED TRADINGVIEW REAL-TIME 3D QUANT CHART -->
+      <div class="card card-21st mob-section chart-3d-card" id="sec-chart">
+        <div class="card-header chart-header-pro">
+          <div class="chart-header-left">
+            <span class="card-title">LIVE TRADINGVIEW PRO CHART</span>
+            <span class="tag green pulse-tag" id="tvActiveSymbolBadge">BTC/USDT</span>
+          </div>
+          <div class="chart-header-controls">
+            <div class="tv-tf-selector">
+              <button class="tv-tf-btn" data-tf="1" onclick="switchTvTimeframe('1')">1m</button>
+              <button class="tv-tf-btn active" data-tf="5" onclick="switchTvTimeframe('5')">5m</button>
+              <button class="tv-tf-btn" data-tf="15" onclick="switchTvTimeframe('15')">15m</button>
+              <button class="tv-tf-btn" data-tf="60" onclick="switchTvTimeframe('60')">1h</button>
+              <button class="tv-tf-btn" data-tf="240" onclick="switchTvTimeframe('240')">4h</button>
+              <button class="tv-tf-btn" data-tf="D" onclick="switchTvTimeframe('D')">1D</button>
+            </div>
+          </div>
         </div>
+        
+        <!-- COIN QUICK SWITCHER BAR -->
+        <div class="tv-coins-bar">
+          <button class="tv-coin-pill active" data-symbol="BINANCE:BTCUSDT" onclick="switchTvChart('BINANCE:BTCUSDT', 'BTC/USDT')">⚡ BTC</button>
+          <button class="tv-coin-pill" data-symbol="BINANCE:ETHUSDT" onclick="switchTvChart('BINANCE:ETHUSDT', 'ETH/USDT')">💎 ETH</button>
+          <button class="tv-coin-pill" data-symbol="BINANCE:SOLUSDT" onclick="switchTvChart('BINANCE:SOLUSDT', 'SOL/USDT')">🚀 SOL</button>
+          <button class="tv-coin-pill" data-symbol="BINANCE:DOGEUSDT" onclick="switchTvChart('BINANCE:DOGEUSDT', 'DOGE/USDT')">🐕 DOGE</button>
+          <button class="tv-coin-pill" data-symbol="BINANCE:PEPEUSDT" onclick="switchTvChart('BINANCE:PEPEUSDT', 'PEPE/USDT')">🐸 PEPE</button>
+          <button class="tv-coin-pill" data-symbol="BINANCE:FETUSDT" onclick="switchTvChart('BINANCE:FETUSDT', 'FET/USDT')">🤖 FET</button>
+          <button class="tv-coin-pill" data-symbol="BINANCE:NEARUSDT" onclick="switchTvChart('BINANCE:NEARUSDT', 'NEAR/USDT')">🌐 NEAR</button>
+          <button class="tv-coin-pill" data-symbol="BINANCE:XRPUSDT" onclick="switchTvChart('BINANCE:XRPUSDT', 'XRP/USDT')">🌊 XRP</button>
+          <button class="tv-coin-pill" data-symbol="BINANCE:PAXGUSDT" onclick="switchTvChart('BINANCE:PAXGUSDT', 'XAUT/USD')">🪙 GOLD</button>
+        </div>
+
         <div class="tv-chart-wrapper">
           <div id="tradingview_5m_chart" class="tv-chart-container"></div>
         </div>

@@ -515,31 +515,99 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
   function fmtPrice(n, dec = 2) { return '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec }); }
   function fmtComma(n) { return Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
-  function initTradingViewChart(symbol = "BINANCE:BTCUSDT") {
+  // ── TRADINGVIEW PRO CHART ENGINE (DARK CYBERPUNK THEME + RELIABLE FALLBACK) ──
+  let currentTvSymbol = "BINANCE:BTCUSDT";
+  let currentTvTf = "5";
+  let currentTvDisplayName = "BTC/USDT";
+
+  function initTradingViewChart(symbol = currentTvSymbol, interval = currentTvTf, displayName = currentTvDisplayName) {
     const el = document.getElementById("tradingview_5m_chart");
-    if (!el || typeof TradingView === 'undefined') return;
-    try {
-      new TradingView.widget({
-        "autosize": true,
-        "symbol": symbol,
-        "interval": "5",
-        "timezone": "Etc/UTC",
-        "theme": "light",
-        "style": "1",
-        "locale": "en",
-        "toolbar_bg": "#f1f3f6",
-        "enable_publishing": false,
-        "allow_symbol_change": true,
-        "studies": [
-          "RSI@tv-basicstudies",
-          "MASimple@tv-basicstudies"
-        ],
-        "container_id": "tradingview_5m_chart"
-      });
-    } catch(e) {
-      console.log("TradingView widget init notice:", e);
+    if (!el) return;
+
+    currentTvSymbol = symbol;
+    currentTvTf = interval;
+    currentTvDisplayName = displayName;
+
+    const badge = document.getElementById("tvActiveSymbolBadge");
+    if (badge) badge.textContent = displayName;
+
+    // Clean symbol for iframe fallback
+    let cleanSym = symbol.replace("BINANCE:", "").replace("COINBASE:", "").replace("DELTA:", "");
+    if (!cleanSym.includes("USDT") && !cleanSym.includes("USD")) cleanSym += "USDT";
+
+    // Attempt Native TradingView Widget with Dark Cyberpunk Theme
+    let nativeSuccess = false;
+    if (typeof TradingView !== 'undefined' && TradingView.widget) {
+      try {
+        el.innerHTML = "";
+        new TradingView.widget({
+          "autosize": true,
+          "symbol": symbol,
+          "interval": interval,
+          "timezone": "Etc/UTC",
+          "theme": "dark",
+          "style": "1",
+          "locale": "en",
+          "toolbar_bg": "#06090e",
+          "enable_publishing": false,
+          "allow_symbol_change": true,
+          "withdateranges": true,
+          "hide_side_toolbar": false,
+          "loading_screen": { "backgroundColor": "#06090e", "foregroundColor": "#00e5ff" },
+          "overrides": {
+            "paneProperties.background": "#06090e",
+            "paneProperties.vertGridProperties.color": "rgba(59, 130, 246, 0.12)",
+            "paneProperties.horzGridProperties.color": "rgba(59, 130, 246, 0.12)",
+            "mainSeriesProperties.candleStyle.upColor": "#00ff88",
+            "mainSeriesProperties.candleStyle.downColor": "#ff0080",
+            "mainSeriesProperties.candleStyle.drawWick": true,
+            "mainSeriesProperties.candleStyle.drawBorder": true,
+            "mainSeriesProperties.candleStyle.borderColor": "#00ff88",
+            "mainSeriesProperties.candleStyle.borderUpColor": "#00ff88",
+            "mainSeriesProperties.candleStyle.borderDownColor": "#ff0080",
+            "mainSeriesProperties.candleStyle.wickUpColor": "#00ff88",
+            "mainSeriesProperties.candleStyle.wickDownColor": "#ff0080"
+          },
+          "studies": [
+            "RSI@tv-basicstudies",
+            "MASimple@tv-basicstudies"
+          ],
+          "container_id": "tradingview_5m_chart"
+        });
+        nativeSuccess = true;
+      } catch (err) {
+        console.warn("Native TradingView widget error, using responsive iframe fallback:", err);
+      }
+    }
+
+    // High-Reliability Dark Responsive Iframe Fallback (Guarantees zero blank screen)
+    if (!nativeSuccess) {
+      el.innerHTML = `
+        <iframe
+          src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_chart_frame&symbol=BINANCE%3A${encodeURIComponent(cleanSym)}&interval=${interval}&hidesidetoolbar=0&symboledit=1&saveimage=1&toolbarbg=06090e&theme=dark&style=1&timezone=Etc%2FUTC"
+          style="width: 100%; height: 100%; min-height: 380px; border: none; background: #06090e;"
+          allowtransparency="true"
+          scrolling="no">
+        </iframe>
+      `;
     }
   }
+
+  window.switchTvChart = function(symbol, displayName) {
+    document.querySelectorAll('.tv-coin-pill').forEach(btn => {
+      if (btn.dataset.symbol === symbol) btn.classList.add('active');
+      else btn.classList.remove('active');
+    });
+    initTradingViewChart(symbol, currentTvTf, displayName);
+  };
+
+  window.switchTvTimeframe = function(tf) {
+    document.querySelectorAll('.tv-tf-btn').forEach(btn => {
+      if (btn.dataset.tf === tf) btn.classList.add('active');
+      else btn.classList.remove('active');
+    });
+    initTradingViewChart(currentTvSymbol, tf, currentTvDisplayName);
+  };
 
   let currentFlowTab = 'all';
 
@@ -1145,17 +1213,138 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
     if (window.loadTvChart) window.loadTvChart('BTCUSDT');
   }, 1000);
 
-  // Bind click event for Admin Tab
-  document.querySelectorAll('.mob-tab-btn[data-tab="admin"]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      fetchAdminSettings();
+  // ── 3D CARD TILT & PARALLAX PHYSICS ENGINE (DRIBBLE 3D / MOTION.DEV) ──
+  function init3DCardTilt() {
+    const cards = document.querySelectorAll('.card, .card-21st, .rate-card');
+    cards.forEach(card => {
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const cx = rect.width / 2;
+        const cy = rect.height / 2;
+        const rx = ((y - cy) / cy) * -6; // max 6 deg tilt
+        const ry = ((x - cx) / cx) * 6;
+        card.style.transform = `perspective(1000px) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) translateZ(6px) scale3d(1.01, 1.01, 1.01)`;
+        card.style.setProperty('--mouse-x', `${((x / rect.width) * 100).toFixed(1)}%`);
+        card.style.setProperty('--mouse-y', `${((y / rect.height) * 100).toFixed(1)}%`);
+      });
+
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateZ(0px) scale3d(1, 1, 1)';
+        card.style.setProperty('--mouse-x', '50%');
+        card.style.setProperty('--mouse-y', '50%');
+      });
     });
-  });
+  }
+
+  // ── 60FPS 3D CYBER PARTICLE MESH CANVAS ENGINE ──
+  function init3DCanvas() {
+    const canvas = document.getElementById('bg3dCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let width, height;
+    let particles = [];
+    const NUM_PARTICLES = 65;
+
+    function resize() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    class Particle3D {
+      constructor() {
+        this.reset();
+      }
+      reset() {
+        this.x = (Math.random() - 0.5) * width * 1.5;
+        this.y = (Math.random() - 0.5) * height * 1.5;
+        this.z = Math.random() * 800 + 200;
+        this.vx = (Math.random() - 0.5) * 0.4;
+        this.vy = (Math.random() - 0.5) * 0.4;
+        this.vz = (Math.random() - 0.5) * 0.5;
+        this.color = Math.random() > 0.6 ? 'rgba(0, 229, 255, ' : (Math.random() > 0.5 ? 'rgba(255, 0, 128, ' : 'rgba(0, 255, 136, ');
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.z += this.vz;
+        if (this.z < 100 || this.z > 1000 || Math.abs(this.x) > width || Math.abs(this.y) > height) {
+          this.reset();
+        }
+      }
+      draw(cx, cy, fov) {
+        const scale = fov / (fov + this.z);
+        const px = cx + this.x * scale;
+        const py = cy + this.y * scale;
+        const radius = Math.max(0.8, (1 - this.z / 1000) * 2.5);
+        const alpha = Math.max(0.1, (1 - this.z / 1000) * 0.7);
+
+        ctx.beginPath();
+        ctx.arc(px, py, radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color + alpha + ')';
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = this.color + '0.8)';
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        return { px, py, alpha };
+      }
+    }
+
+    for (let i = 0; i < NUM_PARTICLES; i++) {
+      particles.push(new Particle3D());
+    }
+
+    let mouseX = 0, mouseY = 0;
+    window.addEventListener('mousemove', (e) => {
+      mouseX = (e.clientX - width / 2) * 0.05;
+      mouseY = (e.clientY - height / 2) * 0.05;
+    });
+
+    function animate() {
+      ctx.clearRect(0, 0, width, height);
+      const cx = width / 2 + mouseX;
+      const cy = height / 2 + mouseY;
+      const fov = 400;
+
+      const screenCoords = [];
+      for (let i = 0; i < particles.length; i++) {
+        particles[i].update();
+        screenCoords.push(particles[i].draw(cx, cy, fov));
+      }
+
+      // Draw subtle holographic neural connection lines between close particles
+      for (let i = 0; i < screenCoords.length; i++) {
+        for (let j = i + 1; j < screenCoords.length; j++) {
+          const dx = screenCoords[i].px - screenCoords[j].px;
+          const dy = screenCoords[i].py - screenCoords[j].py;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 110) {
+            ctx.beginPath();
+            ctx.moveTo(screenCoords[i].px, screenCoords[i].py);
+            ctx.lineTo(screenCoords[j].px, screenCoords[j].py);
+            const lineAlpha = (1 - dist / 110) * 0.15;
+            ctx.strokeStyle = `rgba(0, 229, 255, ${lineAlpha})`;
+            ctx.lineWidth = 0.8;
+            ctx.stroke();
+          }
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+    animate();
+  }
 
   // ═══════════════════ INIT ═══════════════════
   initClock();
+  init3DCanvas();
+  initTradingViewChart("BINANCE:BTCUSDT", "5", "BTC/USDT");
   fetchRealData();
   setInterval(fetchRealData, 3000);
-  // Load Darwin leaderboard data on startup
+  setTimeout(init3DCardTilt, 500);
   setTimeout(loadDarwinLeaderboard, 2000);
 })();
