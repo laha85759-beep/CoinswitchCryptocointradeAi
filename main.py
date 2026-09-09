@@ -239,7 +239,8 @@ def _send_daily_report_if_due(
         f"• *Win Rate Today* : `{win_rate}%` ({wins} W / {losses} L)\n"
         f"• *Net PnL Today*  : `{total_net_usdt:+.2f} USDT` (`₹{total_net_inr:+.2f} INR`)\n"
         f"═════════════════════════\n"
-        f"🟢 *VERIFIED LIVE EXCHANGE API DATA • NO ESTIMATES*"
+        f"🟢 *VERIFIED LIVE EXCHANGE API DATA • NO ESTIMATES*\n"
+        f"🎁 *10% Off Delta India Fees + Bonuses*: [Sign Up Here](https://www.delta.exchange/?code=YXQSZA)"
     )
 
     notifier.send(report)

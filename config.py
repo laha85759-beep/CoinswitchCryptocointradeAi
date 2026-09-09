@@ -138,6 +138,7 @@ CONFIG = {
     "paper_trading_mode":  _bool_env("PAPER_TRADING_MODE", False),
     "paper_portfolio_usdt": _float_env("PAPER_PORTFOLIO_USDT", 1000.0),
     "telegram_channel_url": os.getenv("TELEGRAM_CHANNEL_URL", "https://t.me/CoinsAiOfficial"),
+    "delta_affiliate_url":  os.getenv("DELTA_AFFILIATE_URL", "https://www.delta.exchange/?code=YXQSZA"),
 
     # ── Signal detector thresholds ────────────────────────────────────────────
     # 5m move ≥ 0.5% = genuine momentum candle (altcoins move 0.5-2% easily)
