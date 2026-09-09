@@ -150,6 +150,31 @@ class OptionsHedgeAgent:
             log.warning("Invalid options premium pricing for %s (Call: %s, Put: %s)", asset, entry_call_premium, entry_put_premium)
             return None
 
+        # Contract value scaling (e.g. BTC options contract_value is 0.001)
+        call_cv = float(best_call.get("contract_value", 1.0) or 1.0)
+        put_cv = float(best_put.get("contract_value", 1.0) or 1.0)
+        actual_call_cost = entry_call_premium * call_cv
+        actual_put_cost = entry_put_premium * put_cv
+        actual_total_cost_usd = actual_call_cost + actual_put_cost
+
+        # ── STRICT RISK GUARD: Reject high-premium options ──
+        max_premium_allowed = float(self.cfg.get("options_max_premium_usd", 0.50))
+        if actual_total_cost_usd > max_premium_allowed:
+            log.info("OPTIONS RISK REJECT: %s options cost ($%.4f) exceeds max allowed premium ($%.2f)",
+                     asset, actual_total_cost_usd, max_premium_allowed)
+            return None
+
+        # Check total wallet balance allocation (max 15% of account)
+        try:
+            current_balance = float(self.delta_client.get_usdt_balance())
+            max_balance_pct = float(self.cfg.get("options_max_balance_pct", 15.0))
+            if current_balance > 0 and actual_total_cost_usd > (current_balance * (max_balance_pct / 100.0)):
+                log.info("OPTIONS RISK REJECT: %s options cost ($%.4f) exceeds %.1f%% of balance ($%.2f)",
+                         asset, actual_total_cost_usd, max_balance_pct, current_balance)
+                return None
+        except Exception:
+            pass
+
         total_premium_paid = entry_call_premium + entry_put_premium
 
         # MANDATORY SL & TP CALCULATIONS (Strict Risk Protection)

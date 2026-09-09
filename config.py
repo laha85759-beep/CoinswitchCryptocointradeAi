@@ -192,10 +192,12 @@ CONFIG = {
     "nvidia_model":     os.getenv("NVIDIA_MODEL", "nvidia/nemotron-3-ultra-550b-a55b"),
 
     # ── Options Hedge Agent ───────────────────────────────────────────────────
-    "options_enabled":         _bool_env("OPTIONS_ENABLED", True),
-    "options_assets":          ["ETH", "BTC", "XAUT", "SOL", "XRP", "DOGE", "MNT"],
-    "options_stop_loss_pct":   _float_env("OPTIONS_STOP_LOSS_PCT", 50.0),   # -50% SL on options premium
-    "options_take_profit_pct": _float_env("OPTIONS_TAKE_PROFIT_PCT", 100.0), # +100% TP on options premium
+    "options_enabled":               _bool_env("OPTIONS_ENABLED", True),
+    "options_assets":                ["ETH", "BTC", "XAUT", "SOL", "XRP", "DOGE", "MNT"],
+    "options_max_premium_usd":       _float_env("OPTIONS_MAX_PREMIUM_USD", 0.50),  # Max $0.50 total premium per options trade (strict micro-premium cap)
+    "options_max_balance_pct":       _float_env("OPTIONS_MAX_BALANCE_PCT", 15.0),  # Max 15% of account balance allocated to options
+    "options_stop_loss_pct":         _float_env("OPTIONS_STOP_LOSS_PCT", 50.0),   # -50% SL on options premium
+    "options_take_profit_pct":       _float_env("OPTIONS_TAKE_PROFIT_PCT", 100.0), # +100% TP on options premium
 }
 
 # ── Isolate proxy configuration to prevent affecting other clients (CoinSwitch / Telegram) ──
