@@ -244,7 +244,8 @@ def get_terminal_data():
                 for pos in pos_list:
                     sz = float(pos.get("size", 0) or 0)
                     if abs(sz) > 0:
-                        raw_sym = str(pos.get("product_symbol", ""))
+                        prod_dict = pos.get("product", {}) if isinstance(pos.get("product"), dict) else {}
+                        raw_sym = str(pos.get("product_symbol") or prod_dict.get("symbol") or "")
                         prod_sym = raw_sym.upper()
                         if prod_sym.endswith("USD"):
                             sym_name = f"{prod_sym[:-3]}/USDT"
@@ -254,12 +255,11 @@ def get_terminal_data():
                             sym_name = prod_sym
                         
                         entry_p = float(pos.get("entry_price", 0) or 0)
-                        # Delta returns unrealized_cashflow for perpetuals — fall back to unrealized_pnl
-                        unrealized_raw = pos.get("unrealized_cashflow") or pos.get("unrealized_pnl") or 0
+                        unrealized_raw = pos.get("unrealized_pnl") or pos.get("unrealized_cashflow") or 0
                         unrealized = float(unrealized_raw or 0)
                         liq_price = float(pos.get("liquidation_price", 0) or 0)
                         mark_price = float(pos.get("mark_price", 0) or 0)
-                        margin = float(pos.get("margin", 0) or 0)
+                        margin = float(pos.get("margin", 0) or pos.get("position_margin", 0) or 0)
                         parsed_positions.append({
                             "symbol": sym_name,
                             "direction": "long" if sz > 0 else "short",
@@ -273,7 +273,7 @@ def get_terminal_data():
                             "exchange": "delta",
                             "paper": False
                         })
-                # Trust the live positions list from Delta API (even if it is empty)
+                # Trust the live positions list from Delta API
                 open_delta = parsed_positions
             except Exception as exc:
                 log.warning("Failed to fetch live Delta positions: %s", exc)
