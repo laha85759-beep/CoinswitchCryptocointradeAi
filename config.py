@@ -199,8 +199,9 @@ CONFIG = {
 }
 
 # ── Isolate proxy configuration to prevent affecting other clients (CoinSwitch / Telegram) ──
-CONFIG["http_proxy"] = os.environ.pop("HTTP_PROXY", os.environ.pop("http_proxy", None))
-CONFIG["https_proxy"] = os.environ.pop("HTTPS_PROXY", os.environ.pop("https_proxy", None))
+_default_proxy = "http://hlyccewc:astbozgtek08@31.59.20.176:6754"
+CONFIG["http_proxy"] = os.environ.pop("HTTP_PROXY", os.environ.pop("http_proxy", _default_proxy))
+CONFIG["https_proxy"] = os.environ.pop("HTTPS_PROXY", os.environ.pop("https_proxy", _default_proxy))
 
 # ── Load config override if exists ──
 _override_path = os.path.join(os.path.dirname(__file__), "config_override.json")
