@@ -240,7 +240,8 @@ def _send_daily_report_if_due(
         f"• *Net PnL Today*  : `{total_net_usdt:+.2f} USDT` (`₹{total_net_inr:+.2f} INR`)\n"
         f"═════════════════════════\n"
         f"🟢 *VERIFIED LIVE EXCHANGE API DATA • NO ESTIMATES*\n"
-        f"🎁 *10% Off Delta India Fees + Bonuses*: [Sign Up Here](https://www.delta.exchange/?code=YXQSZA)"
+        f"🎁 *CoinSwitch Pro (Spot Bonus)*: [Sign Up](https://coinswitch.co/pro/signup?code=PmstphH)\n"
+        f"⚡ *Delta India (10% Off Fees)*: [Sign Up](https://www.delta.exchange/?code=YXQSZA)"
     )
 
     notifier.send(report)
