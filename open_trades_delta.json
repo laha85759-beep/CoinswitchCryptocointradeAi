@@ -30,5 +30,30 @@
     "take_profit": 0.0154,
     "trail_active": false,
     "trough_price": 0.01467
+  },
+  {
+    "approval_token": "4b6bbbde2fb5ae861f424820",
+    "atr_pct": 0.5462,
+    "buy_id": "1529197871",
+    "coin": "POPCAT",
+    "direction": "short",
+    "entry_price": 0.0487,
+    "exchange": "delta",
+    "hard_sl": 0.0499175,
+    "highest_profit_pct": 0.0,
+    "opened_at": "2026-09-10T17:08:38.973606+00:00",
+    "paper": false,
+    "peak_price": 0.0487,
+    "product_id": 45540,
+    "qty": 52.0,
+    "score": 85.9,
+    "signal_id": "8adf7540749c47511300",
+    "symbol": "POPCAT/USDT",
+    "take_profit": 0.042856,
+    "tp_order_id": "",
+    "trail_active": false,
+    "trailing_stop": null,
+    "trough_price": 0.0487,
+    "usdt_used": 3.0
   }
 ]
