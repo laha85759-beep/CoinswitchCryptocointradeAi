@@ -48,19 +48,21 @@ def utc_iso() -> str:
     return utc_now().isoformat()
 
 
-def load_json(path: Path, default: Any) -> Any:
-    if not path.exists():
+def load_json(path: Path | str, default: Any) -> Any:
+    p = Path(path) if isinstance(path, (str, Path)) else Path(str(path))
+    if not p.exists():
         return default
     try:
-        with path.open("r", encoding="utf-8") as handle:
+        with p.open("r", encoding="utf-8") as handle:
             return json.load(handle)
     except Exception as exc:
-        log.warning("Could not read %s: %s", path, exc)
+        log.warning("Could not read %s: %s", p, exc)
         return default
 
 
-def save_json(path: Path, data: Any) -> None:
-    with path.open("w", encoding="utf-8") as handle:
+def save_json(path: Path | str, data: Any) -> None:
+    p = Path(path) if isinstance(path, (str, Path)) else Path(str(path))
+    with p.open("w", encoding="utf-8") as handle:
         json.dump(data, handle, indent=2, sort_keys=True)
 
 
