@@ -193,8 +193,8 @@ CONFIG = {
     "nvidia_base_url":  os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1"),
     "nvidia_model":     os.getenv("NVIDIA_MODEL", "nvidia/nemotron-3-ultra-550b-a55b"),
 
-    # ── Options Hedge Agent ───────────────────────────────────────────────────
-    "options_enabled":               _bool_env("OPTIONS_ENABLED", True),
+    # ── Options Hedge Agent (Disabled for small capital accounts to avoid Theta decay) ──
+    "options_enabled":               _bool_env("OPTIONS_ENABLED", False),  # Disabled: Preserves 100% of capital for high-conviction momentum & perpetuals
     "options_assets":                ["ETH", "BTC", "XAUT", "SOL", "XRP", "DOGE", "MNT"],
     "options_max_premium_usd":       _float_env("OPTIONS_MAX_PREMIUM_USD", 0.50),  # Max $0.50 total premium per options trade (strict micro-premium cap)
     "options_max_balance_pct":       _float_env("OPTIONS_MAX_BALANCE_PCT", 15.0),  # Max 15% of account balance allocated to options
