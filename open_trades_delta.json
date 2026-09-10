@@ -41,6 +41,7 @@
     "exchange": "delta",
     "hard_sl": 0.0499175,
     "highest_profit_pct": 1.1294,
+    "last_monitor_error": "name 'timestamp' is not defined",
     "opened_at": "2026-09-10T17:08:38.973606+00:00",
     "paper": false,
     "peak_price": 0.0487,
