@@ -108,10 +108,27 @@ class OptionsHedgeAgent:
         if not self.cfg.get("options_enabled", True) or not self.delta_client:
             return None
 
-        # Check if active options trade already open for this asset to avoid repeated entries
+        # Check if active options trade already open on Delta Exchange or local state
         open_opts = load_json(OPTIONS_TRADES_FILE, [])
         if any(t.get("asset") == asset and t.get("status") == "active" for t in open_opts):
             return None
+
+        # Check live Delta Exchange positions directly from API to prevent stacking
+        try:
+            live_pos = self.delta_client._request("GET", "/v2/positions/margined")
+            live_list = live_pos.get("result", []) if isinstance(live_pos, dict) else (live_pos if isinstance(live_pos, list) else [])
+            active_live_options = [
+                p for p in live_list 
+                if float(p.get("size", 0) or 0) > 0 and (
+                    str(p.get("product_symbol", "")).startswith(f"C-{asset}") or 
+                    str(p.get("product_symbol", "")).startswith(f"P-{asset}")
+                )
+            ]
+            if active_live_options:
+                log.info("OPTIONS REJECT: Active live options already open on Delta for %s (%s contracts)", asset, len(active_live_options))
+                return None
+        except Exception as exc:
+            log.warning("Delta live options check notice: %s", exc)
 
         chain = self.provider.get_live_options_chain(asset)
         if not chain:
@@ -307,6 +324,42 @@ class OptionsMonitorAgent:
 
     def monitor(self) -> dict:
         """Evaluates all open options trades against SL and TP triggers."""
+        # 1. Fetch live Delta options positions directly from exchange
+        try:
+            res = self.delta_client._request("GET", "/v2/positions/margined")
+            pos_list = res.get("result", []) if isinstance(res, dict) else (res if isinstance(res, list) else [])
+            for p in pos_list:
+                sz = float(p.get("size", 0) or 0)
+                if sz > 0:
+                    sym = str(p.get("product_symbol", "")).upper()
+                    if sym.startswith("C-") or sym.startswith("P-"):
+                        entry_p = float(p.get("entry_price", 0) or 0)
+                        mark_p = float(p.get("mark_price", 0) or 0)
+                        unrealized = float(p.get("unrealized_pnl", 0) or p.get("unrealized_cashflow", 0) or 0)
+                        prod_dict = p.get("product", {}) if isinstance(p.get("product"), dict) else {}
+                        cv = float(prod_dict.get("contract_value", 1.0) or 1.0)
+                        cost = abs(float(p.get("realized_cashflow", 0) or 0))
+                        if cost <= 0:
+                            cost = entry_p * sz * cv
+                        
+                        # If option dropped more than 60% of cost or rose +100%, close it immediately
+                        if cost > 0 and (unrealized <= -(cost * 0.60) or (mark_p >= entry_p * 2.0)):
+                            exit_reason = "STOP_LOSS_HIT" if unrealized < 0 else "TAKE_PROFIT_HIT"
+                            log.info("OPTIONS AUTO-EXIT: Closing %s (%s) | Cost: $%s | UnPnL: $%s", sym, exit_reason, cost, unrealized)
+                            try:
+                                self.delta_client.place_order(sym, "sell", "market_order", sz)
+                                if self.notifier:
+                                    self.notifier.send(
+                                        f"🛡️ *OPTIONS AUTO-EXIT EXECUTED*\n"
+                                        f"• *Symbol*: `{sym}`\n"
+                                        f"• *Trigger*: `{exit_reason}`\n"
+                                        f"• *PnL*: `${unrealized:.4f} USD`"
+                                    )
+                            except Exception as c_err:
+                                log.warning("Failed to auto-close option %s: %s", sym, c_err)
+        except Exception as exc:
+            log.warning("Options live exchange monitor notice: %s", exc)
+
         open_opts = load_json(OPTIONS_TRADES_FILE, [])
         if not open_opts:
             return {"open_options": 0, "closed": []}
