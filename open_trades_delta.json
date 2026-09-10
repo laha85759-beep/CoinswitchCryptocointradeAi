@@ -4,7 +4,7 @@
     "entry_price": 0.0508,
     "exchange": "delta",
     "hard_sl": 0.0516,
-    "highest_profit_pct": 5.2165,
+    "highest_profit_pct": 5.5118,
     "last_monitor_error": "name 'timestamp' is not defined",
     "opened_at": "2026-09-09T17:25:11.316419+00:00",
     "order_id": "synced_api",
@@ -13,24 +13,8 @@
     "symbol": "POPCAT/USDT",
     "take_profit": 0.0484,
     "trail_active": true,
-    "trailing_stop": 0.0485352,
-    "trough_price": 0.04815
-  },
-  {
-    "direction": "long",
-    "entry_price": 0.01467,
-    "exchange": "delta",
-    "hard_sl": 0.0144,
-    "highest_profit_pct": 1.636,
-    "opened_at": "2026-09-10T15:02:31.882092+00:00",
-    "order_id": "synced_api",
-    "peak_price": 0.01491,
-    "qty": 207.0,
-    "symbol": "GOAT/USDT",
-    "take_profit": 0.0154,
-    "trail_active": true,
-    "trailing_stop": 0.01485036,
-    "trough_price": 0.01467
+    "trailing_stop": 0.048384,
+    "trough_price": 0.048
   },
   {
     "approval_token": "4b6bbbde2fb5ae861f424820",
@@ -41,7 +25,7 @@
     "entry_price": 0.0487,
     "exchange": "delta",
     "hard_sl": 0.0499175,
-    "highest_profit_pct": 1.1294,
+    "highest_profit_pct": 1.4374,
     "last_monitor_error": "name 'timestamp' is not defined",
     "opened_at": "2026-09-10T17:08:38.973606+00:00",
     "paper": false,
@@ -54,8 +38,8 @@
     "take_profit": 0.042856,
     "tp_order_id": "",
     "trail_active": true,
-    "trailing_stop": 0.0483426,
-    "trough_price": 0.04815,
+    "trailing_stop": 0.048192,
+    "trough_price": 0.048,
     "usdt_used": 3.0
   }
 ]
