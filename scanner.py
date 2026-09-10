@@ -288,8 +288,8 @@ class MarketScanner:
         quote = self.cfg["quote_currency"]
         min_vol = self.cfg.get("min_volume_usdt", 50_000)
 
-        # Try c2c2 first (has candle data), fallback to c2c1
-        for exchange in ("c2c2", "c2c1"):
+        # Query c2c2 exchange (has full candle data)
+        for exchange in ("c2c2",):
             tickers = self.client.get_all_tickers(exchange)
             log.info("Scanner: got %s tickers from %s", len(tickers), exchange)
             if not tickers:
@@ -338,8 +338,8 @@ class MarketScanner:
     def _ohlcv(self, symbol: str) -> pd.DataFrame | None:
         try:
             interval = self._parse_timeframe(self.cfg["timeframe"])
-            # c2c2 has candle data; fallback to c2c1
-            for ex in ("c2c2", "c2c1"):
+            # c2c2 has candle data
+            for ex in ("c2c2",):
                 candles = self.client.get_ohlcv(symbol, interval, self.cfg["candle_limit"], exchange=ex)
                 if candles and len(candles) >= 15:
                     df = pd.DataFrame(candles)
@@ -349,7 +349,7 @@ class MarketScanner:
                     df["close"] = df["c"].astype(float)
                     df["volume"] = df["volume"].astype(float)
                     return df
-            log.debug("OHLCV: insufficient candles for %s on c2c2/c2c1", symbol)
+            log.debug("OHLCV: insufficient candles for %s on c2c2", symbol)
             return None
         except Exception as e:
             log.debug(f"OHLCV error {symbol}: {e}")
