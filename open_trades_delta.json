@@ -21,14 +21,15 @@
     "entry_price": 0.01467,
     "exchange": "delta",
     "hard_sl": 0.0144,
-    "highest_profit_pct": 0.0,
+    "highest_profit_pct": 1.636,
     "opened_at": "2026-09-10T15:02:31.882092+00:00",
     "order_id": "synced_api",
-    "peak_price": 0.01467,
+    "peak_price": 0.01491,
     "qty": 207.0,
     "symbol": "GOAT/USDT",
     "take_profit": 0.0154,
-    "trail_active": false,
+    "trail_active": true,
+    "trailing_stop": 0.01485036,
     "trough_price": 0.01467
   },
   {
