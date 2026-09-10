@@ -15,5 +15,20 @@
     "trail_active": true,
     "trailing_stop": 0.0485352,
     "trough_price": 0.04815
+  },
+  {
+    "direction": "long",
+    "entry_price": 0.01467,
+    "exchange": "delta",
+    "hard_sl": 0.0144,
+    "highest_profit_pct": 0.0,
+    "opened_at": "2026-09-10T15:02:31.882092+00:00",
+    "order_id": "synced_api",
+    "peak_price": 0.01467,
+    "qty": 207.0,
+    "symbol": "GOAT/USDT",
+    "take_profit": 0.0154,
+    "trail_active": false,
+    "trough_price": 0.01467
   }
 ]
