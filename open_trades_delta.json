@@ -5,7 +5,7 @@
     "exchange": "delta",
     "hard_sl": 0.0516,
     "highest_profit_pct": 5.2165,
-    "last_monitor_error": "'str' object has no attribute 'exists'",
+    "last_monitor_error": "name 'timestamp' is not defined",
     "opened_at": "2026-09-09T17:25:11.316419+00:00",
     "order_id": "synced_api",
     "peak_price": 0.0508,
