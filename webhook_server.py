@@ -259,7 +259,13 @@ def get_terminal_data():
                         unrealized = float(unrealized_raw or 0)
                         liq_price = float(pos.get("liquidation_price", 0) or 0)
                         mark_price = float(pos.get("mark_price", 0) or 0)
+                        prod_dict = pos.get("product", {}) if isinstance(pos.get("product"), dict) else {}
+                        cv = float(prod_dict.get("contract_value", 1.0) or 1.0)
+                        cashflow = abs(float(pos.get("realized_cashflow", 0) or 0))
                         margin = float(pos.get("margin", 0) or pos.get("position_margin", 0) or 0)
+                        if margin <= 0:
+                            margin = cashflow if cashflow > 0 else (entry_p * abs(sz) * cv)
+                        
                         parsed_positions.append({
                             "symbol": sym_name,
                             "direction": "long" if sz > 0 else "short",
