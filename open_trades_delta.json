@@ -76,10 +76,10 @@
     "entry_price": 0.1408,
     "exchange": "delta",
     "hard_sl": 0.13728,
-    "highest_profit_pct": 0.0,
+    "highest_profit_pct": 0.3551,
     "opened_at": "2026-09-11T06:06:56.773624+00:00",
     "paper": false,
-    "peak_price": 0.1408,
+    "peak_price": 0.1413,
     "product_id": 54902,
     "qty": 19.0,
     "score": 93.0,
@@ -87,8 +87,8 @@
     "symbol": "FARTCOIN/USDT",
     "take_profit": 0.157696,
     "tp_order_id": "",
-    "trail_active": false,
-    "trailing_stop": null,
+    "trail_active": true,
+    "trailing_stop": 0.1408761,
     "trough_price": 0.1408,
     "usdt_used": 3.0
   }
