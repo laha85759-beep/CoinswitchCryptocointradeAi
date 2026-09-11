@@ -46,6 +46,7 @@
   <!-- ═══════════════════ MOBILE TAB NAVIGATION ═══════════════════ -->
   <nav class="mobile-nav-bar card-21st">
     <button class="mob-tab-btn active" data-tab="all">⚡ ALL</button>
+    <button class="mob-tab-btn" data-tab="partners" style="color: #ff0080; border-color: #ff0080; font-weight: 800;">💎 PARTNERS & DEALS</button>
     <button class="mob-tab-btn" data-tab="aichat">💬 AI CHAT</button>
     <button class="mob-tab-btn" data-tab="darwin">🧬 DARWIN AI</button>
     <button class="mob-tab-btn" data-tab="wallet">💰 WALLET</button>
@@ -70,32 +71,303 @@
   <!-- ═══════════════════ MAIN CONTENT GRID ═══════════════════ -->
   <main class="dashboard">
 
-    <!-- 📢 OFFICIAL PARTNER PORTAL (COINSWITCH PRO + DELTA EXCHANGE + TELEGRAM) -->
-    <div class="card card-21st" style="grid-column: span 3; background: linear-gradient(135deg, #0c1015 0%, #150a1a 100%); border-color: #ff0080; box-shadow: 0 0 15px rgba(255,0,128,0.25);">
-      <div class="card-header" style="justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,0,128,0.3);">
+    <!-- 📢 GLOBAL PARTNER & AFFILIATE REVENUE HUB (PROP FIRMS, BROKERS, HARDWARE) -->
+    <div class="card card-21st affiliate-hub-card sec-target" id="sec-partners">
+      <div class="card-header" style="justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 229, 255, 0.3);">
         <div style="display: flex; align-items: center; gap: 10px;">
-          <span style="font-size: 20px;">💎</span>
-          <span class="card-title" style="color: #ff0080; font-weight: 800; letter-spacing: 0.5px;">EXCLUSIVE TRADING PARTNER REBATES & LIVE SIGNALS</span>
+          <span style="font-size: 22px;">💎</span>
+          <div>
+            <span class="card-title" style="color: #00e5ff; font-weight: 800; letter-spacing: 0.5px;">GLOBAL TRADING PARTNERS, FUNDED PROP FIRMS & VIP DEALS</span>
+            <div style="font-size: 10px; color: var(--text-muted);">Official Partner Portal • Instant Evaluation Discounts & VIP Broker Fee Rebates</div>
+          </div>
         </div>
-        <span class="tag-21st glow-tag bg-magenta" style="background: rgba(255,0,128,0.2); color: #ff3399; border-color: #ff0080;">MAX REBATES ACTIVE</span>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <span class="tag-21st glow-tag bg-magenta" style="background: rgba(255,0,128,0.2); color: #ff3399; border-color: #ff0080;">🔥 EXCLUSIVE DISCOUNTS</span>
+          <a id="mainTgBannerLink" href="https://t.me/CoinsAiOfficial" target="_blank" class="btn-action btn-pulse" style="display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(90deg, #ff0080 0%, #7928ca 100%); border: none; color: #ffffff; font-weight: 800; font-size: 11px; padding: 6px 14px; border-radius: 4px; text-decoration: none;">
+            <span>🚀 TELEGRAM ALERTS</span>
+          </a>
+        </div>
       </div>
-      <div class="card-body" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px; padding: 14px 16px;">
-        <div style="flex: 1; min-width: 280px;">
-          <p style="margin: 0; color: #d0d7de; font-size: 12px; line-height: 1.6;">
-            Get zero-fee crypto trading & maximum trading bonuses on India's top exchanges! Trade Spot on <strong>CoinSwitch Pro</strong> with 0.05% fee tiers or Futures & Options on <strong>Delta Exchange India</strong> with instant UPI deposits & a <strong>10% lifetime fee rebate</strong>.
-          </p>
+
+      <!-- CATEGORY FILTER TABS -->
+      <div class="aff-category-tabs">
+        <button class="aff-tab-btn active" onclick="filterAffiliateCategory('all', this)">⚡ ALL OFFERS (16)</button>
+        <button class="aff-tab-btn" onclick="filterAffiliateCategory('prop', this)">🏆 FUNDED PROP FIRMS (7)</button>
+        <button class="aff-tab-btn" onclick="filterAffiliateCategory('broker', this)">📈 BROKERS & CRYPTO (5)</button>
+        <button class="aff-tab-btn" onclick="filterAffiliateCategory('hardware', this)">💻 TRADING GEAR & HARDWARE (4)</button>
+      </div>
+
+      <!-- DEALS GRID -->
+      <div class="aff-grid" id="affiliateDealsGrid">
+
+        <!-- 1. Atlas Funded -->
+        <div class="aff-deal-card" data-cat="prop">
+          <div class="aff-deal-header">
+            <span class="aff-deal-title">🏆 Atlas Funded</span>
+            <span class="aff-deal-badge badge-gold">GLOBAL • 20% OFF</span>
+          </div>
+          <p class="aff-deal-desc">Trade up to $200,000 in funded trading capital with no time limits & rapid bi-weekly payouts.</p>
+          <div class="aff-deal-payout">
+            <span class="aff-deal-payout-label">Offer Benefit:</span>
+            <span class="aff-deal-payout-val">20% Challenge Discount</span>
+          </div>
+          <div class="aff-coupon-box">
+            <span>Promo Code: <b class="aff-coupon-code">12275</b></span>
+            <button class="aff-copy-btn" onclick="copyAffCoupon('12275', this)">COPY</button>
+          </div>
+          <a href="https://affiliates.atlasfunded.com/Tracking/click/?affid=12275&campaign=11320&product_id=1&t_type=Register&t_lang=EN" target="_blank" class="aff-cta-btn aff-cta-prop">
+            <span>🚀 GET FUNDED (ATLAS) ➔</span>
+          </a>
         </div>
-        <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
-          <a id="coinswitchAffiliateBtn" href="https://coinswitch.co/pro/signup?code=PmstphH" target="_blank" class="btn-action" style="display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(90deg, #00ff88 0%, #00d26a 100%); border: none; color: #06090c; font-weight: 800; font-size: 12px; padding: 10px 18px; border-radius: 4px; text-decoration: none; box-shadow: 0 0 15px rgba(0, 255, 136, 0.4);">
-            <span>🟢 COINSWITCH PRO (BONUS)</span>
-          </a>
-          <a id="deltaAffiliateBtn" href="https://www.delta.exchange/?code=YXQSZA" target="_blank" class="btn-action" style="display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(90deg, #00e5ff 0%, #0088ff 100%); border: none; color: #ffffff; font-weight: 800; font-size: 12px; padding: 10px 18px; border-radius: 4px; text-decoration: none; box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);">
-            <span>⚡ DELTA INDIA (10% OFF)</span>
-          </a>
-          <a id="mainTgBannerLink" href="https://t.me/CoinsAiOfficial" target="_blank" class="btn-action btn-pulse" style="display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(90deg, #ff0080 0%, #7928ca 100%); border: none; color: #ffffff; font-weight: 800; font-size: 12px; padding: 10px 18px; border-radius: 4px; text-decoration: none; box-shadow: 0 0 15px rgba(255, 0, 128, 0.4);">
-            <span>🚀 TELEGRAM SIGNALS</span>
+
+        <!-- 2. AquaFunded -->
+        <div class="aff-deal-card" data-cat="prop">
+          <div class="aff-deal-header">
+            <span class="aff-deal-title">🌊 AquaFunded</span>
+            <span class="aff-deal-badge badge-cyan">TOP RATED • 90% PROFIT SPLIT</span>
+          </div>
+          <p class="aff-deal-desc">Industry-leading raw spreads, zero commission on crypto, and instant funded accounts.</p>
+          <div class="aff-deal-payout">
+            <span class="aff-deal-payout-label">VIP Code:</span>
+            <span class="aff-deal-payout-val">Max Evaluation Rebate</span>
+          </div>
+          <div class="aff-coupon-box">
+            <span>Promo Code: <b class="aff-coupon-code">6e9</b></span>
+            <button class="aff-copy-btn" onclick="copyAffCoupon('6e9', this)">COPY</button>
+          </div>
+          <a href="https://www.aquafunded.com/?afmc=6e9" target="_blank" class="aff-cta-btn aff-cta-prop">
+            <span>⚡ CLAIM AQUAFUNDED PASS ➔</span>
           </a>
         </div>
+
+        <!-- 3. Pocket Option Quick Trading -->
+        <div class="aff-deal-card" data-cat="broker">
+          <div class="aff-deal-header">
+            <span class="aff-deal-title">⚡ Pocket Option (Quick Trade)</span>
+            <span class="aff-deal-badge badge-green">50% DEPOSIT BONUS</span>
+          </div>
+          <p class="aff-deal-desc">Fast-execution quick binary & crypto trading with instant card & crypto deposits worldwide.</p>
+          <div class="aff-deal-payout">
+            <span class="aff-deal-payout-label">Bonus Code:</span>
+            <span class="aff-deal-payout-val">+50% Instant Deposit Match</span>
+          </div>
+          <div class="aff-coupon-box">
+            <span>Bonus Code: <b class="aff-coupon-code">50START</b></span>
+            <button class="aff-copy-btn" onclick="copyAffCoupon('50START', this)">COPY</button>
+          </div>
+          <a href="https://v4.lands-po.com/en/land/001-QT-02?utm_campaign=865170&utm_source=affiliate&utm_medium=sr&a=5zrdNdJrvFxqJO&al=1794767&ac=smart-link&cid=979105&code=50START" target="_blank" class="aff-cta-btn aff-cta-broker">
+            <span>📈 START QUICK TRADING ➔</span>
+          </a>
+        </div>
+
+        <!-- 4. Pocket Option Copy Trading & $10k Demo -->
+        <div class="aff-deal-card" data-cat="broker">
+          <div class="aff-deal-header">
+            <span class="aff-deal-title">👥 Pocket Option (Social Copy)</span>
+            <span class="aff-deal-badge badge-cyan">$10,000 FREE DEMO</span>
+          </div>
+          <p class="aff-deal-desc">Automatically copy the most profitable traders in real time with 1-click social trading.</p>
+          <div class="aff-deal-payout">
+            <span class="aff-deal-payout-label">Demo Capital:</span>
+            <span class="aff-deal-payout-val">$10,000 Risk-Free Account</span>
+          </div>
+          <div class="aff-coupon-box">
+            <span>Promo Code: <b class="aff-coupon-code">50START</b></span>
+            <button class="aff-copy-btn" onclick="copyAffCoupon('50START', this)">COPY</button>
+          </div>
+          <a href="https://v4.lands-po.com/en/land/009-QT-09?utm_campaign=865170&utm_source=affiliate&utm_medium=sr&a=5zrdNdJrvFxqJO&al=1794767&ac=smart-link&cid=979105&code=50START" target="_blank" class="aff-cta-btn aff-cta-broker">
+            <span>👥 ACCESS COPY TRADING ➔</span>
+          </a>
+        </div>
+
+        <!-- 5. Delta Exchange India -->
+        <div class="aff-deal-card" data-cat="broker">
+          <div class="aff-deal-header">
+            <span class="aff-deal-title">⚡ Delta Exchange India</span>
+            <span class="aff-deal-badge badge-magenta">15% LIFETIME FEE REBATE</span>
+          </div>
+          <p class="aff-deal-desc">Trade BTC/ETH Crypto Futures & Options with instant INR UPI deposits and low fees.</p>
+          <div class="aff-deal-payout">
+            <span class="aff-deal-payout-label">Discount:</span>
+            <span class="aff-deal-payout-val">15% Off Trading Fees</span>
+          </div>
+          <div class="aff-coupon-box">
+            <span>Referral Code: <b class="aff-coupon-code">YXQSZA</b></span>
+            <button class="aff-copy-btn" onclick="copyAffCoupon('YXQSZA', this)">COPY</button>
+          </div>
+          <a href="https://www.delta.exchange/?code=YXQSZA" target="_blank" class="aff-cta-btn aff-cta-broker">
+            <span>⚡ TRADE ON DELTA INDIA ➔</span>
+          </a>
+        </div>
+
+        <!-- 6. CoinSwitch Pro Direct & VIP -->
+        <div class="aff-deal-card" data-cat="broker">
+          <div class="aff-deal-header">
+            <span class="aff-deal-title">🟢 CoinSwitch Pro (VIP Desk)</span>
+            <span class="aff-deal-badge badge-green">0.05% TIER + BONUS</span>
+          </div>
+          <p class="aff-deal-desc">India's leading crypto spot terminal. Trade 150+ pairs with direct INR bank transfers.</p>
+          <div class="aff-deal-payout">
+            <span class="aff-deal-payout-label">VIP Benefits:</span>
+            <span class="aff-deal-payout-val">Cashback + VIP Fee Rates</span>
+          </div>
+          <div class="aff-coupon-box">
+            <span>VIP Code: <b class="aff-coupon-code">NLfEITW</b></span>
+            <button class="aff-copy-btn" onclick="copyAffCoupon('NLfEITW', this)">COPY</button>
+          </div>
+          <a href="https://coinswitch.co/pro/signup?code=NLfEITW" target="_blank" class="aff-cta-btn aff-cta-broker">
+            <span>🟢 SIGN UP COINSWITCH PRO ➔</span>
+          </a>
+        </div>
+
+        <!-- 7. MyFundedFutures (MFFU) -->
+        <div class="aff-deal-card" data-cat="prop">
+          <div class="aff-deal-header">
+            <span class="aff-deal-title">📊 MyFundedFutures (MFFU)</span>
+            <span class="aff-deal-badge badge-gold">FUTURES • 1-STEP EVAL</span>
+          </div>
+          <p class="aff-deal-desc">CME / Nasdaq index futures funded accounts with no daily drawdown on starter plans.</p>
+          <div class="aff-deal-payout">
+            <span class="aff-deal-payout-label">Exclusive Deal:</span>
+            <span class="aff-deal-payout-val">Up to 20% Off Evaluation</span>
+          </div>
+          <div class="aff-coupon-box">
+            <span>Code: <b class="aff-coupon-code">FUTURES2026</b></span>
+            <button class="aff-copy-btn" onclick="copyAffCoupon('FUTURES2026', this)">COPY</button>
+          </div>
+          <a href="https://mffu.com/f/85f1f73f30" target="_blank" class="aff-cta-btn aff-cta-prop">
+            <span>📊 TRADE FUTURES CAPITAL ➔</span>
+          </a>
+        </div>
+
+        <!-- 8. Blue Guardian -->
+        <div class="aff-deal-card" data-cat="prop">
+          <div class="aff-deal-header">
+            <span class="aff-deal-title">🛡️ Blue Guardian</span>
+            <span class="aff-deal-badge badge-cyan">GUARDIAN PROTECTOR</span>
+          </div>
+          <p class="aff-deal-desc">Built-in Guardian risk protection tool to prevent rule violations and keep your funded account.</p>
+          <div class="aff-deal-payout">
+            <span class="aff-deal-payout-label">Rebate Code:</span>
+            <span class="aff-deal-payout-val">VIP Evaluation Discount</span>
+          </div>
+          <div class="aff-coupon-box">
+            <span>Code: <b class="aff-coupon-code">1tgf</b></span>
+            <button class="aff-copy-btn" onclick="copyAffCoupon('1tgf', this)">COPY</button>
+          </div>
+          <a href="https://blueguardian.com/?afmc=1tgf" target="_blank" class="aff-cta-btn aff-cta-prop">
+            <span>🛡️ JOIN BLUE GUARDIAN ➔</span>
+          </a>
+        </div>
+
+        <!-- 9. Fundex Prop -->
+        <div class="aff-deal-card" data-cat="prop">
+          <div class="aff-deal-header">
+            <span class="aff-deal-title">🎮 Fundex Prop</span>
+            <span class="aff-deal-badge badge-gold">INSTANT SCALE</span>
+          </div>
+          <p class="aff-deal-desc">Fast evaluation criteria, crypto and forex scaling plan up to $1,000,000 in funded capital.</p>
+          <div class="aff-deal-payout">
+            <span class="aff-deal-payout-label">Promo Discount:</span>
+            <span class="aff-deal-payout-val">Exclusive Evaluation Pass</span>
+          </div>
+          <div class="aff-coupon-box">
+            <span>Code: <b class="aff-coupon-code">GGG34QEO</b></span>
+            <button class="aff-copy-btn" onclick="copyAffCoupon('GGG34QEO', this)">COPY</button>
+          </div>
+          <a href="https://prop.fundex.gg/rc/GGG34QEO" target="_blank" class="aff-cta-btn aff-cta-prop">
+            <span>🎮 START FUNDEX CHALLENGE ➔</span>
+          </a>
+        </div>
+
+        <!-- 10. Funded Trader Markets (FTM) -->
+        <div class="aff-deal-card" data-cat="prop">
+          <div class="aff-deal-header">
+            <span class="aff-deal-title">📈 Funded Trader Markets</span>
+            <span class="aff-deal-badge badge-cyan">RELIABLE PAYOUTS</span>
+          </div>
+          <p class="aff-deal-desc">Top tier prop trading conditions with low latency MT5 and cTrader institutional bridges.</p>
+          <div class="aff-deal-payout">
+            <span class="aff-deal-payout-label">VIP Code:</span>
+            <span class="aff-deal-payout-val">15% Evaluation Discount</span>
+          </div>
+          <div class="aff-coupon-box">
+            <span>Promo Code: <b class="aff-coupon-code">arnab</b></span>
+            <button class="aff-copy-btn" onclick="copyAffCoupon('arnab', this)">COPY</button>
+          </div>
+          <a href="https://fundedtradermarkets.com/ref/arnab" target="_blank" class="aff-cta-btn aff-cta-prop">
+            <span>📈 GET FTM EVALUATION ➔</span>
+          </a>
+        </div>
+
+        <!-- 11. CK Capital -->
+        <div class="aff-deal-card" data-cat="prop">
+          <div class="aff-deal-header">
+            <span class="aff-deal-title">🏛️ CK Capital UK</span>
+            <span class="aff-deal-badge badge-gold">UK INSTITUTIONAL</span>
+          </div>
+          <p class="aff-deal-desc">Premium UK prop funding firm providing institutional liquidity and generous profit splits.</p>
+          <div class="aff-deal-payout">
+            <span class="aff-deal-payout-label">VIP Access:</span>
+            <span class="aff-deal-payout-val">Direct Fast-Track Signup</span>
+          </div>
+          <div class="aff-coupon-box">
+            <span>Referral Code: <b class="aff-coupon-code">ALPROP</b></span>
+            <button class="aff-copy-btn" onclick="copyAffCoupon('ALPROP', this)">COPY</button>
+          </div>
+          <a href="https://app.ckcapital.co.uk/signup/ALPROP/" target="_blank" class="aff-cta-btn aff-cta-prop">
+            <span>🏛️ SIGN UP CK CAPITAL ➔</span>
+          </a>
+        </div>
+
+        <!-- 12. NVIDIA RTX 4090 & AI Hardware -->
+        <div class="aff-deal-card" data-cat="hardware">
+          <div class="aff-deal-header">
+            <span class="aff-deal-title">🧠 NVIDIA RTX 4090 / AI GPUs</span>
+            <span class="aff-deal-badge badge-green">AMAZON PRIME</span>
+          </div>
+          <p class="aff-deal-desc">High-speed GPUs, Tensor Core acceleration, fast NVMe SSDs & algorithmic quant workstations.</p>
+          <div class="aff-deal-payout">
+            <span class="aff-deal-payout-label">Availability:</span>
+            <span class="aff-deal-payout-val">Official Amazon Deals</span>
+          </div>
+          <a href="https://amzn.to/4gJpL5u" target="_blank" class="aff-cta-btn aff-cta-amazon">
+            <span>📦 BROWSE AI HARDWARE (AMAZON) ➔</span>
+          </a>
+        </div>
+
+        <!-- 13. MacBook Pro & Developer Workstations -->
+        <div class="aff-deal-card" data-cat="hardware">
+          <div class="aff-deal-header">
+            <span class="aff-deal-title">💻 MacBook Pro M3/M4 Max</span>
+            <span class="aff-deal-badge badge-cyan">PRO WORKSPACE</span>
+          </div>
+          <p class="aff-deal-desc">Apple Silicon developer laptops, Keychron mechanical keyboards, and quant programming books.</p>
+          <div class="aff-deal-payout">
+            <span class="aff-deal-payout-label">Gear:</span>
+            <span class="aff-deal-payout-val">Top Rated Dev Setup</span>
+          </div>
+          <a href="https://amzn.to/3UXVtTR" target="_blank" class="aff-cta-btn aff-cta-amazon">
+            <span>📦 VIEW DEVELOPER GEAR (AMAZON) ➔</span>
+          </a>
+        </div>
+
+        <!-- 14. Dell UltraSharp & Odyssey Multi-Monitors -->
+        <div class="aff-deal-card" data-cat="hardware">
+          <div class="aff-deal-header">
+            <span class="aff-deal-title">🖥️ Multi-Chart Trading Monitors</span>
+            <span class="aff-deal-badge badge-gold">4K / ULTRAWIDE</span>
+          </div>
+          <p class="aff-deal-desc">Dell UltraSharp & Samsung Odyssey monitors for multi-chart TradingView & terminal setups.</p>
+          <div class="aff-deal-payout">
+            <span class="aff-deal-payout-label">Display:</span>
+            <span class="aff-deal-payout-val">High-Refresh 4K Panels</span>
+          </div>
+          <a href="https://amzn.to/3VjFaRp" target="_blank" class="aff-cta-btn aff-cta-amazon">
+            <span>📦 SHOP TRADING MONITORS (AMAZON) ➔</span>
+          </a>
+        </div>
+
       </div>
     </div>
 
@@ -937,6 +1209,7 @@
         </div>
       </div>
       <div class="chat-chips-row">
+        <button class="chat-chip" onclick="sendChatPrompt('What are the best prop firm discounts and funded account passes?')">💎 Funded Passes & Deals</button>
         <button class="chat-chip" onclick="sendChatPrompt('What is my wallet balance?')">💰 Balances</button>
         <button class="chat-chip" onclick="sendChatPrompt('Show active open positions')">📊 Active Trades</button>
         <button class="chat-chip" onclick="sendChatPrompt('What is the macro regime right now?')">🌐 Macro Regime</button>

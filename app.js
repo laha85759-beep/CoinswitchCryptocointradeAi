@@ -923,6 +923,36 @@ function easeNumber(elementId, targetValue, formatFn = (n) => n) {
               .replace(/\n/g, '<br>');
   }
 
+  // ═══════════════════ GLOBAL PARTNER & AFFILIATE HUB JS ═══════════════════
+  window.filterAffiliateCategory = function(cat, btn) {
+    document.querySelectorAll('.aff-tab-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    const cards = document.querySelectorAll('.aff-deal-card');
+    cards.forEach(card => {
+      if (cat === 'all' || card.getAttribute('data-cat') === cat) {
+        card.style.display = 'flex';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  };
+
+  window.copyAffCoupon = function(code, btn) {
+    navigator.clipboard.writeText(code).then(() => {
+      const origText = btn.textContent;
+      btn.textContent = 'COPIED! ✓';
+      btn.style.background = '#00ff88';
+      btn.style.color = '#06090e';
+      setTimeout(() => {
+        btn.textContent = origText;
+        btn.style.background = '';
+        btn.style.color = '';
+      }, 2000);
+    }).catch(() => {
+      prompt('Copy your promo code:', code);
+    });
+  };
+
   // ═══════════════════ DARWIN ATLAS LEADERBOARD JS ═══════════════════
 
   // Load Darwin leaderboard (weights + history)

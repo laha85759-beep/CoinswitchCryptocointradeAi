@@ -1144,6 +1144,25 @@ def handle_ai_chat():
                 lines.append(f"\nATLAS CIO top pick: **{cio_symbol}** ({cio_action})")
                 reply = "\n".join(lines)
 
+        elif any(w in user_msg for w in ["prop", "funded", "affiliate", "bonus", "discount", "coupon", "code", "broker", "pass", "challenge", "hardware", "amazon"]):
+            reply = (
+                f"💎 **EXCLUSIVE PARTNER DISCOUNTS & FUNDED PASSES:**\n\n"
+                f"🏆 **Top Funded Prop Firms (Up to $200k Capital):**\n"
+                f"• **Atlas Funded** (20% Off): Code `12275` → [Get Funded](https://affiliates.atlasfunded.com/Tracking/click/?affid=12275&campaign=11320&product_id=1&t_type=Register&t_lang=EN)\n"
+                f"• **AquaFunded** (90% Profit Split): Code `6e9` → [Claim Pass](https://www.aquafunded.com/?afmc=6e9)\n"
+                f"• **MyFundedFutures** (Futures Eval): Code `FUTURES2026` → [Trade Futures](https://mffu.com/f/85f1f73f30)\n"
+                f"• **Blue Guardian** (Protection Tools): Code `1tgf` → [Join Guardian](https://blueguardian.com/?afmc=1tgf)\n"
+                f"• **Fundex Prop** (Scaling): Code `GGG34QEO` → [Start Challenge](https://prop.fundex.gg/rc/GGG34QEO)\n"
+                f"• **Funded Trader Markets**: Code `arnab` → [FTM Evaluation](https://fundedtradermarkets.com/ref/arnab)\n"
+                f"• **CK Capital UK**: Code `ALPROP` → [Institutional Pass](https://app.ckcapital.co.uk/signup/ALPROP/)\n\n"
+                f"📈 **VIP Brokers & Trading Fee Rebates:**\n"
+                f"• **Pocket Option**: 50% Match + $10k Demo (Code `50START`) → [Start Trading](https://v4.lands-po.com/en/land/001-QT-02?utm_campaign=865170&utm_source=affiliate&utm_medium=sr&a=5zrdNdJrvFxqJO&al=1794767&ac=smart-link&cid=979105&code=50START)\n"
+                f"• **Delta Exchange India**: 15% Lifetime Rebate (Code `YXQSZA`) → [Trade Perps](https://www.delta.exchange/?code=YXQSZA)\n"
+                f"• **CoinSwitch Pro**: Direct INR Spot VIP (Code `NLfEITW`) → [Sign Up Pro](https://coinswitch.co/pro/signup?code=NLfEITW)\n\n"
+                f"📦 **Trading Hardware & Gear Deals:**\n"
+                f"• [NVIDIA RTX 4090 / AI Hardware](https://amzn.to/4gJpL5u) | [MacBook Pro M3/M4 Max](https://amzn.to/3UXVtTR) | [Multi-Chart 4K Monitors](https://amzn.to/3VjFaRp)"
+            )
+
         elif any(w in user_msg for w in ["strategy", "how", "algorithm", "engine", "leverage"]):
             reply = (
                 f"**COINSAI + ATLAS TRADING ENGINES:**\n\n"
