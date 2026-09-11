@@ -13,7 +13,7 @@
     "symbol": "POPCAT/USDT",
     "take_profit": 0.0484,
     "trail_active": true,
-    "trailing_stop": 0.0477288,
+    "trailing_stop": 0.0475394,
     "trough_price": 0.04735
   },
   {
@@ -52,6 +52,7 @@
     "exchange": "delta",
     "hard_sl": 0.0488925,
     "highest_profit_pct": 0.7338,
+    "last_monitor_error": "name 'timestamp' is not defined",
     "opened_at": "2026-09-10T23:27:49.328403+00:00",
     "paper": false,
     "peak_price": 0.0477,
@@ -63,7 +64,7 @@
     "take_profit": 0.041976,
     "tp_order_id": "",
     "trail_active": true,
-    "trailing_stop": 0.0475394,
+    "trailing_stop": 0.04749205,
     "trough_price": 0.04735,
     "usdt_used": 3.0
   }
