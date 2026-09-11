@@ -4,7 +4,7 @@
     "entry_price": 0.0508,
     "exchange": "delta",
     "hard_sl": 0.0516,
-    "highest_profit_pct": 5.5118,
+    "highest_profit_pct": 6.0039,
     "last_monitor_error": "name 'timestamp' is not defined",
     "opened_at": "2026-09-09T17:25:11.316419+00:00",
     "order_id": "synced_api",
@@ -13,8 +13,8 @@
     "symbol": "POPCAT/USDT",
     "take_profit": 0.0484,
     "trail_active": true,
-    "trailing_stop": 0.048384,
-    "trough_price": 0.048
+    "trailing_stop": 0.048132,
+    "trough_price": 0.04775
   },
   {
     "approval_token": "4b6bbbde2fb5ae861f424820",
@@ -25,7 +25,7 @@
     "entry_price": 0.0487,
     "exchange": "delta",
     "hard_sl": 0.0499175,
-    "highest_profit_pct": 1.4374,
+    "highest_profit_pct": 1.9507,
     "last_monitor_error": "name 'timestamp' is not defined",
     "opened_at": "2026-09-10T17:08:38.973606+00:00",
     "paper": false,
@@ -38,8 +38,8 @@
     "take_profit": 0.042856,
     "tp_order_id": "",
     "trail_active": true,
-    "trailing_stop": 0.048192,
-    "trough_price": 0.048,
+    "trailing_stop": 0.047941,
+    "trough_price": 0.04775,
     "usdt_used": 3.0
   },
   {
@@ -51,10 +51,10 @@
     "entry_price": 0.1386,
     "exchange": "delta",
     "hard_sl": 0.135135,
-    "highest_profit_pct": 0.0,
+    "highest_profit_pct": 2.0202,
     "opened_at": "2026-09-10T23:27:31.665379+00:00",
     "paper": false,
-    "peak_price": 0.1386,
+    "peak_price": 0.1414,
     "product_id": 54902,
     "qty": 21.0,
     "score": 89.0,
@@ -62,8 +62,8 @@
     "symbol": "FARTCOIN/USDT",
     "take_profit": 0.155232,
     "tp_order_id": "",
-    "trail_active": false,
-    "trailing_stop": null,
+    "trail_active": true,
+    "trailing_stop": 0.1408344,
     "trough_price": 0.1386,
     "usdt_used": 3.0
   },

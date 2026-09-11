@@ -1,11 +1,16 @@
 {
-  "total_yield_earned_usdt": 0.00030046,
+  "total_yield_earned_usdt": 0.00268665000270453,
   "used_yield_budget_usdt": 0.0,
-  "available_trading_budget_usdt": 0.00030046,
+  "available_trading_budget_usdt": 0.00268665000270453,
   "history": [
     {
       "timestamp": 1788974775.4043236,
       "amount_usdt": 0.00030046,
+      "type": "funding_fee_harvest"
+    },
+    {
+      "timestamp": 1789088765.1203637,
+      "amount_usdt": 0.00238619000270453,
       "type": "funding_fee_harvest"
     }
   ]
