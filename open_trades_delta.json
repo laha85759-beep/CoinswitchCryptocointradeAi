@@ -78,6 +78,7 @@
     "exchange": "delta",
     "hard_sl": 0.14118,
     "highest_profit_pct": 0.8978,
+    "last_monitor_error": "name 'timestamp' is not defined",
     "opened_at": "2026-09-12T01:16:33.789430+00:00",
     "paper": false,
     "peak_price": 0.1461,
@@ -89,7 +90,7 @@
     "take_profit": 0.162176,
     "tp_order_id": "",
     "trail_active": true,
-    "trailing_stop": 0.1455156,
+    "trailing_stop": 0.14564756,
     "trough_price": 0.1448,
     "usdt_used": 3.0
   }
