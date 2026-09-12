@@ -67,31 +67,5 @@
     "trailing_stop": 0.04749205,
     "trough_price": 0.04735,
     "usdt_used": 3.0
-  },
-  {
-    "approval_token": "6f00b13f5838aefe42adc00f",
-    "atr_pct": 0.3871,
-    "buy_id": "1532458089",
-    "coin": "FARTCOIN",
-    "direction": "long",
-    "entry_price": 0.1448,
-    "exchange": "delta",
-    "hard_sl": 0.14118,
-    "highest_profit_pct": 0.8978,
-    "last_monitor_error": "name 'timestamp' is not defined",
-    "opened_at": "2026-09-12T01:16:33.789430+00:00",
-    "paper": false,
-    "peak_price": 0.1461,
-    "product_id": 54902,
-    "qty": 3.0,
-    "score": 89.0,
-    "signal_id": "775a0c34e473186b0dba",
-    "symbol": "FARTCOIN/USDT",
-    "take_profit": 0.162176,
-    "tp_order_id": "",
-    "trail_active": true,
-    "trailing_stop": 0.14564756,
-    "trough_price": 0.1448,
-    "usdt_used": 3.0
   }
 ]
