@@ -64,7 +64,7 @@
     "take_profit": 0.041976,
     "tp_order_id": "",
     "trail_active": true,
-    "trailing_stop": 0.0473888,
+    "trailing_stop": 0.0473416,
     "trough_price": 0.0472,
     "usdt_used": 3.0
   }
