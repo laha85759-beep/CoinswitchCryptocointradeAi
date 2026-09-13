@@ -2,8 +2,8 @@
   "balances": {
     "coinswitch_inr": 5.01,
     "coinswitch_usdt": 0.0795,
-    "delta_usdt": 0.3062,
-    "total_usd_value": 0.44
+    "delta_usdt": 0.2768,
+    "total_usd_value": 0.41
   },
   "checks": {
     "active_positions": {
@@ -17,5 +17,5 @@
   },
   "issues_resolved": [],
   "status": "HEALTHY",
-  "timestamp": "2026-09-13 04:29:45 IST"
+  "timestamp": "2026-09-13 06:23:11 IST"
 }
