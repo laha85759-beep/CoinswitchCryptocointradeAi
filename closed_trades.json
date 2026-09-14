@@ -1,62 +1,74 @@
 [
   {
-    "symbol": "PEPE/USDT",
-    "exchange": "delta",
+    "closed_at": "2026-08-11T12:15:00Z",
     "direction": "long",
-    "entry_price": 0.00000812,
-    "exit_price": 0.00000865,
-    "qty": 500000,
-    "pnl_usdt": 0.265,
+    "entry_price": 8.12e-06,
+    "exchange": "delta",
+    "exit_price": 8.65e-06,
     "pnl_pct": 6.52,
+    "pnl_usdt": 0.265,
+    "qty": 500000,
     "reason": "TAKE PROFIT",
-    "closed_at": "2026-08-11T12:15:00Z"
+    "symbol": "PEPE/USDT"
   },
   {
-    "symbol": "SOL/USDT",
-    "exchange": "delta",
+    "closed_at": "2026-08-11T10:45:00Z",
     "direction": "long",
-    "entry_price": 142.50,
-    "exit_price": 146.80,
-    "qty": 0.1,
-    "pnl_usdt": 0.430,
+    "entry_price": 142.5,
+    "exchange": "delta",
+    "exit_price": 146.8,
     "pnl_pct": 3.01,
+    "pnl_usdt": 0.43,
+    "qty": 0.1,
     "reason": "TRAILING STOP",
-    "closed_at": "2026-08-11T10:45:00Z"
+    "symbol": "SOL/USDT"
   },
   {
-    "symbol": "ONDO/USDT",
-    "exchange": "delta",
+    "closed_at": "2026-08-11T08:30:00Z",
     "direction": "long",
     "entry_price": 0.812,
+    "exchange": "delta",
     "exit_price": 0.845,
-    "qty": 10.0,
-    "pnl_usdt": 0.330,
     "pnl_pct": 4.06,
+    "pnl_usdt": 0.33,
+    "qty": 10.0,
     "reason": "TAKE PROFIT",
-    "closed_at": "2026-08-11T08:30:00Z"
+    "symbol": "ONDO/USDT"
   },
   {
-    "symbol": "WIF/USDT",
-    "exchange": "delta",
+    "closed_at": "2026-08-11T06:20:00Z",
     "direction": "short",
     "entry_price": 1.92,
+    "exchange": "delta",
     "exit_price": 1.95,
-    "qty": 5.0,
-    "pnl_usdt": -0.150,
     "pnl_pct": -1.56,
+    "pnl_usdt": -0.15,
+    "qty": 5.0,
     "reason": "STOP LOSS",
-    "closed_at": "2026-08-11T06:20:00Z"
+    "symbol": "WIF/USDT"
   },
   {
-    "symbol": "DOGE/USDT",
-    "exchange": "coinswitch",
+    "closed_at": "2026-08-11T04:10:00Z",
     "direction": "long",
     "entry_price": 0.118,
+    "exchange": "coinswitch",
     "exit_price": 0.116,
-    "qty": 40.0,
-    "pnl_usdt": -0.080,
     "pnl_pct": -1.69,
+    "pnl_usdt": -0.08,
+    "qty": 40.0,
     "reason": "STOP LOSS",
-    "closed_at": "2026-08-11T04:10:00Z"
+    "symbol": "DOGE/USDT"
+  },
+  {
+    "closed_at": "2026-09-14T14:18:42.898645+00:00Z",
+    "direction": "short",
+    "entry_price": 0.0508,
+    "exchange": "delta",
+    "exit_price": 0.04671,
+    "pnl_pct": 8.05,
+    "pnl_usdt": 0.24,
+    "qty": 59.0,
+    "reason": "\ud83c\udfaf TAKE PROFIT (+4.8%)",
+    "symbol": "POPCAT/USDT"
   }
 ]
