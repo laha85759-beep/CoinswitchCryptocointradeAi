@@ -1,21 +1,5 @@
 [
   {
-    "direction": "short",
-    "entry_price": 0.0508,
-    "exchange": "delta",
-    "hard_sl": 0.0516,
-    "highest_profit_pct": 8.6614,
-    "opened_at": "2026-09-09T17:25:11.316419+00:00",
-    "order_id": "synced_api",
-    "peak_price": 0.0508,
-    "qty": 59.0,
-    "symbol": "POPCAT/USDT",
-    "take_profit": 0.0484,
-    "trail_active": true,
-    "trailing_stop": 0.046632,
-    "trough_price": 0.0464
-  },
-  {
     "approval_token": "4b6bbbde2fb5ae861f424820",
     "atr_pct": 0.5462,
     "buy_id": "1529197871",
@@ -39,46 +23,5 @@
     "trailing_stop": 0.0467208,
     "trough_price": 0.04635,
     "usdt_used": 3.0
-  },
-  {
-    "approval_token": "91c94f806e62e4cd5ad6544f",
-    "atr_pct": 0.2097,
-    "buy_id": "1529582521",
-    "coin": "POPCAT",
-    "direction": "short",
-    "entry_price": 0.0477,
-    "exchange": "delta",
-    "hard_sl": 0.0488925,
-    "highest_profit_pct": 2.8302,
-    "opened_at": "2026-09-10T23:27:49.328403+00:00",
-    "paper": false,
-    "peak_price": 0.0477,
-    "product_id": 45540,
-    "qty": 62.0,
-    "score": 92.0,
-    "signal_id": "6e32b925bd4ea57325da",
-    "symbol": "POPCAT/USDT",
-    "take_profit": 0.041976,
-    "tp_order_id": "",
-    "trail_active": true,
-    "trailing_stop": 0.0465354,
-    "trough_price": 0.04635,
-    "usdt_used": 3.0
-  },
-  {
-    "direction": "short",
-    "entry_price": 0.1923,
-    "exchange": "delta",
-    "hard_sl": 0.1952,
-    "highest_profit_pct": 2.6001,
-    "opened_at": "2026-09-14T14:18:35.228603+00:00",
-    "order_id": "synced_api",
-    "peak_price": 0.1923,
-    "qty": 9.0,
-    "symbol": "WIF/USDT",
-    "take_profit": 0.1831,
-    "trail_active": true,
-    "trailing_stop": 0.1880492,
-    "trough_price": 0.1873
   }
 ]
