@@ -67,5 +67,30 @@
     "trailing_stop": 0.0473416,
     "trough_price": 0.0472,
     "usdt_used": 3.0
+  },
+  {
+    "approval_token": "b99a519c55d332f9ed10fa6d",
+    "atr_pct": 0.3761,
+    "buy_id": "1535792788",
+    "coin": "WIF",
+    "direction": "short",
+    "entry_price": 0.1916,
+    "exchange": "delta",
+    "hard_sl": 0.19639,
+    "highest_profit_pct": 0.0,
+    "opened_at": "2026-09-14T06:26:42.696604+00:00",
+    "paper": false,
+    "peak_price": 0.1916,
+    "product_id": 15367,
+    "qty": 9.0,
+    "score": 93.0,
+    "signal_id": "244f3ce9099219f663fe",
+    "symbol": "WIF/USDT",
+    "take_profit": 0.168608,
+    "tp_order_id": "",
+    "trail_active": false,
+    "trailing_stop": null,
+    "trough_price": 0.1916,
+    "usdt_used": 3.0
   }
 ]
