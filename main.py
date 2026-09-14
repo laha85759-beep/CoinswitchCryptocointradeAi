@@ -484,6 +484,33 @@ def run() -> None:
         except Exception as k_exc:
             log.warning("Kronos signal enhancement notice: %s", k_exc)
 
+    # ── Step 3.5: AI Consensus Committee Super Brain Evaluation ─────────────
+    if CONFIG.get("ai_consensus_enabled", True):
+        try:
+            from ai_consensus_committee import AIConsensusCommittee
+            committee = AIConsensusCommittee(CONFIG)
+            filtered_signals = []
+            market_map = {d["symbol"]: d for d in market_data if not d.get("error")}
+            for s in signals:
+                if s.get("signal") in ("pump", "dump"):
+                    sym = s["symbol"]
+                    m_item = market_map.get(sym, {})
+                    df = m_item.get("df") if isinstance(m_item, dict) else None
+                    verdict = committee.evaluate_consensus(sym, s, m_item, df=df)
+                    if verdict.get("approved"):
+                        s["confidence"] = verdict["consensus_score"]
+                        s["hard_sl"] = verdict["hard_sl"]
+                        s["take_profit"] = verdict["take_profit"]
+                        s["suspected_cause"] = f"{s.get('suspected_cause', '')} [AI Consensus: {verdict['consensus_score']:.2f}]"
+                        filtered_signals.append(s)
+                elif s.get("signal") == "watch":
+                    filtered_signals.append(s)
+            signals = filtered_signals
+            log.info("AIConsensusCommittee: Approved %s high-conviction signals (>= 85%% confidence)",
+                     sum(1 for s in signals if s["signal"] in ("pump", "dump")))
+        except Exception as comm_exc:
+            log.warning("AIConsensusCommittee notice: %s", comm_exc)
+
     pump_signals  = [s for s in signals if s["signal"] == "pump"]
     watch_signals = [s for s in signals if s["signal"] == "watch"]
     dump_signals  = [s for s in signals if s["signal"] == "dump"]
