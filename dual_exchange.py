@@ -731,7 +731,7 @@ class DualMonitorAgent:
             f"💰 *Realized Net P&L*: `{pnl_pct:+.2f}%` (`{pnl_sign}${abs(pnl_usdt):.2f} USDT`)\n"
             f"─────────────────────────\n"
             f"⚡ *Exchange*: `Delta Exchange India (10x)`\n"
-            f"🕒 *Timestamp*: `{timestamp}`\n"
+            f"🕒 *Timestamp*: `{utc_iso()}`\n"
             f"═════════════════════════"
         )
         log.info(
