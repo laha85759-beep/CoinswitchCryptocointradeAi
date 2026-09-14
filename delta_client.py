@@ -197,11 +197,9 @@ class DeltaClient:
         Get 24h ticker for a symbol.
         Delta India symbol format: 'BTCUSD' (base + USD, no slash, no T).
         """
-        base = symbol.split("/")[0].upper()
-        delta_sym = f"{base}USD"
-        data = self._request(
-            "GET", f"/v2/tickers/{delta_sym}", auth=False, use_cdn=True
-        )
+        sym = symbol.upper().replace("/", "").replace("USDT", "")
+        delta_sym = sym if sym.endswith("USD") else f"{sym}USD"
+        data = self._request("GET", f"/v2/tickers/{delta_sym}", auth=False)
         result = data.get("result")
         if result is None:
             # Try all tickers and find by symbol
@@ -236,8 +234,8 @@ class DeltaClient:
         """
         Fetch OHLCV candles. Delta India uses 'BTCUSD' symbol format.
         """
-        base = symbol.split("/")[0].upper()
-        delta_sym = f"{base}USD"
+        sym = symbol.upper().replace("/", "").replace("USDT", "")
+        delta_sym = sym if sym.endswith("USD") else f"{sym}USD"
         resolution = RESOLUTION_MAP.get(interval_minutes, "5m")
         end = int(time.time())
         start = end - (limit * interval_minutes * 60)
@@ -296,6 +294,23 @@ class DeltaClient:
         except Exception as exc:
             log.warning("Delta balance error: %s", exc)
         return 0.0
+
+    def get_wallet_balance(self) -> dict:
+        """Return raw wallet balances dictionary."""
+        return self._request("GET", "/v2/wallet/balances")
+
+    def get_assets(self) -> list[dict]:
+        """Fetch all supported assets from Delta Exchange India."""
+        data = self._request("GET", "/v2/assets", auth=False, use_cdn=True)
+        return data.get("result", []) if isinstance(data, dict) else []
+
+    def get_open_positions(self) -> list[dict]:
+        """Fetch all currently open margined positions on Delta Exchange India."""
+        data = self._request("GET", "/v2/positions/margined")
+        if isinstance(data, dict):
+            res = data.get("result", [])
+            return [p for p in res if int(p.get("size") or 0) != 0]
+        return []
 
     # ── Orders ───────────────────────────────────────────────────────────────
 
