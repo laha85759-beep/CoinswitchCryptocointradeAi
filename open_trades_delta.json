@@ -1,17 +1,1 @@
-[
-  {
-    "direction": "long",
-    "entry_price": 0.04722169811320755,
-    "exchange": "delta",
-    "hard_sl": 0.0465,
-    "highest_profit_pct": 0.0,
-    "opened_at": "2026-09-15T01:47:08.920562+00:00",
-    "order_id": "synced_api",
-    "peak_price": 0.04722169811320755,
-    "qty": 106.0,
-    "symbol": "POPCAT/USDT",
-    "take_profit": 0.0495,
-    "trail_active": false,
-    "trough_price": 0.04722169811320755
-  }
-]
+[]
