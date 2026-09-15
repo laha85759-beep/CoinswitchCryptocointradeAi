@@ -165,10 +165,10 @@ CONFIG = {
     "max_trades_per_hour":      _int_env("MAX_TRADES_PER_HOUR",         10),
     # min_confidence=0.75: Ultra-high conviction filter for small account preservation
     "min_confidence":           _float_env("MIN_CONFIDENCE",             0.75),
-    "stop_loss_pct":            _float_env("STOP_LOSS_PCT",              2.5),  # -2.5% Breathing Stop Loss (prevents noise stop-outs)
-    "take_profit_pct":          _float_env("TAKE_PROFIT_PCT",           12.0),  # +12.0% TP Target (Captures massive +120% margin profit spikes!)
-    "trail_activation_pct":     _float_env("TRAIL_ACTIVATION_PCT",        0.2),  # INSTANT trailing stop activation at +0.2% profit!
-    "small_account_leverage":   _int_env("SMALL_ACCOUNT_LEVERAGE",       10),   # 10x leverage for small capital (< $10 USDT) to reduce liquidation sensitivity
+    "stop_loss_pct":            _float_env("STOP_LOSS_PCT",              2.0),  # -2.0% Precision Invalidation Stop Loss
+    "take_profit_pct":          _float_env("TAKE_PROFIT_PCT",           15.0),  # +15.0% TP Target (+150% ROE on 10x leverage!)
+    "trail_activation_pct":     _float_env("TRAIL_ACTIVATION_PCT",        0.3),  # INSTANT breakeven trailing stop activation at +0.3% profit!
+    "small_account_leverage":   _int_env("SMALL_ACCOUNT_LEVERAGE",       10),   # 10x leverage for small capital (< $10 USDT) to maximize safety and margin efficiency
     "scalp_lot_multiplier":     _float_env("SCALP_LOT_MULTIPLIER",       2.5),  # QuickScalpAgent uses 2.5x larger lot size
     # daily_max_drawdown=4%: on $100 that's $4 max daily loss before halt
     "daily_max_drawdown_pct":   _float_env("DAILY_MAX_DRAWDOWN_PCT",     4.0),

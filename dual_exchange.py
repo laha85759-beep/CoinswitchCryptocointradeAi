@@ -252,9 +252,13 @@ class DualExecutionAgent:
         # Dynamic risk-based lot size (contracts) considering contract_value & leverage
         contract_notional = current_price * contract_val
         if contract_notional > 0:
-            max_contracts_for_balance = int((delta_balance * 0.85 * leverage) / contract_notional) if delta_balance > 0 else 1
-            calculated_contracts = int(position_usd / contract_notional)
-            num_contracts = max(1, min(calculated_contracts, max_contracts_for_balance))
+            max_contracts_for_balance = int((delta_balance * 0.85 * leverage) / contract_notional) if delta_balance > 0 else 0
+            if max_contracts_for_balance < 1 and (contract_notional / leverage) > delta_balance:
+                log.warning("Delta order skipped for %s: 1 contract requires $%.4f margin, available is $%.4f",
+                            symbol, (contract_notional / leverage), delta_balance)
+                return {"status": "rejected", "reason": "insufficient_margin_for_min_lot", "symbol": symbol}
+            calculated_contracts = int(position_usd / contract_notional) if position_usd > 0 else 1
+            num_contracts = max(1, min(calculated_contracts, max(1, max_contracts_for_balance)))
         else:
             num_contracts = 1
 
