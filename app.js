@@ -6,15 +6,42 @@ let currentTvSymbol = "BINANCE:BTCUSDT";
 let currentView = "terminal";
 let adminToken = sessionStorage.getItem("tsm_admin_token") || "";
 let isBotPaused = false;
+let currentTheme = localStorage.getItem("tsm_theme") || "dark";
 
 // ── 1. Initialization ─────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
+  initTheme();
   initUtcClock();
   initTradingViewWidget("tradingview_widget_container", currentTvSymbol);
   fetchRealData();
   setInterval(fetchRealData, 4000);
   checkAdminAuth();
 });
+
+// ── 1.1 Theme Switcher (Dark / Light) ──────────────────────────────────────
+function initTheme() {
+  applyTheme(currentTheme);
+}
+
+function toggleTheme() {
+  currentTheme = currentTheme === "dark" ? "light" : "dark";
+  localStorage.setItem("tsm_theme", currentTheme);
+  applyTheme(currentTheme);
+}
+
+function applyTheme(theme) {
+  const icon = document.getElementById("themeToggleIcon");
+  const text = document.getElementById("themeToggleText");
+  if (theme === "light") {
+    document.body.classList.add("light-mode");
+    if (icon) icon.textContent = "☀️";
+    if (text) text.textContent = "LIGHT";
+  } else {
+    document.body.classList.remove("light-mode");
+    if (icon) icon.textContent = "🌙";
+    if (text) text.textContent = "DARK";
+  }
+}
 
 // ── 2. Real-Time UTC Clock ─────────────────────────────────────────────────
 function initUtcClock() {

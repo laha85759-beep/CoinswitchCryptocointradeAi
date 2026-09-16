@@ -7,6 +7,7 @@
   --bg-secondary: #0b111a;
   --bg-card: rgba(14, 21, 32, 0.75);
   --bg-card-hover: rgba(20, 30, 46, 0.85);
+  --header-bg: rgba(8, 14, 22, 0.90);
   
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-focus: rgba(0, 240, 144, 0.4);
@@ -32,6 +33,29 @@
   --radius-lg: 14px;
 }
 
+body.light-mode {
+  --bg-primary: #f4f6fa;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fafc;
+  --header-bg: rgba(255, 255, 255, 0.95);
+  
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-focus: rgba(0, 150, 90, 0.6);
+  --border-glow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  
+  --accent-green: #00995a;
+  --accent-cyan: #0088cc;
+  --accent-magenta: #d90066;
+  --accent-purple: #621ba8;
+  --accent-gold: #b38600;
+  --accent-red: #e02444;
+  
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -50,12 +74,42 @@ body.theme-thesmartmag {
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body.light-mode.theme-thesmartmag {
+  background-image: 
+    radial-gradient(circle at 15% 15%, rgba(0, 150, 90, 0.03) 0%, transparent 40%),
+    radial-gradient(circle at 85% 85%, rgba(179, 134, 0, 0.03) 0%, transparent 40%);
+}
+
+/* ═══════════════════ THEME TOGGLE BUTTON ═══════════════════ */
+.tsm-theme-toggle-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tsm-theme-toggle-btn:hover {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.2);
+  transform: translateY(-1px);
 }
 
 /* ═══════════════════ HEADER ═══════════════════ */
 .tsm-header {
   height: 68px;
-  background: rgba(8, 14, 22, 0.90);
+  background: var(--header-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border-subtle);

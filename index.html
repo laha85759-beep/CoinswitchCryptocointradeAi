@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=77.0">
+  <link rel="stylesheet" href="styles.css?v=78.0">
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 </head>
 <body class="theme-thesmartmag">
@@ -51,6 +51,9 @@
     </div>
 
     <div class="tsm-header-right">
+      <button class="tsm-theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle Light / Dark Mode">
+        <span id="themeToggleIcon">🌙</span> <span id="themeToggleText">DARK</span>
+      </button>
       <div class="tsm-live-status">
         <span class="pulse-dot-green"></span>
         <span class="status-text" id="engineStatusText">24/7 CLOUD ACTIVE</span>
@@ -586,6 +589,6 @@
     </div>
   </footer>
 
-  <script src="app.js?v=77.0"></script>
+  <script src="app.js?v=78.0"></script>
 </body>
 </html>
