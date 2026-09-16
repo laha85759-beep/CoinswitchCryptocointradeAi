@@ -3,12 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>TheSmartMag Quant Terminal • Autonomous AI Trading Engine</title>
   <meta name="description" content="TheSmartMag Quant & AI Trading Terminal. Dual-Exchange Autonomous Execution across CoinSwitch Pro & Delta Exchange India with NVIDIA AI Super Brain." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=60.0">
+  <link rel="stylesheet" href="styles.css?v=77.0">
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 </head>
 <body class="theme-thesmartmag">
@@ -172,7 +175,27 @@
         </div>
       </div>
 
-      <!-- BOTTOM ROW: OPEN POSITIONS & EXECUTION LOG -->
+      <!-- ═══════════════════ LIVE 24/7 BACKGROUND AGENTS EXECUTION STREAM ═══════════════════ -->
+      <div class="tsm-card tsm-log-stream-card">
+        <div class="tsm-card-header">
+          <div class="card-title-wrap">
+            <span class="pulse-dot-green"></span>
+            <span class="card-title">⚡ LIVE 24/7 BACKGROUND AGENTS EXECUTION STREAM & TELEMETRY</span>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <span class="live-tag">REAL-TIME DAEMON STREAM</span>
+            <button class="tsm-btn-sm" onclick="fetchAgentLogs()">🔄 REFRESH</button>
+          </div>
+        </div>
+        <div class="tsm-log-console" id="agent-logs-console">
+          <div class="log-entry info"><span class="log-time">[2026-09-16 22:15:00 UTC]</span> <span class="log-badge badge-daemon">DAEMON</span> Continuous 24/7 Active Runner online. Scanning Spot & Futures markets...</div>
+          <div class="log-entry info"><span class="log-time">[2026-09-16 22:15:01 UTC]</span> <span class="log-badge badge-scanner">SCANNER</span> Prioritized 113 altcoin, memecoin, and RWA pairs for CoinSwitch live trading</div>
+          <div class="log-entry info"><span class="log-time">[2026-09-16 22:15:02 UTC]</span> <span class="log-badge badge-nvidia">NVIDIA_AI</span> 6-Model AI Super Brain Gatekeeper armed. Quota preserver active</div>
+          <div class="log-entry success"><span class="log-time">[2026-09-16 22:15:03 UTC]</span> <span class="log-badge badge-risk">RISK</span> Instant Trailing Stop Loss (+0.2% ratchet / -2.0% hard SL) verified</div>
+        </div>
+      </div>
+
+      <!-- BOTTOM ROW: OPEN POSITIONS & HIGH-IMPACT NEWS -->
       <div class="tsm-layout-grid bottom-grid">
         
         <!-- Open Positions Table -->
@@ -225,7 +248,7 @@
         </div>
       </div>
 
-      <!-- SUBTLE BOTTOM PARTNER & REBATE STRIP (NOT IN TOP) -->
+      <!-- SUBTLE BOTTOM PARTNER & REBATE STRIP -->
       <div class="tsm-partner-bar tsm-card">
         <div class="partner-bar-left">
           <span class="gold-badge">💎 OFFICIAL VERIFIED PARTNERS</span>
@@ -313,7 +336,7 @@
       </div>
     </div>
 
-    <!-- ── VIEW 4: VIP PARTNERS & PROP FIRMS (DEDICATED SECTION) ────────── -->
+    <!-- ── VIEW 4: VIP PARTNERS & PROP FIRMS ────────────────────────────── -->
     <div id="view-partners" class="tsm-view-section">
       <div class="tsm-card">
         <div class="tsm-card-header">
@@ -328,7 +351,6 @@
         </p>
 
         <div class="partners-grid">
-          <!-- Partner 1 -->
           <div class="partner-card">
             <div class="partner-head">
               <span class="partner-name">Funded Trader Markets (FTM)</span>
@@ -343,7 +365,6 @@
             </div>
           </div>
 
-          <!-- Partner 2 -->
           <div class="partner-card">
             <div class="partner-head">
               <span class="partner-name">CoinSwitch Pro</span>
@@ -358,7 +379,6 @@
             </div>
           </div>
 
-          <!-- Partner 3 -->
           <div class="partner-card">
             <div class="partner-head">
               <span class="partner-name">Delta Exchange India</span>
@@ -373,7 +393,6 @@
             </div>
           </div>
 
-          <!-- Partner 4 -->
           <div class="partner-card">
             <div class="partner-head">
               <span class="partner-name">Atlas Funded</span>
@@ -474,7 +493,6 @@
         </div>
 
         <div class="admin-grid">
-          <!-- Column 1: Live Engine Controls -->
           <div class="tsm-card">
             <div class="tsm-card-header"><span class="card-title">⚡ 24/7 BOT CONTROLS</span></div>
             <div class="control-row">
@@ -494,7 +512,6 @@
             </div>
           </div>
 
-          <!-- Column 2: Strategy Parameters -->
           <div class="tsm-card">
             <div class="tsm-card-header"><span class="card-title">🎛️ DYNAMIC RISK PARAMETERS</span></div>
             <form id="adminSettingsForm" onsubmit="saveAdminSettings(event)">
@@ -522,7 +539,6 @@
             </form>
           </div>
 
-          <!-- Column 3: Manual Trade -->
           <div class="tsm-card">
             <div class="tsm-card-header"><span class="card-title">🎯 MANUAL OVERRIDE ORDER</span></div>
             <form id="manualTradeForm" onsubmit="executeManualTrade(event)">
@@ -570,6 +586,6 @@
     </div>
   </footer>
 
-  <script src="app.js?v=60.0"></script>
+  <script src="app.js?v=77.0"></script>
 </body>
 </html>

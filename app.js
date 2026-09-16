@@ -432,3 +432,42 @@ async function executeManualTrade(e) {
     alert("Trade request error: " + err);
   }
 }
+
+// ── 7. Real-Time 24/7 Background Agents Log Polling ───────────────────────
+async function fetchAgentLogs() {
+  const consoleEl = document.getElementById("agent-logs-console");
+  if (!consoleEl) return;
+
+  try {
+    const res = await fetch("/api/agent-logs");
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.logs && data.logs.length > 0) {
+      consoleEl.innerHTML = data.logs.map(logLine => {
+        let badgeType = "daemon";
+        let badgeText = "DAEMON";
+
+        if (logLine.includes("NVIDIA") || logLine.includes("Nemotron") || logLine.includes("Kumo")) {
+          badgeType = "nvidia"; badgeText = "NVIDIA_AI";
+        } else if (logLine.includes("Scanner") || logLine.includes("Collector") || logLine.includes("SMC")) {
+          badgeType = "scanner"; badgeText = "SCANNER";
+        } else if (logLine.includes("Risk") || logLine.includes("Trailing") || logLine.includes("Stop")) {
+          badgeType = "risk"; badgeText = "RISK_GUARD";
+        } else if (logLine.includes("Filled") || logLine.includes("Executed") || logLine.includes("order")) {
+          badgeType = "trade"; badgeText = "EXECUTION";
+        }
+
+        return `<div class="log-entry"><span class="log-badge badge-${badgeType}">${badgeText}</span> <span>${escapeHtml(logLine)}</span></div>`;
+      }).join("");
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+  } catch (e) {
+    console.debug("Log fetch notice:", e);
+  }
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+setInterval(fetchAgentLogs, 3000);
