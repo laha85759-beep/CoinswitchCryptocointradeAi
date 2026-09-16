@@ -404,6 +404,16 @@ def run() -> None:
     except Exception as news_exc:
         log.warning("ForexFactoryNewsAgent notice: %s", news_exc)
 
+    # ── Step 2.55: Crypto & Altcoin Breaking News AI Intelligence Broadcaster ─
+    try:
+        from crypto_news_agent import CryptoNewsIntelligenceAgent
+        crypto_news_agent = CryptoNewsIntelligenceAgent(CONFIG, notifier=notifier)
+        broadcasted_news = crypto_news_agent.process_and_broadcast_news()
+        if broadcasted_news:
+            log.info("CryptoNewsIntelligenceAgent: Broadcasted %s breaking crypto news alerts to Telegram", len(broadcasted_news))
+    except Exception as c_news_exc:
+        log.warning("CryptoNewsIntelligenceAgent notice: %s", c_news_exc)
+
     # ── Step 2.6: Quick Scalping Agent Execution ──────────────────────────────
     try:
         from scalp_agent import QuickScalpAgent
