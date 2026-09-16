@@ -207,6 +207,15 @@ CONFIG = {
     "smc_fvg_min_pct":               _float_env("SMC_FVG_MIN_PCT", 0.3),          # Min 0.3% Fair Value Gap
     "smc_order_block_lookback":      _int_env("SMC_ORDER_BLOCK_LOOKBACK", 30),    # Lookback candles for Order Block structure
 
+    # ── TheSmartMag Brand & Admin Portal Settings ───────────────────────────────
+    "brand_name":                    "TheSmartMag Quant Terminal",
+    "brand_domain":                  "thesmartmag.com",
+    "brand_subdomain":               os.getenv("BRAND_SUBDOMAIN", "trade.thesmartmag.com"),
+    "admin_username":                os.getenv("ADMIN_USERNAME", "admin@thesmartmag.com"),
+    "admin_password":                os.getenv("ADMIN_PASSWORD", "SmartMag@Quant2026!"),
+    "admin_jwt_secret":              os.getenv("ADMIN_JWT_SECRET", "thesmartmag_quant_jwt_secret_key_2026_ultra_secure"),
+    "bot_execution_paused":          _bool_env("BOT_EXECUTION_PAUSED", False),
+
     # ── Options Hedge Agent (Disabled for small capital accounts to avoid Theta decay) ──
     "options_enabled":               _bool_env("OPTIONS_ENABLED", False),  # Disabled: Preserves 100% of capital for high-conviction momentum & perpetuals
     "options_assets":                ["ETH", "BTC", "XAUT", "SOL", "XRP", "DOGE", "MNT"],
