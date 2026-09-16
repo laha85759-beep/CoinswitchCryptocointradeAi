@@ -78,9 +78,11 @@ CONFIG = {
         "MOODENG/USDT", "PUMP/USDT", "FARTCOIN/USDT", "ZRO/USDT", "SPX/USDT", "POPCAT/USDT",
         "GOAT/USDT", "GRIFFAIN/USDT", "TRUMP/USDT", "VIRTUAL/USDT", "AIXBT/USDT", "HYPE/USDT",
         "ONDO/USDT", "OM/USDT", "PENDLE/USDT", "LINK/USDT", "AVAX/USDT", "MKR/USDT", "CTC/USDT",
-        "SOL/USDT", "NEAR/USDT", "SUI/USDT", "APT/USDT", "TIA/USDT"
+        "SOL/USDT", "NEAR/USDT", "SUI/USDT", "APT/USDT", "TIA/USDT", "RENDER/USDT", "FET/USDT",
+        "INJ/USDT", "TAO/USDT", "SEI/USDT", "KAS/USDT", "NEIRO/USDT", "BRETT/USDT", "MEW/USDT",
+        "CAT/USDT", "BOME/USDT", "TURBO/USDT", "BABYDOGE/USDT", "MYRO/USDT", "SLERF/USDT"
     ],
-    "blacklist": ["BTC/USDT", "BTC/INR", "ETH/USDT", "ETH/INR", "USDC/USDT", "BUSD/USDT", "TUSD/USDT", "FDUSD/USDT"],
+    "blacklist": ["BTC/INR", "ETH/INR", "USDC/USDT", "BUSD/USDT", "TUSD/USDT", "FDUSD/USDT"],
 
     # ── Legacy scanner thresholds (used by scanner.py SignalEngine) ───────────
     "pump_score_min": 62,
