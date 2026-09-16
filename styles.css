@@ -1063,3 +1063,140 @@ body.light-mode.theme-thesmartmag {
 .badge-nvidia { background: rgba(121, 40, 202, 0.25); color: #c084fc; border: 1px solid rgba(121, 40, 202, 0.5); }
 .badge-risk { background: rgba(255, 215, 0, 0.2); color: var(--accent-gold); border: 1px solid rgba(255, 215, 0, 0.4); }
 .badge-trade { background: rgba(255, 0, 122, 0.2); color: var(--accent-magenta); border: 1px solid rgba(255, 0, 122, 0.4); }
+
+/* ═══════════════════ 3D AGENT CORE & WORKFLOW MATRIX ═══════════════════ */
+.agent-core-grid {
+  grid-template-columns: 1.3fr 1fr;
+  margin-bottom: 24px;
+}
+
+.tsm-3d-card {
+  display: flex;
+  flex-direction: column;
+  height: 380px;
+  position: relative;
+  overflow: hidden;
+}
+
+.tsm-3d-canvas-container {
+  flex: 1;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-sm);
+  background: radial-gradient(circle at center, rgba(0, 212, 255, 0.05) 0%, #03060a 80%);
+  overflow: hidden;
+}
+
+#agent3dCanvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+.agent-3d-overlay {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  justify-content: space-between;
+  background: rgba(5, 8, 14, 0.75);
+  backdrop-filter: blur(8px);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+.agent-stat-node {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-primary);
+}
+
+.node-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.node-dot.green { background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); }
+.node-dot.cyan { background: var(--accent-cyan); box-shadow: 0 0 6px var(--accent-cyan); }
+.node-dot.magenta { background: var(--accent-magenta); box-shadow: 0 0 6px var(--accent-magenta); }
+.node-dot.gold { background: var(--accent-gold); box-shadow: 0 0 6px var(--accent-gold); }
+
+/* 5-STAGE WORKFLOW */
+.tsm-workflow-card {
+  height: 380px;
+  display: flex;
+  flex-direction: column;
+}
+
+.workflow-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  flex: 1;
+  padding-right: 4px;
+}
+
+.wf-step-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  transition: all 0.25s ease;
+}
+
+.wf-step-item.active, .wf-step-item:hover {
+  background: rgba(0, 240, 144, 0.05);
+  border-color: rgba(0, 240, 144, 0.3);
+  transform: translateX(3px);
+}
+
+.wf-step-num {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--accent-cyan);
+  background: rgba(0, 212, 255, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.wf-step-content {
+  flex: 1;
+}
+
+.wf-step-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.wf-step-desc {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+.wf-step-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--accent-green);
+  border: 1px solid rgba(0, 240, 144, 0.2);
+}

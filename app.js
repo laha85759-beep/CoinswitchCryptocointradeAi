@@ -13,6 +13,8 @@ document.addEventListener("DOMContentLoaded", () => {
   initTheme();
   initUtcClock();
   initTradingViewWidget("tradingview_widget_container", currentTvSymbol);
+  initAgent3dCore();
+  initWorkflowCycle();
   fetchRealData();
   setInterval(fetchRealData, 4000);
   checkAdminAuth();
@@ -498,3 +500,125 @@ function escapeHtml(str) {
 }
 
 setInterval(fetchAgentLogs, 3000);
+
+// ── 8. 3D WebGL Multi-Agent Holographic Neural Sphere Core ────────────────
+let scene3d, camera3d, renderer3d, sphereMesh, ringMesh1, ringMesh2, particles3d;
+
+function initAgent3dCore() {
+  const container = document.getElementById("agent3dContainer");
+  const canvas = document.getElementById("agent3dCanvas");
+  if (!container || !canvas || typeof THREE === "undefined") return;
+
+  const width = container.clientWidth || 400;
+  const height = container.clientHeight || 300;
+
+  scene3d = new THREE.Scene();
+  camera3d = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+  camera3d.position.z = 7;
+
+  renderer3d = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+  renderer3d.setSize(width, height);
+  renderer3d.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  // 1. Central Wireframe Quant Core (Icosahedron)
+  const sphereGeo = new THREE.IcosahedronGeometry(2.0, 2);
+  const sphereMat = new THREE.MeshBasicMaterial({
+    color: 0x00f090,
+    wireframe: true,
+    transparent: true,
+    opacity: 0.75
+  });
+  sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
+  scene3d.add(sphereMesh);
+
+  // 2. Outer Gyro Orbit Ring 1 (Electric Cyan)
+  const ring1Geo = new THREE.TorusGeometry(2.8, 0.03, 16, 100);
+  const ring1Mat = new THREE.MeshBasicMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.85 });
+  ringMesh1 = new THREE.Mesh(ring1Geo, ring1Mat);
+  scene3d.add(ringMesh1);
+
+  // 3. Outer Gyro Orbit Ring 2 (TheSmartMag Gold)
+  const ring2Geo = new THREE.TorusGeometry(3.3, 0.03, 16, 100);
+  const ring2Mat = new THREE.MeshBasicMaterial({ color: 0xffd700, transparent: true, opacity: 0.65 });
+  ringMesh2 = new THREE.Mesh(ring2Geo, ring2Mat);
+  ringMesh2.rotation.x = Math.PI / 3;
+  scene3d.add(ringMesh2);
+
+  // 4. Orbiting Multi-Agent Particle Swarm (113 crypto nodes)
+  const particleCount = 113;
+  const particleGeo = new THREE.BufferGeometry();
+  const posArray = new Float32Array(particleCount * 3);
+
+  for (let i = 0; i < particleCount * 3; i += 3) {
+    const r = 3.6 + Math.random() * 1.5;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos((Math.random() * 2) - 1);
+    posArray[i] = r * Math.sin(phi) * Math.cos(theta);
+    posArray[i + 1] = r * Math.sin(phi) * Math.sin(theta);
+    posArray[i + 2] = r * Math.cos(phi);
+  }
+
+  particleGeo.setAttribute("position", new THREE.BufferAttribute(posArray, 3));
+  const particleMat = new THREE.PointsMaterial({
+    size: 0.08,
+    color: 0x00f090,
+    transparent: true,
+    opacity: 0.9
+  });
+
+  particles3d = new THREE.Points(particleGeo, particleMat);
+  scene3d.add(particles3d);
+
+  // Animation Loop
+  function animate3d() {
+    requestAnimationFrame(animate3d);
+
+    if (sphereMesh) {
+      sphereMesh.rotation.y += 0.007;
+      sphereMesh.rotation.x += 0.004;
+    }
+    if (ringMesh1) {
+      ringMesh1.rotation.x += 0.012;
+      ringMesh1.rotation.y += 0.008;
+    }
+    if (ringMesh2) {
+      ringMesh2.rotation.y -= 0.009;
+      ringMesh2.rotation.z += 0.006;
+    }
+    if (particles3d) {
+      particles3d.rotation.y += 0.003;
+    }
+
+    renderer3d.render(scene3d, camera3d);
+  }
+
+  animate3d();
+
+  // Resize Listener
+  window.addEventListener("resize", () => {
+    if (!container || !renderer3d || !camera3d) return;
+    const w = container.clientWidth;
+    const h = container.clientHeight;
+    camera3d.aspect = w / h;
+    camera3d.updateProjectionMatrix();
+    renderer3d.setSize(w, h);
+  });
+}
+
+// ── 9. Autonomous 5-Stage Agent Workflow Pipeline Cycling ──────────────────
+let activeWfStep = 0;
+function initWorkflowCycle() {
+  const steps = document.querySelectorAll(".wf-step-item");
+  if (!steps || steps.length === 0) return;
+
+  setInterval(() => {
+    steps.forEach((s, idx) => {
+      if (idx === activeWfStep) {
+        s.classList.add("active");
+      } else {
+        s.classList.remove("active");
+      }
+    });
+    activeWfStep = (activeWfStep + 1) % steps.length;
+  }, 2500);
+}

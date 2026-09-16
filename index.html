@@ -11,8 +11,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=79.0">
+  <link rel="stylesheet" href="styles.css?v=80.0">
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body class="theme-thesmartmag">
 
@@ -175,6 +176,90 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- ═══════════════════ 3D AGENT NEURAL CORE & WORKFLOW MATRIX ═══════════════════ -->
+      <div class="tsm-layout-grid agent-core-grid">
+        
+        <!-- Left: 3D WebGL Multi-Agent Holographic Neural Core -->
+        <div class="tsm-card tsm-3d-card">
+          <div class="tsm-card-header">
+            <div class="card-title-wrap">
+              <span class="card-icon">🌐</span>
+              <span class="card-title">3D QUANT AGENT NEURAL SPHERE & REAL-TIME CORE</span>
+            </div>
+            <span class="live-pill" id="agent3dStatus">NEURAL CLOUD RUNNING</span>
+          </div>
+          <div class="tsm-3d-canvas-container" id="agent3dContainer">
+            <canvas id="agent3dCanvas"></canvas>
+            <div class="agent-3d-overlay">
+              <div class="agent-stat-node"><span class="node-dot green"></span> 113+ PAIR SCANNER</div>
+              <div class="agent-stat-node"><span class="node-dot cyan"></span> SMC & ORDER BLOCK</div>
+              <div class="agent-stat-node"><span class="node-dot magenta"></span> AI ENSEMBLE GATE</div>
+              <div class="agent-stat-node"><span class="node-dot gold"></span> DUAL ATOMIC ROUTER</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: 5-Stage Autonomous Agent Workflow Pipeline -->
+        <div class="tsm-card tsm-workflow-card">
+          <div class="tsm-card-header">
+            <div class="card-title-wrap">
+              <span class="card-icon">⚡</span>
+              <span class="card-title">AUTONOMOUS 5-STAGE AGENT WORKFLOW</span>
+            </div>
+            <span class="gold-badge">CONTINUOUS PIPELINE</span>
+          </div>
+          <div class="workflow-steps-list">
+            
+            <div class="wf-step-item active">
+              <div class="wf-step-num">01</div>
+              <div class="wf-step-content">
+                <div class="wf-step-title">Market Ingestion & Altcoin Scanner</div>
+                <div class="wf-step-desc">Ingests live 5m/15m/1h tick data, orderbook depth & volume ratios across 113+ coins.</div>
+              </div>
+              <div class="wf-step-badge">SCANNING</div>
+            </div>
+
+            <div class="wf-step-item">
+              <div class="wf-step-num">02</div>
+              <div class="wf-step-content">
+                <div class="wf-step-title">SMC & Liquidity Gap Engine</div>
+                <div class="wf-step-desc">Identifies Fair Value Gaps (FVG), institutional order blocks & Supertrend breaks.</div>
+              </div>
+              <div class="wf-step-badge">FILTERED</div>
+            </div>
+
+            <div class="wf-step-item">
+              <div class="wf-step-num">03</div>
+              <div class="wf-step-content">
+                <div class="wf-step-title">Multi-Model AI Ensemble Consensus</div>
+                <div class="wf-step-desc">Tactical CoT reasoning + Kumo classification. Enforces strict ≥0.85 score gate.</div>
+              </div>
+              <div class="wf-step-badge">CONSENSUS</div>
+            </div>
+
+            <div class="wf-step-item">
+              <div class="wf-step-num">04</div>
+              <div class="wf-step-content">
+                <div class="wf-step-title">Dual-Exchange Atomic Dispatcher</div>
+                <div class="wf-step-desc">Calculates balance sizing and fires atomic live orders to CoinSwitch & Delta.</div>
+              </div>
+              <div class="wf-step-badge">ROUTED</div>
+            </div>
+
+            <div class="wf-step-item">
+              <div class="wf-step-num">05</div>
+              <div class="wf-step-content">
+                <div class="wf-step-title">24/7 Trailing Ratchet & Risk Guard</div>
+                <div class="wf-step-desc">Monitors tick-by-tick prices, arms -2.0% Stop-Loss & locks +0.2% trailing profits.</div>
+              </div>
+              <div class="wf-step-badge">ARMED</div>
+            </div>
+
+          </div>
+        </div>
+
       </div>
 
       <!-- ═══════════════════ LIVE 24/7 BACKGROUND AGENTS EXECUTION STREAM ═══════════════════ -->
@@ -633,6 +718,6 @@
     </div>
   </footer>
 
-  <script src="app.js?v=79.0"></script>
+  <script src="app.js?v=80.0"></script>
 </body>
 </html>
