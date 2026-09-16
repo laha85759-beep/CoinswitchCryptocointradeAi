@@ -45,9 +45,16 @@ KNOWN_CRYPTO_ASSETS = {
     "NEAR": "NEAR", "AVALANCHE": "AVAX", "AVAX": "AVAX", "CHAINLINK": "LINK", "LINK": "LINK",
     "CARDANO": "ADA", "ADA": "ADA", "POLKADOT": "DOT", "DOT": "DOT",
     "ZCASH": "ZEC", "ZEC": "ZEC", "MONERO": "XMR", "XMR": "XMR",
-    "AAVE": "AAVE", "UNISWAP": "UNI", "UNI": "UNI", "MAKER": "MKR", "MKR": "MKR",
+    "AAVE": "AAVE", "UNISWAP": "UNI", "UNI": "UNI", "MAKER": "MKR", "MKR": "MKR", "SKY": "MKR",
     "TONCOIN": "TON", "TON": "TON", "TRON": "TRX", "TRX": "TRX",
-    "TETHER": "USDT", "USDT": "USDT", "USDC": "USDC"
+    "TETHER": "USDT", "USDT": "USDT", "USDC": "USDC",
+    # ── Real World Asset (RWA) Tokens ──
+    "ONDO": "ONDO", "MANTRA": "OM", "OM": "OM", "PENDLE": "PENDLE",
+    "CENTRIFUGE": "CFG", "CFG": "CFG", "GOLDFINCH": "GFI", "GFI": "GFI",
+    "MAPLE": "MPL", "MPL": "MPL", "CLEARPOOL": "CPOOL", "CPOOL": "CPOOL",
+    "TRUEFI": "TRU", "TRU": "TRU", "REALIO": "RIO", "RIO": "RIO",
+    "PROPBASE": "PROPC", "PROPC": "PROPC", "IXSWAP": "IXS", "IXS": "IXS",
+    "CREDITCOIN": "CTC", "CTC": "CTC", "XAUT": "XAUT", "PAXG": "PAXG"
 }
 
 
