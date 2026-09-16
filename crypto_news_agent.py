@@ -18,6 +18,7 @@ import json
 import os
 import requests
 import xml.etree.ElementTree as ET
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from notifier import TelegramNotifier
@@ -25,7 +26,8 @@ from nvidia_super_brain import NvidiaSuperBrainEngine
 
 log = logging.getLogger(__name__)
 
-SEEN_NEWS_FILE = "seen_news.json"
+BASE_DIR = Path(__file__).resolve().parent
+SEEN_NEWS_FILE = BASE_DIR / "seen_news.json"
 
 # Common crypto assets mapping for high-accuracy regex entity extraction
 KNOWN_CRYPTO_ASSETS = {
@@ -59,7 +61,7 @@ class CryptoNewsIntelligenceAgent:
         self.seen_news = self._load_seen_news()
 
     def _load_seen_news(self) -> set:
-        if os.path.exists(SEEN_NEWS_FILE):
+        if SEEN_NEWS_FILE.exists():
             try:
                 with open(SEEN_NEWS_FILE, "r", encoding="utf-8") as f:
                     data = json.load(f)
@@ -70,8 +72,8 @@ class CryptoNewsIntelligenceAgent:
 
     def _save_seen_news(self) -> None:
         try:
-            # Keep cache to latest 500 items
-            news_list = list(self.seen_news)[-500:]
+            # Keep cache to latest 1000 items
+            news_list = list(self.seen_news)[-1000:]
             with open(SEEN_NEWS_FILE, "w", encoding="utf-8") as f:
                 json.dump(news_list, f, indent=2)
         except Exception as e:
@@ -191,9 +193,14 @@ class CryptoNewsIntelligenceAgent:
             # Analyze Sentiment & Bias
             analysis = self.analyze_sentiment_and_impact(title, item.get("summary", ""))
 
+            # ONLY broadcast important news: high-impact catalysts or specific coins with clear Long/Short sentiment
+            is_important = analysis.get("is_high_impact") or (len(assets) > 0 and analysis.get("bias") in ("LONG", "SHORT"))
+            if not is_important:
+                continue
+
             # Format Telegram Message
             msg = (
-                f"{analysis['icon']} *BREAKING CRYPTO NEWS ALERT*\n"
+                f"{analysis['icon']} *HIGH-IMPACT CRYPTO NEWS ALERT*\n"
                 f"═════════════════════════\n"
                 f"🪙 *Asset Tag*: `{asset_tags}`\n"
                 f"📍 *Primary Coin*: *{primary_asset}*\n"
@@ -203,7 +210,7 @@ class CryptoNewsIntelligenceAgent:
                 f"🎯 *Market Bias*: `{analysis['bias']}`\n"
                 f"📡 *Source*: `{item['source']}`\n"
                 f"═════════════════════════\n"
-                f"🤖 *NVIDIA AI Super Brain • Continuous Alpha Feed*"
+                f"🤖 *NVIDIA AI Super Brain • Selective High-Conviction Feed*"
             )
 
             if self.notifier:

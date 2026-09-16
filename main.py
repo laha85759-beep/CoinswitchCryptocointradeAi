@@ -48,10 +48,19 @@ except AttributeError:
     pass
 log = logging.getLogger(__name__)
 
-MORNING_REPORT_FILE = Path("last_morning_report.txt")
-DAILY_REPORT_FILE   = Path("last_daily_report.txt")
-WEEKLY_REPORT_FILE  = Path("last_weekly_report.txt")
-MONDAY_NOTICE_FILE  = Path("last_monday_notice.txt")
+BASE_DIR = Path(__file__).resolve().parent
+MORNING_REPORT_FILE = BASE_DIR / "last_morning_report.txt"
+DAILY_REPORT_FILE   = BASE_DIR / "last_daily_report.txt"
+WEEKLY_REPORT_FILE  = BASE_DIR / "last_weekly_report.txt"
+MONDAY_NOTICE_FILE  = BASE_DIR / "last_monday_notice.txt"
+
+# In-memory guards to strictly guarantee zero duplicate reports in daemon process
+_LAST_DAILY_REPORT_DATE: Optional[str] = None
+_LAST_MORNING_REPORT_DATE: Optional[str] = None
+_LAST_WEEKLY_REPORT_KEY: Optional[str] = None
+_LAST_MONDAY_NOTICE_KEY: Optional[str] = None
+_LAST_NEWS_SCAN_TIME: float = 0.0
+
 
 
 def _send_morning_report_if_due(
@@ -62,14 +71,19 @@ def _send_morning_report_if_due(
     delta_enabled: bool,
     monitor_report: dict,
 ) -> None:
+    global _LAST_MORNING_REPORT_DATE
     now_ist = datetime.now(IST)
     # Morning report window: 08:00 to 11:59 IST
     if now_ist.hour < 8 or now_ist.hour >= 12:
         return
 
     today_ist = now_ist.date().isoformat()
+    if _LAST_MORNING_REPORT_DATE == today_ist:
+        return
+
     last_sent = MORNING_REPORT_FILE.read_text(encoding="utf-8").strip() if MORNING_REPORT_FILE.exists() else ""
     if last_sent == today_ist:
+        _LAST_MORNING_REPORT_DATE = today_ist
         return
 
     # Fetch live account balances directly from CoinSwitch & Delta APIs
@@ -160,13 +174,19 @@ def _send_daily_report_if_due(
     delta_enabled: bool,
     monitor_report: dict,
 ) -> None:
+    global _LAST_DAILY_REPORT_DATE
     now_ist = datetime.now(IST)
-    if now_ist.hour < 20:  # Allow daily report from 20:00 IST onwards
+    # Send once at the end of the day (21:00 IST or later)
+    if now_ist.hour < 21:
         return
 
     today_ist = now_ist.date().isoformat()
+    if _LAST_DAILY_REPORT_DATE == today_ist:
+        return
+
     last_sent = DAILY_REPORT_FILE.read_text(encoding="utf-8").strip() if DAILY_REPORT_FILE.exists() else ""
     if last_sent == today_ist:
+        _LAST_DAILY_REPORT_DATE = today_ist
         return
 
     # Fetch 100% REAL LIVE account balances directly from CoinSwitch & Delta APIs
@@ -244,8 +264,13 @@ def _send_daily_report_if_due(
         f"⚡ *Delta India (10% Off Fees)*: [Sign Up](https://www.delta.exchange/?code=YXQSZA)"
     )
 
+    _LAST_DAILY_REPORT_DATE = today_ist
+    try:
+        DAILY_REPORT_FILE.write_text(today_ist, encoding="utf-8")
+    except Exception as e:
+        log.warning("Could not persist DAILY_REPORT_FILE: %s", e)
     notifier.send(report)
-    DAILY_REPORT_FILE.write_text(today_ist, encoding="utf-8")
+    log.info("Daily Telegram Report sent for %s", today_ist)
 
 
 def _send_weekly_report_if_due(
@@ -256,14 +281,19 @@ def _send_weekly_report_if_due(
     delta_enabled: bool,
     monitor_report: dict,
 ) -> None:
+    global _LAST_WEEKLY_REPORT_KEY
     now_ist = datetime.now(IST)
     # Check if today is Sunday (weekday 6) and time is after 20:00 IST
     if now_ist.weekday() != 6 or now_ist.hour < 20:
         return
 
     week_key = now_ist.strftime("%Y-W%U")
+    if _LAST_WEEKLY_REPORT_KEY == week_key:
+        return
+
     last_sent = WEEKLY_REPORT_FILE.read_text(encoding="utf-8").strip() if WEEKLY_REPORT_FILE.exists() else ""
     if last_sent == week_key:
+        _LAST_WEEKLY_REPORT_KEY = week_key
         return
 
     # Fetch live account balances directly from CoinSwitch & Delta APIs
@@ -405,14 +435,18 @@ def run() -> None:
         log.warning("ForexFactoryNewsAgent notice: %s", news_exc)
 
     # ── Step 2.55: Crypto & Altcoin Breaking News AI Intelligence Broadcaster ─
-    try:
-        from crypto_news_agent import CryptoNewsIntelligenceAgent
-        crypto_news_agent = CryptoNewsIntelligenceAgent(CONFIG, notifier=notifier)
-        broadcasted_news = crypto_news_agent.process_and_broadcast_news()
-        if broadcasted_news:
-            log.info("CryptoNewsIntelligenceAgent: Broadcasted %s breaking crypto news alerts to Telegram", len(broadcasted_news))
-    except Exception as c_news_exc:
-        log.warning("CryptoNewsIntelligenceAgent notice: %s", c_news_exc)
+    global _LAST_NEWS_SCAN_TIME
+    now_ts = time.time()
+    if (now_ts - _LAST_NEWS_SCAN_TIME) >= 600.0:  # Scan for breaking news every 10 minutes
+        try:
+            from crypto_news_agent import CryptoNewsIntelligenceAgent
+            crypto_news_agent = CryptoNewsIntelligenceAgent(CONFIG, notifier=notifier)
+            broadcasted_news = crypto_news_agent.process_and_broadcast_news()
+            if broadcasted_news:
+                log.info("CryptoNewsIntelligenceAgent: Broadcasted %s breaking crypto news alerts to Telegram", len(broadcasted_news))
+            _LAST_NEWS_SCAN_TIME = now_ts
+        except Exception as c_news_exc:
+            log.warning("CryptoNewsIntelligenceAgent notice: %s", c_news_exc)
 
     # ── Step 2.6: Quick Scalping Agent Execution ──────────────────────────────
     try:

@@ -228,7 +228,25 @@ class AIConsensusCommittee:
                         (direction == "SELL" and change_5m < 0 and change_1h < 0)
         trend_score = 0.15 if trend_aligned else 0.05
 
+        # 3.5. Smart Gatekeeper Pre-Check: Do not waste NVIDIA API tokens on mathematically non-viable setups
+        tech_score = (base_confidence * 0.20) + (smc_score * 0.25 if smc_aligned else 0.05) + vol_score + trend_score
+        max_possible_score = tech_score + 0.40  # Max NVIDIA contribution is 0.40
+        if max_possible_score < self.min_consensus_score:
+            # Rejection without burning NVIDIA API calls
+            log.debug("AIConsensusCommittee: Pre-screen filtered %s (tech_score %.2f + 0.40 < %.2f req)",
+                      symbol, tech_score, self.min_consensus_score)
+            return {
+                "approved": False,
+                "symbol": symbol,
+                "direction": direction,
+                "signal_type": signal_type,
+                "consensus_score": round(tech_score, 3),
+                "min_required_score": self.min_consensus_score,
+                "reason": f"Filtered at pre-screen (tech_score={tech_score:.2f} too low, saved API quota)",
+            }
+
         # 4. NVIDIA 6-Model Super Brain Evaluation (Nemotron 3.5 30B + Kumo + Ultra 550B)
+        # ONLY called for high-potential trade setups that can pass execution threshold
         nvidia_market_context = {
             "price": price,
             "change_5m": change_5m,
@@ -241,7 +259,7 @@ class AIConsensusCommittee:
         nvidia_score = float(nvidia_verdict.get("consensus_score", 0.85))
 
         # 5. Master Composite Consensus Score (0.0 to 1.0)
-        consensus_score = (base_confidence * 0.20) + (smc_score * 0.25 if smc_aligned else 0.05) + vol_score + trend_score + (nvidia_score * 0.40)
+        consensus_score = tech_score + (nvidia_score * 0.40)
         consensus_score = min(round(consensus_score, 3), 1.0)
 
         # 6. Precision Invalidation SL & Target TP
