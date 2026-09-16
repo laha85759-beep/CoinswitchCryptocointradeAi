@@ -188,10 +188,15 @@ CONFIG = {
     "short_selling_enabled": _bool_env("SHORT_SELLING_ENABLED", True),
     "short_exchanges": ["delta"],
 
-    # ── NVIDIA Nemotron 550B AI Model Endpoint ──────────────────────────────────
-    "nvidia_api_key":   os.getenv("NVIDIA_API_KEY", "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"),
-    "nvidia_base_url":  os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1"),
-    "nvidia_model":     os.getenv("NVIDIA_MODEL", "nvidia/nemotron-3-ultra-550b-a55b"),
+    # ── NVIDIA Multi-Model AI Super Brain Layer ─────────────────────────────────
+    "nvidia_key_lightning_30b":  os.getenv("NVIDIA_KEY_LIGHTNING_30B",  "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"),
+    "nvidia_key_kumo_relational": os.getenv("NVIDIA_KEY_KUMO_RELATIONAL", "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"),
+    "nvidia_key_embed_1b":       os.getenv("NVIDIA_KEY_EMBED_1B",       "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"),
+    "nvidia_key_parse_ocr":      os.getenv("NVIDIA_KEY_PARSE_OCR",      "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"),
+    "nvidia_key_ultra_550b":     os.getenv("NVIDIA_KEY_ULTRA_550B",     "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"),
+    "nvidia_key_riva_translate": os.getenv("NVIDIA_KEY_RIVA_TRANSLATE", "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"),
+    "nvidia_base_url":           os.getenv("NVIDIA_BASE_URL",           "https://integrate.api.nvidia.com/v1"),
+    "nvidia_model":              os.getenv("NVIDIA_MODEL",              "nvidia/nemotron-3.5-lightning-30b-a3b"),
 
     # ── AI Consensus Committee & SMC Structural Engine ───────────────────────────
     "ai_consensus_enabled":          _bool_env("AI_CONSENSUS_ENABLED", True),
