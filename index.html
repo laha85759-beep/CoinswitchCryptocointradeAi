@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=96.0">
+  <link rel="stylesheet" href="styles.css?v=97.0">
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -96,14 +96,14 @@
     <button class="nc-nav-tab tsm-tab active" data-view="terminal" onclick="switchView('terminal')">
       <span class="nc-tab-ico">⚡</span><span>NEURAL TERMINAL</span>
     </button>
+    <button class="nc-nav-tab tsm-tab cyan" data-view="news" onclick="switchView('news')" style="border:1px solid rgba(0,212,255,0.4); background:rgba(0,212,255,0.08); border-radius:4px; margin:0 4px;">
+      <span class="nc-tab-ico">📰</span><span>NEWS &amp; CATALYSTS</span><span style="font-size:8px; padding:1px 5px; background:var(--neon-cyan); color:#000; font-weight:900; border-radius:3px; margin-left:4px;">LIVE</span>
+    </button>
     <button class="nc-nav-tab tsm-tab" data-view="rwa" onclick="switchView('rwa')">
       <span class="nc-tab-ico">🏛</span><span>RWA MATRIX</span>
     </button>
     <button class="nc-nav-tab tsm-tab gold" data-view="partners" onclick="switchView('partners')">
       <span class="nc-tab-ico">💎</span><span>PROP FIRMS &amp; DEALS</span>
-    </button>
-    <button class="nc-nav-tab tsm-tab cyan" data-view="news" onclick="switchView('news')">
-      <span class="nc-tab-ico">📰</span><span>NEWS &amp; CATALYSTS</span>
     </button>
     <button class="nc-nav-tab tsm-tab" data-view="chart" onclick="switchView('chart')">
       <span class="nc-tab-ico">📈</span><span>PRO CHART</span>
@@ -294,6 +294,26 @@
           </div>
 
         </div>
+      </div>
+
+      <!-- 24/7 LIVE NEWS & MACRO CATALYST QUICK ACCESS STRIP -->
+      <div class="tsm-panel" style="background:linear-gradient(135deg, rgba(4,18,36,0.95), rgba(8,30,55,0.9)); border:1.5px solid var(--neon-cyan); box-shadow:0 0 20px rgba(0,212,255,0.15); padding:14px 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; cursor:pointer;" onclick="switchView('news')">
+        <div style="display:flex; align-items:center; gap:14px;">
+          <div style="font-size:24px; filter:drop-shadow(0 0 8px #00d4ff);">📰</div>
+          <div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-family:var(--font-orb); font-size:12px; font-weight:800; color:var(--neon-cyan); letter-spacing:1px;">24/7 LIVE NEWS &amp; MACRO CATALYST AGENT</span>
+              <span class="tsm-live-indicator"><span class="tsm-live-dot"></span> LIVE WIRES</span>
+              <span class="tsm-badge-pill admin" id="preview-news-sentiment">SENTIMENT: BULLISH 68%</span>
+            </div>
+            <div style="font-size:11.5px; color:var(--text-main); margin-top:3px;" id="preview-news-headline">
+              ⚡ Loading breaking financial wires &amp; ForexFactory economic calendar...
+            </div>
+          </div>
+        </div>
+        <button class="tsm-btn-cta cyan" style="margin:0; padding:8px 18px; font-size:10px;" onclick="event.stopPropagation(); switchView('news')">
+          EXPLORE NEWS &amp; SIGNALS ➔
+        </button>
       </div>
 
       <!-- SECONDARY HUD: LIVE POSITIONS & SIGNALS ACCORDION -->
@@ -771,6 +791,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=96.0"></script>
+  <script src="app.js?v=97.0"></script>
 </body>
 </html>

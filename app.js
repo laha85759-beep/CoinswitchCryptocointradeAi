@@ -27,6 +27,10 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchNewsData();
   setInterval(fetchNewsData, 10000);
   checkAdminAuth();
+  if (window.location.hash) {
+    handleHashRouting();
+  }
+  window.addEventListener("hashchange", handleHashRouting);
 });
 
 // ── 1.1 Theme Switcher (Dark / Light) ──────────────────────────────────────
@@ -56,8 +60,18 @@ function initUtcClock() {
 }
 
 // ── 3. Tab & View Navigation ──────────────────────────────────────────────
-function switchView(viewName) {
+function handleHashRouting() {
+  const hash = window.location.hash.replace("#", "").toLowerCase().trim();
+  if (["terminal", "rwa", "partners", "news", "chart", "trades", "admin"].includes(hash)) {
+    switchView(hash, false);
+  }
+}
+
+function switchView(viewName, updateHash = true) {
   currentView = viewName;
+  if (updateHash && window.location.hash !== `#${viewName}`) {
+    history.replaceState(null, null, `#${viewName}`);
+  }
   
   document.querySelectorAll(".tsm-tab, .nc-nav-tab").forEach(tab => {
     if (tab.getAttribute("data-view") === viewName) {
@@ -74,10 +88,13 @@ function switchView(viewName) {
   const targetSec = document.getElementById(`view-${viewName}`);
   if (targetSec) {
     targetSec.classList.add("active");
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   if (viewName === "chart") {
     initTradingViewWidget("tradingview_widget_fullscreen", currentTvSymbol);
+  } else if (viewName === "news") {
+    fetchNewsData();
   }
 }
 
@@ -1176,11 +1193,20 @@ async function fetchNewsData() {
         if (sentSub) {
           sentSub.textContent = `Bullish: ${s.bull_pct}% • Bearish: ${s.bear_pct}%`;
         }
+        const previewSent = document.getElementById("preview-news-sentiment");
+        if (previewSent) {
+          previewSent.textContent = `SENTIMENT: ${s.label} ${s.score}%`;
+          previewSent.className = `tsm-badge-pill ${s.score >= 55 ? 'admin' : (s.score <= 45 ? 'gold' : 'cyan')}`;
+        }
       }
-      if (nData.news) {
+      if (nData.news && nData.news.length > 0) {
         cachedNewsList = nData.news;
         const countEl = document.getElementById("news-total-count");
         if (countEl) countEl.textContent = `${nData.news.length} WIRES`;
+        const previewHeadline = document.getElementById("preview-news-headline");
+        if (previewHeadline && nData.news[0]) {
+          previewHeadline.innerHTML = `⚡ <span class="cyan">[${escapeHtml(nData.news[0].source || 'Live Wire')}]</span> <strong>${escapeHtml(nData.news[0].title || '')}</strong>`;
+        }
         renderNewsFeed();
       }
     }
@@ -1189,10 +1215,11 @@ async function fetchNewsData() {
     const cRes = await fetch("/api/news/calendar");
     if (cRes.ok) {
       const cData = await cRes.json();
-      if (cData.calendar) {
+      const events = cData.events || cData.calendar || [];
+      if (events.length > 0) {
         const calCount = document.getElementById("news-cal-count");
-        if (calCount) calCount.textContent = `${cData.calendar.length} EVENTS`;
-        renderEconomicCalendar(cData.calendar);
+        if (calCount) calCount.textContent = `${events.length} EVENTS`;
+        renderEconomicCalendar(events);
       }
     }
 
@@ -1200,8 +1227,9 @@ async function fetchNewsData() {
     const sRes = await fetch("/api/news/signals");
     if (sRes.ok) {
       const sData = await sRes.json();
-      if (sData.signals) {
-        renderMacroSignals(sData.signals);
+      const sigs = sData.signals || [];
+      if (sigs.length > 0) {
+        renderMacroSignals(sigs);
       }
     }
 
