@@ -477,60 +477,102 @@
         </div>
 
         <!-- Section 2: F&O & Options Derivatives Matrix -->
-        <div class="tsm-split-row" style="margin-bottom:16px;">
-          <!-- NIFTY Options Intelligence -->
-          <div class="tsm-panel">
-            <div class="tsm-panel-header">
-              <div class="tsm-panel-title">📊 NIFTY 50 F&amp;O OPTIONS INTELLIGENCE</div>
-              <span class="tsm-badge-pill admin" id="nifty-pcr-badge">PCR: 1.05</span>
-            </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-family:var(--font-mono); font-size:11px; background:rgba(0,0,0,0.3); padding:10px 12px; border-radius:6px; margin-bottom:10px; border:1px solid rgba(255,255,255,0.05);">
-              <div>Spot LTP: <strong class="cyan" id="nifty-spot-val">—</strong></div>
-              <div>Max Pain: <strong class="gold" id="nifty-maxpain-val">—</strong></div>
-              <div>Call Resistance: <strong class="red-text" id="nifty-res-val">—</strong></div>
-              <div>Put Support: <strong class="green" id="nifty-sup-val">—</strong></div>
-            </div>
-            <div class="macro-level-box" style="margin-bottom:10px;">
-              <div class="macro-level-title green">🎯 RECOMMENDED OPTION PLAYBOOK</div>
-              <div id="nifty-opt-strategy">Loading option analytics...</div>
-            </div>
-            <div class="tsm-table-wrap">
-              <table class="tsm-table" style="font-size:10px;">
-                <thead>
-                  <tr><th>CE LTP</th><th>CE OI</th><th>STRIKE</th><th>PE OI</th><th>PE LTP</th></tr>
-                </thead>
-                <tbody id="nifty-chain-tbody">
-                  <tr><td colspan="5" class="text-center empty-state">Loading Nifty Option Chain...</td></tr>
-                </tbody>
-              </table>
-            </div>
+        <div class="tsm-panel" style="margin-bottom:16px;">
+          <div class="tsm-panel-header">
+            <div class="tsm-panel-title">📊 NSE &amp; BSE F&amp;O OPTIONS INTELLIGENCE (NIFTY, BANK NIFTY, SENSEX)</div>
+            <span class="tsm-badge-cyan">INSTITUTIONAL DERIVATIVES CHAIN</span>
+          </div>
+          <div class="news-filter-bar" style="margin-bottom:12px;">
+            <span style="font-family:var(--font-mono); font-size:10px; color:var(--text-dim); margin-right:6px;">INDEX SELECTOR:</span>
+            <button class="news-filter-btn active" onclick="switchOptionsTab('all', this)">🌐 ALL 3 INDICES</button>
+            <button class="news-filter-btn" onclick="switchOptionsTab('nifty', this)">📊 NIFTY 50</button>
+            <button class="news-filter-btn" onclick="switchOptionsTab('banknifty', this)">🏦 BANK NIFTY</button>
+            <button class="news-filter-btn" onclick="switchOptionsTab('sensex', this)">📈 BSE SENSEX</button>
           </div>
 
-          <!-- BANK NIFTY Options Intelligence -->
-          <div class="tsm-panel">
-            <div class="tsm-panel-header">
-              <div class="tsm-panel-title">🏦 BANK NIFTY F&amp;O OPTIONS INTELLIGENCE</div>
-              <span class="tsm-badge-pill admin" id="bn-pcr-badge">PCR: 1.05</span>
+          <div class="tsm-options-grid" id="options-matrix-grid">
+            <!-- NIFTY Options Intelligence -->
+            <div class="tsm-panel opt-card" id="opt-panel-nifty" style="margin:0; padding:12px;">
+              <div class="tsm-panel-header">
+                <div class="tsm-panel-title">📊 NIFTY 50 OPTIONS</div>
+                <span class="tsm-badge-pill admin" id="nifty-pcr-badge">PCR: 1.05</span>
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-family:var(--font-mono); font-size:10.5px; background:rgba(0,0,0,0.3); padding:8px 10px; border-radius:6px; margin-bottom:8px; border:1px solid rgba(255,255,255,0.05);">
+                <div>Spot LTP: <strong class="cyan" id="nifty-spot-val">—</strong></div>
+                <div>Max Pain: <strong class="gold" id="nifty-maxpain-val">—</strong></div>
+                <div>Call Resistance: <strong class="red-text" id="nifty-res-val">—</strong></div>
+                <div>Put Support: <strong class="green" id="nifty-sup-val">—</strong></div>
+              </div>
+              <div class="macro-level-box" style="margin-bottom:8px; font-size:10.5px;">
+                <div class="macro-level-title green">🎯 RECOMMENDED OPTION PLAYBOOK</div>
+                <div id="nifty-opt-strategy">Loading option analytics...</div>
+              </div>
+              <div class="tsm-table-wrap">
+                <table class="tsm-table" style="font-size:9.5px;">
+                  <thead>
+                    <tr><th>CE LTP</th><th>CE OI</th><th>STRIKE</th><th>PE OI</th><th>PE LTP</th></tr>
+                  </thead>
+                  <tbody id="nifty-chain-tbody">
+                    <tr><td colspan="5" class="text-center empty-state">Loading Nifty Option Chain...</td></tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-family:var(--font-mono); font-size:11px; background:rgba(0,0,0,0.3); padding:10px 12px; border-radius:6px; margin-bottom:10px; border:1px solid rgba(255,255,255,0.05);">
-              <div>Spot LTP: <strong class="cyan" id="bn-spot-val">—</strong></div>
-              <div>Max Pain: <strong class="gold" id="bn-maxpain-val">—</strong></div>
-              <div>Call Resistance: <strong class="red-text" id="bn-res-val">—</strong></div>
-              <div>Put Support: <strong class="green" id="bn-sup-val">—</strong></div>
+
+            <!-- BANK NIFTY Options Intelligence -->
+            <div class="tsm-panel opt-card" id="opt-panel-banknifty" style="margin:0; padding:12px;">
+              <div class="tsm-panel-header">
+                <div class="tsm-panel-title">🏦 BANK NIFTY OPTIONS</div>
+                <span class="tsm-badge-pill admin" id="bn-pcr-badge">PCR: 1.05</span>
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-family:var(--font-mono); font-size:10.5px; background:rgba(0,0,0,0.3); padding:8px 10px; border-radius:6px; margin-bottom:8px; border:1px solid rgba(255,255,255,0.05);">
+                <div>Spot LTP: <strong class="cyan" id="bn-spot-val">—</strong></div>
+                <div>Max Pain: <strong class="gold" id="bn-maxpain-val">—</strong></div>
+                <div>Call Resistance: <strong class="red-text" id="bn-res-val">—</strong></div>
+                <div>Put Support: <strong class="green" id="bn-sup-val">—</strong></div>
+              </div>
+              <div class="macro-level-box" style="margin-bottom:8px; font-size:10.5px;">
+                <div class="macro-level-title cyan">🎯 RECOMMENDED OPTION PLAYBOOK</div>
+                <div id="bn-opt-strategy">Loading option analytics...</div>
+              </div>
+              <div class="tsm-table-wrap">
+                <table class="tsm-table" style="font-size:9.5px;">
+                  <thead>
+                    <tr><th>CE LTP</th><th>CE OI</th><th>STRIKE</th><th>PE OI</th><th>PE LTP</th></tr>
+                  </thead>
+                  <tbody id="bn-chain-tbody">
+                    <tr><td colspan="5" class="text-center empty-state">Loading Bank Nifty Option Chain...</td></tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div class="macro-level-box" style="margin-bottom:10px;">
-              <div class="macro-level-title cyan">🎯 RECOMMENDED OPTION PLAYBOOK</div>
-              <div id="bn-opt-strategy">Loading option analytics...</div>
-            </div>
-            <div class="tsm-table-wrap">
-              <table class="tsm-table" style="font-size:10px;">
-                <thead>
-                  <tr><th>CE LTP</th><th>CE OI</th><th>STRIKE</th><th>PE OI</th><th>PE LTP</th></tr>
-                </thead>
-                <tbody id="bn-chain-tbody">
-                  <tr><td colspan="5" class="text-center empty-state">Loading Bank Nifty Option Chain...</td></tr>
-                </tbody>
-              </table>
+
+            <!-- BSE SENSEX Options Intelligence -->
+            <div class="tsm-panel opt-card" id="opt-panel-sensex" style="margin:0; padding:12px;">
+              <div class="tsm-panel-header">
+                <div class="tsm-panel-title">📈 BSE SENSEX OPTIONS</div>
+                <span class="tsm-badge-pill gold" id="sensex-pcr-badge">PCR: 1.05</span>
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-family:var(--font-mono); font-size:10.5px; background:rgba(0,0,0,0.3); padding:8px 10px; border-radius:6px; margin-bottom:8px; border:1px solid rgba(255,255,255,0.05);">
+                <div>Spot LTP: <strong class="cyan" id="sensex-spot-val">—</strong></div>
+                <div>Max Pain: <strong class="gold" id="sensex-maxpain-val">—</strong></div>
+                <div>Call Resistance: <strong class="red-text" id="sensex-res-val">—</strong></div>
+                <div>Put Support: <strong class="green" id="sensex-sup-val">—</strong></div>
+              </div>
+              <div class="macro-level-box" style="margin-bottom:8px; font-size:10.5px;">
+                <div class="macro-level-title gold">🎯 RECOMMENDED OPTION PLAYBOOK</div>
+                <div id="sensex-opt-strategy">Loading option analytics...</div>
+              </div>
+              <div class="tsm-table-wrap">
+                <table class="tsm-table" style="font-size:9.5px;">
+                  <thead>
+                    <tr><th>CE LTP</th><th>CE OI</th><th>STRIKE</th><th>PE OI</th><th>PE LTP</th></tr>
+                  </thead>
+                  <tbody id="sensex-chain-tbody">
+                    <tr><td colspan="5" class="text-center empty-state">Loading BSE Sensex Option Chain...</td></tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -645,6 +687,9 @@
               <button class="news-filter-btn" style="padding:2px 8px; font-size:9px;" onclick="filterCalendarEvents('USD', this)">🇺🇸 USD</button>
               <button class="news-filter-btn" style="padding:2px 8px; font-size:9px;" onclick="filterCalendarEvents('INR', this)">🇮🇳 INR</button>
               <button class="news-filter-btn" style="padding:2px 8px; font-size:9px;" onclick="filterCalendarEvents('EUR', this)">🇪🇺 EUR</button>
+              <button class="news-filter-btn" style="padding:2px 8px; font-size:9px;" onclick="filterCalendarEvents('GBP', this)">🇬🇧 GBP</button>
+              <button class="news-filter-btn" style="padding:2px 8px; font-size:9px;" onclick="filterCalendarEvents('JPY', this)">🇯🇵 JPY</button>
+              <button class="news-filter-btn" style="padding:2px 8px; font-size:9px;" onclick="filterCalendarEvents('AUD', this)">🇦🇺 AUD</button>
             </div>
 
             <div class="tsm-table-wrap" style="max-height:460px; overflow-y:auto;">

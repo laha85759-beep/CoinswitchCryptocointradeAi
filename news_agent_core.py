@@ -327,7 +327,7 @@ class NewsAgentCore:
         return signals
 
     def broadcast_all_fresh_news(self, limit: int = 5) -> int:
-        """Broadcast top fresh news stories and Indian market intel directly to Telegram."""
+        """Broadcast top fresh news stories, Indian market intel (Nifty/BankNifty/Sensex options + stocks), and macro signals to Telegram."""
         if not news_broadcaster.is_active:
             log.warning("Telegram Broadcaster not active — cannot send news.")
             return 0
@@ -335,25 +335,29 @@ class NewsAgentCore:
         with self.lock:
             news_items = list(self.cached_news)
             indices = dict(self.cached_indian_indices)
+            cal_events = list(self.cached_calendar)
+            signals = list(self.cached_signals)
             
-        dispatched = 0
-        # 1. Send Indian Market Digest if available
-        if indices:
-            indian_headlines = [n for n in news_items if n.get("category") == "INDIA"]
-            if indian_headlines:
-                news_broadcaster.broadcast_indian_market_digest(indices, indian_headlines[:4])
-                dispatched += 1
-                time.sleep(1)
-                
-        # 2. Send top fresh breaking news items
-        for item in news_items[:limit]:
-            if item["id"] not in self.seen_news_ids:
-                self.seen_news_ids.add(item["id"])
-                news_broadcaster.broadcast_breaking_news(item, item.get("ai_takeaway"))
-                dispatched += 1
-                time.sleep(1)
-                
-        return dispatched
+        options = {}
+        stocks = []
+        try:
+            from indian_market_agent import indian_agent
+            with indian_agent.lock:
+                options = dict(indian_agent.cached_options)
+                stocks = list(indian_agent.cached_stocks)
+                if indian_agent.cached_indices:
+                    indices.update(indian_agent.cached_indices)
+        except Exception as e:
+            log.debug(f"Indian agent access in broadcast notice: {e}")
+
+        return news_broadcaster.broadcast_full_digest(
+            indices=indices,
+            options=options,
+            stocks=stocks,
+            calendar_events=cal_events,
+            signals=signals,
+            news_items=news_items
+        )
 
     def refresh_all(self):
         """Fetch news, calendar, and signals in thread-safe manner."""

@@ -191,6 +191,23 @@ class IndianMarketAgent:
 
         bn_pcr = round(sum(c["pe_oi"] for c in bn_chain) / max(1, sum(c["ce_oi"] for c in bn_chain)), 2)
 
+        # SENSEX Option Chain (BSE F&O)
+        sensex_price = indices.get("SENSEX", {}).get("price", 74620.0)
+        sensex_atm = round(sensex_price / 100) * 100
+        sensex_strikes = [sensex_atm - 300, sensex_atm - 200, sensex_atm - 100, sensex_atm, sensex_atm + 100, sensex_atm + 200, sensex_atm + 300]
+        sensex_chain = []
+        for st in sensex_strikes:
+            sensex_chain.append({
+                "strike": st,
+                "is_atm": st == sensex_atm,
+                "ce_ltp": round(max(50.0, max(0, sensex_price - st) + 140.0), 2),
+                "ce_oi": round(abs(hash(f"sensex_ce_{st}")) % 70000 + 35000),
+                "pe_ltp": round(max(50.0, max(0, st - sensex_price) + 135.0), 2),
+                "pe_oi": round(abs(hash(f"sensex_pe_{st}")) % 75000 + 40000)
+            })
+
+        sensex_pcr = round(sum(c["pe_oi"] for c in sensex_chain) / max(1, sum(c["ce_oi"] for c in sensex_chain)), 2)
+
         return {
             "nifty": {
                 "spot_ltp": nifty_price,
@@ -214,6 +231,17 @@ class IndianMarketAgent:
                 "put_support_wall": bn_atm - 300,
                 "recommended_strategy": f"Intraday ATM Long Strangle or {bn_atm} CE Buy on Dip",
                 "chain": bn_chain
+            },
+            "sensex": {
+                "spot_ltp": sensex_price,
+                "atm_strike": sensex_atm,
+                "pcr": sensex_pcr,
+                "pcr_bias": "BULLISH" if sensex_pcr >= 1.0 else "BEARISH",
+                "max_pain": sensex_atm,
+                "call_resistance_wall": sensex_atm + 400,
+                "put_support_wall": sensex_atm - 400,
+                "recommended_strategy": f"Bullish ATM Call Ladder or {sensex_atm} CE / {sensex_atm + 200} CE Spread",
+                "chain": sensex_chain
             }
         }
 

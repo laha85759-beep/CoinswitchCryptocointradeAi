@@ -1369,7 +1369,7 @@ function renderEconomicCalendar(events) {
     list = list.filter(e => (e.impact || '').toLowerCase() === 'high');
   } else if (currentCalFilter === 'med') {
     list = list.filter(e => ['medium', 'med'].includes((e.impact || '').toLowerCase()));
-  } else if (['USD', 'INR', 'EUR', 'GBP'].includes(currentCalFilter)) {
+  } else if (['USD', 'INR', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF'].includes(currentCalFilter)) {
     list = list.filter(e => {
       const c = (e.country || '').toUpperCase();
       const curr = (e.currency || '').toUpperCase();
@@ -1675,6 +1675,83 @@ function renderOptionsIntel(options) {
         </tr>
       `).join("");
     }
+  }
+
+  // BSE SENSEX Options
+  const sx = options.sensex;
+  if (sx) {
+    const pcrBadge = document.getElementById("sensex-pcr-badge");
+    if (pcrBadge) {
+      pcrBadge.textContent = `PCR: ${sx.pcr} (${sx.pcr >= 1 ? '🟢 BULLISH' : '🔴 BEARISH'})`;
+      pcrBadge.className = `tsm-badge-pill ${sx.pcr >= 1 ? 'admin' : 'gold'}`;
+    }
+
+    if (document.getElementById("sensex-spot-val")) {
+      document.getElementById("sensex-spot-val").textContent = `₹${Number(sx.spot_ltp).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+    }
+    if (document.getElementById("sensex-maxpain-val")) {
+      document.getElementById("sensex-maxpain-val").textContent = `₹${sx.max_pain}`;
+    }
+    if (document.getElementById("sensex-res-val")) {
+      document.getElementById("sensex-res-val").textContent = `₹${sx.call_resistance_wall}`;
+    }
+    if (document.getElementById("sensex-sup-val")) {
+      document.getElementById("sensex-sup-val").textContent = `₹${sx.put_support_wall}`;
+    }
+    if (document.getElementById("sensex-opt-strategy")) {
+      document.getElementById("sensex-opt-strategy").innerHTML = `
+        <strong>${escapeHtml(sx.recommended_strategy)}</strong>
+        <div style="font-size:10px; color:var(--text-dim); margin-top:2px;">Sentiment: <span class="${sx.pcr >= 1 ? 'green' : 'red-text'}">${escapeHtml(sx.pcr_bias || '')}</span></div>
+      `;
+    }
+
+    const chainTbody = document.getElementById("sensex-chain-tbody");
+    if (chainTbody && sx.chain) {
+      chainTbody.innerHTML = sx.chain.map(c => `
+        <tr style="${c.is_atm ? 'background:rgba(255,215,0,0.08); font-weight:700;' : ''}">
+          <td class="font-mono green">₹${Number(c.ce_ltp).toFixed(2)}</td>
+          <td class="font-mono text-dim">${Number(c.ce_oi).toLocaleString('en-IN')}</td>
+          <td class="font-mono text-center"><strong class="${c.is_atm ? 'gold' : ''}">${c.strike}${c.is_atm ? ' <span style="font-size:8px; color:var(--neon-gold);">(ATM)</span>' : ''}</strong></td>
+          <td class="font-mono text-dim">${Number(c.pe_oi).toLocaleString('en-IN')}</td>
+          <td class="font-mono red-text">₹${Number(c.pe_ltp).toFixed(2)}</td>
+        </tr>
+      `).join("");
+    }
+  }
+}
+
+function switchOptionsTab(tab, btn) {
+  const parent = btn?.parentElement;
+  if (parent) {
+    parent.querySelectorAll(".news-filter-btn").forEach(b => b.classList.remove("active"));
+  }
+  if (btn) btn.classList.add("active");
+
+  const niftyCard = document.getElementById("opt-panel-nifty");
+  const bnCard = document.getElementById("opt-panel-banknifty");
+  const sxCard = document.getElementById("opt-panel-sensex");
+  const grid = document.getElementById("options-matrix-grid");
+
+  if (tab === 'all') {
+    if (niftyCard) niftyCard.classList.remove("hidden");
+    if (bnCard) bnCard.classList.remove("hidden");
+    if (sxCard) sxCard.classList.remove("hidden");
+    if (grid) grid.style.gridTemplateColumns = "repeat(3, 1fr)";
+  } else if (tab === 'nifty') {
+    if (niftyCard) niftyCard.classList.remove("hidden");
+    if (bnCard) bnCard.classList.add("hidden");
+    if (sxCard) sxCard.classList.add("hidden");
+    if (grid) grid.style.gridTemplateColumns = "1fr";
+  } else if (tab === 'banknifty') {
+    if (niftyCard) niftyCard.classList.add("hidden");
+    if (bnCard) bnCard.classList.remove("hidden");
+    if (sxCard) sxCard.classList.add("hidden");
+    if (grid) grid.style.gridTemplateColumns = "1fr";
+  } else if (tab === 'sensex') {
+    if (niftyCard) niftyCard.classList.add("hidden");
+    if (bnCard) bnCard.classList.add("hidden");
+    if (sxCard) sxCard.classList.remove("hidden");
+    if (grid) grid.style.gridTemplateColumns = "1fr";
   }
 }
 

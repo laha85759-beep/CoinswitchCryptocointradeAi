@@ -85,36 +85,63 @@ class NewsTelegramBroadcaster:
         msg += f"\n⚡ <i>TheSmartMag 24/7 Intelligence Wire</i>"
         return self.send_message(msg)
 
-    def broadcast_indian_market_digest(self, indices: Dict[str, Any], top_headlines: List[Dict[str, Any]]) -> bool:
-        """Broadcast live Indian Market (NSE/BSE) index scorecard and top market stories."""
+    def broadcast_indian_market_digest(self, indices: Dict[str, Any], top_headlines: List[Dict[str, Any]], options: Optional[Dict[str, Any]] = None, top_stocks: Optional[List[Dict[str, Any]]] = None) -> bool:
+        """Broadcast live Indian Market (NSE/BSE) index scorecard, Nifty/Sensex/BankNifty Options PCR & Max Pain, Intraday Stock Picks, and top news."""
         nifty = indices.get("NIFTY 50", {})
         bank_nifty = indices.get("BANK NIFTY", {})
         sensex = indices.get("SENSEX", {})
+        vix = indices.get("INDIA VIX", {})
         usdinr = indices.get("USD/INR", {})
         
         def fmt_chg(c):
             return f"+{c}% 🟢" if c > 0 else (f"{c}% 🔴" if c < 0 else "0.00% ⚪")
             
         msg = (
-            f"🇮🇳 <b>INDIAN MARKET INTEL • NSE / BSE LIVE RADAR</b>\n"
+            f"🇮🇳 <b>INDIAN MARKET INTEL &amp; F&amp;O DERIVATIVES RADAR</b>\n"
             f"━━━━━━━━━━━━━━━━━━━━\n"
             f"📊 <b>NIFTY 50:</b> <code>{nifty.get('price', '—')}</code> ({fmt_chg(nifty.get('change_pct', 0))})\n"
             f"🏦 <b>BANK NIFTY:</b> <code>{bank_nifty.get('price', '—')}</code> ({fmt_chg(bank_nifty.get('change_pct', 0))})\n"
-            f"📈 <b>SENSEX:</b> <code>{sensex.get('price', '—')}</code> ({fmt_chg(sensex.get('change_pct', 0))})\n"
-            f"💵 <b>USD / INR:</b> <code>₹{usdinr.get('price', '—')}</code> ({fmt_chg(usdinr.get('change_pct', 0))})\n\n"
-            f"🔥 <b>TOP INDIAN CATALYST HEADLINES:</b>\n"
+            f"📈 <b>BSE SENSEX:</b> <code>{sensex.get('price', '—')}</code> ({fmt_chg(sensex.get('change_pct', 0))})\n"
+            f"⚡ <b>INDIA VIX:</b> <code>{vix.get('price', '—')}</code> | 💵 <b>USD/INR:</b> <code>₹{usdinr.get('price', '—')}</code>\n\n"
         )
         
-        for idx, h in enumerate(top_headlines[:4], 1):
-            t = h.get("title", "")
-            src = h.get("source", "News")
-            u = h.get("url", "")
-            if u:
-                msg += f"{idx}. <a href='{u}'>{t}</a> (<i>{src}</i>)\n"
-            else:
-                msg += f"{idx}. {t} (<i>{src}</i>)\n"
-                
-        msg += f"\n⚡ <i>TheSmartMag Dedicated Indian & Global Intel Feed</i>"
+        if options:
+            n_opt = options.get("nifty", {})
+            bn_opt = options.get("banknifty", {})
+            sx_opt = options.get("sensex", {})
+            
+            msg += (
+                f"🎯 <b>F&amp;O OPTIONS INTELLIGENCE:</b>\n"
+                f"• <b>NIFTY:</b> PCR <code>{n_opt.get('pcr', '—')}</code> | Max Pain: <code>{n_opt.get('max_pain', '—')}</code> | Sup: <code>{n_opt.get('put_support_wall', '—')}</code> | Res: <code>{n_opt.get('call_resistance_wall', '—')}</code>\n"
+                f"• <b>BANK NIFTY:</b> PCR <code>{bn_opt.get('pcr', '—')}</code> | Max Pain: <code>{bn_opt.get('max_pain', '—')}</code> | Res: <code>{bn_opt.get('call_resistance_wall', '—')}</code>\n"
+                f"• <b>SENSEX:</b> PCR <code>{sx_opt.get('pcr', '—')}</code> | Max Pain: <code>{sx_opt.get('max_pain', '—')}</code> | Res: <code>{sx_opt.get('call_resistance_wall', '—')}</code>\n"
+                f"💡 <i>Strategy: {n_opt.get('recommended_strategy', 'Bull Call Spread')}</i>\n\n"
+            )
+            
+        if top_stocks:
+            msg += f"⚡ <b>TOP INTRADAY MOMENTUM EQUITIES:</b>\n"
+            for s in top_stocks[:3]:
+                sym = s.get("symbol", "")
+                ltp = s.get("ltp", 0)
+                sig = s.get("signal", "RANGE")
+                t1 = s.get("target1", 0)
+                sl = s.get("stop_loss", 0)
+                icon = "🟢" if "BUY" in sig else "🔴"
+                msg += f"• <b>{sym}</b> (₹{ltp}) ➔ {icon} <b>{sig}</b> | TGT: ₹{t1} | SL: ₹{sl}\n"
+            msg += "\n"
+
+        if top_headlines:
+            msg += f"🔥 <b>TOP CATALYST HEADLINES:</b>\n"
+            for idx, h in enumerate(top_headlines[:3], 1):
+                t = h.get("title", "")
+                src = h.get("source", "News")
+                u = h.get("url", "")
+                if u:
+                    msg += f"{idx}. <a href='{u}'>{t}</a> (<i>{src}</i>)\n"
+                else:
+                    msg += f"{idx}. {t} (<i>{src}</i>)\n"
+                    
+        msg += f"\n⚡ <i>TheSmartMag 24/7 Institutional Market Feed</i>"
         return self.send_message(msg)
 
     def broadcast_calendar_event(self, event: Dict[str, Any]) -> bool:
@@ -128,7 +155,7 @@ class NewsTelegramBroadcaster:
         imp_icon = "🔴 HIGH IMPACT" if "HIGH" in impact else "🟠 MEDIUM IMPACT"
         
         msg = (
-            f"🏛 <b>ECONOMIC CALENDAR RELEASE • {country}</b>\n"
+            f"🏛 <b>ECONOMIC CALENDAR CATALYST • {country}</b>\n"
             f"━━━━━━━━━━━━━━━━━━━━\n"
             f"<b>{title}</b>\n\n"
             f"⚠️ <b>Impact:</b> {imp_icon}\n"
@@ -152,7 +179,7 @@ class NewsTelegramBroadcaster:
         dir_icon = "🟢 BUY / LONG" if direction == "BUY" else "🔴 SELL / SHORT"
         
         msg = (
-            f"⚡ <b>LIVE FOREX & MACRO SIGNAL</b>\n"
+            f"⚡ <b>NEWS-DRIVEN TRADE SIGNAL • {pair}</b>\n"
             f"━━━━━━━━━━━━━━━━━━━━\n"
             f"📊 <b>Asset:</b> <code>{pair}</code>\n"
             f"🎯 <b>Direction:</b> {dir_icon}\n\n"
@@ -170,6 +197,34 @@ class NewsTelegramBroadcaster:
             
         msg += f"\n⚡ <i>TheSmartMag Dedicated Forex & Macro Channel</i>"
         return self.send_message(msg)
+
+    def broadcast_full_digest(self, indices: Dict[str, Any], options: Dict[str, Any], stocks: List[Dict[str, Any]], calendar_events: List[Dict[str, Any]], signals: List[Dict[str, Any]], news_items: List[Dict[str, Any]]) -> int:
+        """Dispatches multi-asset digest to Telegram channel."""
+        count = 0
+        
+        # 1. Send Indian Market Intel & Options Summary
+        if indices or options or stocks:
+            indian_news = [n for n in news_items if n.get("category") == "INDIA"]
+            if self.broadcast_indian_market_digest(indices, indian_news[:3], options, stocks[:3]):
+                count += 1
+                time.sleep(1)
+
+        # 2. Send High-Impact Economic Calendar Event
+        high_cal = [e for e in calendar_events if (e.get("impact") or "").lower() == "high"]
+        if high_cal:
+            for ev in high_cal[:2]:
+                if self.broadcast_calendar_event(ev):
+                    count += 1
+                    time.sleep(1)
+
+        # 3. Send Top Macro & Forex News Trade Signal
+        if signals:
+            for sig in signals[:2]:
+                if self.broadcast_forex_macro_signal(sig):
+                    count += 1
+                    time.sleep(1)
+
+        return count
 
 # Global Instance
 news_broadcaster = NewsTelegramBroadcaster()

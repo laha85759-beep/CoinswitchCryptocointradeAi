@@ -762,6 +762,22 @@ body.neural-core-os {
   grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
+.tsm-options-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+@media (max-width: 1100px) {
+  .tsm-options-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.opt-card {
+  transition: all 0.3s ease;
+}
+.opt-card.hidden {
+  display: none !important;
+}
 
 .tsm-table-wrap { overflow-x: auto; }
 .tsm-table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 11px; }
