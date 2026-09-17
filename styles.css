@@ -1331,7 +1331,75 @@ body.neural-core-os {
   margin-bottom: 3px;
 }
 
+/* ─── 🇮🇳 INDIAN MARKET INTEL & NSE/BSE STRIP ───────────────────────────── */
+.indian-market-strip {
+  background: linear-gradient(135deg, rgba(255, 153, 51, 0.08), rgba(18, 24, 38, 0.9) 30%, rgba(19, 136, 8, 0.08) 100%);
+  border: 1px solid rgba(255, 153, 51, 0.35);
+  border-radius: 10px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(255, 153, 51, 0.04);
+}
+
+.indian-strip-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-orb);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: #ff9933;
+  text-shadow: 0 0 10px rgba(255, 153, 51, 0.4);
+}
+
+.indian-indices-grid {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.indian-idx-card {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  transition: all 0.2s;
+}
+
+.indian-idx-card:hover {
+  border-color: rgba(255, 153, 51, 0.5);
+  transform: translateY(-1px);
+}
+
+.indian-idx-name {
+  color: var(--text-dim);
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+
+.indian-idx-val {
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+.indian-idx-chg {
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
 @media (max-width: 1024px) {
   .news-kpi-grid { grid-template-columns: 1fr 1fr; }
   .macro-signals-grid { grid-template-columns: 1fr; }
+  .indian-market-strip { flex-direction: column; align-items: flex-start; }
 }

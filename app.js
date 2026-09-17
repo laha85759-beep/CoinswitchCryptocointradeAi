@@ -1199,6 +1199,45 @@ async function fetchNewsData() {
           previewSent.className = `tsm-badge-pill ${s.score >= 55 ? 'admin' : (s.score <= 45 ? 'gold' : 'cyan')}`;
         }
       }
+      if (nData.indian_indices) {
+        const ind = nData.indian_indices;
+        const nifty = ind["NIFTY 50"];
+        const banknifty = ind["BANK NIFTY"];
+        const sensex = ind["SENSEX"];
+        const usdinr = ind["USD/INR"];
+        
+        if (nifty && document.getElementById("idx-nifty")) {
+          document.getElementById("idx-nifty").textContent = Number(nifty.price).toLocaleString('en-IN');
+          const el = document.getElementById("idx-nifty-chg");
+          if (el) {
+            el.textContent = `${nifty.change_pct > 0 ? '+' : ''}${nifty.change_pct}% ${nifty.change_pct >= 0 ? '🟢' : '🔴'}`;
+            el.className = `indian-idx-chg ${nifty.change_pct >= 0 ? 'green' : 'red-text'}`;
+          }
+        }
+        if (banknifty && document.getElementById("idx-banknifty")) {
+          document.getElementById("idx-banknifty").textContent = Number(banknifty.price).toLocaleString('en-IN');
+          const el = document.getElementById("idx-banknifty-chg");
+          if (el) {
+            el.textContent = `${banknifty.change_pct > 0 ? '+' : ''}${banknifty.change_pct}% ${banknifty.change_pct >= 0 ? '🟢' : '🔴'}`;
+            el.className = `indian-idx-chg ${banknifty.change_pct >= 0 ? 'green' : 'red-text'}`;
+          }
+        }
+        if (sensex && document.getElementById("idx-sensex")) {
+          document.getElementById("idx-sensex").textContent = Number(sensex.price).toLocaleString('en-IN');
+          const el = document.getElementById("idx-sensex-chg");
+          if (el) {
+            el.textContent = `${sensex.change_pct > 0 ? '+' : ''}${sensex.change_pct}% ${sensex.change_pct >= 0 ? '🟢' : '🔴'}`;
+            el.className = `indian-idx-chg ${sensex.change_pct >= 0 ? 'green' : 'red-text'}`;
+          }
+        }
+        if (usdinr && document.getElementById("idx-usdinr")) {
+          document.getElementById("idx-usdinr").textContent = `₹${usdinr.price}`;
+          const el = document.getElementById("idx-usdinr-chg");
+          if (el) {
+            el.textContent = `${usdinr.change_pct > 0 ? '+' : ''}${usdinr.change_pct}% ⚪`;
+          }
+        }
+      }
       if (nData.news && nData.news.length > 0) {
         cachedNewsList = nData.news;
         const countEl = document.getElementById("news-total-count");
@@ -1250,10 +1289,12 @@ function renderNewsFeed() {
   if (!container || !cachedNewsList || cachedNewsList.length === 0) return;
 
   let filtered = cachedNewsList;
-  if (currentNewsFilter === 'crypto') {
+  if (currentNewsFilter === 'india') {
+    filtered = cachedNewsList.filter(n => n.category === 'INDIA' || n.country === 'INDIA' || ['Moneycontrol', 'Economic Times', 'LiveMint', 'Business Standard'].includes(n.source));
+  } else if (currentNewsFilter === 'crypto') {
     filtered = cachedNewsList.filter(n => n.category === 'CRYPTO');
   } else if (currentNewsFilter === 'forex') {
-    filtered = cachedNewsList.filter(n => n.category !== 'CRYPTO' || (n.affected_assets && n.affected_assets.some(a => ['EUR', 'GBP', 'USD', 'GOLD'].includes(a))));
+    filtered = cachedNewsList.filter(n => n.category !== 'CRYPTO' || (n.affected_assets && n.affected_assets.some(a => ['EUR', 'GBP', 'USD', 'GOLD', 'INR'].includes(a))));
   } else if (currentNewsFilter === 'bullish') {
     filtered = cachedNewsList.filter(n => (n.sentiment || '').includes('BULL'));
   } else if (currentNewsFilter === 'bearish') {
@@ -1362,5 +1403,19 @@ async function triggerNewsScan() {
     fetchNewsData();
   } catch (err) {
     alert("Scan notice: " + err);
+  }
+}
+
+async function broadcastNewsToTelegram() {
+  try {
+    const res = await fetch("/api/news/broadcast-telegram", { method: "POST" });
+    const data = await res.json();
+    if (res.ok) {
+      alert("📢 " + (data.message || "Live News & Indian Market Intel dispatched to Telegram!"));
+    } else {
+      alert("⚠️ " + (data.message || "Failed to dispatch to Telegram."));
+    }
+  } catch (err) {
+    alert("Broadcast error: " + err);
   }
 }

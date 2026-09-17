@@ -1,4 +1,4 @@
-﻿from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify
 from functools import wraps
 import time
 import os
@@ -311,9 +311,11 @@ def get_live_news():
     sentiment = news_core.get_market_sentiment_summary()
     with news_core.lock:
         news_list = list(news_core.cached_news)
+        indian_indices = dict(news_core.cached_indian_indices)
     return jsonify({
         "status": "success",
         "sentiment": sentiment,
+        "indian_indices": indian_indices,
         "total_articles": len(news_list),
         "news": news_list,
         "last_updated": news_core.last_scan_time
@@ -327,6 +329,7 @@ def get_economic_calendar():
         "status": "success",
         "total_events": len(calendar_list),
         "calendar": calendar_list,
+        "events": calendar_list,
         "last_updated": news_core.last_scan_time
     })
 
@@ -346,10 +349,26 @@ def trigger_news_scan():
     news_core.refresh_all()
     return jsonify({
         "status": "success",
-        "message": "Live news, economic calendar & macro signals refreshed successfully!",
+        "message": "Live news, Indian market radar & macro signals refreshed successfully!",
         "articles": len(news_core.cached_news),
         "calendar_events": len(news_core.cached_calendar),
-        "signals": len(news_core.cached_signals)
+        "signals": len(news_core.cached_signals),
+        "indian_indices": news_core.cached_indian_indices
+    })
+
+@api_bp.route("/api/news/broadcast-telegram", methods=["POST"])
+def broadcast_news_to_telegram():
+    if not news_broadcaster.is_active:
+        return jsonify({
+            "status": "notice",
+            "message": "News Telegram channel is in standby. Ensure NEWS_BOT_TOKEN and NEWS_CHAT_ID are active."
+        }), 400
+    
+    count = news_core.broadcast_all_fresh_news(limit=5)
+    return jsonify({
+        "status": "success",
+        "message": f"Dispatched {count} live updates & Indian Market Intel to dedicated Telegram channel!",
+        "count": count
     })
 
 @api_bp.route("/api/admin/news/test-broadcast", methods=["POST"])
@@ -363,11 +382,12 @@ def admin_test_news_broadcast(admin_user):
         
     test_article = {
         "title": "⚡ TheSmartMag News Agent: Telegram Broadcast Integration Verified!",
-        "source_name": "TheSmartMag AI Core",
-        "link": "https://trade.thesmartmag.com",
-        "sentiment": "BULLISH"
+        "source": "TheSmartMag AI Core",
+        "url": "https://trade.thesmartmag.com",
+        "sentiment": "BULLISH",
+        "category": "INDIA"
     }
-    success = news_broadcaster.broadcast_breaking_news(test_article, "Multi-asset news agent is monitoring 24/7 with zero impact on trading channels.")
+    success = news_broadcaster.broadcast_breaking_news(test_article, "Multi-asset news & Indian market radar is monitoring 24/7 with zero impact on trading channels.")
     if success:
         return jsonify({"status": "success", "message": "Test message sent to dedicated News Telegram channel!"})
     else:

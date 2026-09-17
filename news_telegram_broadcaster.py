@@ -1,4 +1,4 @@
-﻿"""
+"""
 news_telegram_broadcaster.py — Dedicated Telegram Broadcaster for News & Forex Signals
 =====================================================================================
 Runs independently for the Live News, Economic Calendar & Forex Signals Channel.
@@ -61,15 +61,18 @@ class NewsTelegramBroadcaster:
             return False
 
     def broadcast_breaking_news(self, article: Dict[str, Any], ai_insight: Optional[str] = None) -> bool:
-        title = article.get("title", "")
-        source = article.get("source_name", "Market Wire")
-        link = article.get("link", "")
+        title = article.get("title", "").strip()
+        source = article.get("source") or article.get("source_name") or "Market Wire"
+        link = article.get("url") or article.get("link") or ""
         sentiment = article.get("sentiment", "NEUTRAL").upper()
+        category = article.get("category", "MARKET").upper()
         
         sent_icon = "🟢 BULLISH" if "BULL" in sentiment else ("🔴 BEARISH" if "BEAR" in sentiment else "⚪ NEUTRAL")
+        cat_badge = "🇮🇳 INDIAN EQUITIES & REGULATORY" if category == "INDIA" else f"🌐 {category}"
         
         msg = (
-            f"📰 <b>BREAKING MARKET NEWS • {source}</b>\n"
+            f"📰 <b>BREAKING NEWS ALERT • {source}</b>\n"
+            f"🏷 <i>{cat_badge}</i>\n"
             f"━━━━━━━━━━━━━━━━━━━━\n"
             f"<b>{title}</b>\n\n"
             f"📊 <b>Sentiment:</b> {sent_icon}\n"
@@ -77,9 +80,41 @@ class NewsTelegramBroadcaster:
         if ai_insight:
             msg += f"🧠 <b>AI Catalyst Insight:</b> <i>{ai_insight}</i>\n"
         if link:
-            msg += f"\n🔗 <a href='{link}'>Read Full Report</a>\n"
+            msg += f"\n🔗 <a href='{link}'>Read Full Article</a>\n"
             
-        msg += f"\n⚡ <i>TheSmartMag Live News & Macro Engine</i>"
+        msg += f"\n⚡ <i>TheSmartMag 24/7 Intelligence Wire</i>"
+        return self.send_message(msg)
+
+    def broadcast_indian_market_digest(self, indices: Dict[str, Any], top_headlines: List[Dict[str, Any]]) -> bool:
+        """Broadcast live Indian Market (NSE/BSE) index scorecard and top market stories."""
+        nifty = indices.get("NIFTY 50", {})
+        bank_nifty = indices.get("BANK NIFTY", {})
+        sensex = indices.get("SENSEX", {})
+        usdinr = indices.get("USD/INR", {})
+        
+        def fmt_chg(c):
+            return f"+{c}% 🟢" if c > 0 else (f"{c}% 🔴" if c < 0 else "0.00% ⚪")
+            
+        msg = (
+            f"🇮🇳 <b>INDIAN MARKET INTEL • NSE / BSE LIVE RADAR</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
+            f"📊 <b>NIFTY 50:</b> <code>{nifty.get('price', '—')}</code> ({fmt_chg(nifty.get('change_pct', 0))})\n"
+            f"🏦 <b>BANK NIFTY:</b> <code>{bank_nifty.get('price', '—')}</code> ({fmt_chg(bank_nifty.get('change_pct', 0))})\n"
+            f"📈 <b>SENSEX:</b> <code>{sensex.get('price', '—')}</code> ({fmt_chg(sensex.get('change_pct', 0))})\n"
+            f"💵 <b>USD / INR:</b> <code>₹{usdinr.get('price', '—')}</code> ({fmt_chg(usdinr.get('change_pct', 0))})\n\n"
+            f"🔥 <b>TOP INDIAN CATALYST HEADLINES:</b>\n"
+        )
+        
+        for idx, h in enumerate(top_headlines[:4], 1):
+            t = h.get("title", "")
+            src = h.get("source", "News")
+            u = h.get("url", "")
+            if u:
+                msg += f"{idx}. <a href='{u}'>{t}</a> (<i>{src}</i>)\n"
+            else:
+                msg += f"{idx}. {t} (<i>{src}</i>)\n"
+                
+        msg += f"\n⚡ <i>TheSmartMag Dedicated Indian & Global Intel Feed</i>"
         return self.send_message(msg)
 
     def broadcast_calendar_event(self, event: Dict[str, Any]) -> bool:

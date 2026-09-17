@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=97.0">
+  <link rel="stylesheet" href="styles.css?v=98.0">
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -384,10 +384,43 @@
     <div id="view-news" class="nc-view-pane tsm-view-section">
       <div class="tsm-panel">
         <div class="tsm-panel-header">
-          <div class="tsm-panel-title">📰 LIVE NEWS, ECONOMIC CALENDAR &amp; MACRO CATALYST AGENT</div>
-          <div style="display:flex; gap:10px; align-items:center;">
-            <span class="tsm-live-indicator"><span class="tsm-live-dot"></span> 24/7 STREAM ONLINE</span>
+          <div class="tsm-panel-title">📰 LIVE NEWS, INDIAN MARKET INTEL &amp; MACRO CATALYST AGENT</div>
+          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <button class="tsm-btn-cta cyan" onclick="broadcastNewsToTelegram()" style="margin:0; padding:6px 14px; font-size:10px; letter-spacing:1px;">
+              📢 BROADCAST TO TELEGRAM
+            </button>
             <button class="tsm-btn-secondary" onclick="triggerNewsScan()">🔄 SCAN LATEST NEWS</button>
+            <span class="tsm-live-indicator"><span class="tsm-live-dot"></span> 24/7 STREAM ONLINE</span>
+          </div>
+        </div>
+
+        <!-- 🇮🇳 INDIAN MARKET INTEL & NSE/BSE LIVE RADAR STRIP -->
+        <div class="indian-market-strip">
+          <div class="indian-strip-label">
+            <span>🇮🇳</span>
+            <span>INDIAN EQUITIES &amp; MACRO RADAR</span>
+          </div>
+          <div class="indian-indices-grid">
+            <div class="indian-idx-card">
+              <span class="indian-idx-name">NIFTY 50</span>
+              <span class="indian-idx-val" id="idx-nifty">23,347.25</span>
+              <span class="indian-idx-chg green" id="idx-nifty-chg">+0.56% 🟢</span>
+            </div>
+            <div class="indian-idx-card">
+              <span class="indian-idx-name">BANK NIFTY</span>
+              <span class="indian-idx-val" id="idx-banknifty">56,325.50</span>
+              <span class="indian-idx-chg green" id="idx-banknifty-chg">+0.06% 🟢</span>
+            </div>
+            <div class="indian-idx-card">
+              <span class="indian-idx-name">SENSEX</span>
+              <span class="indian-idx-val" id="idx-sensex">74,620.91</span>
+              <span class="indian-idx-chg green" id="idx-sensex-chg">+0.38% 🟢</span>
+            </div>
+            <div class="indian-idx-card">
+              <span class="indian-idx-name">USD / INR</span>
+              <span class="indian-idx-val cyan" id="idx-usdinr">₹95.89</span>
+              <span class="indian-idx-chg" id="idx-usdinr-chg">-0.05% ⚪</span>
+            </div>
           </div>
         </div>
 
@@ -405,13 +438,13 @@
           </div>
           <div class="nc-hex-card">
             <div class="nc-hex-label">NEWS VELOCITY</div>
-            <div class="nc-hex-val gold" id="news-total-count">30+ WIRES</div>
-            <div class="nc-hex-sub">Finnhub, CoinDesk, FXStreet</div>
+            <div class="nc-hex-val gold" id="news-total-count">50+ WIRES</div>
+            <div class="nc-hex-sub">Moneycontrol, ET, CoinDesk, FXStreet</div>
           </div>
           <div class="nc-hex-card">
             <div class="nc-hex-label">TELEGRAM BROADCAST</div>
             <div class="nc-hex-val purple">ISOLATED CHANNEL</div>
-            <div class="nc-hex-sub">Dedicated Forex &amp; News Wire</div>
+            <div class="nc-hex-sub">Auto-Dispatch on Breaking Wires</div>
           </div>
         </div>
 
@@ -419,6 +452,7 @@
         <div class="news-filter-bar">
           <span style="font-family:var(--font-mono); font-size:10px; color:var(--text-dim); margin-right:6px;">FILTERS:</span>
           <button class="news-filter-btn active" onclick="filterNewsCategory('all', this)">ALL NEWS</button>
+          <button class="news-filter-btn" onclick="filterNewsCategory('india', this)" style="border-color:rgba(255,153,51,0.5); color:#ff9933;">🇮🇳 INDIA / NSE-BSE</button>
           <button class="news-filter-btn" onclick="filterNewsCategory('crypto', this)">CRYPTO</button>
           <button class="news-filter-btn" onclick="filterNewsCategory('forex', this)">FOREX / MACRO</button>
           <button class="news-filter-btn" onclick="filterNewsCategory('bullish', this)">BULLISH ONLY</button>
@@ -791,6 +825,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=97.0"></script>
+  <script src="app.js?v=98.0"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-﻿"""
+"""
 news_agent_core.py — TheSmartMag Live News, Economic Calendar & Macro Signal Engine
 ===================================================================================
 Integrated multi-source financial news aggregator, AI sentiment scoring,
@@ -31,6 +31,12 @@ class NewsAgentCore:
         self.cached_news: List[Dict[str, Any]] = []
         self.cached_calendar: List[Dict[str, Any]] = []
         self.cached_signals: List[Dict[str, Any]] = []
+        self.cached_indian_indices: Dict[str, Any] = {
+            "NIFTY 50": {"price": 23347.25, "change_pct": 0.56},
+            "BANK NIFTY": {"price": 56325.50, "change_pct": 0.06},
+            "SENSEX": {"price": 74620.91, "change_pct": 0.38},
+            "USD/INR": {"price": 95.89, "change_pct": -0.05}
+        }
         self.seen_news_ids: set = set()
         self.last_scan_time = 0
         self.is_running = False
@@ -64,6 +70,73 @@ class NewsAgentCore:
                 "bear_pct": bear_pct,
                 "headline_count": total
             }
+
+    def fetch_indian_indices(self) -> Dict[str, Any]:
+        """Fetch real-time quotes for NSE Nifty 50, Bank Nifty, Sensex, and USD/INR."""
+        symbols = {
+            "NIFTY 50": "%5ENSEI",
+            "BANK NIFTY": "%5ENSEBANK",
+            "SENSEX": "%5EBSESN",
+            "USD/INR": "INR=X"
+        }
+        result = {}
+        for name, sym in symbols.items():
+            try:
+                headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+                url = f"https://query1.finance.yahoo.com/v8/finance/chart/{sym}?interval=1d"
+                res = requests.get(url, headers=headers, timeout=6)
+                if res.status_code == 200:
+                    meta = res.json()["chart"]["result"][0]["meta"]
+                    price = meta.get("regularMarketPrice")
+                    prev = meta.get("chartPreviousClose")
+                    if price and prev:
+                        change_pct = round(((price - prev) / prev) * 100, 2)
+                        result[name] = {"price": round(price, 2), "change_pct": change_pct}
+            except Exception as exc:
+                log.debug(f"Indian index quote notice for {name}: {exc}")
+                
+        if not result:
+            result = self.cached_indian_indices
+        return result
+
+    def fetch_indian_market_news(self) -> List[Dict[str, Any]]:
+        """Fetch live Indian Market, NSE/BSE, Moneycontrol, LiveMint, and Economic Times news."""
+        feeds = [
+            ("https://www.moneycontrol.com/rss/MCtopnews.xml", "Moneycontrol", "INDIA"),
+            ("https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms", "Economic Times", "INDIA"),
+            ("https://www.livemint.com/rss/markets", "LiveMint", "INDIA"),
+            ("https://www.business-standard.com/rss/markets-106.rss", "Business Standard", "INDIA")
+        ]
+        articles = []
+        for url, source, cat in feeds:
+            try:
+                headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+                res = requests.get(url, headers=headers, timeout=8)
+                if res.status_code == 200:
+                    root = ET.fromstring(res.content)
+                    for item in root.findall(".//item")[:10]:
+                        title = (item.findtext("title") or "").strip()
+                        link = (item.findtext("link") or "").strip()
+                        desc = (item.findtext("description") or "").strip()
+                        if "<" in desc and ">" in desc:
+                            import re
+                            desc = re.sub(r"<[^>]+>", "", desc).strip()
+                        pub_date = item.findtext("pubDate") or ""
+                        if title:
+                            articles.append({
+                                "id": f"in_{abs(hash(title))}",
+                                "title": title,
+                                "summary": desc[:280] if desc else title,
+                                "source": source,
+                                "url": link,
+                                "category": cat,
+                                "country": "INDIA",
+                                "timestamp": int(time.time()),
+                                "pubDate": pub_date
+                            })
+            except Exception as e:
+                log.debug(f"Indian RSS fetch notice for {source}: {e}")
+        return articles
 
     def fetch_finnhub_news(self) -> List[Dict[str, Any]]:
         if not FINNHUB_API_KEY:
@@ -108,7 +181,6 @@ class NewsAgentCore:
                         title = (item.findtext("title") or "").strip()
                         link = (item.findtext("link") or "").strip()
                         desc = (item.findtext("description") or "").strip()
-                        # Clean HTML from desc
                         if "<" in desc and ">" in desc:
                             import re
                             desc = re.sub(r"<[^>]+>", "", desc).strip()
@@ -134,8 +206,8 @@ class NewsAgentCore:
         full_text = f"{title} {summary}".lower()
         
         # Bullish / Bearish Keywords dictionary
-        bull_words = ["surge", "jump", "record", "rally", "bullish", "inflows", "adoption", "approval", "gain", "breakout", "accumulat", "soar", "pump", "partner", "invest", "buy"]
-        bear_words = ["crash", "drop", "dump", "bearish", "outflows", "ban", "hack", "liquidat", "plunge", "fall", "selloff", "lawsuit", "crackdown", "decline", "warn", "risk"]
+        bull_words = ["surge", "jump", "record", "rally", "bullish", "inflows", "adoption", "approval", "gain", "breakout", "accumulat", "soar", "pump", "partner", "invest", "buy", "all-time high", "profit", "expansion"]
+        bear_words = ["crash", "drop", "dump", "bearish", "outflows", "ban", "hack", "liquidat", "plunge", "fall", "selloff", "lawsuit", "crackdown", "decline", "warn", "risk", "loss", "fraud"]
         
         bull_score = sum(1 for w in bull_words if w in full_text)
         bear_score = sum(1 for w in bear_words if w in full_text)
@@ -150,13 +222,13 @@ class NewsAgentCore:
             sentiment = "NEUTRAL"
             impact = 50
             
-        # Target Assets
+        # Target Assets & Indian Tickers
         assets = []
-        for sym in ["BTC", "ETH", "SOL", "XRP", "USDT", "GOLD", "USD", "INR", "EUR", "GBP"]:
+        for sym in ["NIFTY", "SENSEX", "BANKNIFTY", "RELIANCE", "HDFCBANK", "TCS", "INFY", "TATA", "COINSWITCH", "DELTA", "TDS", "FIU", "RBI", "SEBI", "BTC", "ETH", "SOL", "XRP", "USDT", "GOLD", "USD", "INR", "EUR", "GBP"]:
             if sym.lower() in full_text:
                 assets.append(sym)
         if not assets:
-            assets = ["CRYPTO / MACRO"]
+            assets = ["MARKET / CATALYST"]
             
         return {
             "sentiment": sentiment,
@@ -167,6 +239,9 @@ class NewsAgentCore:
 
     def fetch_live_news(self) -> List[Dict[str, Any]]:
         raw_items = []
+        # Indian Market Wires
+        raw_items.extend(self.fetch_indian_market_news())
+        # Global & Crypto Wires
         raw_items.extend(self.fetch_finnhub_news())
         raw_items.extend(self.fetch_rss_crypto_news())
         
@@ -178,7 +253,7 @@ class NewsAgentCore:
             
         # Sort by latest
         processed.sort(key=lambda x: x.get("timestamp", 0), reverse=True)
-        return processed[:30]
+        return processed[:50]
 
     def fetch_economic_calendar(self) -> List[Dict[str, Any]]:
         try:
@@ -251,27 +326,59 @@ class NewsAgentCore:
         ]
         return signals
 
+    def broadcast_all_fresh_news(self, limit: int = 5) -> int:
+        """Broadcast top fresh news stories and Indian market intel directly to Telegram."""
+        if not news_broadcaster.is_active:
+            log.warning("Telegram Broadcaster not active — cannot send news.")
+            return 0
+            
+        with self.lock:
+            news_items = list(self.cached_news)
+            indices = dict(self.cached_indian_indices)
+            
+        dispatched = 0
+        # 1. Send Indian Market Digest if available
+        if indices:
+            indian_headlines = [n for n in news_items if n.get("category") == "INDIA"]
+            if indian_headlines:
+                news_broadcaster.broadcast_indian_market_digest(indices, indian_headlines[:4])
+                dispatched += 1
+                time.sleep(1)
+                
+        # 2. Send top fresh breaking news items
+        for item in news_items[:limit]:
+            if item["id"] not in self.seen_news_ids:
+                self.seen_news_ids.add(item["id"])
+                news_broadcaster.broadcast_breaking_news(item, item.get("ai_takeaway"))
+                dispatched += 1
+                time.sleep(1)
+                
+        return dispatched
+
     def refresh_all(self):
         """Fetch news, calendar, and signals in thread-safe manner."""
-        log.info("🔄 Refreshing News, Economic Calendar & Macro Signals...")
+        log.info("🔄 Refreshing News, Indian Intel, Economic Calendar & Macro Signals...")
         news = self.fetch_live_news()
         cal = self.fetch_economic_calendar()
         sigs = self.generate_macro_forex_signals()
+        indices = self.fetch_indian_indices()
         
         with self.lock:
             self.cached_news = news
             self.cached_calendar = cal
             self.cached_signals = sigs
+            self.cached_indian_indices = indices
             self.last_scan_time = int(time.time())
             
-        log.info(f"✅ News Engine Synced: {len(news)} articles, {len(cal)} calendar events, {len(sigs)} macro signals.")
+        log.info(f"✅ News Engine Synced: {len(news)} articles, {len(cal)} calendar events, {len(sigs)} macro signals, Indian Indices: {list(indices.keys())}.")
         
-        # Check for high impact breaking news to broadcast to dedicated News Telegram channel
+        # Broadcast high impact fresh breaking news to dedicated News Telegram channel
         if news and news_broadcaster.is_active:
-            for item in news[:2]:
-                if item["id"] not in self.seen_news_ids and item.get("impact_score", 0) >= 75:
+            for item in news[:3]:
+                if item["id"] not in self.seen_news_ids and item.get("impact_score", 0) >= 70:
                     self.seen_news_ids.add(item["id"])
                     news_broadcaster.broadcast_breaking_news(item, item.get("ai_takeaway"))
+                    time.sleep(1)
 
     def start_background_loop(self, interval_seconds: int = 90):
         """Run continuous 24/7 news monitoring."""
