@@ -24,6 +24,8 @@ document.addEventListener("DOMContentLoaded", () => {
   initUserSession();
   fetchRealData();
   setInterval(fetchRealData, 4000);
+  fetchNewsData();
+  setInterval(fetchNewsData, 10000);
   checkAdminAuth();
 });
 
@@ -1150,4 +1152,187 @@ function initNeuralBgCanvas() {
     requestAnimationFrame(loop);
   }
   loop();
+}
+
+
+// ── 14. Live News Agent, Economic Calendar & Macro Signal Engine ───────────
+let cachedNewsList = [];
+let currentNewsFilter = 'all';
+
+async function fetchNewsData() {
+  try {
+    // 1. Fetch Live News & Sentiment
+    const nRes = await fetch("/api/news/live");
+    if (nRes.ok) {
+      const nData = await nRes.json();
+      if (nData.sentiment) {
+        const s = nData.sentiment;
+        const sentVal = document.getElementById("news-sentiment-val");
+        const sentSub = document.getElementById("news-sentiment-sub");
+        if (sentVal) {
+          sentVal.textContent = `${s.label} ${s.score}%`;
+          sentVal.className = `nc-hex-val ${s.score >= 55 ? 'green' : (s.score <= 45 ? 'purple' : 'cyan')}`;
+        }
+        if (sentSub) {
+          sentSub.textContent = `Bullish: ${s.bull_pct}% • Bearish: ${s.bear_pct}%`;
+        }
+      }
+      if (nData.news) {
+        cachedNewsList = nData.news;
+        const countEl = document.getElementById("news-total-count");
+        if (countEl) countEl.textContent = `${nData.news.length} WIRES`;
+        renderNewsFeed();
+      }
+    }
+
+    // 2. Fetch Economic Calendar
+    const cRes = await fetch("/api/news/calendar");
+    if (cRes.ok) {
+      const cData = await cRes.json();
+      if (cData.calendar) {
+        const calCount = document.getElementById("news-cal-count");
+        if (calCount) calCount.textContent = `${cData.calendar.length} EVENTS`;
+        renderEconomicCalendar(cData.calendar);
+      }
+    }
+
+    // 3. Fetch Macro & Forex Signals
+    const sRes = await fetch("/api/news/signals");
+    if (sRes.ok) {
+      const sData = await sRes.json();
+      if (sData.signals) {
+        renderMacroSignals(sData.signals);
+      }
+    }
+
+  } catch (err) {
+    console.debug("News data fetch notice:", err);
+  }
+}
+
+function filterNewsCategory(cat, btn) {
+  currentNewsFilter = cat;
+  document.querySelectorAll(".news-filter-btn").forEach(b => b.classList.remove("active"));
+  if (btn) btn.classList.add("active");
+  renderNewsFeed();
+}
+
+function renderNewsFeed() {
+  const container = document.getElementById("news-stream-container");
+  if (!container || !cachedNewsList || cachedNewsList.length === 0) return;
+
+  let filtered = cachedNewsList;
+  if (currentNewsFilter === 'crypto') {
+    filtered = cachedNewsList.filter(n => n.category === 'CRYPTO');
+  } else if (currentNewsFilter === 'forex') {
+    filtered = cachedNewsList.filter(n => n.category !== 'CRYPTO' || (n.affected_assets && n.affected_assets.some(a => ['EUR', 'GBP', 'USD', 'GOLD'].includes(a))));
+  } else if (currentNewsFilter === 'bullish') {
+    filtered = cachedNewsList.filter(n => (n.sentiment || '').includes('BULL'));
+  } else if (currentNewsFilter === 'bearish') {
+    filtered = cachedNewsList.filter(n => (n.sentiment || '').includes('BEAR'));
+  }
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="empty-state text-center" style="padding:20px;">No articles match the '${currentNewsFilter}' filter.</div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(item => {
+    const sent = (item.sentiment || 'NEUTRAL').toUpperCase();
+    let sentBadge = `<span class="news-sentiment-neutral">⚪ NEUTRAL</span>`;
+    if (sent.includes('BULL')) sentBadge = `<span class="news-sentiment-bull">🟢 BULLISH</span>`;
+    else if (sent.includes('BEAR')) sentBadge = `<span class="news-sentiment-bear">🔴 BEARISH</span>`;
+
+    const impactScore = item.impact_score || 50;
+
+    return `
+      <div class="news-item-card">
+        <div class="news-item-head">
+          <div style="display:flex; gap:6px; align-items:center;">
+            <span class="tsm-partner-badge cyan">${escapeHtml(item.source || 'Wire')}</span>
+            <span class="tsm-partner-badge gold">${escapeHtml(item.category || 'MARKET')}</span>
+            ${sentBadge}
+          </div>
+          <span class="font-mono" style="font-size:9.5px; color:var(--text-muted);">Impact: <strong class="green">${impactScore}/100</strong></span>
+        </div>
+        <a href="${item.url || '#'}" target="_blank" class="news-item-title">${escapeHtml(item.title)}</a>
+        <p style="font-size:11px; color:var(--text-dim); line-height:1.4;">${escapeHtml(item.summary || '')}</p>
+        ${item.ai_takeaway ? `<div class="news-item-ai">🧠 <strong>AI Catalyst Insight:</strong> ${escapeHtml(item.ai_takeaway)}</div>` : ''}
+      </div>
+    `;
+  }).join("");
+}
+
+function renderEconomicCalendar(events) {
+  const tbody = document.getElementById("economic-calendar-tbody");
+  if (!tbody) return;
+
+  if (!events || events.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center empty-state">No economic events scheduled for today.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = events.slice(0, 25).map(ev => {
+    const imp = (ev.impact || 'low').toLowerCase();
+    let impBadge = `<span class="cal-impact-low">LOW</span>`;
+    if (imp === 'high') impBadge = `<span class="cal-impact-high">HIGH 🔴</span>`;
+    else if (imp === 'medium' || imp === 'med') impBadge = `<span class="cal-impact-med">MED 🟠</span>`;
+
+    return `
+      <tr>
+        <td><span class="tsm-badge-pill admin font-mono">${escapeHtml(ev.country || 'ALL')}</span></td>
+        <td><strong>${escapeHtml(ev.title)}</strong></td>
+        <td>${impBadge}</td>
+        <td class="font-mono green"><strong>${escapeHtml(ev.actual || 'N/A')}</strong></td>
+        <td class="font-mono text-dim">${escapeHtml(ev.forecast || 'N/A')}</td>
+        <td class="font-mono text-muted">${escapeHtml(ev.previous || 'N/A')}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function renderMacroSignals(signals) {
+  const container = document.getElementById("macro-signals-container");
+  if (!container || !signals || signals.length === 0) return;
+
+  container.innerHTML = signals.map(s => {
+    const isBuy = (s.direction || 'BUY').toUpperCase() === 'BUY';
+    const levels = s.levels || {};
+
+    return `
+      <div class="macro-sig-card">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <strong style="font-family:var(--font-orb); font-size:13px; color:var(--text-main);">${escapeHtml(s.symbol)}</strong>
+          <span class="tsm-badge-pill ${isBuy ? 'admin' : 'gold'}">${s.direction.toUpperCase()} • ${(s.confidence * 100).toFixed(0)}% CONF</span>
+        </div>
+        
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-family:var(--font-mono); font-size:11px; background:rgba(0,0,0,0.3); padding:8px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.05);">
+          <div>Entry: <strong class="cyan">${escapeHtml(s.entry)}</strong></div>
+          <div>Stop Loss: <strong class="red-text">${escapeHtml(s.sl)}</strong></div>
+          <div>Target 1: <strong class="green">${escapeHtml(s.tp1)}</strong></div>
+          <div>Target 2: <strong class="green">${escapeHtml(s.tp2)}</strong></div>
+        </div>
+
+        <p style="font-size:11px; color:var(--text-dim); line-height:1.4;">⚡ <i>${escapeHtml(s.reason)}</i></p>
+
+        <!-- Multi-Level Explanations -->
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          ${levels.beginner ? `<div class="macro-level-box"><div class="macro-level-title green">🔰 BEGINNER GUIDE</div>${escapeHtml(levels.beginner)}</div>` : ''}
+          ${levels.intermediate ? `<div class="macro-level-box"><div class="macro-level-title cyan">📊 TECHNICAL REASONING</div>${escapeHtml(levels.intermediate)}</div>` : ''}
+          ${levels.experienced ? `<div class="macro-level-box"><div class="macro-level-title purple">🏛 INSTITUTIONAL ALPHA</div>${escapeHtml(levels.experienced)}</div>` : ''}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+async function triggerNewsScan() {
+  try {
+    const res = await fetch("/api/news/trigger-scan", { method: "POST" });
+    const data = await res.json();
+    alert("✅ " + (data.message || "News scan refreshed!"));
+    fetchNewsData();
+  } catch (err) {
+    alert("Scan notice: " + err);
+  }
 }

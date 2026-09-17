@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=95.0">
+  <link rel="stylesheet" href="styles.css?v=96.0">
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -101,6 +101,9 @@
     </button>
     <button class="nc-nav-tab tsm-tab gold" data-view="partners" onclick="switchView('partners')">
       <span class="nc-tab-ico">💎</span><span>PROP FIRMS &amp; DEALS</span>
+    </button>
+    <button class="nc-nav-tab tsm-tab cyan" data-view="news" onclick="switchView('news')">
+      <span class="nc-tab-ico">📰</span><span>NEWS &amp; CATALYSTS</span>
     </button>
     <button class="nc-nav-tab tsm-tab" data-view="chart" onclick="switchView('chart')">
       <span class="nc-tab-ico">📈</span><span>PRO CHART</span>
@@ -354,6 +357,105 @@
           <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">CFG</div><div class="tsm-rwa-name">Centrifuge</div><div class="tsm-rwa-sector">Structured Asset Pools</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
           <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">XAUT</div><div class="tsm-rwa-name">Tether Gold</div><div class="tsm-rwa-sector">Gold Commodity RWA</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
         </div>
+      </div>
+    </div>
+
+    <!-- VIEW: LIVE NEWS, ECONOMIC CALENDAR & MACRO AGENT -->
+    <div id="view-news" class="nc-view-pane tsm-view-section">
+      <div class="tsm-panel">
+        <div class="tsm-panel-header">
+          <div class="tsm-panel-title">📰 LIVE NEWS, ECONOMIC CALENDAR &amp; MACRO CATALYST AGENT</div>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <span class="tsm-live-indicator"><span class="tsm-live-dot"></span> 24/7 STREAM ONLINE</span>
+            <button class="tsm-btn-secondary" onclick="triggerNewsScan()">🔄 SCAN LATEST NEWS</button>
+          </div>
+        </div>
+
+        <!-- 4 Metric Cards -->
+        <div class="news-kpi-grid">
+          <div class="nc-hex-card">
+            <div class="nc-hex-label">MARKET SENTIMENT</div>
+            <div class="nc-hex-val green" id="news-sentiment-val">BULLISH 68%</div>
+            <div class="nc-hex-sub" id="news-sentiment-sub">Multi-Asset AI NLP Index</div>
+          </div>
+          <div class="nc-hex-card">
+            <div class="nc-hex-label">MACRO CATALYSTS</div>
+            <div class="nc-hex-val cyan" id="news-cal-count">40 EVENTS</div>
+            <div class="nc-hex-sub">TradingView &amp; ForexFactory</div>
+          </div>
+          <div class="nc-hex-card">
+            <div class="nc-hex-label">NEWS VELOCITY</div>
+            <div class="nc-hex-val gold" id="news-total-count">30+ WIRES</div>
+            <div class="nc-hex-sub">Finnhub, CoinDesk, FXStreet</div>
+          </div>
+          <div class="nc-hex-card">
+            <div class="nc-hex-label">TELEGRAM BROADCAST</div>
+            <div class="nc-hex-val purple">ISOLATED CHANNEL</div>
+            <div class="nc-hex-sub">Dedicated Forex &amp; News Wire</div>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="news-filter-bar">
+          <span style="font-family:var(--font-mono); font-size:10px; color:var(--text-dim); margin-right:6px;">FILTERS:</span>
+          <button class="news-filter-btn active" onclick="filterNewsCategory('all', this)">ALL NEWS</button>
+          <button class="news-filter-btn" onclick="filterNewsCategory('crypto', this)">CRYPTO</button>
+          <button class="news-filter-btn" onclick="filterNewsCategory('forex', this)">FOREX / MACRO</button>
+          <button class="news-filter-btn" onclick="filterNewsCategory('bullish', this)">BULLISH ONLY</button>
+          <button class="news-filter-btn" onclick="filterNewsCategory('bearish', this)">BEARISH ONLY</button>
+        </div>
+
+        <!-- Two Column Intel Grid -->
+        <div class="tsm-split-row">
+          <!-- Left Column: Economic Calendar -->
+          <div class="tsm-panel" style="padding:14px;">
+            <div class="tsm-panel-header">
+              <div class="tsm-panel-title">🏛 ECONOMIC CALENDAR • GLOBAL CATALYSTS</div>
+              <span class="tsm-badge-gold">HIGH &amp; MED IMPACT</span>
+            </div>
+            <div class="tsm-table-wrap" style="max-height:480px; overflow-y:auto;">
+              <table class="tsm-table">
+                <thead>
+                  <tr>
+                    <th>COUNTRY</th>
+                    <th>EVENT TITLE</th>
+                    <th>IMPACT</th>
+                    <th>ACTUAL</th>
+                    <th>FORECAST</th>
+                    <th>PREVIOUS</th>
+                  </tr>
+                </thead>
+                <tbody id="economic-calendar-tbody">
+                  <tr><td colspan="6" class="text-center empty-state">Loading global economic calendar...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Right Column: Live Breaking News Stream -->
+          <div class="tsm-panel" style="padding:14px;">
+            <div class="tsm-panel-header">
+              <div class="tsm-panel-title">⚡ REAL-TIME FINANCIAL NEWS &amp; AI SENTIMENT</div>
+              <span class="tsm-badge-cyan">NLP SCORED</span>
+            </div>
+            <div class="news-stream-box" id="news-stream-container">
+              <div class="empty-state text-center">Loading live financial wire...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Panel: Macro & Forex Signals with Multi-Level AI Explanations -->
+        <div class="tsm-panel" style="margin-top:16px; padding:16px;">
+          <div class="tsm-panel-header">
+            <div class="tsm-panel-title">🎯 LIVE MACRO &amp; FOREX AI SIGNALS (MULTI-LEVEL TRADER ANALYSIS)</div>
+            <span class="tsm-live-indicator"><span class="tsm-live-dot"></span> REAL-TIME LEVELS</span>
+          </div>
+          <p class="tsm-panel-desc">Algorithmic Order Flow &amp; SMC Liquidity setups with dynamic explanations adapted for Beginner, Intermediate, and Institutional trader levels.</p>
+          <div class="macro-signals-grid" id="macro-signals-container">
+            <!-- Rendered dynamically by JavaScript -->
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -669,6 +771,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=95.0"></script>
+  <script src="app.js?v=96.0"></script>
 </body>
 </html>

@@ -45,6 +45,13 @@ app = Flask(__name__)
 from api_routes import api_bp
 app.register_blueprint(api_bp)
 
+try:
+    from news_agent_core import news_core
+    news_core.start_background_loop(interval_seconds=90)
+    log.info("🚀 News & Macro Catalyst 24/7 Agent initialized with Webhook Server")
+except Exception as _ne_err:
+    log.warning(f"News Agent initialization notice: {_ne_err}")
+
 cs_client = CoinSwitchClient(CONFIG["api_key"], CONFIG["api_secret"])
 delta_client = DeltaClient(CONFIG["delta_api_key"], CONFIG["delta_api_secret"])
 notifier = TelegramNotifier(CONFIG.get("telegram_bot_token", ""), CONFIG.get("telegram_chat_id", ""))

@@ -301,4 +301,76 @@ def admin_panic_flatten_all(admin_user):
         "message": f"🚨 EMERGENCY PANIC FLATTEN EXECUTED: Closed {closed_count} open positions across all user accounts."
     })
 
-print("api_routes.py Blueprint created successfully!")
+
+# ── 5. NEWS AGENT, ECONOMIC CALENDAR & MACRO SIGNALS ───────────────────────
+from news_agent_core import news_core
+from news_telegram_broadcaster import news_broadcaster
+
+@api_bp.route("/api/news/live", methods=["GET"])
+def get_live_news():
+    sentiment = news_core.get_market_sentiment_summary()
+    with news_core.lock:
+        news_list = list(news_core.cached_news)
+    return jsonify({
+        "status": "success",
+        "sentiment": sentiment,
+        "total_articles": len(news_list),
+        "news": news_list,
+        "last_updated": news_core.last_scan_time
+    })
+
+@api_bp.route("/api/news/calendar", methods=["GET"])
+def get_economic_calendar():
+    with news_core.lock:
+        calendar_list = list(news_core.cached_calendar)
+    return jsonify({
+        "status": "success",
+        "total_events": len(calendar_list),
+        "calendar": calendar_list,
+        "last_updated": news_core.last_scan_time
+    })
+
+@api_bp.route("/api/news/signals", methods=["GET"])
+def get_macro_signals():
+    with news_core.lock:
+        signals_list = list(news_core.cached_signals)
+    return jsonify({
+        "status": "success",
+        "total_signals": len(signals_list),
+        "signals": signals_list,
+        "last_updated": news_core.last_scan_time
+    })
+
+@api_bp.route("/api/news/trigger-scan", methods=["POST"])
+def trigger_news_scan():
+    news_core.refresh_all()
+    return jsonify({
+        "status": "success",
+        "message": "Live news, economic calendar & macro signals refreshed successfully!",
+        "articles": len(news_core.cached_news),
+        "calendar_events": len(news_core.cached_calendar),
+        "signals": len(news_core.cached_signals)
+    })
+
+@api_bp.route("/api/admin/news/test-broadcast", methods=["POST"])
+@superadmin_required
+def admin_test_news_broadcast(admin_user):
+    if not news_broadcaster.is_active:
+        return jsonify({
+            "status": "notice",
+            "message": "News Telegram channel not configured yet. Please set NEWS_BOT_TOKEN and NEWS_CHAT_ID in Render environment variables."
+        }), 400
+        
+    test_article = {
+        "title": "⚡ TheSmartMag News Agent: Telegram Broadcast Integration Verified!",
+        "source_name": "TheSmartMag AI Core",
+        "link": "https://trade.thesmartmag.com",
+        "sentiment": "BULLISH"
+    }
+    success = news_broadcaster.broadcast_breaking_news(test_article, "Multi-asset news agent is monitoring 24/7 with zero impact on trading channels.")
+    if success:
+        return jsonify({"status": "success", "message": "Test message sent to dedicated News Telegram channel!"})
+    else:
+        return jsonify({"status": "error", "message": "Failed to send to Telegram. Check bot token permissions."}), 500
+
+print("api_routes.py Blueprint updated with News Agent routes successfully!")
