@@ -622,3 +622,61 @@ function initWorkflowCycle() {
     activeWfStep = (activeWfStep + 1) % steps.length;
   }, 2500);
 }
+
+
+// ── 10. Quantum Neural Particle Matrix Background ──────────────────────────
+function initNeuralBgCanvas() {
+  const canvas = document.getElementById("neuralBgCanvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resizeCanvas();
+  window.addEventListener("resize", resizeCanvas);
+
+  const particles = [];
+  const count = Math.min(60, Math.floor(window.innerWidth / 28));
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.35,
+      vy: (Math.random() - 0.5) * 0.35,
+      radius: Math.random() * 1.5 + 0.8
+    });
+  }
+
+  function drawMatrix() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+      if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(0, 240, 144, 0.55)";
+      ctx.fill();
+
+      for (let j = i + 1; j < particles.length; j++) {
+        const q = particles[j];
+        const dist = Math.hypot(p.x - q.x, p.y - q.y);
+        if (dist < 125) {
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(q.x, q.y);
+          ctx.strokeStyle = `rgba(0, 212, 255, ${(1 - dist / 125) * 0.16})`;
+          ctx.lineWidth = 0.6;
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(drawMatrix);
+  }
+  drawMatrix();
+}

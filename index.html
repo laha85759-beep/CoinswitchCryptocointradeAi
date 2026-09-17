@@ -6,683 +6,578 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>TheSmartMag Super Brain • Quantum AI Trading Computer</title>
-  <meta name="description" content="TheSmartMag Super Brain — Quantum AI Trading Computer. Autonomous Dual-Exchange Neural Execution across CoinSwitch Pro & Delta Exchange India." />
+  <title>TheSmartMag Quant Terminal • Super Brain AI Autonomous Engine</title>
+  <meta name="description" content="TheSmartMag Quant & AI Trading Terminal. Dual-Exchange Autonomous Execution across CoinSwitch Pro & Delta Exchange India with Neural Super Brain AI." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=90.0">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=85.0">
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
-<body class="theme-thesmartmag">
-
-  <!-- ═══════════════════ COMMAND BAR ═══════════════════ -->
-  <header class="sb-command-bar">
-    <div class="sb-cmd-left">
-      <a href="https://thesmartmag.com" target="_blank" class="sb-brand-link" title="Visit TheSmartMag.com">
-        <div class="sb-logo-core">
-          <svg width="30" height="30" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="40" height="40" rx="8" fill="url(#sb-grad)"/>
-            <path d="M11 13H29M20 13V27M13 27H27" stroke="#020408" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<body class="superbrain-os theme-thesmartmag">
+  <canvas id="neuralBgCanvas"></canvas>
+  <div class="cyber-scanlines"></div>
+  <div class="cyber-grid-mesh"></div>
+  <!-- SUPERBRAIN COMMAND HEADER -->
+  <header class="tsm-header">
+    <div class="tsm-header-left">
+      <a href="https://thesmartmag.com" target="_blank" class="tsm-brand" title="TheSmartMag Media & AI Tech">
+        <div class="tsm-logo-hexagon">
+          <svg width="42" height="42" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="24,2 44,13 44,35 24,46 4,35 4,13" fill="none" stroke="url(#hexGrad)" stroke-width="1.8"/>
+            <polygon points="24,8 38,16 38,32 24,40 10,32 10,16" fill="url(#hexFill)" opacity="0.2"/>
+            <text x="24" y="29" text-anchor="middle" fill="url(#hexGrad)" font-family="Orbitron" font-weight="900" font-size="11" letter-spacing="1">TSM</text>
             <defs>
-              <linearGradient id="sb-grad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+              <linearGradient id="hexGrad" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
                 <stop stop-color="#00f090"/>
                 <stop offset="0.5" stop-color="#00d4ff"/>
                 <stop offset="1" stop-color="#ffd700"/>
               </linearGradient>
+              <linearGradient id="hexFill" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#00f090"/>
+                <stop offset="1" stop-color="#00d4ff"/>
+              </linearGradient>
             </defs>
           </svg>
         </div>
-        <div class="sb-brand-text">
-          <div class="sb-brand-title">THE<span class="accent">SMART</span>MAG <span class="sb-system-badge">SUPER BRAIN</span></div>
-          <div class="sb-brand-sub">Quantum AI Trading Computer • thesmartmag.com</div>
+        <div class="tsm-brand-text">
+          <div class="tsm-brand-name">THE<span class="text-green">SMART</span>MAG <span class="tsm-core-pill">SUPER BRAIN</span></div>
+          <div class="tsm-brand-sub">Autonomous Dual-Exchange Quant Computer • 24/7 Cloud Core</div>
         </div>
       </a>
     </div>
 
-    <div class="sb-cmd-center">
-      <div class="sb-neural-status">
-        <div class="sb-core-indicator">
-          <span class="sb-core-dot green"></span>
-          <span class="sb-core-dot cyan"></span>
-          <span class="sb-core-dot gold"></span>
-        </div>
-        <span class="sb-neural-label" id="engineStatusText">NEURAL CORE ONLINE</span>
-        <div class="sb-core-indicator">
-          <span class="sb-core-dot gold"></span>
-          <span class="sb-core-dot cyan"></span>
-          <span class="sb-core-dot green"></span>
-        </div>
-      </div>
-      <div class="sb-ticker-strip">
-        <div class="sb-tick"><span class="sb-tick-name">BTC</span> <span class="sb-tick-val" id="header-btc">—</span></div>
-        <div class="sb-tick"><span class="sb-tick-name">ETH</span> <span class="sb-tick-val" id="header-eth">—</span></div>
-        <div class="sb-tick"><span class="sb-tick-name">SOL</span> <span class="sb-tick-val" id="header-sol">—</span></div>
-        <div class="sb-tick"><span class="sb-tick-name">ONDO</span> <span class="sb-tick-val" id="header-ondo">—</span></div>
-        <div class="sb-tick"><span class="sb-tick-name">PEPE</span> <span class="sb-tick-val" id="header-pepe">—</span></div>
+    <div class="tsm-header-center">
+      <div class="tsm-ticker-strip" id="tickerMarquee">
+        <div class="tsm-tick-item"><span class="tsm-tick-lbl">BTC</span><span id="header-btc" class="tsm-tick-val">—</span></div>
+        <span class="tsm-tick-sep">◈</span>
+        <div class="tsm-tick-item"><span class="tsm-tick-lbl">ETH</span><span id="header-eth" class="tsm-tick-val">—</span></div>
+        <span class="tsm-tick-sep">◈</span>
+        <div class="tsm-tick-item"><span class="tsm-tick-lbl">SOL</span><span id="header-sol" class="tsm-tick-val">—</span></div>
+        <span class="tsm-tick-sep">◈</span>
+        <div class="tsm-tick-item"><span class="tsm-tick-lbl">ONDO</span><span id="header-ondo" class="tsm-tick-val">—</span></div>
+        <span class="tsm-tick-sep">◈</span>
+        <div class="tsm-tick-item"><span class="tsm-tick-lbl">PEPE</span><span id="header-pepe" class="tsm-tick-val">—</span></div>
       </div>
     </div>
 
-    <div class="sb-cmd-right">
-      <button class="sb-theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle Light / Dark Mode">
-        <span id="themeToggleIcon">🌙</span> <span id="themeToggleText">DARK</span>
+    <div class="tsm-header-right">
+      <button class="tsm-theme-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle Theme">
+        <span id="themeToggleIcon">🌙</span><span id="themeToggleText">DARK</span>
       </button>
-      <div class="sb-status-chip">
-        <span class="sb-pulse-ring"></span>
-        <span>24/7 CLOUD ACTIVE</span>
+      <div class="tsm-beacon">
+        <span class="tsm-pulse-ring"></span>
+        <span class="tsm-beacon-dot"></span>
+        <span id="engineStatusText" class="tsm-beacon-txt">24/7 CLOUD ACTIVE</span>
       </div>
-      <div class="sb-clock" id="live-utc-clock">00:00:00 UTC</div>
-      <button class="sb-cmd-btn" id="adminNavBtn" onclick="toggleAdminView()">
-        <span>⚙️</span> <span id="adminNavBtnText">ADMIN</span>
+      <div class="tsm-clock-box" id="live-utc-clock">00:00:00 UTC</div>
+      <button class="tsm-admin-btn" id="adminNavBtn" onclick="toggleAdminView()">
+        <span class="tsm-admin-icon">⚙</span><span id="adminNavBtnText">ADMIN</span>
       </button>
     </div>
   </header>
 
-  <!-- ═══════════════════ MODULE NAVIGATION ═══════════════════ -->
-  <nav class="sb-module-nav">
-    <button class="sb-module-tab active" data-view="terminal" onclick="switchView('terminal')">⚡ NEURAL TERMINAL</button>
-    <button class="sb-module-tab" data-view="rwa" onclick="switchView('rwa')">🏛️ RWA & ALTCOINS</button>
-    <button class="sb-module-tab highlight-gold" data-view="partners" onclick="switchView('partners')">💎 PARTNERS & PROP FIRMS</button>
-    <button class="sb-module-tab" data-view="chart" onclick="switchView('chart')">📈 PRO CHART</button>
-    <button class="sb-module-tab" data-view="trades" onclick="switchView('trades')">💼 AUDIT TRAIL</button>
-    <button class="sb-module-tab highlight-green" data-view="admin" onclick="switchView('admin')">🔐 COMMAND CENTER</button>
+  <!-- CYBERNETIC NAVIGATION MATRIX -->
+  <nav class="tsm-nav">
+    <button class="tsm-tab active" data-view="terminal" onclick="switchView('terminal')">
+      <span class="tsm-tab-icon">⚡</span><span>SUPERBRAIN TERMINAL</span>
+    </button>
+    <button class="tsm-tab" data-view="rwa" onclick="switchView('rwa')">
+      <span class="tsm-tab-icon">🏛</span><span>RWA &amp; ALTCOIN MATRIX</span>
+    </button>
+    <button class="tsm-tab tsm-tab-gold" data-view="partners" onclick="switchView('partners')">
+      <span class="tsm-tab-icon">💎</span><span>PROP FIRMS &amp; VIP DEALS</span>
+    </button>
+    <button class="tsm-tab" data-view="chart" onclick="switchView('chart')">
+      <span class="tsm-tab-icon">📈</span><span>QUANT PRO CHART</span>
+    </button>
+    <button class="tsm-tab" data-view="trades" onclick="switchView('trades')">
+      <span class="tsm-tab-icon">💼</span><span>VERIFIED AUDIT</span>
+    </button>
+    <button class="tsm-tab tsm-tab-cyan" data-view="admin" onclick="switchView('admin')">
+      <span class="tsm-tab-icon">🔐</span><span>COMMAND PROTOCOL</span>
+    </button>
   </nav>
 
-  <!-- ═══════════════════ MAIN CONTAINER ═══════════════════ -->
-  <main class="sb-main">
+  <main class="tsm-main">
+    <!-- VIEW 1: SUPERBRAIN TERMINAL -->
+    <div id="view-terminal" class="tsm-view-section active">
 
-    <!-- ── VIEW 1: NEURAL TERMINAL ────────────────────────── -->
-    <div id="view-terminal" class="sb-view active">
-
-      <!-- QUANTUM KPI METRICS -->
-      <div class="sb-kpi-grid">
-        <div class="sb-kpi-card glow-active">
-          <div class="sb-kpi-head">
-            <span class="sb-kpi-label">TOTAL VERIFIED CAPITAL</span>
-            <span class="sb-kpi-badge live">LIVE API</span>
+      <!-- KPI HUD -->
+      <div class="tsm-kpi-grid">
+        <div class="tsm-kpi-card">
+          <div class="tsm-kpi-top"><span class="tsm-kpi-lbl">TOTAL QUANT CAPITAL</span><span class="tsm-kpi-badge cyan">LIVE API</span></div>
+          <div class="tsm-kpi-val" id="total-capital">$6.57 <span class="tsm-kpi-unit">USDT</span></div>
+          <div class="tsm-kpi-details">
+            <div class="tsm-kpi-line">CoinSwitch Spot: <span id="cs-bal-txt" class="highlight">$2.34 USDT (₹11.41)</span></div>
+            <div class="tsm-kpi-line">Delta Futures: <span id="delta-bal-txt" class="highlight">$4.17 USDT (₹366.96)</span></div>
           </div>
-          <div class="sb-kpi-value" id="total-capital">$6.57 <span class="sb-kpi-unit">USDT</span></div>
-          <div class="sb-kpi-sub">
-            <div>CoinSwitch Spot: <span id="cs-bal-txt">$2.34 USDT (₹11.41)</span></div>
-            <div>Delta Futures: <span id="delta-bal-txt">$4.17 USDT (₹366.96)</span></div>
-          </div>
+          <div class="tsm-kpi-meter"><div class="tsm-meter-fill green-cyan" style="width:65%;"></div></div>
         </div>
 
-        <div class="sb-kpi-card">
-          <div class="sb-kpi-head">
-            <span class="sb-kpi-label">NET PROFIT TODAY</span>
-            <span class="sb-kpi-badge live" id="pnl-pct-tag">+0.00%</span>
+        <div class="tsm-kpi-card">
+          <div class="tsm-kpi-top"><span class="tsm-kpi-lbl">NET PROFIT TODAY</span><span class="tsm-kpi-badge green" id="pnl-pct-tag">+0.00%</span></div>
+          <div class="tsm-kpi-val green" id="total-pnl-value">+$0.00 <span class="tsm-kpi-unit">USDT</span></div>
+          <div class="tsm-kpi-details">
+            <div class="tsm-kpi-line">Closed Cycles: <span id="closed-trades-count" class="highlight">0</span></div>
+            <div class="tsm-kpi-line">Ensemble Win Rate: <span id="stat-winrate" class="green">100.0%</span></div>
           </div>
-          <div class="sb-kpi-value green-text" id="total-pnl-value">+$0.00 <span class="sb-kpi-unit">USDT</span></div>
-          <div class="sb-kpi-sub">
-            <div>Daily Closed Trades: <span id="closed-trades-count">0</span></div>
-            <div>Win Rate: <span id="stat-winrate" class="green-text">100.0%</span></div>
-          </div>
+          <div class="tsm-kpi-meter"><div class="tsm-meter-fill green" style="width:0%;"></div></div>
         </div>
 
-        <div class="sb-kpi-card">
-          <div class="sb-kpi-head">
-            <span class="sb-kpi-label">RISK ENGINE STATUS</span>
-            <span class="sb-kpi-badge armed">ARMED 🛡️</span>
+        <div class="tsm-kpi-card">
+          <div class="tsm-kpi-top"><span class="tsm-kpi-lbl">AUTONOMOUS RISK SHIELD</span><span class="tsm-kpi-badge green">ARMED 🛡</span></div>
+          <div class="tsm-kpi-val small">SL -2.0% / TP +15.0%</div>
+          <div class="tsm-kpi-details">
+            <div class="tsm-kpi-line">Instant Trailing: <span class="green">🟢 ACTIVE (+0.2%)</span></div>
+            <div class="tsm-kpi-line">AI Consensus Gate: <span class="cyan">Strict ≥ 85% Score</span></div>
           </div>
-          <div class="sb-kpi-value" style="font-size: 18px;">-2.0% <span class="sb-kpi-unit">SL</span> / +15.0% <span class="sb-kpi-unit">TP</span></div>
-          <div class="sb-kpi-sub">
-            <div>Instant Trailing: <span class="green-text">🟢 ACTIVE (+0.2% Trail)</span></div>
-            <div>Consensus Gate: <span class="cyan-text">QUANT AI ≥ 85%</span></div>
-          </div>
+          <div class="tsm-kpi-meter"><div class="tsm-meter-fill purple" style="width:85%;"></div></div>
         </div>
 
-        <div class="sb-kpi-card">
-          <div class="sb-kpi-head">
-            <span class="sb-kpi-label">ACTIVE POSITIONS</span>
-            <span class="sb-kpi-badge armed" id="positions-tag">0 OPEN</span>
+        <div class="tsm-kpi-card">
+          <div class="tsm-kpi-top"><span class="tsm-kpi-lbl">RUNNING POSITIONS</span><span class="tsm-kpi-badge gold" id="positions-tag">0 OPEN</span></div>
+          <div class="tsm-kpi-val" id="total-open-count">0 <span class="tsm-kpi-unit">ACTIVE</span></div>
+          <div class="tsm-kpi-details">
+            <div class="tsm-kpi-line">CoinSwitch: <span id="cs-open-count" class="highlight">0</span> | Delta: <span id="delta-open-count" class="highlight">0</span></div>
+            <div class="tsm-kpi-line">Coverage: <span class="cyan">113+ Viral Altcoin Pairs</span></div>
           </div>
-          <div class="sb-kpi-value" id="total-open-count">0 <span class="sb-kpi-unit">POSITIONS</span></div>
-          <div class="sb-kpi-sub">
-            <div>Spot: <span id="cs-open-count">0</span> | Futures: <span id="delta-open-count">0</span></div>
-            <div>Scanned Tokens: <span class="cyan-text">113+ Viral Pairs</span></div>
-          </div>
+          <div class="tsm-kpi-meter"><div class="tsm-meter-fill gold" style="width:0%;"></div></div>
         </div>
       </div>
-
-      <!-- CHART + SIGNALS NEURAL GRID -->
-      <div class="sb-neural-grid">
-        <div class="sb-holo-card sb-chart-card">
-          <div class="sb-card-head">
-            <div class="sb-card-title-group">
-              <span class="sb-card-icon">📈</span>
-              <span class="sb-card-title">LIVE MULTI-TIMEFRAME QUANT CHART</span>
-            </div>
-            <div class="sb-chart-controls">
-              <button class="sb-coin-btn active" onclick="loadTvSymbol('BINANCE:BTCUSDT')">BTC</button>
-              <button class="sb-coin-btn" onclick="loadTvSymbol('BINANCE:SOLUSDT')">SOL</button>
-              <button class="sb-coin-btn" onclick="loadTvSymbol('BINANCE:ONDOUSDT')">ONDO</button>
-              <button class="sb-coin-btn" onclick="loadTvSymbol('BINANCE:PEPEUSDT')">PEPE</button>
-              <button class="sb-coin-btn" onclick="loadTvSymbol('BINANCE:PENDLEUSDT')">PENDLE</button>
+      <!-- ROW 2: CHART + AI SIGNALS -->
+      <div class="tsm-split-row">
+        <div class="tsm-panel tsm-chart-panel">
+          <div class="tsm-panel-header">
+            <div class="tsm-panel-title"><span class="tsm-title-icon">📈</span> LIVE MULTI-TIMEFRAME QUANT CHART</div>
+            <div class="tsm-chart-coins">
+              <button class="chart-coin-btn active" onclick="loadTvSymbol('BINANCE:BTCUSDT')">BTC</button>
+              <button class="chart-coin-btn" onclick="loadTvSymbol('BINANCE:ETHUSDT')">ETH</button>
+              <button class="chart-coin-btn" onclick="loadTvSymbol('BINANCE:SOLUSDT')">SOL</button>
+              <button class="chart-coin-btn" onclick="loadTvSymbol('BINANCE:ONDOUSDT')">ONDO</button>
+              <button class="chart-coin-btn" onclick="loadTvSymbol('BINANCE:PEPEUSDT')">PEPE</button>
             </div>
           </div>
-          <div class="sb-chart-body" id="tradingview_widget_container"></div>
+          <div class="tsm-chart-container" id="tradingview_widget_container"></div>
         </div>
 
-        <div class="sb-holo-card">
-          <div class="sb-card-head">
-            <div class="sb-card-title-group">
-              <span class="sb-card-icon">🧠</span>
-              <span class="sb-card-title">QUANT AI CONSENSUS</span>
-            </div>
-            <div class="sb-live-indicator scanning"><span class="sb-live-dot"></span> LIVE SCAN</div>
+        <div class="tsm-panel tsm-signals-panel">
+          <div class="tsm-panel-header">
+            <div class="tsm-panel-title"><span class="tsm-title-icon">🧠</span> QUANT AI CONSENSUS SIGNALS</div>
+            <span class="tsm-live-indicator"><span class="tsm-live-dot"></span> LIVE SCAN</span>
           </div>
-          <div class="sb-signals-list" id="signals-container">
-            <div class="sb-signal-item loading-shimmer">
-              <div style="font-weight: 700; font-size: 12px;">Scanning 113+ pairs across CoinSwitch & Delta...</div>
-              <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">Multi-Model Ensemble Active</div>
+          <div class="tsm-signals-stream" id="signals-container">
+            <div class="tsm-signal-card skeleton">
+              <div class="sig-head">
+                <span class="sig-pair">SCANNING 113+ PAIRS...</span>
+                <span class="sig-badge">ENSEMBLE ACTIVE</span>
+              </div>
+              <div class="sig-detail">Ingesting live orderbook depth, SMC imbalances, and momentum vectors.</div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 3D NEURAL CORE + WORKFLOW PIPELINE -->
-      <div class="sb-neural-grid core-split">
-        <div class="sb-holo-card sb-3d-card">
-          <div class="sb-card-head">
-            <div class="sb-card-title-group">
-              <span class="sb-card-icon">🌐</span>
-              <span class="sb-card-title">3D QUANT AGENT NEURAL SPHERE</span>
-            </div>
-            <div class="sb-live-indicator running"><span class="sb-live-dot"></span> <span id="agent3dStatus">NEURAL CLOUD</span></div>
+      <!-- ROW 3: 3D NEURAL SPHERE + WORKFLOW -->
+      <div class="tsm-split-row">
+        <div class="tsm-panel tsm-neural-panel">
+          <div class="tsm-panel-header">
+            <div class="tsm-panel-title"><span class="tsm-title-icon">🌐</span> 3D QUANT AGENT NEURAL SPHERE CORE</div>
+            <span class="tsm-badge-cyan" id="agent3dStatus">NEURAL CLOUD RUNNING</span>
           </div>
-          <div class="sb-3d-container" id="agent3dContainer">
+          <div class="tsm-neural-stage" id="agent3dContainer">
             <canvas id="agent3dCanvas"></canvas>
-            <div class="sb-3d-overlay">
-              <div class="sb-node-stat"><span class="sb-node-dot green"></span> 113+ SCANNER</div>
-              <div class="sb-node-stat"><span class="sb-node-dot cyan"></span> SMC ENGINE</div>
-              <div class="sb-node-stat"><span class="sb-node-dot magenta"></span> AI GATE</div>
-              <div class="sb-node-stat"><span class="sb-node-dot gold"></span> DUAL ROUTER</div>
+            <div class="tsm-neural-hud">
+              <div class="tsm-hud-node"><span class="dot-mini green"></span> 113+ PAIR SCANNER</div>
+              <div class="tsm-hud-node"><span class="dot-mini cyan"></span> SMC ORDER BLOCK</div>
+              <div class="tsm-hud-node"><span class="dot-mini magenta"></span> AI ENSEMBLE GATE</div>
+              <div class="tsm-hud-node"><span class="dot-mini gold"></span> ATOMIC DUAL ROUTER</div>
             </div>
           </div>
         </div>
 
-        <div class="sb-holo-card sb-workflow-card">
-          <div class="sb-card-head">
-            <div class="sb-card-title-group">
-              <span class="sb-card-icon">⚡</span>
-              <span class="sb-card-title">AUTONOMOUS 5-STAGE PIPELINE</span>
-            </div>
-            <div class="sb-live-indicator pipeline"><span class="sb-live-dot"></span> CONTINUOUS</div>
+        <div class="tsm-panel tsm-workflow-panel">
+          <div class="tsm-panel-header">
+            <div class="tsm-panel-title"><span class="tsm-title-icon">⚡</span> AUTONOMOUS EXECUTION PIPELINE</div>
+            <span class="tsm-badge-gold">5-STAGE CONTINUOUS</span>
           </div>
-          <div class="sb-workflow-list">
-            <div class="sb-wf-step active">
-              <div class="sb-wf-num">01</div>
-              <div class="sb-wf-content">
-                <div class="sb-wf-title">Market Ingestion & Altcoin Scanner</div>
-                <div class="sb-wf-desc">Ingests live 5m/15m/1h tick data, orderbook depth & volume ratios across 113+ coins.</div>
+          <div class="tsm-wf-stack">
+            <div class="tsm-wf-card wf-step-item active">
+              <div class="tsm-wf-index">01</div>
+              <div class="tsm-wf-content">
+                <div class="tsm-wf-name">Market Ingestion &amp; Altcoin Scanner</div>
+                <div class="tsm-wf-desc">Ingests live 5m/15m/1h tick data, orderbook depth &amp; volume ratios across 113+ coins.</div>
+                <div class="tsm-wf-line"><div class="tsm-wf-fill"></div></div>
               </div>
-              <div class="sb-wf-badge">SCANNING</div>
+              <div class="tsm-wf-chip">SCANNING</div>
             </div>
-            <div class="sb-wf-step">
-              <div class="sb-wf-num">02</div>
-              <div class="sb-wf-content">
-                <div class="sb-wf-title">SMC & Liquidity Gap Engine</div>
-                <div class="sb-wf-desc">Identifies Fair Value Gaps (FVG), institutional order blocks & Supertrend breaks.</div>
+
+            <div class="tsm-wf-card wf-step-item">
+              <div class="tsm-wf-index">02</div>
+              <div class="tsm-wf-content">
+                <div class="tsm-wf-name">SMC &amp; Liquidity Gap Engine</div>
+                <div class="tsm-wf-desc">Identifies Fair Value Gaps (FVG), institutional order blocks &amp; PP SuperTrend breaks.</div>
+                <div class="tsm-wf-line"><div class="tsm-wf-fill"></div></div>
               </div>
-              <div class="sb-wf-badge">FILTERED</div>
+              <div class="tsm-wf-chip">FILTERED</div>
             </div>
-            <div class="sb-wf-step">
-              <div class="sb-wf-num">03</div>
-              <div class="sb-wf-content">
-                <div class="sb-wf-title">Multi-Model AI Ensemble Consensus</div>
-                <div class="sb-wf-desc">Tactical CoT reasoning + Kumo classification. Enforces strict ≥0.85 score gate.</div>
+
+            <div class="tsm-wf-card wf-step-item">
+              <div class="tsm-wf-index">03</div>
+              <div class="tsm-wf-content">
+                <div class="tsm-wf-name">Multi-Model AI Ensemble Consensus</div>
+                <div class="tsm-wf-desc">Tactical CoT reasoning + Kumo classification. Strict ≥0.85 score gate enforced.</div>
+                <div class="tsm-wf-line"><div class="tsm-wf-fill"></div></div>
               </div>
-              <div class="sb-wf-badge">CONSENSUS</div>
+              <div class="tsm-wf-chip">CONSENSUS</div>
             </div>
-            <div class="sb-wf-step">
-              <div class="sb-wf-num">04</div>
-              <div class="sb-wf-content">
-                <div class="sb-wf-title">Dual-Exchange Atomic Dispatcher</div>
-                <div class="sb-wf-desc">Calculates balance sizing and fires atomic live orders to CoinSwitch & Delta.</div>
+
+            <div class="tsm-wf-card wf-step-item">
+              <div class="tsm-wf-index">04</div>
+              <div class="tsm-wf-content">
+                <div class="tsm-wf-name">Dual-Exchange Atomic Dispatcher</div>
+                <div class="tsm-wf-desc">Calculates balance sizing and fires atomic live orders to CoinSwitch &amp; Delta.</div>
+                <div class="tsm-wf-line"><div class="tsm-wf-fill"></div></div>
               </div>
-              <div class="sb-wf-badge">ROUTED</div>
+              <div class="tsm-wf-chip">ROUTED</div>
             </div>
-            <div class="sb-wf-step">
-              <div class="sb-wf-num">05</div>
-              <div class="sb-wf-content">
-                <div class="sb-wf-title">24/7 Trailing Ratchet & Risk Guard</div>
-                <div class="sb-wf-desc">Monitors tick-by-tick prices, arms -2.0% Stop-Loss & locks +0.2% trailing profits.</div>
+
+            <div class="tsm-wf-card wf-step-item">
+              <div class="tsm-wf-index">05</div>
+              <div class="tsm-wf-content">
+                <div class="tsm-wf-name">24/7 Trailing Ratchet &amp; Risk Guard</div>
+                <div class="tsm-wf-desc">Monitors tick-by-tick, arms -2.0% Stop-Loss &amp; locks +0.2% trailing profits.</div>
+                <div class="tsm-wf-line"><div class="tsm-wf-fill"></div></div>
               </div>
-              <div class="sb-wf-badge">ARMED</div>
+              <div class="tsm-wf-chip">ARMED</div>
             </div>
           </div>
         </div>
       </div>
-
-      <!-- MATRIX LOG CONSOLE -->
-      <div class="sb-holo-card sb-log-card">
-        <div class="sb-card-head">
-          <div class="sb-card-title-group">
-            <span class="sb-pulse-ring"></span>
-            <span class="sb-card-title">⚡ LIVE 24/7 BACKGROUND AGENTS EXECUTION STREAM</span>
+      <!-- ROW 4: LIVE LOG CONSOLE -->
+      <div class="tsm-panel tsm-logs-panel">
+        <div class="tsm-panel-header">
+          <div class="tsm-panel-title">
+            <span class="tsm-pulse-ring-sm"></span>
+            <span class="tsm-title-icon">⚡</span> 24/7 BACKGROUND AGENT EXECUTION STREAM &amp; TELEMETRY
           </div>
-          <div style="display: flex; gap: 8px; align-items: center;">
-            <div class="sb-live-indicator running"><span class="sb-live-dot"></span> REAL-TIME STREAM</div>
-            <button class="sb-btn-sm" onclick="fetchAgentLogs()">🔄 REFRESH</button>
+          <div class="tsm-logs-actions">
+            <span class="tsm-live-indicator"><span class="tsm-live-dot"></span> REAL-TIME DAEMON</span>
+            <button class="tsm-btn-mini" onclick="fetchAgentLogs()">⟳ REFRESH</button>
           </div>
         </div>
-        <div class="sb-matrix-console" id="agent-logs-console">
-          <div class="sb-log-line"><span class="sb-log-time">[BOOT]</span> <span class="sb-log-tag tag-daemon">DAEMON</span> Continuous 24/7 Active Runner online. Scanning Spot & Futures markets...</div>
-          <div class="sb-log-line"><span class="sb-log-time">[BOOT]</span> <span class="sb-log-tag tag-scanner">SCANNER</span> Prioritized 113 altcoin, memecoin, and RWA pairs for CoinSwitch live trading</div>
-          <div class="sb-log-line"><span class="sb-log-time">[BOOT]</span> <span class="sb-log-tag tag-nvidia">QUANT_AI</span> Multi-Model AI Super Brain Gatekeeper armed. Quota preserver active</div>
-          <div class="sb-log-line"><span class="sb-log-time">[BOOT]</span> <span class="sb-log-tag tag-risk">RISK</span> Instant Trailing Stop Loss (+0.2% ratchet / -2.0% hard SL) verified</div>
+        <div class="tsm-logs-terminal" id="agent-logs-console">
+          <div class="log-entry"><span class="log-badge badge-daemon">DAEMON</span> <span>Continuous 24/7 Active Runner online. Scanning Spot &amp; Futures markets...</span></div>
+          <div class="log-entry"><span class="log-badge badge-scanner">SCANNER</span> <span>Prioritized 113 altcoin, memecoin, and RWA pairs for CoinSwitch live trading</span></div>
+          <div class="log-entry"><span class="log-badge badge-nvidia">QUANT_AI</span> <span>Multi-Model AI Super Brain Gatekeeper armed. Quota preserver active</span></div>
+          <div class="log-entry"><span class="log-badge badge-risk">RISK_GUARD</span> <span>Instant Trailing Stop Loss (+0.2% ratchet / -2.0% hard SL) verified</span></div>
         </div>
       </div>
 
-      <!-- BOTTOM: POSITIONS TABLE + NEWS FEED -->
-      <div class="sb-neural-grid bottom-split">
-        <div class="sb-holo-card">
-          <div class="sb-card-head">
-            <div class="sb-card-title-group">
-              <span class="sb-card-icon">💼</span>
-              <span class="sb-card-title">LIVE OPEN POSITIONS</span>
-            </div>
-            <div class="sb-live-indicator scanning" id="pos-table-badge">0 RUNNING</div>
+      <!-- ROW 5: POSITIONS + NEWS -->
+      <div class="tsm-split-row tsm-bottom-split">
+        <div class="tsm-panel tsm-pos-panel">
+          <div class="tsm-panel-header">
+            <div class="tsm-panel-title"><span class="tsm-title-icon">💼</span> LIVE OPEN POSITIONS (SPOT &amp; FUTURES)</div>
+            <span class="tsm-badge-cyan" id="pos-table-badge">0 RUNNING</span>
           </div>
-          <div class="sb-table-wrap">
-            <table class="sb-table">
+          <div class="tsm-table-wrap">
+            <table class="tsm-table">
               <thead>
                 <tr>
-                  <th>EXCHANGE</th>
-                  <th>SYMBOL</th>
-                  <th>TYPE</th>
-                  <th>ENTRY</th>
-                  <th>STOP LOSS</th>
-                  <th>TAKE PROFIT</th>
-                  <th>TRAILING</th>
-                  <th>STATUS</th>
+                  <th>EXCHANGE</th><th>SYMBOL</th><th>TYPE</th><th>ENTRY</th><th>STOP LOSS</th><th>TAKE PROFIT</th><th>TRAIL</th><th>STATUS</th>
                 </tr>
               </thead>
               <tbody id="open-trades-tbody">
-                <tr><td colspan="8" class="sb-empty-state">No open positions. Neural scanner primed for high-conviction breakout setups.</td></tr>
+                <tr><td colspan="8" class="text-center empty-state">No open positions. Autonomous scanner primed for high-conviction breakout setups.</td></tr>
               </tbody>
             </table>
           </div>
         </div>
 
-        <div class="sb-holo-card">
-          <div class="sb-card-head">
-            <div class="sb-card-title-group">
-              <span class="sb-card-icon">📰</span>
-              <span class="sb-card-title">CATALYST RADAR</span>
-            </div>
-            <div class="sb-live-indicator filtered"><span class="sb-live-dot"></span> FILTERED</div>
+        <div class="tsm-panel tsm-news-panel">
+          <div class="tsm-panel-header">
+            <div class="tsm-panel-title"><span class="tsm-title-icon">📰</span> HIGH-IMPACT NEWS &amp; CATALYST RADAR</div>
+            <span class="tsm-badge-gold">AI FILTERED</span>
           </div>
-          <div class="sb-news-feed" id="news-feed-container">
-            <div class="sb-news-item">
-              <div class="sb-news-meta"><span class="sb-news-tag">#BTC #ETH</span> <span class="sb-news-source">AI Intelligence Feed</span></div>
-              <div class="sb-news-title">Institutional Real-World Asset (RWA) Inflows & Altcoin Volatility Monitored Real-Time.</div>
+          <div class="tsm-news-stack" id="news-feed-container">
+            <div class="tsm-news-card">
+              <div class="tsm-news-meta">
+                <span class="tsm-news-tag">#BTC #ETH #SOL</span>
+                <span class="tsm-news-time">AI Intelligence Feed</span>
+              </div>
+              <div class="tsm-news-headline">Institutional Real-World Asset (RWA) Inflows &amp; Altcoin Volatility Monitored Real-Time.</div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- PARTNER STRIP -->
-      <div class="sb-partner-strip">
-        <div class="sb-strip-left">
-          <span class="sb-gold-tag">💎 VERIFIED PARTNERS</span>
-          <span>Trade with exclusive TheSmartMag VIP fee rebates & zero-time-limit prop evaluations:</span>
+      <!-- VIP PARTNER STRIP -->
+      <div class="tsm-partner-bar">
+        <span class="tsm-partner-intro">💎 VERIFIED PARTNERS &amp; DISCOUNTS:</span>
+        <a href="https://fundedtradermarkets.com/ref/arnab" target="_blank" class="tsm-partner-pill">🏆 FTM Prop ($100k Challenge)</a>
+        <a href="https://coinswitch.co/pro/signup?code=PmstphH" target="_blank" class="tsm-partner-pill">🏛 CoinSwitch Pro VIP Bonus</a>
+        <a href="https://www.delta.exchange/?code=YXQSZA" target="_blank" class="tsm-partner-pill">⚡ Delta India 10% Fee Rebate</a>
+        <a href="https://affiliates.atlasfunded.com/Tracking/click/?affid=12275&campaign=11320&product_id=1&t_type=Register&t_lang=EN" target="_blank" class="tsm-partner-pill">🚀 Atlas Funded 20% Off</a>
+      </div>
+    </div>
+    <!-- VIEW 2: RWA & ALTCOINS -->
+    <div id="view-rwa" class="tsm-view-section">
+      <div class="tsm-panel">
+        <div class="tsm-panel-header">
+          <div class="tsm-panel-title"><span class="tsm-title-icon">🏛</span> REAL-WORLD ASSETS (RWA) &amp; VIRAL ALTCOIN HEATMAP</div>
+          <span class="tsm-badge-cyan">PRIORITY WATCHLIST</span>
         </div>
-        <div class="sb-strip-right">
-          <a href="https://fundedtradermarkets.com/ref/arnab" target="_blank" class="sb-partner-pill">🏆 FTM Prop ($100k)</a>
-          <a href="https://coinswitch.co/pro/signup?code=PmstphH" target="_blank" class="sb-partner-pill">🏛️ CoinSwitch Pro</a>
-          <a href="https://www.delta.exchange/?code=YXQSZA" target="_blank" class="sb-partner-pill">⚡ Delta 10% Off</a>
+        <p class="tsm-panel-desc">Real-World Asset tokenization and high-beta altcoins monitored 24/7 with institutional volume and orderbook imbalance tracking.</p>
+        <div class="tsm-rwa-grid">
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">ONDO</div><div class="tsm-rwa-name">Ondo Finance</div><div class="tsm-rwa-sector">US Treasuries &amp; Yield</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">OM</div><div class="tsm-rwa-name">MANTRA Chain</div><div class="tsm-rwa-sector">RWA Layer 1</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">PENDLE</div><div class="tsm-rwa-name">Pendle Finance</div><div class="tsm-rwa-sector">Yield Tokenization</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">LINK</div><div class="tsm-rwa-name">Chainlink</div><div class="tsm-rwa-sector">Cross-Chain CCIP</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">AVAX</div><div class="tsm-rwa-name">Avalanche</div><div class="tsm-rwa-sector">Evergreen Subnets</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">MKR</div><div class="tsm-rwa-name">Maker / Sky</div><div class="tsm-rwa-sector">Decentralized Credit</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">CFG</div><div class="tsm-rwa-name">Centrifuge</div><div class="tsm-rwa-sector">Structured Asset Pools</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">XAUT</div><div class="tsm-rwa-name">Tether Gold</div><div class="tsm-rwa-sector">Gold Commodity RWA</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
         </div>
       </div>
     </div>
 
-    <!-- ── VIEW 2: RWA & ALTCOIN MATRIX ─────────────────── -->
-    <div id="view-rwa" class="sb-view">
-      <div class="sb-holo-card">
-        <div class="sb-card-head">
-          <div class="sb-card-title-group">
-            <span class="sb-card-icon">🏛️</span>
-            <span class="sb-card-title">REAL-WORLD ASSETS (RWA) & VIRAL ALTCOIN HEATMAP</span>
-          </div>
-          <div class="sb-live-indicator scanning"><span class="sb-live-dot"></span> ACTIVE WATCHLIST</div>
+    <!-- VIEW 3: PARTNERS & PROP FIRMS -->
+    <div id="view-partners" class="tsm-view-section">
+      <div class="tsm-panel">
+        <div class="tsm-panel-header">
+          <div class="tsm-panel-title"><span class="tsm-title-icon">💎</span> THESMARTMAG VERIFIED PROP FIRMS &amp; BROKER PARTNERS</div>
+          <span class="tsm-badge-gold">EXCLUSIVE DISCOUNTS &amp; BONUS</span>
         </div>
-        <div class="sb-rwa-grid">
-          <div class="sb-rwa-item"><div class="sb-rwa-ticker">ONDO</div><div class="sb-rwa-name">Ondo Finance</div><div class="sb-rwa-type">US Treasuries & Yield</div><div class="sb-rwa-status green-text">ARMED FOR BREAKOUT</div></div>
-          <div class="sb-rwa-item"><div class="sb-rwa-ticker">OM</div><div class="sb-rwa-name">MANTRA Chain</div><div class="sb-rwa-type">RWA Layer 1</div><div class="sb-rwa-status green-text">ARMED FOR BREAKOUT</div></div>
-          <div class="sb-rwa-item"><div class="sb-rwa-ticker">PENDLE</div><div class="sb-rwa-name">Pendle Finance</div><div class="sb-rwa-type">Yield Tokenization</div><div class="sb-rwa-status green-text">ARMED FOR BREAKOUT</div></div>
-          <div class="sb-rwa-item"><div class="sb-rwa-ticker">LINK</div><div class="sb-rwa-name">Chainlink</div><div class="sb-rwa-type">Cross-Chain CCIP</div><div class="sb-rwa-status green-text">ARMED FOR BREAKOUT</div></div>
-          <div class="sb-rwa-item"><div class="sb-rwa-ticker">AVAX</div><div class="sb-rwa-name">Avalanche</div><div class="sb-rwa-type">Evergreen Subnets</div><div class="sb-rwa-status green-text">ARMED FOR BREAKOUT</div></div>
-          <div class="sb-rwa-item"><div class="sb-rwa-ticker">MKR</div><div class="sb-rwa-name">Maker / Sky</div><div class="sb-rwa-type">Decentralized Credit</div><div class="sb-rwa-status green-text">ARMED FOR BREAKOUT</div></div>
-          <div class="sb-rwa-item"><div class="sb-rwa-ticker">CFG</div><div class="sb-rwa-name">Centrifuge</div><div class="sb-rwa-type">Structured Asset Pools</div><div class="sb-rwa-status green-text">ARMED FOR BREAKOUT</div></div>
-          <div class="sb-rwa-item"><div class="sb-rwa-ticker">XAUT</div><div class="sb-rwa-name">Tether Gold</div><div class="sb-rwa-type">Gold Commodity RWA</div><div class="sb-rwa-status green-text">ARMED FOR BREAKOUT</div></div>
-        </div>
-      </div>
-    </div>
+        <p class="tsm-panel-desc">Official high-payout evaluations, zero-spread liquidity, and institutional fee rebates verified for TheSmartMag Quant traders.</p>
 
-    <!-- ── VIEW 3: PARTNERS & PROP FIRMS ─────────────────── -->
-    <div id="view-partners" class="sb-view">
-      <div class="sb-holo-card">
-        <div class="sb-card-head">
-          <div class="sb-card-title-group">
-            <span class="sb-card-icon">💎</span>
-            <span class="sb-card-title">THESMARTMAG VERIFIED PROP FIRMS & BROKER DEALS</span>
-          </div>
-          <div class="sb-live-indicator pipeline"><span class="sb-live-dot"></span> EXCLUSIVE DISCOUNTS</div>
-        </div>
-        <p style="font-size: 11px; color: var(--text-secondary); margin-bottom: 16px;">
-          Exclusive negotiated evaluations, fee discounts, and high payout splits for TheSmartMag Quant traders.
-        </p>
-
-        <div class="sb-partners-grid">
-          <!-- 1. Atlas Funded -->
-          <div class="sb-partner-card">
-            <div class="sb-partner-head">
-              <span class="sb-partner-name">Atlas Funded</span>
-              <span class="sb-partner-tag">20% OFF 🚀</span>
-            </div>
-            <div class="sb-partner-body">
-              <p>TradeLocker execution with instant pass tokens ($5 FTPs) and rapid account scaling up to $300,000.</p>
-              <div class="sb-partner-perk">✨ Promo Code: <strong>12275</strong> (Instant Pass)</div>
-            </div>
-            <div><a href="https://affiliates.atlasfunded.com/Tracking/click/?affid=12275&campaign=11320&product_id=1&t_type=Register&t_lang=EN" target="_blank" class="sb-btn-gold">ACCESS ATLAS FUNDED ➔</a></div>
+        <div class="tsm-partners-grid">
+          <div class="tsm-partner-card">
+            <div class="tsm-partner-head"><span class="tsm-partner-title">Atlas Funded</span><span class="tsm-partner-badge gold">20% OFF 🚀</span></div>
+            <div class="tsm-partner-body"><p>TradeLocker execution with instant pass tokens ($5 FTPs) and rapid account scaling up to $300,000.</p><div class="tsm-partner-code">✨ Promo Code: <strong>12275</strong> (Instant Pass)</div></div>
+            <a href="https://affiliates.atlasfunded.com/Tracking/click/?affid=12275&campaign=11320&product_id=1&t_type=Register&t_lang=EN" target="_blank" class="tsm-btn-cta gold">ACCESS ATLAS FUNDED ➔</a>
           </div>
 
-          <!-- 2. FTM -->
-          <div class="sb-partner-card">
-            <div class="sb-partner-head">
-              <span class="sb-partner-name">Funded Trader Markets (FTM)</span>
-              <span class="sb-partner-tag">TOP RATED 🏆</span>
-            </div>
-            <div class="sb-partner-body">
-              <p>Zero time limits on evaluation phases, up to 90% profit split, and on-demand bi-weekly payouts.</p>
-              <div class="sb-partner-perk">✨ Code: <strong>arnab</strong> (No Expiration)</div>
-            </div>
-            <div><a href="https://fundedtradermarkets.com/ref/arnab" target="_blank" class="sb-btn-gold">CLAIM FTM CHALLENGE ➔</a></div>
+          <div class="tsm-partner-card">
+            <div class="tsm-partner-head"><span class="tsm-partner-title">Funded Trader Markets</span><span class="tsm-partner-badge green">TOP RATED 🏆</span></div>
+            <div class="tsm-partner-body"><p>Zero time limits on evaluation phases, up to 90% profit split, and on-demand bi-weekly payouts.</p><div class="tsm-partner-code">✨ Promo Code: <strong>arnab</strong> (No Expiration)</div></div>
+            <a href="https://fundedtradermarkets.com/ref/arnab" target="_blank" class="tsm-btn-cta gold">CLAIM FTM CHALLENGE ➔</a>
           </div>
 
-          <!-- 3. AquaFunded -->
-          <div class="sb-partner-card">
-            <div class="sb-partner-head">
-              <span class="sb-partner-name">AquaFunded</span>
-              <span class="sb-partner-tag">90% PAYOUT 💧</span>
-            </div>
-            <div class="sb-partner-body">
-              <p>Crypto & FX funded evaluation with raw spreads, 90% profit splits, and rapid 24-hour payout processing.</p>
-              <div class="sb-partner-perk">✨ Affiliate Pass Code: <strong>6e9</strong></div>
-            </div>
-            <div><a href="https://www.aquafunded.com/?afmc=6e9" target="_blank" class="sb-btn-gold">CLAIM AQUAFUNDED PASS ➔</a></div>
+          <div class="tsm-partner-card">
+            <div class="tsm-partner-head"><span class="tsm-partner-title">AquaFunded</span><span class="tsm-partner-badge cyan">90% PAYOUT 💧</span></div>
+            <div class="tsm-partner-body"><p>Crypto &amp; FX funded evaluation with raw spreads, 90% profit splits, and rapid 24-hour payout processing.</p><div class="tsm-partner-code">✨ Promo Code: <strong>6e9</strong></div></div>
+            <a href="https://www.aquafunded.com/?afmc=6e9" target="_blank" class="tsm-btn-cta gold">CLAIM AQUAFUNDED PASS ➔</a>
           </div>
 
-          <!-- 4. MyFundedFutures -->
-          <div class="sb-partner-card">
-            <div class="sb-partner-head">
-              <span class="sb-partner-name">MyFundedFutures (MFFU)</span>
-              <span class="sb-partner-tag">FUTURES ELITE 📈</span>
-            </div>
-            <div class="sb-partner-body">
-              <p>Institutional CME/Crypto futures prop trading on Tradovate & NinjaTrader with zero activation fees.</p>
-              <div class="sb-partner-perk">✨ Discount Code: <strong>FUTURES2026</strong></div>
-            </div>
-            <div><a href="https://mffu.com/f/85f1f73f30" target="_blank" class="sb-btn-gold">START FUTURES EVAL ➔</a></div>
+          <div class="tsm-partner-card">
+            <div class="tsm-partner-head"><span class="tsm-partner-title">MyFundedFutures (MFFU)</span><span class="tsm-partner-badge purple">FUTURES ELITE 📈</span></div>
+            <div class="tsm-partner-body"><p>Institutional CME/Crypto futures prop trading on Tradovate &amp; NinjaTrader with zero activation fees.</p><div class="tsm-partner-code">✨ Promo Code: <strong>FUTURES2026</strong></div></div>
+            <a href="https://mffu.com/f/85f1f73f30" target="_blank" class="tsm-btn-cta gold">START FUTURES EVAL ➔</a>
           </div>
 
-          <!-- 5. Blue Guardian -->
-          <div class="sb-partner-card">
-            <div class="sb-partner-head">
-              <span class="sb-partner-name">Blue Guardian</span>
-              <span class="sb-partner-tag">GUARDIAN EDGE 🛡️</span>
-            </div>
-            <div class="sb-partner-body">
-              <p>Built-in guardian risk manager protecting drawdown, unlimited trading days, and direct crypto payouts.</p>
-              <div class="sb-partner-perk">✨ Promo Code: <strong>1tgf</strong></div>
-            </div>
-            <div><a href="https://blueguardian.com/?afmc=1tgf" target="_blank" class="sb-btn-gold">JOIN BLUE GUARDIAN ➔</a></div>
+          <div class="tsm-partner-card">
+            <div class="tsm-partner-head"><span class="tsm-partner-title">Blue Guardian</span><span class="tsm-partner-badge cyan">GUARDIAN EDGE 🛡</span></div>
+            <div class="tsm-partner-body"><p>Built-in guardian risk manager protecting drawdown, unlimited trading days, and direct crypto payouts.</p><div class="tsm-partner-code">✨ Promo Code: <strong>1tgf</strong></div></div>
+            <a href="https://blueguardian.com/?afmc=1tgf" target="_blank" class="tsm-btn-cta gold">JOIN BLUE GUARDIAN ➔</a>
           </div>
 
-          <!-- 6. Fundex Prop -->
-          <div class="sb-partner-card">
-            <div class="sb-partner-head">
-              <span class="sb-partner-name">Fundex Prop</span>
-              <span class="sb-partner-tag">FAST SCALING ⚡</span>
-            </div>
-            <div class="sb-partner-body">
-              <p>Dynamic profit target scaling with next-generation execution, low latency, and zero overnight restrictions.</p>
-              <div class="sb-partner-perk">✨ Challenge Referral: <strong>GGG34QEO</strong></div>
-            </div>
-            <div><a href="https://prop.fundex.gg/rc/GGG34QEO" target="_blank" class="sb-btn-gold">START FUNDEX CHALLENGE ➔</a></div>
+          <div class="tsm-partner-card">
+            <div class="tsm-partner-head"><span class="tsm-partner-title">Fundex Prop</span><span class="tsm-partner-badge gold">FAST SCALING ⚡</span></div>
+            <div class="tsm-partner-body"><p>Dynamic profit target scaling with next-gen execution, low latency, and zero overnight restrictions.</p><div class="tsm-partner-code">✨ Promo Code: <strong>GGG34QEO</strong></div></div>
+            <a href="https://prop.fundex.gg/rc/GGG34QEO" target="_blank" class="tsm-btn-cta gold">START FUNDEX CHALLENGE ➔</a>
           </div>
 
-          <!-- 7. CK Capital UK -->
-          <div class="sb-partner-card">
-            <div class="sb-partner-head">
-              <span class="sb-partner-name">CK Capital UK</span>
-              <span class="sb-partner-tag">INSTITUTIONAL 🇬🇧</span>
-            </div>
-            <div class="sb-partner-body">
-              <p>UK-regulated institutional funding program offering capital allocations up to $2,000,000 for quants.</p>
-              <div class="sb-partner-perk">✨ Fast Track Code: <strong>ALPROP</strong></div>
-            </div>
-            <div><a href="https://app.ckcapital.co.uk/signup/ALPROP/" target="_blank" class="sb-btn-gold">APPLY CK CAPITAL ➔</a></div>
+          <div class="tsm-partner-card">
+            <div class="tsm-partner-head"><span class="tsm-partner-title">CK Capital UK</span><span class="tsm-partner-badge green">INSTITUTIONAL 🇬🇧</span></div>
+            <div class="tsm-partner-body"><p>UK-regulated institutional funding program offering capital allocations up to $2,000,000 for quants.</p><div class="tsm-partner-code">✨ Promo Code: <strong>ALPROP</strong></div></div>
+            <a href="https://app.ckcapital.co.uk/signup/ALPROP/" target="_blank" class="tsm-btn-cta gold">APPLY CK CAPITAL ➔</a>
           </div>
 
-          <!-- 8. CoinSwitch Pro -->
-          <div class="sb-partner-card">
-            <div class="sb-partner-head">
-              <span class="sb-partner-name">CoinSwitch Pro</span>
-              <span class="sb-partner-tag">SPOT EXCHANGE 🏛️</span>
-            </div>
-            <div class="sb-partner-body">
-              <p>Institutional spot trading across 250+ crypto assets with zero TDS on select pairs and instant INR settlements.</p>
-              <div class="sb-partner-perk">✨ VIP Sign-up Trading Bonus (Code: <strong>PmstphH</strong>)</div>
-            </div>
-            <div><a href="https://coinswitch.co/pro/signup?code=PmstphH" target="_blank" class="sb-btn-primary">GET COINSWITCH BONUS ➔</a></div>
+          <div class="tsm-partner-card">
+            <div class="tsm-partner-head"><span class="tsm-partner-title">CoinSwitch Pro</span><span class="tsm-partner-badge green">SPOT EXCHANGE 🏛</span></div>
+            <div class="tsm-partner-body"><p>Institutional spot trading across 250+ crypto assets with zero TDS on select pairs and instant INR settlements.</p><div class="tsm-partner-code">✨ Promo Code: <strong>PmstphH</strong> (VIP Bonus)</div></div>
+            <a href="https://coinswitch.co/pro/signup?code=PmstphH" target="_blank" class="tsm-btn-cta green">GET COINSWITCH BONUS ➔</a>
           </div>
 
-          <!-- 9. Delta Exchange India -->
-          <div class="sb-partner-card">
-            <div class="sb-partner-head">
-              <span class="sb-partner-name">Delta Exchange India</span>
-              <span class="sb-partner-tag">FUTURES & OPTIONS ⚡</span>
-            </div>
-            <div class="sb-partner-body">
-              <p>FIU-compliant derivatives exchange in India offering USDT-margined futures with high leverage and tight spreads.</p>
-              <div class="sb-partner-perk">✨ Lifetime 10-15% Fee Rebate (Code: <strong>YXQSZA</strong>)</div>
-            </div>
-            <div><a href="https://www.delta.exchange/?code=YXQSZA" target="_blank" class="sb-btn-primary">CLAIM 10% FEE REBATE ➔</a></div>
+          <div class="tsm-partner-card">
+            <div class="tsm-partner-head"><span class="tsm-partner-title">Delta Exchange India</span><span class="tsm-partner-badge cyan">FUTURES &amp; OPTIONS ⚡</span></div>
+            <div class="tsm-partner-body"><p>FIU-compliant derivatives exchange in India offering USDT-margined futures with high leverage and tight spreads.</p><div class="tsm-partner-code">✨ Promo Code: <strong>YXQSZA</strong> (10-15% Fee Rebate)</div></div>
+            <a href="https://www.delta.exchange/?code=YXQSZA" target="_blank" class="tsm-btn-cta cyan">CLAIM 10% FEE REBATE ➔</a>
           </div>
 
-          <!-- 10. Pocket Option -->
-          <div class="sb-partner-card">
-            <div class="sb-partner-head">
-              <span class="sb-partner-name">Pocket Option</span>
-              <span class="sb-partner-tag">50% BONUS 🎁</span>
-            </div>
-            <div class="sb-partner-body">
-              <p>Fast-pace digital options & high-frequency contract trading with $10,000 free risk-free demo account.</p>
-              <div class="sb-partner-perk">✨ 50% Deposit Match (Code: <strong>50START</strong>)</div>
-            </div>
-            <div><a href="https://v4.lands-po.com/en/land/001-QT-02?utm_campaign=865170&utm_source=affiliate&utm_medium=sr&a=5zrdNdJrvFxqJO&al=1794767&ac=smart-link&cid=979105&code=50START" target="_blank" class="sb-btn-primary">START DEMO & 50% MATCH ➔</a></div>
+          <div class="tsm-partner-card">
+            <div class="tsm-partner-head"><span class="tsm-partner-title">Pocket Option</span><span class="tsm-partner-badge gold">50% BONUS 🎁</span></div>
+            <div class="tsm-partner-body"><p>Fast-pace digital options &amp; high-frequency contract trading with $10,000 free risk-free demo account.</p><div class="tsm-partner-code">✨ Promo Code: <strong>50START</strong> (50% Deposit Match)</div></div>
+            <a href="https://v4.lands-po.com/en/land/001-QT-02?utm_campaign=865170&utm_source=affiliate&utm_medium=sr&a=5zrdNdJrvFxqJO&al=1794767&ac=smart-link&cid=979105&code=50START" target="_blank" class="tsm-btn-cta gold">START DEMO &amp; 50% MATCH ➔</a>
           </div>
         </div>
       </div>
     </div>
-
-    <!-- ── VIEW 4: PRO CHART FULLSCREEN ───────────────────── -->
-    <div id="view-chart" class="sb-view">
-      <div class="sb-holo-card" style="height: 700px; padding: 0;">
-        <div id="tradingview_widget_fullscreen" style="height: 100%; width: 100%;"></div>
+    <!-- VIEW 4: PRO CHART FULLSCREEN -->
+    <div id="view-chart" class="tsm-view-section">
+      <div class="tsm-panel" style="height:720px; padding:0; overflow:hidden;">
+        <div id="tradingview_widget_fullscreen" style="height:100%; width:100%;"></div>
       </div>
     </div>
 
-    <!-- ── VIEW 5: TRADES & AUDIT TRAIL ───────────────────── -->
-    <div id="view-trades" class="sb-view">
-      <div class="sb-holo-card">
-        <div class="sb-card-head">
-          <div class="sb-card-title-group">
-            <span class="sb-card-icon">📜</span>
-            <span class="sb-card-title">VERIFIED EXECUTION LOG & TRADING AUDIT TRAIL</span>
-          </div>
+    <!-- VIEW 5: VERIFIED AUDIT -->
+    <div id="view-trades" class="tsm-view-section">
+      <div class="tsm-panel">
+        <div class="tsm-panel-header">
+          <div class="tsm-panel-title"><span class="tsm-title-icon">📜</span> VERIFIED EXECUTION LOG &amp; TRADING AUDIT TRAIL</div>
         </div>
-        <div class="sb-table-wrap">
-          <table class="sb-table">
+        <div class="tsm-table-wrap">
+          <table class="tsm-table">
             <thead>
               <tr>
-                <th>TIMESTAMP</th>
-                <th>EXCHANGE</th>
-                <th>SYMBOL</th>
-                <th>ACTION</th>
-                <th>ENTRY PRICE</th>
-                <th>EXIT / STATUS</th>
-                <th>REALIZED PNL</th>
+                <th>TIMESTAMP</th><th>EXCHANGE</th><th>SYMBOL</th><th>ACTION</th><th>ENTRY PRICE</th><th>EXIT / STATUS</th><th>REALIZED PNL</th>
               </tr>
             </thead>
             <tbody id="closed-trades-tbody">
-              <tr><td colspan="7" class="sb-empty-state">No closed trades today. All trades executed on live APIs with verified cryptographic audit trail.</td></tr>
+              <tr><td colspan="7" class="text-center empty-state">No closed trades today. All trades executed on live APIs with verified cryptographic audit trail.</td></tr>
             </tbody>
           </table>
         </div>
       </div>
     </div>
 
-    <!-- ── VIEW 6: ADMIN COMMAND CENTER ───────────────────── -->
-    <div id="view-admin" class="sb-view">
-
-      <!-- LOGIN GATE -->
-      <div id="admin-login-box" class="sb-holo-card sb-admin-login glow-active">
-        <div class="sb-admin-login-head">
-          <div class="sb-admin-shield">🔐</div>
-          <h2>Super Brain Command Center</h2>
-          <p>Enter administrative credentials to manage 24/7 bot daemon, risk parameters, and manual trades.</p>
+    <!-- VIEW 6: ADMIN COMMAND PROTOCOL -->
+    <div id="view-admin" class="tsm-view-section">
+      <!-- Admin Login Box -->
+      <div id="admin-login-box" class="tsm-login-card">
+        <div class="tsm-login-head">
+          <div class="tsm-login-badge">🔐 SUPER ADMIN AUTHENTICATION</div>
+          <h2 class="tsm-login-title">TheSmartMag Admin Portal</h2>
+          <p class="tsm-login-sub">Enter administrative credentials to manage 24/7 bot daemon, risk parameters, and manual trades.</p>
         </div>
-        <form id="adminLoginForm" onsubmit="handleAdminLogin(event)">
-          <div class="sb-form-group">
-            <label>Admin Username / Email</label>
-            <input type="text" id="adminUserInput" placeholder="admin@thesmartmag.com" required autocomplete="username" />
+        <form id="adminLoginForm" onsubmit="handleAdminLogin(event)" class="tsm-form">
+          <div class="tsm-form-group">
+            <label class="tsm-label">Admin Username / Email</label>
+            <input type="text" id="adminUserInput" placeholder="admin@thesmartmag.com" required autocomplete="username" class="tsm-input" />
           </div>
-          <div class="sb-form-group">
-            <label>Password</label>
-            <input type="password" id="adminPassInput" placeholder="••••••••••••" required autocomplete="current-password" />
+          <div class="tsm-form-group">
+            <label class="tsm-label">Password</label>
+            <input type="password" id="adminPassInput" placeholder="••••••••••••" required autocomplete="current-password" class="tsm-input" />
           </div>
-          <div id="loginErrorMsg" class="sb-error-box" style="display: none;"></div>
-          <button type="submit" class="sb-btn-primary" id="loginSubmitBtn">AUTHENTICATE ADMIN</button>
+          <div id="loginErrorMsg" class="tsm-error-msg" style="display:none;"></div>
+          <button type="submit" class="tsm-btn-submit" id="loginSubmitBtn">AUTHENTICATE ADMIN</button>
         </form>
-        <div class="sb-login-hint">
-          <strong>Default Credentials:</strong><br>
+        <div class="tsm-login-hint">
+          <strong>Default Admin Credentials:</strong><br>
           Username: <code>admin@thesmartmag.com</code><br>
           Password: <code>SmartMag@Quant2026!</code>
         </div>
       </div>
 
-      <!-- ADMIN DASHBOARD -->
-      <div id="admin-dashboard-panel" style="display: none;">
-        <div class="sb-admin-header sb-holo-card">
+      <!-- Admin Dashboard Panel -->
+      <div id="admin-dashboard-panel" style="display:none;">
+        <div class="tsm-panel tsm-admin-head-panel">
           <div>
-            <span class="sb-admin-badge">SUPER ADMIN ACTIVE</span>
-            <h2 style="margin: 4px 0; font-family: var(--font-brand); font-weight: 800; font-size: 18px; color: var(--text-bright);">Super Brain Command Center</h2>
-            <div style="font-size: 10px; color: var(--text-muted); font-family: var(--font-mono);">Connected: <strong>trade.thesmartmag.com</strong></div>
+            <span class="tsm-badge-pill admin">SUPER ADMIN ACTIVE</span>
+            <h2 class="tsm-admin-title">TheSmartMag Quant Command Center</h2>
+            <div class="tsm-admin-sub">Connected Subdomain: <strong>trade.thesmartmag.com</strong></div>
           </div>
-          <div style="display: flex; gap: 8px; align-items: center;">
-            <button class="sb-btn-danger" onclick="panicFlattenAll()">🚨 PANIC FLATTEN</button>
-            <button class="sb-btn-secondary" onclick="handleAdminLogout()">LOGOUT</button>
+          <div class="tsm-admin-actions">
+            <button class="tsm-btn-danger" onclick="panicFlattenAll()">🚨 PANIC FLATTEN ALL</button>
+            <button class="tsm-btn-secondary" onclick="handleAdminLogout()">LOGOUT</button>
           </div>
         </div>
 
-        <div class="sb-admin-grid">
-          <div class="sb-holo-card">
-            <div class="sb-card-head"><span class="sb-card-title">⚡ 24/7 BOT CONTROLS</span></div>
-            <div class="sb-control-row">
+        <div class="tsm-admin-grid">
+          <div class="tsm-panel">
+            <div class="tsm-panel-header"><div class="tsm-panel-title">⚡ 24/7 BOT CONTROLS</div></div>
+            <div class="tsm-ctrl-row">
               <div>
-                <strong style="color: var(--text-primary); font-size: 12px;">Autonomous Execution Daemon</strong>
-                <div style="font-size: 10px; color: var(--text-muted); font-family: var(--font-mono);" id="botStatusText">Status: RUNNING LIVE</div>
+                <strong>Autonomous Execution Daemon</strong>
+                <div class="tsm-ctrl-sub" id="botStatusText">Status: RUNNING LIVE</div>
               </div>
-              <button class="sb-btn-toggle" id="botToggleBtn" onclick="toggleBotExecution()">PAUSE BOT</button>
+              <button class="tsm-btn-toggle" id="botToggleBtn" onclick="toggleBotExecution()">PAUSE BOT</button>
             </div>
-            <hr class="sb-divider">
-            <div class="sb-control-row">
+            <hr class="tsm-divider">
+            <div class="tsm-ctrl-row">
               <div>
-                <strong style="color: var(--text-primary); font-size: 12px;">AI Consensus Committee</strong>
-                <div style="font-size: 10px; color: var(--text-muted);">Require ≥ 85% Agreement</div>
+                <strong>AI Consensus Committee</strong>
+                <div class="tsm-ctrl-sub">Require ≥ 85% Agreement</div>
               </div>
-              <span class="green-text" style="font-size: 11px;">ENABLED ✓</span>
+              <span class="green">ENABLED ✓</span>
             </div>
           </div>
 
-          <div class="sb-holo-card">
-            <div class="sb-card-head"><span class="sb-card-title">🎛️ RISK PARAMETERS</span></div>
+          <div class="tsm-panel">
+            <div class="tsm-panel-header"><div class="tsm-panel-title">🎛 DYNAMIC RISK PARAMETERS</div></div>
             <form id="adminSettingsForm" onsubmit="saveAdminSettings(event)">
-              <div class="sb-form-row">
-                <div class="sb-form-half">
-                  <label>Stop Loss (%)</label>
-                  <input type="number" step="0.1" id="cfg_hard_sl_pct" value="2.0" required />
+              <div class="tsm-form-split">
+                <div class="tsm-form-half">
+                  <label class="tsm-label">Stop Loss (%)</label>
+                  <input type="number" step="0.1" id="cfg_hard_sl_pct" value="2.0" required class="tsm-input" />
                 </div>
-                <div class="sb-form-half">
-                  <label>Take Profit (%)</label>
-                  <input type="number" step="0.5" id="cfg_take_profit_pct" value="15.0" required />
-                </div>
-              </div>
-              <div class="sb-form-row">
-                <div class="sb-form-half">
-                  <label>Trailing (%)</label>
-                  <input type="number" step="0.1" id="cfg_trail_pct" value="1.0" required />
-                </div>
-                <div class="sb-form-half">
-                  <label>Max Capital (%)</label>
-                  <input type="number" step="5" id="cfg_max_capital_pct" value="40" required />
+                <div class="tsm-form-half">
+                  <label class="tsm-label">Take Profit (%)</label>
+                  <input type="number" step="0.5" id="cfg_take_profit_pct" value="15.0" required class="tsm-input" />
                 </div>
               </div>
-              <button type="submit" class="sb-btn-primary" style="margin-top: 8px;">SAVE PARAMETERS</button>
+              <div class="tsm-form-split" style="margin-top:10px;">
+                <div class="tsm-form-half">
+                  <label class="tsm-label">Trailing Profit (%)</label>
+                  <input type="number" step="0.1" id="cfg_trail_pct" value="1.0" required class="tsm-input" />
+                </div>
+                <div class="tsm-form-half">
+                  <label class="tsm-label">Max Capital (%)</label>
+                  <input type="number" step="5" id="cfg_max_capital_pct" value="40" required class="tsm-input" />
+                </div>
+              </div>
+              <button type="submit" class="tsm-btn-submit" style="margin-top:14px;">SAVE RISK PARAMETERS</button>
             </form>
           </div>
 
-          <div class="sb-holo-card">
-            <div class="sb-card-head"><span class="sb-card-title">🎯 MANUAL OVERRIDE</span></div>
+          <div class="tsm-panel">
+            <div class="tsm-panel-header"><div class="tsm-panel-title">🎯 MANUAL OVERRIDE ORDER</div></div>
             <form id="manualTradeForm" onsubmit="executeManualTrade(event)">
-              <div class="sb-form-group">
-                <label>Symbol</label>
-                <input type="text" id="manual_symbol" value="SOL/USDT" required />
+              <div class="tsm-form-group">
+                <label class="tsm-label">Symbol</label>
+                <input type="text" id="manual_symbol" value="SOL/USDT" required class="tsm-input" />
               </div>
-              <div class="sb-form-row">
-                <div class="sb-form-half">
-                  <label>Exchange</label>
-                  <select id="manual_exchange">
+              <div class="tsm-form-split" style="margin-top:10px;">
+                <div class="tsm-form-half">
+                  <label class="tsm-label">Exchange</label>
+                  <select id="manual_exchange" class="tsm-input">
                     <option value="delta">Delta India (Futures)</option>
                     <option value="coinswitch">CoinSwitch (Spot)</option>
                   </select>
                 </div>
-                <div class="sb-form-half">
-                  <label>Direction</label>
-                  <select id="manual_action">
+                <div class="tsm-form-half">
+                  <label class="tsm-label">Direction</label>
+                  <select id="manual_action" class="tsm-input">
                     <option value="buy">LONG / BUY</option>
                     <option value="sell">SHORT / SELL</option>
                   </select>
                 </div>
               </div>
-              <div class="sb-form-group">
-                <label>Amount ($ USD)</label>
-                <input type="number" step="0.5" id="manual_amount" value="2.0" required />
+              <div class="tsm-form-group" style="margin-top:10px;">
+                <label class="tsm-label">Amount ($ USD)</label>
+                <input type="number" step="0.5" id="manual_amount" value="2.0" required class="tsm-input" />
               </div>
-              <button type="submit" class="sb-btn-action" style="margin-top: 8px;">DISPATCH MANUAL TRADE</button>
+              <button type="submit" class="tsm-btn-action" style="margin-top:14px;">DISPATCH MANUAL TRADE</button>
             </form>
           </div>
         </div>
       </div>
     </div>
-
   </main>
 
-  <!-- ═══════════════════ FOOTER ═══════════════════ -->
-  <footer class="sb-footer">
-    <div>
-      <span><strong>TheSmartMag Super Brain</strong> • Quantum AI Trading Computer by <a href="https://thesmartmag.com" target="_blank">thesmartmag.com</a></span>
-      <div style="font-size: 9px; margin-top: 2px;">AI Tech Innovations, Quant Trading, Prop Firms & Global Alpha</div>
+  <!-- FOOTER -->
+  <footer class="tsm-footer">
+    <div class="tsm-footer-left">
+      <span><strong>TheSmartMag Quant AI Terminal</strong> • Official Platform of <a href="https://thesmartmag.com" target="_blank">thesmartmag.com</a></span>
+      <div class="tsm-footer-sub">AI Tech Innovations, Quant Trading, Prop Firms &amp; Global Alpha Architecture</div>
     </div>
-    <div>
-      <span style="font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.5px;">Exchanges: CoinSwitch Pro & Delta Exchange India</span>
+    <div class="tsm-footer-right">
+      <span>Dual-Exchange Engine: CoinSwitch Pro &amp; Delta Exchange India</span>
     </div>
   </footer>
 
-  <script src="app.js?v=90.0"></script>
+  <script src="app.js?v=85.0"></script>
 </body>
 </html>
