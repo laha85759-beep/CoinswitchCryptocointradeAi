@@ -96,7 +96,10 @@
     <button class="nc-nav-tab tsm-tab active" data-view="terminal" onclick="switchView('terminal')">
       <span class="nc-tab-ico">⚡</span><span>NEURAL TERMINAL</span>
     </button>
-    <button class="nc-nav-tab tsm-tab cyan" data-view="news" onclick="switchView('news')" style="border:1px solid rgba(0,212,255,0.4); background:rgba(0,212,255,0.08); border-radius:4px; margin:0 4px;">
+    <button class="nc-nav-tab tsm-tab gold" data-view="india" onclick="switchView('india')" style="border:1px solid rgba(255,153,51,0.5); background:rgba(255,153,51,0.08); border-radius:4px; margin:0 4px;">
+      <span class="nc-tab-ico">🇮🇳</span><span>INDIA EQUITIES &amp; F&amp;O</span><span style="font-size:8px; padding:1px 5px; background:#ff9933; color:#000; font-weight:900; border-radius:3px; margin-left:4px;">NSE/BSE</span>
+    </button>
+    <button class="nc-nav-tab tsm-tab cyan" data-view="news" onclick="switchView('news')">
       <span class="nc-tab-ico">📰</span><span>NEWS &amp; CATALYSTS</span><span style="font-size:8px; padding:1px 5px; background:var(--neon-cyan); color:#000; font-weight:900; border-radius:3px; margin-left:4px;">LIVE</span>
     </button>
     <button class="nc-nav-tab tsm-tab" data-view="rwa" onclick="switchView('rwa')">
@@ -380,6 +383,164 @@
       </div>
     </div>
 
+    <!-- ══════════ VIEW: INDIAN EQUITIES & F&O OPTIONS INTELLIGENCE ══════════ -->
+    <div id="view-india" class="nc-view-pane tsm-view-section">
+      <div class="tsm-panel">
+        <div class="tsm-panel-header">
+          <div class="tsm-panel-title">🇮🇳 INDIAN EQUITIES, INTRADAY STOCKS &amp; F&amp;O OPTIONS INTELLIGENCE</div>
+          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <button class="tsm-btn-cta cyan" onclick="broadcastNewsToTelegram()" style="margin:0; padding:6px 14px; font-size:10px; letter-spacing:1px;">
+              📢 BROADCAST TO TELEGRAM
+            </button>
+            <button class="tsm-btn-secondary" onclick="fetchIndianMarketData(true)">🔄 REFRESH NSE/BSE DATA</button>
+            <span class="tsm-live-indicator"><span class="tsm-live-dot"></span> LIVE NSE/BSE RADAR</span>
+          </div>
+        </div>
+
+        <!-- Indian Top Indices Scorecard -->
+        <div class="indian-market-strip" style="margin-bottom:16px;">
+          <div class="indian-strip-label">
+            <span>🏛</span>
+            <span>INDIAN BENCHMARKS &amp; VOLATILITY</span>
+          </div>
+          <div class="indian-indices-grid">
+            <div class="indian-idx-card">
+              <span class="indian-idx-name">NIFTY 50</span>
+              <span class="indian-idx-val" id="in-idx-nifty">—</span>
+              <span class="indian-idx-chg green" id="in-idx-nifty-chg">—</span>
+            </div>
+            <div class="indian-idx-card">
+              <span class="indian-idx-name">BANK NIFTY</span>
+              <span class="indian-idx-val" id="in-idx-banknifty">—</span>
+              <span class="indian-idx-chg green" id="in-idx-banknifty-chg">—</span>
+            </div>
+            <div class="indian-idx-card">
+              <span class="indian-idx-name">SENSEX</span>
+              <span class="indian-idx-val" id="in-idx-sensex">—</span>
+              <span class="indian-idx-chg green" id="in-idx-sensex-chg">—</span>
+            </div>
+            <div class="indian-idx-card">
+              <span class="indian-idx-name">INDIA VIX</span>
+              <span class="indian-idx-val purple" id="in-idx-vix">—</span>
+              <span class="indian-idx-chg green" id="in-idx-vix-chg">—</span>
+            </div>
+            <div class="indian-idx-card">
+              <span class="indian-idx-name">USD / INR</span>
+              <span class="indian-idx-val cyan" id="in-idx-usdinr">—</span>
+              <span class="indian-idx-chg" id="in-idx-usdinr-chg">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 1: Intraday Stock Momentum Radar -->
+        <div class="tsm-panel" style="margin-bottom:16px;">
+          <div class="tsm-panel-header">
+            <div class="tsm-panel-title">⚡ NSE TOP INTRADAY MOMENTUM EQUITIES RADAR</div>
+            <span class="tsm-badge-gold">REAL-TIME PRICES &amp; SIGNALS</span>
+          </div>
+          <div class="news-filter-bar" style="margin-bottom:10px;">
+            <span style="font-family:var(--font-mono); font-size:10px; color:var(--text-dim); margin-right:6px;">SECTOR FILTERS:</span>
+            <button class="news-filter-btn active" onclick="filterIndianStocks('all', this)">ALL NSE STOCKS</button>
+            <button class="news-filter-btn" onclick="filterIndianStocks('bull', this)">🟢 INTRADAY BUY</button>
+            <button class="news-filter-btn" onclick="filterIndianStocks('bear', this)">🔴 INTRADAY SHORT</button>
+            <button class="news-filter-btn" onclick="filterIndianStocks('bank', this)">🏦 BANKING</button>
+            <button class="news-filter-btn" onclick="filterIndianStocks('it', this)">💻 IT &amp; TECH</button>
+          </div>
+          <div class="tsm-table-wrap" style="max-height:420px; overflow-y:auto;">
+            <table class="tsm-table">
+              <thead>
+                <tr>
+                  <th>SYMBOL</th>
+                  <th>COMPANY / SECTOR</th>
+                  <th>LTP (₹)</th>
+                  <th>CHG %</th>
+                  <th>DAY HIGH / LOW</th>
+                  <th>INTRADAY SIGNAL</th>
+                  <th>TARGET 1</th>
+                  <th>TARGET 2</th>
+                  <th>STOP LOSS</th>
+                </tr>
+              </thead>
+              <tbody id="india-stocks-tbody">
+                <tr><td colspan="9" class="text-center empty-state">Loading live NSE stocks data...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Section 2: F&O & Options Derivatives Matrix -->
+        <div class="tsm-split-row" style="margin-bottom:16px;">
+          <!-- NIFTY Options Intelligence -->
+          <div class="tsm-panel">
+            <div class="tsm-panel-header">
+              <div class="tsm-panel-title">📊 NIFTY 50 F&amp;O OPTIONS INTELLIGENCE</div>
+              <span class="tsm-badge-pill admin" id="nifty-pcr-badge">PCR: 1.05</span>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-family:var(--font-mono); font-size:11px; background:rgba(0,0,0,0.3); padding:10px 12px; border-radius:6px; margin-bottom:10px; border:1px solid rgba(255,255,255,0.05);">
+              <div>Spot LTP: <strong class="cyan" id="nifty-spot-val">—</strong></div>
+              <div>Max Pain: <strong class="gold" id="nifty-maxpain-val">—</strong></div>
+              <div>Call Resistance: <strong class="red-text" id="nifty-res-val">—</strong></div>
+              <div>Put Support: <strong class="green" id="nifty-sup-val">—</strong></div>
+            </div>
+            <div class="macro-level-box" style="margin-bottom:10px;">
+              <div class="macro-level-title green">🎯 RECOMMENDED OPTION PLAYBOOK</div>
+              <div id="nifty-opt-strategy">Loading option analytics...</div>
+            </div>
+            <div class="tsm-table-wrap">
+              <table class="tsm-table" style="font-size:10px;">
+                <thead>
+                  <tr><th>CE LTP</th><th>CE OI</th><th>STRIKE</th><th>PE OI</th><th>PE LTP</th></tr>
+                </thead>
+                <tbody id="nifty-chain-tbody">
+                  <tr><td colspan="5" class="text-center empty-state">Loading Nifty Option Chain...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- BANK NIFTY Options Intelligence -->
+          <div class="tsm-panel">
+            <div class="tsm-panel-header">
+              <div class="tsm-panel-title">🏦 BANK NIFTY F&amp;O OPTIONS INTELLIGENCE</div>
+              <span class="tsm-badge-pill admin" id="bn-pcr-badge">PCR: 1.05</span>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-family:var(--font-mono); font-size:11px; background:rgba(0,0,0,0.3); padding:10px 12px; border-radius:6px; margin-bottom:10px; border:1px solid rgba(255,255,255,0.05);">
+              <div>Spot LTP: <strong class="cyan" id="bn-spot-val">—</strong></div>
+              <div>Max Pain: <strong class="gold" id="bn-maxpain-val">—</strong></div>
+              <div>Call Resistance: <strong class="red-text" id="bn-res-val">—</strong></div>
+              <div>Put Support: <strong class="green" id="bn-sup-val">—</strong></div>
+            </div>
+            <div class="macro-level-box" style="margin-bottom:10px;">
+              <div class="macro-level-title cyan">🎯 RECOMMENDED OPTION PLAYBOOK</div>
+              <div id="bn-opt-strategy">Loading option analytics...</div>
+            </div>
+            <div class="tsm-table-wrap">
+              <table class="tsm-table" style="font-size:10px;">
+                <thead>
+                  <tr><th>CE LTP</th><th>CE OI</th><th>STRIKE</th><th>PE OI</th><th>PE LTP</th></tr>
+                </thead>
+                <tbody id="bn-chain-tbody">
+                  <tr><td colspan="5" class="text-center empty-state">Loading Bank Nifty Option Chain...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Indian Market News Feed -->
+        <div class="tsm-panel">
+          <div class="tsm-panel-header">
+            <div class="tsm-panel-title">📰 MONEYCONTROL &amp; ECONOMIC TIMES LIVE RADAR</div>
+            <span class="tsm-badge-gold">INDIA CORPORATE &amp; POLICY</span>
+          </div>
+          <div class="news-stream-box" id="india-news-container">
+            <div class="empty-state text-center">Loading live Indian financial stream...</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- VIEW: LIVE NEWS, ECONOMIC CALENDAR & MACRO AGENT -->
     <div id="view-news" class="nc-view-pane tsm-view-section">
       <div class="tsm-panel">
@@ -461,13 +622,24 @@
 
         <!-- Two Column Intel Grid -->
         <div class="tsm-split-row">
-          <!-- Left Column: Economic Calendar -->
+          <!-- Left Column: Economic Calendar with Impact & Region Filters -->
           <div class="tsm-panel" style="padding:14px;">
             <div class="tsm-panel-header">
               <div class="tsm-panel-title">🏛 ECONOMIC CALENDAR • GLOBAL CATALYSTS</div>
-              <span class="tsm-badge-gold">HIGH &amp; MED IMPACT</span>
+              <span class="tsm-badge-gold" id="cal-filter-label">ALL RELEASES</span>
             </div>
-            <div class="tsm-table-wrap" style="max-height:480px; overflow-y:auto;">
+            
+            <!-- Calendar Filter Sub-Bar -->
+            <div class="news-filter-bar" style="margin-bottom:10px; padding:4px 0;">
+              <button class="news-filter-btn active" style="padding:2px 8px; font-size:9px;" onclick="filterCalendarEvents('all', this)">ALL</button>
+              <button class="news-filter-btn" style="padding:2px 8px; font-size:9px; border-color:rgba(255,51,102,0.4); color:#ff3366;" onclick="filterCalendarEvents('high', this)">🔴 HIGH IMPACT</button>
+              <button class="news-filter-btn" style="padding:2px 8px; font-size:9px; border-color:rgba(255,170,0,0.4); color:#ffaa00;" onclick="filterCalendarEvents('med', this)">🟠 MEDIUM</button>
+              <button class="news-filter-btn" style="padding:2px 8px; font-size:9px;" onclick="filterCalendarEvents('USD', this)">🇺🇸 USD</button>
+              <button class="news-filter-btn" style="padding:2px 8px; font-size:9px;" onclick="filterCalendarEvents('INR', this)">🇮🇳 INR</button>
+              <button class="news-filter-btn" style="padding:2px 8px; font-size:9px;" onclick="filterCalendarEvents('EUR', this)">🇪🇺 EUR</button>
+            </div>
+
+            <div class="tsm-table-wrap" style="max-height:460px; overflow-y:auto;">
               <table class="tsm-table">
                 <thead>
                   <tr>

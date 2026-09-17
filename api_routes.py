@@ -393,4 +393,56 @@ def admin_test_news_broadcast(admin_user):
     else:
         return jsonify({"status": "error", "message": "Failed to send to Telegram. Check bot token permissions."}), 500
 
-print("api_routes.py Blueprint updated with News Agent routes successfully!")
+# ── 6. INDIAN EQUITIES & F&O OPTIONS INTEL ──────────────────────────────────
+from indian_market_agent import indian_agent
+
+@api_bp.route("/api/india/overview", methods=["GET"])
+def get_india_market_overview():
+    with indian_agent.lock:
+        indices = dict(indian_agent.cached_indices)
+        stocks = list(indian_agent.cached_stocks)
+        options = dict(indian_agent.cached_options)
+        last_updated = indian_agent.last_update_time
+        
+    with news_core.lock:
+        indian_news = [n for n in news_core.cached_news if n.get("category") == "INDIA"][:10]
+        
+    return jsonify({
+        "status": "success",
+        "indices": indices,
+        "stocks": stocks,
+        "options": options,
+        "news": indian_news,
+        "last_updated": last_updated
+    })
+
+@api_bp.route("/api/india/stocks", methods=["GET"])
+def get_india_stocks():
+    with indian_agent.lock:
+        stocks = list(indian_agent.cached_stocks)
+    return jsonify({
+        "status": "success",
+        "total": len(stocks),
+        "stocks": stocks
+    })
+
+@api_bp.route("/api/india/options", methods=["GET"])
+def get_india_options():
+    with indian_agent.lock:
+        options = dict(indian_agent.cached_options)
+    return jsonify({
+        "status": "success",
+        "options": options
+    })
+
+@api_bp.route("/api/india/trigger-refresh", methods=["POST"])
+def trigger_india_refresh():
+    indian_agent.refresh_all()
+    return jsonify({
+        "status": "success",
+        "message": "Indian market equities & F&O options intelligence refreshed!",
+        "stocks_count": len(indian_agent.cached_stocks),
+        "indices_count": len(indian_agent.cached_indices)
+    })
+
+print("api_routes.py Blueprint updated with News & Indian Market routes successfully!")

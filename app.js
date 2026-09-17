@@ -26,6 +26,8 @@ document.addEventListener("DOMContentLoaded", () => {
   setInterval(fetchRealData, 4000);
   fetchNewsData();
   setInterval(fetchNewsData, 10000);
+  fetchIndianMarketData();
+  setInterval(fetchIndianMarketData, 8000);
   checkAdminAuth();
   if (window.location.hash) {
     handleHashRouting();
@@ -62,7 +64,7 @@ function initUtcClock() {
 // ── 3. Tab & View Navigation ──────────────────────────────────────────────
 function handleHashRouting() {
   const hash = window.location.hash.replace("#", "").toLowerCase().trim();
-  if (["terminal", "rwa", "partners", "news", "chart", "trades", "admin"].includes(hash)) {
+  if (["terminal", "rwa", "partners", "india", "news", "chart", "trades", "admin"].includes(hash)) {
     switchView(hash, false);
   }
 }
@@ -95,6 +97,8 @@ function switchView(viewName, updateHash = true) {
     initTradingViewWidget("tradingview_widget_fullscreen", currentTvSymbol);
   } else if (viewName === "news") {
     fetchNewsData();
+  } else if (viewName === "india") {
+    fetchIndianMarketData();
   }
 }
 
@@ -1332,16 +1336,53 @@ function renderNewsFeed() {
   }).join("");
 }
 
+let cachedCalendarEvents = [];
+let currentCalFilter = 'all';
+
+function filterCalendarEvents(filterType, btn) {
+  currentCalFilter = filterType;
+  const parent = btn?.parentElement;
+  if (parent) {
+    parent.querySelectorAll(".news-filter-btn").forEach(b => b.classList.remove("active"));
+  }
+  if (btn) btn.classList.add("active");
+
+  const labelEl = document.getElementById("cal-filter-label");
+  if (labelEl) {
+    labelEl.textContent = filterType.toUpperCase() + (filterType === 'all' ? ' RELEASES' : ' FILTER');
+  }
+
+  renderEconomicCalendar(cachedCalendarEvents);
+}
+
 function renderEconomicCalendar(events) {
   const tbody = document.getElementById("economic-calendar-tbody");
   if (!tbody) return;
 
-  if (!events || events.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="text-center empty-state">No economic events scheduled for today.</td></tr>`;
+  if (events && events.length > 0) {
+    cachedCalendarEvents = events;
+  }
+
+  let list = cachedCalendarEvents || [];
+
+  if (currentCalFilter === 'high') {
+    list = list.filter(e => (e.impact || '').toLowerCase() === 'high');
+  } else if (currentCalFilter === 'med') {
+    list = list.filter(e => ['medium', 'med'].includes((e.impact || '').toLowerCase()));
+  } else if (['USD', 'INR', 'EUR', 'GBP'].includes(currentCalFilter)) {
+    list = list.filter(e => {
+      const c = (e.country || '').toUpperCase();
+      const curr = (e.currency || '').toUpperCase();
+      return c.includes(currentCalFilter) || curr.includes(currentCalFilter);
+    });
+  }
+
+  if (!list || list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center empty-state">No economic events match '${currentCalFilter}' filter.</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = events.slice(0, 25).map(ev => {
+  tbody.innerHTML = list.slice(0, 30).map(ev => {
     const imp = (ev.impact || 'low').toLowerCase();
     let impBadge = `<span class="cal-impact-low">LOW</span>`;
     if (imp === 'high') impBadge = `<span class="cal-impact-high">HIGH 🔴</span>`;
@@ -1393,6 +1434,269 @@ function renderMacroSignals(signals) {
       </div>
     `;
   }).join("");
+}
+
+// ── 12. INDIAN EQUITIES & F&O OPTIONS INTELLIGENCE ENGINE ──────────────────
+let cachedIndianStocks = [];
+let currentStockFilter = 'all';
+
+async function fetchIndianMarketData(isManual = false) {
+  try {
+    if (isManual) {
+      await fetch("/api/india/trigger-refresh", { method: "POST" });
+    }
+
+    const res = await fetch("/api/india/overview");
+    if (!res.ok) return;
+    const data = await res.json();
+
+    // 1. Update Benchmark Scorecard
+    if (data.indices) {
+      const idx = data.indices;
+      const nifty = idx["NIFTY 50"];
+      const bn = idx["BANK NIFTY"];
+      const sensex = idx["SENSEX"];
+      const vix = idx["INDIA VIX"];
+      const usdinr = idx["USD/INR"];
+
+      if (nifty && document.getElementById("in-idx-nifty")) {
+        document.getElementById("in-idx-nifty").textContent = Number(nifty.price).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+        const el = document.getElementById("in-idx-nifty-chg");
+        if (el) {
+          el.textContent = `${nifty.change_pct >= 0 ? '+' : ''}${nifty.change_pct}% ${nifty.change_pct >= 0 ? '🟢' : '🔴'}`;
+          el.className = `indian-idx-chg ${nifty.change_pct >= 0 ? 'green' : 'red-text'}`;
+        }
+      }
+
+      if (bn && document.getElementById("in-idx-banknifty")) {
+        document.getElementById("in-idx-banknifty").textContent = Number(bn.price).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+        const el = document.getElementById("in-idx-banknifty-chg");
+        if (el) {
+          el.textContent = `${bn.change_pct >= 0 ? '+' : ''}${bn.change_pct}% ${bn.change_pct >= 0 ? '🟢' : '🔴'}`;
+          el.className = `indian-idx-chg ${bn.change_pct >= 0 ? 'green' : 'red-text'}`;
+        }
+      }
+
+      if (sensex && document.getElementById("in-idx-sensex")) {
+        document.getElementById("in-idx-sensex").textContent = Number(sensex.price).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+        const el = document.getElementById("in-idx-sensex-chg");
+        if (el) {
+          el.textContent = `${sensex.change_pct >= 0 ? '+' : ''}${sensex.change_pct}% ${sensex.change_pct >= 0 ? '🟢' : '🔴'}`;
+          el.className = `indian-idx-chg ${sensex.change_pct >= 0 ? 'green' : 'red-text'}`;
+        }
+      }
+
+      if (vix && document.getElementById("in-idx-vix")) {
+        document.getElementById("in-idx-vix").textContent = Number(vix.price).toFixed(2);
+        const el = document.getElementById("in-idx-vix-chg");
+        if (el) {
+          el.textContent = `${vix.change_pct >= 0 ? '+' : ''}${vix.change_pct}% ⚡`;
+          el.className = `indian-idx-chg ${vix.change_pct <= 0 ? 'green' : 'gold'}`;
+        }
+      }
+
+      if (usdinr && document.getElementById("in-idx-usdinr")) {
+        document.getElementById("in-idx-usdinr").textContent = `₹${Number(usdinr.price).toFixed(2)}`;
+        const el = document.getElementById("in-idx-usdinr-chg");
+        if (el) {
+          el.textContent = `${usdinr.change_pct >= 0 ? '+' : ''}${usdinr.change_pct}% ⚪`;
+        }
+      }
+    }
+
+    // 2. Render Intraday Stock Radar
+    if (data.stocks && data.stocks.length > 0) {
+      cachedIndianStocks = data.stocks;
+      renderIndianStockScreener();
+    }
+
+    // 3. Render F&O Options Intelligence Matrix
+    if (data.options) {
+      renderOptionsIntel(data.options);
+    }
+
+    // 4. Render Indian Financial News Feed
+    if (data.news && data.news.length > 0) {
+      renderIndianNewsFeed(data.news);
+    }
+
+    if (isManual) {
+      alert("✅ Indian Equities & Options Data Refreshed!");
+    }
+  } catch (err) {
+    console.debug("Indian market data fetch notice:", err);
+  }
+}
+
+function filterIndianStocks(sector, btn) {
+  currentStockFilter = sector;
+  const parent = btn?.parentElement;
+  if (parent) {
+    parent.querySelectorAll(".news-filter-btn").forEach(b => b.classList.remove("active"));
+  }
+  if (btn) btn.classList.add("active");
+  renderIndianStockScreener();
+}
+
+function renderIndianStockScreener() {
+  const tbody = document.getElementById("india-stocks-tbody");
+  if (!tbody) return;
+
+  let list = cachedIndianStocks || [];
+  if (currentStockFilter === 'bull') {
+    list = list.filter(s => (s.signal || '').includes('BUY'));
+  } else if (currentStockFilter === 'bear') {
+    list = list.filter(s => (s.signal || '').includes('SELL'));
+  } else if (currentStockFilter === 'bank') {
+    list = list.filter(s => (s.sector || '').toLowerCase().includes('bank'));
+  } else if (currentStockFilter === 'it') {
+    list = list.filter(s => (s.sector || '').toLowerCase().includes('it') || (s.sector || '').toLowerCase().includes('tech'));
+  }
+
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9" class="text-center empty-state">No NSE stocks found for sector filter '${currentStockFilter}'.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map(stk => {
+    const isBull = (stk.signal || '').includes('BUY');
+    const isBear = (stk.signal || '').includes('SELL');
+    let sigBadge = `<span class="tsm-badge-pill font-mono">⚪ RANGE</span>`;
+    if (isBull) sigBadge = `<span class="tsm-badge-pill admin font-mono">🟢 ${escapeHtml(stk.signal)}</span>`;
+    else if (isBear) sigBadge = `<span class="tsm-badge-pill gold font-mono" style="border-color:rgba(255,51,102,0.5); color:#ff3366;">🔴 ${escapeHtml(stk.signal)}</span>`;
+
+    const chgClass = stk.change_pct >= 0 ? 'green' : 'red-text';
+    const chgSign = stk.change_pct >= 0 ? '+' : '';
+
+    return `
+      <tr>
+        <td><strong class="cyan" style="font-family:var(--font-orb);">${escapeHtml(stk.symbol)}</strong></td>
+        <td>
+          <div style="font-weight:600;">${escapeHtml(stk.name)}</div>
+          <div style="font-size:9.5px; color:var(--text-muted);">${escapeHtml(stk.sector)}</div>
+        </td>
+        <td class="font-mono" style="font-size:13px; font-weight:700;">₹${Number(stk.ltp).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+        <td class="font-mono ${chgClass}"><strong>${chgSign}${stk.change_pct}%</strong></td>
+        <td class="font-mono" style="font-size:10.5px;">
+          <span class="green">H: ₹${Number(stk.high).toFixed(1)}</span><br>
+          <span class="red-text">L: ₹${Number(stk.low).toFixed(1)}</span>
+        </td>
+        <td>${sigBadge}</td>
+        <td class="font-mono green">₹${Number(stk.target1).toLocaleString('en-IN')}</td>
+        <td class="font-mono green">₹${Number(stk.target2).toLocaleString('en-IN')}</td>
+        <td class="font-mono red-text">₹${Number(stk.stop_loss).toLocaleString('en-IN')}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function renderOptionsIntel(options) {
+  if (!options) return;
+
+  // NIFTY 50 Options
+  const nifty = options.nifty;
+  if (nifty) {
+    const pcrBadge = document.getElementById("nifty-pcr-badge");
+    if (pcrBadge) {
+      pcrBadge.textContent = `PCR: ${nifty.pcr} (${nifty.pcr >= 1 ? '🟢 BULLISH' : '🔴 BEARISH'})`;
+      pcrBadge.className = `tsm-badge-pill ${nifty.pcr >= 1 ? 'admin' : 'gold'}`;
+    }
+
+    if (document.getElementById("nifty-spot-val")) {
+      document.getElementById("nifty-spot-val").textContent = `₹${Number(nifty.spot_ltp).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+    }
+    if (document.getElementById("nifty-maxpain-val")) {
+      document.getElementById("nifty-maxpain-val").textContent = `₹${nifty.max_pain}`;
+    }
+    if (document.getElementById("nifty-res-val")) {
+      document.getElementById("nifty-res-val").textContent = `₹${nifty.call_resistance_wall}`;
+    }
+    if (document.getElementById("nifty-sup-val")) {
+      document.getElementById("nifty-sup-val").textContent = `₹${nifty.put_support_wall}`;
+    }
+    if (document.getElementById("nifty-opt-strategy")) {
+      document.getElementById("nifty-opt-strategy").innerHTML = `
+        <strong>${escapeHtml(nifty.recommended_strategy)}</strong> 
+        <div style="font-size:10px; color:var(--text-dim); margin-top:2px;">Sentiment: <span class="${nifty.pcr >= 1 ? 'green' : 'red-text'}">${escapeHtml(nifty.pcr_bias || '')}</span> • India VIX: <span class="cyan">${nifty.india_vix}</span></div>
+      `;
+    }
+
+    const chainTbody = document.getElementById("nifty-chain-tbody");
+    if (chainTbody && nifty.chain) {
+      chainTbody.innerHTML = nifty.chain.map(c => `
+        <tr style="${c.is_atm ? 'background:rgba(0,240,144,0.08); font-weight:700;' : ''}">
+          <td class="font-mono green">₹${Number(c.ce_ltp).toFixed(2)}</td>
+          <td class="font-mono text-dim">${Number(c.ce_oi).toLocaleString('en-IN')}</td>
+          <td class="font-mono text-center"><strong class="${c.is_atm ? 'cyan' : ''}">${c.strike}${c.is_atm ? ' <span style="font-size:8px; color:var(--neon-green);">(ATM)</span>' : ''}</strong></td>
+          <td class="font-mono text-dim">${Number(c.pe_oi).toLocaleString('en-IN')}</td>
+          <td class="font-mono red-text">₹${Number(c.pe_ltp).toFixed(2)}</td>
+        </tr>
+      `).join("");
+    }
+  }
+
+  // BANK NIFTY Options
+  const bn = options.banknifty;
+  if (bn) {
+    const pcrBadge = document.getElementById("bn-pcr-badge");
+    if (pcrBadge) {
+      pcrBadge.textContent = `PCR: ${bn.pcr} (${bn.pcr >= 1 ? '🟢 BULLISH' : '🔴 BEARISH'})`;
+      pcrBadge.className = `tsm-badge-pill ${bn.pcr >= 1 ? 'admin' : 'gold'}`;
+    }
+
+    if (document.getElementById("bn-spot-val")) {
+      document.getElementById("bn-spot-val").textContent = `₹${Number(bn.spot_ltp).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+    }
+    if (document.getElementById("bn-maxpain-val")) {
+      document.getElementById("bn-maxpain-val").textContent = `₹${bn.max_pain}`;
+    }
+    if (document.getElementById("bn-res-val")) {
+      document.getElementById("bn-res-val").textContent = `₹${bn.call_resistance_wall}`;
+    }
+    if (document.getElementById("bn-sup-val")) {
+      document.getElementById("bn-sup-val").textContent = `₹${bn.put_support_wall}`;
+    }
+    if (document.getElementById("bn-opt-strategy")) {
+      document.getElementById("bn-opt-strategy").innerHTML = `
+        <strong>${escapeHtml(bn.recommended_strategy)}</strong>
+        <div style="font-size:10px; color:var(--text-dim); margin-top:2px;">Sentiment: <span class="${bn.pcr >= 1 ? 'green' : 'red-text'}">${escapeHtml(bn.pcr_bias || '')}</span></div>
+      `;
+    }
+
+    const chainTbody = document.getElementById("bn-chain-tbody");
+    if (chainTbody && bn.chain) {
+      chainTbody.innerHTML = bn.chain.map(c => `
+        <tr style="${c.is_atm ? 'background:rgba(0,212,255,0.08); font-weight:700;' : ''}">
+          <td class="font-mono green">₹${Number(c.ce_ltp).toFixed(2)}</td>
+          <td class="font-mono text-dim">${Number(c.ce_oi).toLocaleString('en-IN')}</td>
+          <td class="font-mono text-center"><strong class="${c.is_atm ? 'cyan' : ''}">${c.strike}${c.is_atm ? ' <span style="font-size:8px; color:var(--neon-cyan);">(ATM)</span>' : ''}</strong></td>
+          <td class="font-mono text-dim">${Number(c.pe_oi).toLocaleString('en-IN')}</td>
+          <td class="font-mono red-text">₹${Number(c.pe_ltp).toFixed(2)}</td>
+        </tr>
+      `).join("");
+    }
+  }
+}
+
+function renderIndianNewsFeed(newsItems) {
+  const container = document.getElementById("india-news-container");
+  if (!container || !newsItems || newsItems.length === 0) return;
+
+  container.innerHTML = newsItems.map(item => `
+    <div class="news-item-card">
+      <div class="news-item-head">
+        <div style="display:flex; gap:6px; align-items:center;">
+          <span class="tsm-partner-badge cyan">${escapeHtml(item.source || 'NSE/BSE Wire')}</span>
+          <span class="tsm-partner-badge gold">🇮🇳 INDIA EQUITIES</span>
+          <span class="${(item.sentiment || '').includes('BULL') ? 'news-sentiment-bull' : 'news-sentiment-bear'}">${(item.sentiment || 'BULLISH').toUpperCase()}</span>
+        </div>
+        <span class="font-mono" style="font-size:9.5px; color:var(--text-muted);">Impact: <strong class="green">${item.impact_score || 75}/100</strong></span>
+      </div>
+      <a href="${item.url || '#'}" target="_blank" class="news-item-title">${escapeHtml(item.title)}</a>
+      <p style="font-size:11px; color:var(--text-dim); line-height:1.4;">${escapeHtml(item.summary || '')}</p>
+      ${item.ai_takeaway ? `<div class="news-item-ai">🧠 <strong>Market Impact:</strong> ${escapeHtml(item.ai_takeaway)}</div>` : ''}
+    </div>
+  `).join("");
 }
 
 async function triggerNewsScan() {

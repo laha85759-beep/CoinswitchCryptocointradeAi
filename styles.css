@@ -1398,8 +1398,145 @@ body.neural-core-os {
   font-weight: 700;
 }
 
+/* ─── 📱 UNIVERSAL MOBILE & TABLET RESPONSIVENESS OVERHAUL ─────────────────── */
 @media (max-width: 1024px) {
-  .news-kpi-grid { grid-template-columns: 1fr 1fr; }
-  .macro-signals-grid { grid-template-columns: 1fr; }
-  .indian-market-strip { flex-direction: column; align-items: flex-start; }
+  .nc-cockpit-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .nc-kpi-grid, .tsm-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .tsm-split-row {
+    grid-template-columns: 1fr;
+  }
+  .news-kpi-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .macro-signals-grid {
+    grid-template-columns: 1fr;
+  }
+  .indian-market-strip {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .indian-indices-grid {
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 768px) {
+  html, body {
+    font-size: 12px;
+  }
+  .nc-top-header {
+    height: auto;
+    min-height: 56px;
+    padding: 8px 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .nc-hdr-center {
+    display: none; /* Hide decorative pills on mobile to keep header clean */
+  }
+  .nc-ticker-marquee {
+    display: none; /* Hide header ticker on phone */
+  }
+  .nc-hdr-right {
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .nc-clock-pill {
+    font-size: 9.5px;
+    padding: 3px 6px;
+  }
+  .nc-user-pill, .nc-btn-logout, .nc-btn-keys {
+    font-size: 9.5px;
+    padding: 4px 8px;
+  }
+  .nc-nav-bar {
+    padding: 0 8px;
+    top: 56px;
+    gap: 2px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .nc-nav-tab {
+    padding: 8px 12px;
+    font-size: 9px;
+    letter-spacing: 0.8px;
+  }
+  .nc-main-stage {
+    padding: 12px 10px;
+    gap: 14px;
+  }
+  .nc-kpi-grid, .tsm-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+  .news-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+  .tsm-rwa-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .tsm-partners-grid {
+    grid-template-columns: 1fr;
+  }
+  .nc-wf-track {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .nc-wf-connector {
+    display: none;
+  }
+  .tsm-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tsm-table th, .tsm-table td {
+    padding: 8px 10px;
+    font-size: 10.5px;
+    white-space: nowrap;
+  }
+  .indian-indices-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .indian-idx-card {
+    padding: 6px 8px;
+    font-size: 10px;
+  }
+  .nc-modal-card {
+    width: 94% !important;
+    max-width: 94% !important;
+    padding: 20px 16px !important;
+    margin: 20px auto !important;
+  }
+  .nc-form-split {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .tsm-rwa-grid {
+    grid-template-columns: 1fr;
+  }
+  .indian-indices-grid {
+    grid-template-columns: 1fr;
+  }
+  .nc-app-title {
+    font-size: 12px;
+  }
+  .nc-brand-sub {
+    font-size: 8px;
+  }
+  .news-filter-bar {
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
 }
