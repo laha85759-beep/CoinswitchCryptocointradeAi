@@ -18,6 +18,8 @@ NEWS_BOT_TOKEN = (
     os.getenv("NEWS_BOT_TOKEN") or 
     os.getenv("NEWS_TELEGRAM_BOT_TOKEN") or 
     os.getenv("FOREX_NEWS_BOT_TOKEN") or 
+    os.getenv("TELEGRAM_NEWS_BOT_TOKEN") or
+    os.getenv("TELEGRAM_BOT_TOKEN") or
     ""
 ).strip()
 
@@ -25,6 +27,8 @@ NEWS_CHAT_ID = (
     os.getenv("NEWS_CHAT_ID") or 
     os.getenv("NEWS_TELEGRAM_CHAT_ID") or 
     os.getenv("FOREX_NEWS_CHAT_ID") or 
+    os.getenv("TELEGRAM_NEWS_CHAT_ID") or
+    os.getenv("TELEGRAM_CHAT_ID") or
     ""
 ).strip()
 
