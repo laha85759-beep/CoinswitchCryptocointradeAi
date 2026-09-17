@@ -445,4 +445,42 @@ def trigger_india_refresh():
         "indices_count": len(indian_agent.cached_indices)
     })
 
-print("api_routes.py Blueprint updated with News & Indian Market routes successfully!")
+# ── 7. JARVIS AI QUANT ASSISTANT & VOICE BRIEFINGS ─────────────────────────
+from jarvis_assistant import jarvis_engine
+
+@api_bp.route("/api/ai-assistant/briefing", methods=["GET"])
+def get_jarvis_briefing():
+    try:
+        briefing = jarvis_engine.generate_market_briefing()
+        return jsonify(briefing)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@api_bp.route("/api/ai-assistant/asset-intel/<symbol>", methods=["GET"])
+def get_jarvis_asset_intel(symbol):
+    try:
+        intel = jarvis_engine.generate_asset_intel(symbol)
+        return jsonify({"status": "success", "intel": intel})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@api_bp.route("/api/ai-assistant/chat", methods=["POST"])
+def jarvis_chat():
+    try:
+        data = request.get_json() or {}
+        query = data.get("query", "").strip()
+        if not query:
+            return jsonify({"status": "error", "message": "Query cannot be empty"}), 400
+        
+        response = jarvis_engine.process_chat_query(query)
+        return jsonify({
+            "status": "success",
+            "reply": response["reply"],
+            "voice_script": response.get("voice_script", ""),
+            "category": response.get("category", "general"),
+            "timestamp": time.time()
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+print("api_routes.py Blueprint updated with News, Indian Market & Jarvis Assistant routes successfully!")

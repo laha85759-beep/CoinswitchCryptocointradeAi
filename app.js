@@ -552,6 +552,26 @@ async function fetchRealData() {
       updateTicker("header-sol", data.tickers.sol);
       updateTicker("header-ondo", data.tickers.ondo || 0.72);
       updateTicker("header-pepe", data.tickers.pepe || 0.0000078);
+
+      // Update 3D Floating Coin Node Badges
+      if (data.tickers.btc && document.getElementById("fnode-price-btc")) {
+        document.getElementById("fnode-price-btc").textContent = `$${Number(data.tickers.btc).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+      }
+      if (data.tickers.eth && document.getElementById("fnode-price-eth")) {
+        document.getElementById("fnode-price-eth").textContent = `$${Number(data.tickers.eth).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+      }
+      if (data.tickers.sol && document.getElementById("fnode-price-sol")) {
+        document.getElementById("fnode-price-sol").textContent = `$${Number(data.tickers.sol).toFixed(2)}`;
+      }
+      if (data.tickers.xrp && document.getElementById("fnode-price-xrp")) {
+        document.getElementById("fnode-price-xrp").textContent = `$${Number(data.tickers.xrp).toFixed(4)}`;
+      }
+      if (data.tickers.doge && document.getElementById("fnode-price-doge")) {
+        document.getElementById("fnode-price-doge").textContent = `$${Number(data.tickers.doge).toFixed(4)}`;
+      }
+      if (data.tickers.gold && document.getElementById("fnode-price-gold")) {
+        document.getElementById("fnode-price-gold").textContent = `$${Number(data.tickers.gold).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+      }
     }
 
     const positions = userData && userData.open_positions ? userData.open_positions : data.open_positions;
@@ -1124,23 +1144,61 @@ function initAgent3dCore() {
   ring3.rotation.z = Math.PI / 6;
   mainGroup.add(ring3);
 
-  // 4. Orbiting 3D Trade & Asset Nodes (BTC, Gold, Nifty, ETH, SOL, Sensex)
+  // 4. Orbiting 3D Trade & Asset Nodes with Indicative Icons & Tether Beams
   const nodeAssets = [
-    { label: "BTC", color: 0xf7931a, radius: 9.0, speed: 0.4, angle: 0 },
-    { label: "GOLD", color: 0xffd700, radius: 9.5, speed: 0.32, angle: 1.2 },
-    { label: "NIFTY", color: 0x00f090, radius: 8.8, speed: 0.45, angle: 2.4 },
-    { label: "ETH", color: 0x627eea, radius: 9.2, speed: 0.38, angle: 3.6 },
-    { label: "SOL", color: 0x14f195, radius: 9.6, speed: 0.5, angle: 4.8 },
-    { label: "SENSEX", color: 0x00d4ff, radius: 8.5, speed: 0.35, angle: 5.8 }
+    { id: "btc", label: "BTC", icon: "₿", color: 0xf7931a, radius: 8.8, speed: 0.35, angle: 0, badgeClass: "gold-badge", price: "$65,105", chg: "+2.4%", up: true },
+    { id: "eth", label: "ETH", icon: "⟠", color: 0x627eea, radius: 9.2, speed: 0.28, angle: 0.8, badgeClass: "cyan-badge", price: "$2,740", chg: "+1.8%", up: true },
+    { id: "sol", label: "SOL", icon: "◎", color: 0x14f195, radius: 9.6, speed: 0.42, angle: 1.6, badgeClass: "", price: "$145.20", chg: "+4.6%", up: true },
+    { id: "gold", label: "GOLD", icon: "🥇", color: 0xffd700, radius: 8.4, speed: 0.25, angle: 2.4, badgeClass: "gold-badge", price: "$2,650", chg: "+0.6%", up: true },
+    { id: "nifty", label: "NIFTY 50", icon: "🇮🇳", color: 0x00f090, radius: 9.0, speed: 0.38, angle: 3.2, badgeClass: "", price: "₹24,850", chg: "+0.45%", up: true },
+    { id: "sensex", label: "SENSEX", icon: "🏛️", color: 0x00d4ff, radius: 8.6, speed: 0.31, angle: 4.0, badgeClass: "cyan-badge", price: "₹81,320", chg: "+0.38%", up: true },
+    { id: "xrp", label: "XRP", icon: "✕", color: 0x00d4ff, radius: 9.4, speed: 0.45, angle: 4.8, badgeClass: "cyan-badge", price: "$0.584", chg: "+1.2%", up: true },
+    { id: "doge", label: "DOGE", icon: "🐕", color: 0xff00aa, radius: 9.8, speed: 0.50, angle: 5.6, badgeClass: "magenta-badge", price: "$0.125", chg: "+3.1%", up: true }
   ];
 
   const nodeMeshes = [];
+  const overlayContainer = document.getElementById("floatingNodesOverlay");
+  if (overlayContainer) overlayContainer.innerHTML = "";
+
   nodeAssets.forEach(asset => {
-    const nodeGeo = new THREE.SphereGeometry(0.45, 16, 16);
+    const nodeGeo = new THREE.SphereGeometry(0.42, 16, 16);
     const nodeMat = new THREE.MeshBasicMaterial({ color: asset.color, wireframe: true });
     const mesh = new THREE.Mesh(nodeGeo, nodeMat);
     mainGroup.add(mesh);
-    nodeMeshes.push({ mesh, asset });
+
+    // Dynamic Tether Beam
+    const tetherGeo = new THREE.BufferGeometry();
+    const tetherPos = new Float32Array(6);
+    tetherGeo.setAttribute('position', new THREE.BufferAttribute(tetherPos, 3));
+    const tetherMat = new THREE.LineBasicMaterial({
+      color: asset.color,
+      transparent: true,
+      opacity: 0.22,
+      blending: THREE.AdditiveBlending
+    });
+    const tetherLine = new THREE.Line(tetherGeo, tetherMat);
+    mainGroup.add(tetherLine);
+
+    // Create 2D Projected HTML Floating Badge
+    let badgeEl = null;
+    if (overlayContainer) {
+      badgeEl = document.createElement("div");
+      badgeEl.className = `floating-coin-badge ${asset.badgeClass}`;
+      badgeEl.id = `floating-node-${asset.id}`;
+      badgeEl.innerHTML = `
+        <span class="coin-badge-icon">${asset.icon}</span>
+        <span class="coin-badge-name">${asset.label}</span>
+        <span class="coin-badge-price" id="fnode-price-${asset.id}">${asset.price}</span>
+        <span class="coin-badge-chg ${asset.up ? 'up' : 'down'}" id="fnode-chg-${asset.id}">${asset.chg}</span>
+      `;
+      badgeEl.onclick = (e) => {
+        e.stopPropagation();
+        speakAssetIntel(asset.label);
+      };
+      overlayContainer.appendChild(badgeEl);
+    }
+
+    nodeMeshes.push({ mesh, tetherLine, asset, badgeEl });
   });
 
   // 5. Procedural Lightning Arcs
@@ -1164,16 +1222,18 @@ function initAgent3dCore() {
   });
 
   const clock = new THREE.Clock();
+  const tempV = new THREE.Vector3();
+
   function animate() {
     requestAnimationFrame(animate);
     const time = clock.getElapsedTime();
 
-    mainGroup.rotation.y = time * 0.25 + mouseX;
-    mainGroup.rotation.x = Math.sin(time * 0.15) * 0.15 + mouseY;
+    mainGroup.rotation.y = time * 0.22 + mouseX;
+    mainGroup.rotation.x = Math.sin(time * 0.12) * 0.12 + mouseY;
 
-    ring1.rotation.z = time * 0.3;
-    ring2.rotation.x = -time * 0.25;
-    ring3.rotation.y = time * 0.2;
+    ring1.rotation.z = time * 0.28;
+    ring2.rotation.x = -time * 0.22;
+    ring3.rotation.y = time * 0.18;
 
     // Organic double-pulse heartbeat
     const heart = Math.pow(Math.sin(time * 3.4), 8) * 0.08 + Math.pow(Math.sin(time * 3.4 + 0.3), 8) * 0.04;
@@ -1181,14 +1241,46 @@ function initAgent3dCore() {
     brainPoints.scale.set(scale, scale, scale);
     brainLines.scale.set(scale, scale, scale);
 
-    // Update orbiting trade nodes
+    const containerRect = container.getBoundingClientRect();
+
+    // Update orbiting trade nodes & project 3D to 2D HTML badges
     nodeMeshes.forEach(n => {
       const a = n.asset;
       const curAngle = a.angle + time * a.speed;
       n.mesh.position.x = Math.cos(curAngle) * a.radius;
       n.mesh.position.z = Math.sin(curAngle) * a.radius;
-      n.mesh.position.y = Math.sin(curAngle * 2.0) * 2.0;
+      n.mesh.position.y = Math.sin(curAngle * 2.0) * 1.8;
       n.mesh.rotation.y = time * 2.0;
+
+      // Update tether beam to center
+      const tArr = n.tetherLine.geometry.attributes.position.array;
+      tArr[0] = 0; tArr[1] = 0; tArr[2] = 0;
+      tArr[3] = n.mesh.position.x;
+      tArr[4] = n.mesh.position.y;
+      tArr[5] = n.mesh.position.z;
+      n.tetherLine.geometry.attributes.position.needsUpdate = true;
+
+      // Project 3D coordinate to screen 2D position
+      if (n.badgeEl && containerRect.width > 0) {
+        n.mesh.getWorldPosition(tempV);
+        tempV.project(camera);
+
+        const x = (tempV.x * 0.5 + 0.5) * containerRect.width;
+        const y = (-(tempV.y * 0.5) + 0.5) * containerRect.height;
+
+        n.badgeEl.style.left = `${x}px`;
+        n.badgeEl.style.top = `${y}px`;
+
+        // Hide if behind camera or occluded
+        if (tempV.z > 0.95 || x < 0 || x > containerRect.width || y < 0 || y > containerRect.height) {
+          n.badgeEl.style.opacity = "0.2";
+          n.badgeEl.style.transform = "translate(-50%, -50%) scale(0.75)";
+        } else {
+          n.badgeEl.style.opacity = `${0.65 + (1 - tempV.z) * 0.35}`;
+          const depthScale = 0.8 + (1 - tempV.z) * 0.3;
+          n.badgeEl.style.transform = `translate(-50%, -50%) scale(${depthScale})`;
+        }
+      }
     });
 
     // Lightning discharge spark effect
@@ -1810,6 +1902,9 @@ async function fetchIndianMarketData(isManual = false) {
           el.textContent = `${nifty.change_pct >= 0 ? '+' : ''}${nifty.change_pct}% ${nifty.change_pct >= 0 ? '🟢' : '🔴'}`;
           el.className = `indian-idx-chg ${nifty.change_pct >= 0 ? 'green' : 'red-text'}`;
         }
+        if (document.getElementById("fnode-price-nifty")) {
+          document.getElementById("fnode-price-nifty").textContent = `₹${Number(nifty.price).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+        }
       }
 
       if (bn && document.getElementById("in-idx-banknifty")) {
@@ -1827,6 +1922,9 @@ async function fetchIndianMarketData(isManual = false) {
         if (el) {
           el.textContent = `${sensex.change_pct >= 0 ? '+' : ''}${sensex.change_pct}% ${sensex.change_pct >= 0 ? '🟢' : '🔴'}`;
           el.className = `indian-idx-chg ${sensex.change_pct >= 0 ? 'green' : 'red-text'}`;
+        }
+        if (document.getElementById("fnode-price-sensex")) {
+          document.getElementById("fnode-price-sensex").textContent = `₹${Number(sensex.price).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
         }
       }
 
@@ -2144,3 +2242,351 @@ async function broadcastNewsToTelegram() {
     alert("Broadcast error: " + err);
   }
 }
+
+// ══════════ 17. JARVIS AI VOICE ENGINE (WEB SPEECH & WEB AUDIO API) ══════════
+let jarvisAudioCtx = null;
+let isJarvisSpeaking = false;
+let chatVoiceEnabled = true;
+let speechRecognizer = null;
+let isListening = false;
+
+function getJarvisAudioContext() {
+  if (!jarvisAudioCtx) {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (AudioCtx) jarvisAudioCtx = new AudioCtx();
+  }
+  if (jarvisAudioCtx && jarvisAudioCtx.state === 'suspended') {
+    jarvisAudioCtx.resume();
+  }
+  return jarvisAudioCtx;
+}
+
+function playJarvisChime(type = 'activate') {
+  try {
+    const ctx = getJarvisAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    if (type === 'activate') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, now);
+      osc.frequency.exponentialRampToValueAtTime(880.00, now + 0.15);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc.start(now);
+      osc.stop(now + 0.35);
+    } else if (type === 'beep') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(1046.50, now);
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+      osc.start(now);
+      osc.stop(now + 0.12);
+    }
+  } catch (e) {
+    console.debug("Audio FX notice:", e);
+  }
+}
+
+function getJarvisVoice() {
+  if (!('speechSynthesis' in window)) return null;
+  const voices = window.speechSynthesis.getVoices();
+  return (
+    voices.find(v => v.name.includes("Google UK English Male")) ||
+    voices.find(v => v.name.includes("Daniel") || v.name.includes("Oliver") || v.name.includes("Arthur")) ||
+    voices.find(v => v.name.includes("Natural") && v.lang.startsWith("en")) ||
+    voices.find(v => v.lang.startsWith("en-GB")) ||
+    voices.find(v => v.lang.startsWith("en-US")) ||
+    voices[0] || null
+  );
+}
+
+function speakText(text, onEnd) {
+  if (!('speechSynthesis' in window) || !text) return;
+  window.speechSynthesis.cancel();
+
+  const cleanSpeech = text
+    .replace(/[#*`_~]/g, '')
+    .replace(/₹/g, 'rupees ')
+    .replace(/\$/g, 'dollars ')
+    .replace(/\+/g, 'plus ')
+    .replace(/%/g, ' percent')
+    .replace(/\n+/g, '. ')
+    .trim();
+
+  const utter = new SpeechSynthesisUtterance(cleanSpeech);
+  const voice = getJarvisVoice();
+  if (voice) utter.voice = voice;
+  utter.pitch = 0.95;
+  utter.rate = 1.05;
+
+  playJarvisChime('activate');
+  setJarvisSpeakingState(true);
+
+  utter.onend = () => {
+    setJarvisSpeakingState(false);
+    if (onEnd) onEnd();
+  };
+
+  utter.onerror = () => {
+    setJarvisSpeakingState(false);
+  };
+
+  window.speechSynthesis.speak(utter);
+}
+
+function setJarvisSpeakingState(speaking) {
+  isJarvisSpeaking = speaking;
+  const btn = document.getElementById("headerJarvisVoiceBtn");
+  const txt = document.getElementById("jarvisVoiceBtnText");
+  if (btn) {
+    if (speaking) {
+      btn.classList.add("speaking");
+      if (txt) txt.textContent = "🔊 JARVIS SPEAKING...";
+    } else {
+      btn.classList.remove("speaking");
+      if (txt) txt.textContent = "🎙️ JARVIS VOICE";
+    }
+  }
+}
+
+function stopJarvisVoice() {
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+  }
+  setJarvisSpeakingState(false);
+}
+
+async function toggleJarvisBriefingVoice() {
+  if (isJarvisSpeaking) {
+    stopJarvisVoice();
+    return;
+  }
+  try {
+    const btn = document.getElementById("headerJarvisVoiceBtn");
+    if (btn) btn.classList.add("speaking");
+    const res = await fetch("/api/ai-assistant/briefing");
+    const data = await res.json();
+    if (data.voice_script) {
+      speakText(data.voice_script);
+    }
+  } catch (e) {
+    setJarvisSpeakingState(false);
+    console.debug("Jarvis briefing voice error:", e);
+  }
+}
+
+async function speakAssetIntel(symbol) {
+  try {
+    const res = await fetch(`/api/ai-assistant/asset-intel/${encodeURIComponent(symbol)}`);
+    const data = await res.json();
+    if (data.intel && data.intel.voice_script) {
+      speakText(data.intel.voice_script);
+    }
+  } catch (e) {
+    console.debug("Asset intel error:", e);
+  }
+}
+
+function triggerJarvisSpokenBriefing() {
+  toggleJarvisBriefingVoice();
+}
+
+// ══════════ 18. SPEECH RECOGNITION (VOICE INPUT TO CHATBOT) ══════════
+function initSpeechRecognition() {
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRec) return null;
+  const recognizer = new SpeechRec();
+  recognizer.continuous = false;
+  recognizer.interimResults = false;
+  recognizer.lang = 'en-US';
+
+  recognizer.onstart = () => {
+    isListening = true;
+    const micBtn = document.getElementById("jarvisMicBtn");
+    if (micBtn) micBtn.classList.add("listening");
+    playJarvisChime('beep');
+  };
+
+  recognizer.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    const input = document.getElementById("jarvisChatInput");
+    if (input) {
+      input.value = transcript;
+      sendJarvisMessage(transcript);
+    }
+  };
+
+  recognizer.onerror = () => {
+    isListening = false;
+    const micBtn = document.getElementById("jarvisMicBtn");
+    if (micBtn) micBtn.classList.remove("listening");
+  };
+
+  recognizer.onend = () => {
+    isListening = false;
+    const micBtn = document.getElementById("jarvisMicBtn");
+    if (micBtn) micBtn.classList.remove("listening");
+  };
+
+  return recognizer;
+}
+
+function toggleVoiceInput() {
+  if (!speechRecognizer) {
+    speechRecognizer = initSpeechRecognition();
+  }
+  if (!speechRecognizer) {
+    alert("Speech recognition is not supported in this browser. Please use Chrome or Edge.");
+    return;
+  }
+  if (isListening) {
+    speechRecognizer.stop();
+  } else {
+    try {
+      speechRecognizer.start();
+    } catch (e) {
+      console.debug("Speech start error:", e);
+    }
+  }
+}
+
+// ══════════ 19. JARVIS AI QUANT CHATBOT CONTROLLER ══════════
+function toggleJarvisChat() {
+  const panel = document.getElementById("jarvisChatPanel");
+  if (!panel) return;
+  const isHidden = panel.style.display === "none";
+  panel.style.display = isHidden ? "flex" : "none";
+  if (isHidden) {
+    playJarvisChime('activate');
+    const inp = document.getElementById("jarvisChatInput");
+    if (inp) inp.focus();
+  }
+}
+
+function toggleChatVoice() {
+  chatVoiceEnabled = !chatVoiceEnabled;
+  const btn = document.getElementById("chatVoiceToggleBtn");
+  if (btn) {
+    btn.textContent = chatVoiceEnabled ? "🔊" : "🔇";
+    btn.title = chatVoiceEnabled ? "Voice Output ON" : "Voice Output MUTED";
+  }
+}
+
+function clearJarvisChat() {
+  const list = document.getElementById("jarvisMessagesList");
+  if (!list) return;
+  list.innerHTML = `
+    <div class="chat-bubble jarvis">
+      <h3>🤖 Jarvis Quant AI</h3>
+      Chat history cleared. All multi-exchange live feeds and Indian markets are active. What would you like to analyze?
+      <div class="chat-bubble-footer">
+        <span>QUANT CORE v3.2</span>
+        <button class="chat-speak-btn" onclick="speakText('Chat history cleared. What would you like to analyze?')">🔊 Listen</button>
+      </div>
+    </div>
+  `;
+}
+
+function askJarvisPrompt(promptText) {
+  const input = document.getElementById("jarvisChatInput");
+  if (input) input.value = promptText;
+  sendJarvisMessage(promptText);
+}
+
+function handleJarvisChatSubmit(event) {
+  event.preventDefault();
+  const input = document.getElementById("jarvisChatInput");
+  if (!input) return;
+  const query = input.value.trim();
+  if (!query) return;
+  input.value = "";
+  sendJarvisMessage(query);
+}
+
+function renderMarkdownText(md) {
+  if (!md) return "";
+  let html = escapeHtml(md);
+  html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+  html = html.replace(/`(.*?)`/g, '<code>$1</code>');
+  html = html.replace(/^\- (.*$)/gim, '<li>$1</li>');
+  html = html.replace(/(<li>.*<\/li>)/gims, '<ul>$1</ul>');
+  html = html.replace(/\n\n/g, '<br><br>');
+  return html;
+}
+
+async function sendJarvisMessage(query) {
+  const list = document.getElementById("jarvisMessagesList");
+  if (!list || !query) return;
+
+  const userBubble = document.createElement("div");
+  userBubble.className = "chat-bubble user";
+  userBubble.textContent = query;
+  list.appendChild(userBubble);
+
+  const typingBubble = document.createElement("div");
+  typingBubble.className = "chat-bubble jarvis";
+  typingBubble.id = "jarvisTypingIndicator";
+  typingBubble.innerHTML = `
+    <div style="display:flex; align-items:center; gap:6px;">
+      <span class="nc-pulse-dot cyan"></span>
+      <span style="color:var(--neon-cyan);">Analyzing live market data &amp; quant models...</span>
+    </div>
+  `;
+  list.appendChild(typingBubble);
+  list.scrollTop = list.scrollHeight;
+
+  try {
+    const res = await fetch("/api/ai-assistant/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: query })
+    });
+
+    const data = await res.json();
+    const ind = document.getElementById("jarvisTypingIndicator");
+    if (ind) ind.remove();
+
+    if (data.status === "success") {
+      const jarvisBubble = document.createElement("div");
+      jarvisBubble.className = "chat-bubble jarvis";
+      
+      const formattedHtml = renderMarkdownText(data.reply);
+      const safeVoice = (data.voice_script || "").replace(/'/g, "\\'");
+
+      jarvisBubble.innerHTML = `
+        ${formattedHtml}
+        <div class="chat-bubble-footer">
+          <span>AI CATEGORY: ${(data.category || 'QUANT').toUpperCase()}</span>
+          <button class="chat-speak-btn" onclick="speakText('${safeVoice}')">🔊 Listen</button>
+        </div>
+      `;
+      list.appendChild(jarvisBubble);
+      list.scrollTop = list.scrollHeight;
+
+      if (chatVoiceEnabled && data.voice_script) {
+        speakText(data.voice_script);
+      }
+    } else {
+      const errBubble = document.createElement("div");
+      errBubble.className = "chat-bubble jarvis";
+      errBubble.innerHTML = `<span style="color:#ff3366;">Error processing query: ${escapeHtml(data.message || 'Unknown error')}</span>`;
+      list.appendChild(errBubble);
+    }
+  } catch (err) {
+    const ind = document.getElementById("jarvisTypingIndicator");
+    if (ind) ind.remove();
+    const errBubble = document.createElement("div");
+    errBubble.className = "chat-bubble jarvis";
+    errBubble.innerHTML = `<span style="color:#ff3366;">Connection error: ${escapeHtml(err)}</span>`;
+    list.appendChild(errBubble);
+  }
+  list.scrollTop = list.scrollHeight;
+}
+

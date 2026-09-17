@@ -108,8 +108,17 @@
       </button>
     </nav>
 
-    <!-- RIGHT HUD CONTROLS (CLEAN: USER, KEYS, LOGOUT, CLOCK) -->
+    <!-- RIGHT HUD CONTROLS (CLEAN: USER, KEYS, LOGOUT, CLOCK, JARVIS VOICE) -->
     <div class="nc-hdr-right">
+      <button class="nc-btn-jarvis-voice" id="headerJarvisVoiceBtn" onclick="toggleJarvisBriefingVoice()" title="Jarvis Voice AI Market Briefing">
+        <span class="voice-wave-visualizer">
+          <span class="voice-wave-bar"></span>
+          <span class="voice-wave-bar"></span>
+          <span class="voice-wave-bar"></span>
+          <span class="voice-wave-bar"></span>
+        </span>
+        <span id="jarvisVoiceBtnText">🎙️ JARVIS VOICE</span>
+      </button>
       <div id="userProfilePill" class="nc-user-pill" onclick="openAuthModal()" title="Trader Account">
         <span class="nc-user-icon">👤</span>
         <span id="userProfileText">SIGN IN / JOIN</span>
@@ -202,7 +211,7 @@
 
         <!-- CENTER COLUMN: 3D HOLOGRAPHIC GLOWING NEURAL BRAIN -->
         <div class="nc-brain-center-stage">
-          <div class="nc-brain-container" id="agent3dContainer" onclick="openJarvisModal()" title="Click to launch Holographic Jarvis Fullscreen Core">
+          <div class="nc-brain-container" id="agent3dContainer" title="Click to launch Holographic Jarvis Fullscreen Core">
             <!-- Surrounding HUD Telemetry Chips -->
             <div class="hud-chip top-left" id="hud-synapse-rate">⚡ SYNAPSE: 1,420/s</div>
             <div class="hud-chip top-right" id="hud-consensus-val">🧠 CONSENSUS: 99.4% (4/5)</div>
@@ -211,7 +220,10 @@
             
             <canvas id="agent3dCanvas"></canvas>
             
-            <div class="nc-brain-hud-label" id="agent3dStatus">
+            <!-- 3D Floating Indicative Coin Badges Overlay -->
+            <div class="floating-3d-nodes-overlay" id="floatingNodesOverlay"></div>
+            
+            <div class="nc-brain-hud-label" id="agent3dStatus" onclick="openJarvisModal()">
               <span class="pulse-dot"></span> NEURAL AI BRAIN • CLICK FOR JARVIS HOLOGRAM ↗
             </div>
           </div>
@@ -1826,6 +1838,60 @@
     </div>
   </div>
 
-  <script src="app.js?v=99.0"></script>
+  <!-- ══════════ JARVIS AI QUANT CHATBOT WIDGET ══════════ -->
+  <div class="jarvis-chat-widget-container" id="jarvisChatWidget">
+    <!-- Chat Panel (Expandable) -->
+    <div class="jarvis-chat-panel" id="jarvisChatPanel" style="display:none;">
+      <div class="jarvis-chat-header">
+        <div class="jarvis-header-info">
+          <div class="jarvis-avatar-orb">🤖</div>
+          <div>
+            <div class="jarvis-header-title">JARVIS QUANT AI</div>
+            <div class="jarvis-header-sub"><span class="nc-pulse-dot green"></span> REAL DATA ONLINE</div>
+          </div>
+        </div>
+        <div class="jarvis-header-actions">
+          <button class="jarvis-action-btn" id="chatVoiceToggleBtn" onclick="toggleChatVoice()" title="Toggle Voice Output">🔊</button>
+          <button class="jarvis-action-btn" onclick="clearJarvisChat()" title="Clear Chat">🗑️</button>
+          <button class="jarvis-action-btn" onclick="toggleJarvisChat()" title="Minimize">✕</button>
+        </div>
+      </div>
+      
+      <div class="jarvis-chat-chips-bar">
+        <button class="jarvis-chip" onclick="askJarvisPrompt('Give me a complete market summary')">📊 Market Summary</button>
+        <button class="jarvis-chip" onclick="askJarvisPrompt('What is the Bitcoin BTC price and trend?')">⚡ BTC Trend</button>
+        <button class="jarvis-chip gold" onclick="askJarvisPrompt('Give me NIFTY 50 options intelligence and PCR')">🇮🇳 NIFTY Options</button>
+        <button class="jarvis-chip" onclick="askJarvisPrompt('What is the Gold XAUT macro outlook?')">🥇 Gold Intel</button>
+        <button class="jarvis-chip" onclick="askJarvisPrompt('What are my active positions and risk levels?')">🛡️ Active Positions</button>
+        <button class="jarvis-chip gold" onclick="triggerJarvisSpokenBriefing()">🎙️ Speak Briefing</button>
+      </div>
+      
+      <div class="jarvis-chat-messages" id="jarvisMessagesList">
+        <div class="chat-bubble jarvis">
+          <h3>🤖 Jarvis Quant AI</h3>
+          Greetings sir. I am Jarvis, your real-time quantitative trading assistant. All market feeds, CoinSwitch &amp; Delta order books, and Indian NSE/BSE options chains are connected. How may I assist you today?
+          <div class="chat-bubble-footer">
+            <span>QUANT CORE v3.2</span>
+            <button class="chat-speak-btn" onclick="speakText('Greetings sir. I am Jarvis, your real-time quantitative trading assistant.')">🔊 Listen</button>
+          </div>
+        </div>
+      </div>
+      
+      <form class="jarvis-chat-input-bar" onsubmit="handleJarvisChatSubmit(event)">
+        <input type="text" id="jarvisChatInput" class="jarvis-chat-input" placeholder="Ask Jarvis (e.g., 'BTC price', 'NIFTY PCR', 'market summary')..." autocomplete="off" />
+        <button type="button" class="jarvis-mic-btn" id="jarvisMicBtn" onclick="toggleVoiceInput()" title="Voice Input (Speak to Jarvis)">🎤</button>
+        <button type="submit" class="jarvis-send-btn" title="Send Message">➤</button>
+      </form>
+    </div>
+    
+    <!-- Floating Launcher Pill -->
+    <div class="jarvis-chat-launcher" id="jarvisChatLauncher" onclick="toggleJarvisChat()">
+      <span class="jarvis-launcher-icon">🤖</span>
+      <span>JARVIS AI</span>
+      <span class="nc-pulse-dot green"></span>
+    </div>
+  </div>
+
+  <script src="app.js?v=101.0"></script>
 </body>
 </html>
