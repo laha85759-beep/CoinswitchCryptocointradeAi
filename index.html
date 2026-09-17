@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=98.0">
+  <link rel="stylesheet" href="styles.css?v=99.0">
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -25,19 +25,49 @@
   <!-- TOP HEADER HUD (MATCHES APPROVED MOCKUP) -->
   <header class="nc-top-header">
     <div class="nc-hdr-left">
-      <a href="https://thesmartmag.com" target="_blank" class="nc-brand" title="TheSmartMag AI Quant Core">
+      <a href="https://thesmartmag.com" target="_blank" class="nc-brand" title="TheSmartMag Quantum AI SuperBrain">
         <div class="nc-brain-icon-mini">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#00f090" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2a5 5 0 0 0-5 5v1a4 4 0 0 0-4 4 4 4 0 0 0 4 4h1a5 5 0 0 0 8 0h1a4 4 0 0 0 4-4 4 4 0 0 0-4-4v-1a5 5 0 0 0-5-5z"></path>
-            <path d="M12 2v20"></path>
-            <path d="M7 7c2-1 4 1 5 1s3-2 5-1"></path>
-            <path d="M4 12c3-1 5 1 8 0s5-1 8 0"></path>
-            <path d="M7 17c2 1 4-1 5-1s3 2 5 1"></path>
+          <svg width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="grad-cyber-1" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#00f090" />
+                <stop offset="50%" stop-color="#00d4ff" />
+                <stop offset="100%" stop-color="#ff00aa" />
+              </linearGradient>
+              <linearGradient id="grad-cyber-2" x1="100%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#ffd700" />
+                <stop offset="100%" stop-color="#00f090" />
+              </linearGradient>
+            </defs>
+            <!-- Hexagonal Outer Shield -->
+            <polygon points="19,2 34,10.5 34,27.5 19,36 4,27.5 4,10.5" stroke="url(#grad-cyber-1)" stroke-width="1.8" fill="rgba(2, 8, 18, 0.75)" />
+            <!-- Concentric Orbiting Dashed Techno-Ring -->
+            <circle cx="19" cy="19" r="14.5" stroke="url(#grad-cyber-2)" stroke-width="1.2" stroke-dasharray="3 5 8 3" fill="none" class="nc-logo-orbital" />
+            <!-- Left Neural Synapse Conduit -->
+            <path d="M19 8 C14 8 10 12 10 17 C10 21 13 24 16 26 C17.5 27 19 28 19 30" stroke="#00f090" stroke-width="1.4" stroke-linecap="round" fill="none" class="nc-logo-synapse-l" />
+            <!-- Right Neural Synapse Conduit -->
+            <path d="M19 8 C24 8 28 12 28 17 C28 21 25 24 22 26 C20.5 27 19 28 19 30" stroke="#00d4ff" stroke-width="1.4" stroke-linecap="round" fill="none" class="nc-logo-synapse-r" />
+            <!-- Cross Quantum Bridges -->
+            <path d="M13 14 Q19 16 25 14" stroke="#ff00aa" stroke-width="1.1" stroke-linecap="round" fill="none" />
+            <path d="M11 19 Q19 18 27 19" stroke="#00f090" stroke-width="1.2" stroke-linecap="round" fill="none" />
+            <path d="M14 24 Q19 23 24 24" stroke="#00d4ff" stroke-width="1.1" stroke-linecap="round" fill="none" />
+            <!-- Vertical Data Axis -->
+            <line x1="19" y1="5" x2="19" y2="33" stroke="rgba(255,255,255,0.4)" stroke-width="1" stroke-dasharray="2 3" />
+            <!-- Pulsing Quantum Fusion Core -->
+            <circle cx="19" cy="19" r="4.5" fill="url(#grad-cyber-1)" class="nc-logo-core-pulse" />
+            <circle cx="19" cy="19" r="2" fill="#ffffff" />
+            <!-- Vertex Energy Satellite Beacons -->
+            <circle cx="19" cy="2" r="1.5" fill="#00f090" class="nc-logo-beacon-1" />
+            <circle cx="34" cy="10.5" r="1.5" fill="#00d4ff" class="nc-logo-beacon-2" />
+            <circle cx="34" cy="27.5" r="1.5" fill="#ff00aa" class="nc-logo-beacon-3" />
+            <circle cx="19" cy="36" r="1.5" fill="#ffd700" class="nc-logo-beacon-4" />
+            <circle cx="4" cy="27.5" r="1.5" fill="#ff00aa" class="nc-logo-beacon-5" />
+            <circle cx="4" cy="10.5" r="1.5" fill="#00f090" class="nc-logo-beacon-6" />
           </svg>
         </div>
         <div class="nc-brand-text">
-          <span class="nc-app-title">AI DASHBOARD</span>
-          <span class="nc-brand-sub">TheSmartMag • Dual-Exchange Engine</span>
+          <span class="nc-app-title">THESMARTMAG <span style="font-size:9px; padding:2px 6px; background:linear-gradient(135deg,rgba(0,240,144,0.2),rgba(0,212,255,0.2)); border:1px solid rgba(0,240,144,0.4); border-radius:3px; color:#00f090; font-family:var(--font-mono); font-weight:700; -webkit-text-fill-color: initial; vertical-align:middle; margin-left:4px;">OS v3</span></span>
+          <span class="nc-brand-sub">QUANTUM AI • MULTI-EXCHANGE TERMINAL</span>
         </div>
       </a>
     </div>

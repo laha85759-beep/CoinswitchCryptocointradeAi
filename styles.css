@@ -102,30 +102,100 @@ body.neural-core-os {
   gap: 12px;
   text-decoration: none;
   color: inherit;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.nc-brand:hover {
+  transform: translateY(-1px);
+}
+.nc-brand:hover .nc-brain-icon-mini {
+  border-color: rgba(0, 240, 144, 0.6);
+  box-shadow: 0 0 28px rgba(0, 240, 144, 0.4), inset 0 0 16px rgba(0, 212, 255, 0.3);
+}
+.nc-brand:hover .nc-logo-orbital {
+  animation-duration: 3s;
 }
 
 .nc-brain-icon-mini {
   display: flex;
   align-items: center;
   justify-content: center;
-  filter: drop-shadow(0 0 10px rgba(0, 240, 144, 0.7));
-  animation: pulse-icon 2.5s infinite alternate;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: radial-gradient(circle at center, rgba(0, 240, 144, 0.15) 0%, rgba(2, 8, 18, 0.92) 80%);
+  border: 1px solid rgba(0, 240, 144, 0.3);
+  box-shadow: 0 0 18px rgba(0, 240, 144, 0.2), inset 0 0 12px rgba(0, 212, 255, 0.15);
+  transition: all 0.3s ease;
+  flex-shrink: 0;
 }
-@keyframes pulse-icon { 0% { opacity: 0.8; transform: scale(0.96); } 100% { opacity: 1; transform: scale(1.04); } }
+
+.nc-logo-orbital {
+  transform-origin: 19px 19px;
+  animation: logo-orbital-spin 9s linear infinite;
+}
+@keyframes logo-orbital-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.nc-logo-core-pulse {
+  transform-origin: 19px 19px;
+  animation: logo-core-breathe 2.2s ease-in-out infinite alternate;
+  filter: drop-shadow(0 0 8px #00f090);
+}
+@keyframes logo-core-breathe {
+  0% { transform: scale(0.85); opacity: 0.8; filter: drop-shadow(0 0 5px #00f090); }
+  50% { transform: scale(1.18); opacity: 1; filter: drop-shadow(0 0 12px #00d4ff); }
+  100% { transform: scale(0.92); opacity: 0.9; filter: drop-shadow(0 0 8px #ff00aa); }
+}
+
+.nc-logo-synapse-l {
+  animation: logo-synapse-glow-l 3s ease-in-out infinite alternate;
+}
+.nc-logo-synapse-r {
+  animation: logo-synapse-glow-r 3s ease-in-out infinite alternate 1.5s;
+}
+@keyframes logo-synapse-glow-l {
+  0% { stroke: #00f090; filter: drop-shadow(0 0 2px #00f090); }
+  50% { stroke: #00d4ff; filter: drop-shadow(0 0 6px #00d4ff); }
+  100% { stroke: #ff00aa; filter: drop-shadow(0 0 4px #ff00aa); }
+}
+@keyframes logo-synapse-glow-r {
+  0% { stroke: #00d4ff; filter: drop-shadow(0 0 2px #00d4ff); }
+  50% { stroke: #ff00aa; filter: drop-shadow(0 0 6px #ff00aa); }
+  100% { stroke: #00f090; filter: drop-shadow(0 0 4px #00f090); }
+}
+
+.nc-logo-beacon-1, .nc-logo-beacon-2, .nc-logo-beacon-3,
+.nc-logo-beacon-4, .nc-logo-beacon-5, .nc-logo-beacon-6 {
+  animation: logo-beacon-flash 2.2s ease-in-out infinite alternate;
+}
+.nc-logo-beacon-2 { animation-delay: 0.35s; }
+.nc-logo-beacon-3 { animation-delay: 0.7s; }
+.nc-logo-beacon-4 { animation-delay: 1.05s; }
+.nc-logo-beacon-5 { animation-delay: 1.4s; }
+.nc-logo-beacon-6 { animation-delay: 1.75s; }
+
+@keyframes logo-beacon-flash {
+  0% { opacity: 0.35; transform: scale(0.75); }
+  100% { opacity: 1; transform: scale(1.35); filter: drop-shadow(0 0 5px #ffffff); }
+}
 
 .nc-app-title {
   font-family: var(--font-orb);
   font-size: 14px;
   font-weight: 800;
   letter-spacing: 2px;
-  color: var(--text-main);
+  background: linear-gradient(135deg, #ffffff 0%, #00f090 60%, #00d4ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
   display: block;
 }
 .nc-brand-sub {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 8.5px;
   color: var(--text-dim);
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
 }
 
 /* Center HUD Pills */
