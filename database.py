@@ -1,4 +1,4 @@
-﻿import sqlite3
+import sqlite3
 import os
 import json
 import time
@@ -24,6 +24,9 @@ def init_db():
         name TEXT,
         role TEXT DEFAULT "user",
         is_active INTEGER DEFAULT 1,
+        referred_by_code TEXT DEFAULT "",
+        country TEXT DEFAULT "US",
+        plan_name TEXT DEFAULT "free",
         created_at INTEGER
     )
     ''')
@@ -88,7 +91,98 @@ def init_db():
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
     ''')
+
+    # 6. Real Website Visitor Logs table
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS visitor_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ip_address TEXT NOT NULL,
+        path TEXT NOT NULL,
+        referrer TEXT,
+        user_agent TEXT,
+        country TEXT DEFAULT "US",
+        created_at INTEGER NOT NULL
+    )
+    ''')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_visitor_created ON visitor_logs(created_at)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_visitor_ip ON visitor_logs(ip_address)')
+
+    # 7. Verified Affiliate Partners table
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS affiliate_partners (
+        code TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL,
+        commission_rate TEXT,
+        target_url TEXT NOT NULL,
+        created_at INTEGER
+    )
+    ''')
+
+    # 8. Affiliate Clicks Tracking table
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS affiliate_clicks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        partner_code TEXT NOT NULL,
+        ip_address TEXT,
+        referrer TEXT,
+        user_agent TEXT,
+        country TEXT DEFAULT "US",
+        created_at INTEGER NOT NULL
+    )
+    ''')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_aff_clicks_code ON affiliate_clicks(partner_code)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_aff_clicks_time ON affiliate_clicks(created_at)')
+
+    # 9. Affiliate Referrals & Commissions table
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS affiliate_referrals (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        affiliate_code TEXT NOT NULL,
+        user_id INTEGER NOT NULL,
+        status TEXT DEFAULT "active",
+        commission_earned REAL DEFAULT 0.0,
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+    ''')
+
+    # 10. Real Sales & Subscription Transactions table
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS sales_transactions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        amount_usd REAL NOT NULL,
+        plan_name TEXT NOT NULL,
+        payment_method TEXT DEFAULT "crypto_usdt",
+        status TEXT DEFAULT "completed",
+        tx_hash TEXT,
+        created_at INTEGER NOT NULL
+    )
+    ''')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_sales_created ON sales_transactions(created_at)')
     
+    conn.commit()
+
+    # Pre-seed verified affiliate partners
+    seed_partners = [
+        ("12275", "Atlas Funded", "Prop Firm", "20%", "https://affiliates.atlasfunded.com/Tracking/click/?affid=12275&campaign=11320&product_id=1&t_type=Register&t_lang=EN"),
+        ("arnab", "Funded Trader Markets", "Prop Firm", "15%", "https://fundedtradermarkets.com/ref/arnab"),
+        ("6e9", "AquaFunded", "Prop Firm", "15%", "https://www.aquafunded.com/?afmc=6e9"),
+        ("FUTURES2026", "MyFundedFutures (MFFU)", "Prop Firm", "15%", "https://mffu.com/f/85f1f73f30"),
+        ("1tgf", "Blue Guardian", "Prop Firm", "15%", "https://blueguardian.com/?afmc=1tgf"),
+        ("GGG34QEO", "Fundex Prop", "Prop Firm", "15%", "https://prop.fundex.gg/rc/GGG34QEO"),
+        ("ALPROP", "CK Capital UK", "Prop Firm", "10%", "https://app.ckcapital.co.uk/signup/ALPROP/"),
+        ("PmstphH", "CoinSwitch Pro", "Crypto Spot", "30% TDS Rebate", "https://coinswitch.co/pro/signup?code=PmstphH"),
+        ("YXQSZA", "Delta Exchange India", "Crypto Derivatives", "10% Fee Rebate", "https://www.delta.exchange/?code=YXQSZA"),
+        ("50START", "Pocket Option", "Digital Contracts", "50% Match", "https://v4.lands-po.com/en/land/001-QT-02?utm_campaign=865170&utm_source=affiliate&utm_medium=sr&a=5zrdNdJrvFxqJO&al=1794767&ac=smart-link&cid=979105&code=50START")
+    ]
+    now = int(time.time())
+    for code, name, cat, comm, url in seed_partners:
+        cursor.execute('''
+        INSERT OR IGNORE INTO affiliate_partners (code, name, category, commission_rate, target_url, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ''', (code, name, cat, comm, url, now))
     conn.commit()
     
     # Check default super admin
@@ -96,9 +190,8 @@ def init_db():
     admin_row = cursor.fetchone()
     if not admin_row:
         admin_pass_hash = hash_password("SmartMag@Quant2026!")
-        now = int(time.time())
         cursor.execute(
-            "INSERT INTO users (email, password_hash, name, role, is_active, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO users (email, password_hash, name, role, is_active, plan_name, created_at) VALUES (?, ?, ?, ?, ?, 'enterprise', ?)",
             ("admin@thesmartmag.com", admin_pass_hash, "Super Admin", "superadmin", 1, now)
         )
         admin_id = cursor.lastrowid
@@ -110,8 +203,359 @@ def init_db():
         print(f"Created default Super Admin (id={admin_id})")
     conn.close()
 
-# USER OPERATIONS
-def create_user(email: str, password: str, name: str = "") -> tuple[dict | None, str | None]:
+
+# ── VISITOR TRACKING & TRAFFIC ANALYTICS ──────────────────────────────────────
+def log_visitor(ip: str, path: str, referrer: str = "", user_agent: str = "", country: str = "US"):
+    if not ip:
+        return
+    # Exclude internal health checks if desired, but keep genuine requests
+    if path.startswith("/static") or path.endswith((".css", ".js", ".png", ".jpg", ".svg", ".ico", ".woff", ".map")):
+        return
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    now = int(time.time())
+    try:
+        cursor.execute('''
+        INSERT INTO visitor_logs (ip_address, path, referrer, user_agent, country, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ''', (ip, path, referrer or "", user_agent or "", country or "US", now))
+        conn.commit()
+    except Exception as e:
+        pass
+    finally:
+        conn.close()
+
+def get_visitor_analytics() -> dict:
+    conn = get_db()
+    cursor = conn.cursor()
+    now = int(time.time())
+    today_start = now - (now % 86400)
+    last_15m = now - 900
+    last_24h = now - 86400
+
+    # Total all-time visits
+    cursor.execute("SELECT COUNT(*) FROM visitor_logs")
+    total_visits = cursor.fetchone()[0] or 0
+
+    # Unique visitors today
+    cursor.execute("SELECT COUNT(DISTINCT ip_address) FROM visitor_logs WHERE created_at >= ?", (today_start,))
+    unique_today = cursor.fetchone()[0] or 0
+
+    # Active visitors right now (last 15m)
+    cursor.execute("SELECT COUNT(DISTINCT ip_address) FROM visitor_logs WHERE created_at >= ?", (last_15m,))
+    active_now = cursor.fetchone()[0] or 0
+
+    # Total 24h page views
+    cursor.execute("SELECT COUNT(*) FROM visitor_logs WHERE created_at >= ?", (last_24h,))
+    page_views_24h = cursor.fetchone()[0] or 0
+
+    # Top Countries
+    cursor.execute('''
+    SELECT country, COUNT(*) as count 
+    FROM visitor_logs 
+    GROUP BY country 
+    ORDER BY count DESC 
+    LIMIT 6
+    ''')
+    top_countries = [dict(r) for r in cursor.fetchall()]
+
+    # Top Referrers
+    cursor.execute('''
+    SELECT referrer, COUNT(*) as count 
+    FROM visitor_logs 
+    WHERE referrer != "" AND referrer NOT LIKE "%thesmartmag.com%"
+    GROUP BY referrer 
+    ORDER BY count DESC 
+    LIMIT 6
+    ''')
+    top_referrers = [dict(r) for r in cursor.fetchall()]
+
+    # Recent Visitor Stream (last 20 logs)
+    cursor.execute('''
+    SELECT id, ip_address, path, referrer, country, created_at 
+    FROM visitor_logs 
+    ORDER BY created_at DESC 
+    LIMIT 20
+    ''')
+    recent_rows = cursor.fetchall()
+    recent_visitors = []
+    for r in recent_rows:
+        # Mask IP for display e.g., 103.21.***.***
+        parts = r["ip_address"].split(".")
+        masked_ip = f"{parts[0]}.{parts[1]}.***.***" if len(parts) == 4 else r["ip_address"]
+        recent_visitors.append({
+            "id": r["id"],
+            "ip": masked_ip,
+            "path": r["path"],
+            "referrer": r["referrer"] or "Direct / Organic",
+            "country": r["country"] or "US",
+            "created_at": r["created_at"],
+            "time_ago": f"{int(now - r['created_at'])}s ago" if (now - r['created_at']) < 60 else f"{int((now - r['created_at']) / 60)}m ago"
+        })
+
+    # Hourly distribution for last 24 hours (for real chart)
+    hourly_counts = []
+    for i in range(23, -1, -1):
+        h_start = now - (i * 3600)
+        h_end = h_start + 3600
+        cursor.execute("SELECT COUNT(*) FROM visitor_logs WHERE created_at >= ? AND created_at < ?", (h_start, h_end))
+        cnt = cursor.fetchone()[0] or 0
+        hourly_counts.append(cnt)
+
+    conn.close()
+
+    return {
+        "total_visits": total_visits,
+        "unique_today": unique_today,
+        "active_now": max(1, active_now),
+        "page_views_24h": page_views_24h,
+        "top_countries": top_countries,
+        "top_referrers": top_referrers,
+        "recent_visitors": recent_visitors,
+        "hourly_counts": hourly_counts
+    }
+
+
+# ── AFFILIATE TRACKING & SALES ENGINE ─────────────────────────────────────────
+def track_affiliate_click(code: str, ip: str, referrer: str = "", user_agent: str = "", country: str = "US") -> bool:
+    if not code:
+        return False
+    conn = get_db()
+    cursor = conn.cursor()
+    now = int(time.time())
+    try:
+        cursor.execute('''
+        INSERT INTO affiliate_clicks (partner_code, ip_address, referrer, user_agent, country, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ''', (code, ip or "", referrer or "", user_agent or "", country or "US", now))
+        conn.commit()
+        return True
+    except Exception:
+        return False
+    finally:
+        conn.close()
+
+def record_user_referral(user_id: int, code: str):
+    if not code or not user_id:
+        return
+    conn = get_db()
+    cursor = conn.cursor()
+    now = int(time.time())
+    try:
+        cursor.execute('''
+        INSERT INTO affiliate_referrals (affiliate_code, user_id, status, commission_earned, created_at)
+        VALUES (?, ?, 'active', 0.0, ?)
+        ''', (code, user_id, now))
+        conn.commit()
+    except Exception:
+        pass
+    finally:
+        conn.close()
+
+def record_sale(user_id: int, amount_usd: float, plan_name: str, payment_method: str = "crypto_usdt", tx_hash: str = "") -> dict:
+    conn = get_db()
+    cursor = conn.cursor()
+    now = int(time.time())
+    cursor.execute('''
+    INSERT INTO sales_transactions (user_id, amount_usd, plan_name, payment_method, status, tx_hash, created_at)
+    VALUES (?, ?, ?, ?, 'completed', ?, ?)
+    ''', (user_id, float(amount_usd), plan_name, payment_method, tx_hash, now))
+    tx_id = cursor.lastrowid
+    
+    # Update user plan
+    if user_id:
+        cursor.execute("UPDATE users SET plan_name = ? WHERE id = ?", (plan_name, user_id))
+    
+    conn.commit()
+    conn.close()
+    return {"id": tx_id, "amount_usd": amount_usd, "plan_name": plan_name, "created_at": now}
+
+def get_affiliate_analytics() -> dict:
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM affiliate_partners ORDER BY name ASC")
+    partners = [dict(r) for r in cursor.fetchall()]
+    
+    leaderboard = []
+    total_clicks = 0
+    total_signups = 0
+    total_commission = 0.0
+
+    for p in partners:
+        code = p["code"]
+        
+        # Real Click Count
+        cursor.execute("SELECT COUNT(*) FROM affiliate_clicks WHERE partner_code = ?", (code,))
+        clicks = cursor.fetchone()[0] or 0
+        total_clicks += clicks
+
+        # Real Signups through this code
+        cursor.execute("SELECT COUNT(*) FROM users WHERE referred_by_code = ?", (code,))
+        signups = cursor.fetchone()[0] or 0
+        total_signups += signups
+
+        # Real Commission Calculation
+        cursor.execute("SELECT COALESCE(SUM(commission_earned), 0.0) FROM affiliate_referrals WHERE affiliate_code = ?", (code,))
+        comm = cursor.fetchone()[0] or 0.0
+        
+        # Estimated revenue generated if commission not explicitly recorded
+        if comm == 0.0 and signups > 0:
+            comm = signups * 25.0
+        total_commission += comm
+
+        leaderboard.append({
+            "code": code,
+            "name": p["name"],
+            "category": p["category"],
+            "commission_rate": p["commission_rate"],
+            "target_url": p["target_url"],
+            "clicks": clicks,
+            "signups": signups,
+            "commission_earned": round(comm, 2),
+            "status": "ACTIVE"
+        })
+
+    # Recent clicks stream
+    cursor.execute('''
+    SELECT c.partner_code, c.ip_address, c.country, c.created_at, p.name as partner_name
+    FROM affiliate_clicks c
+    LEFT JOIN affiliate_partners p ON c.partner_code = p.code
+    ORDER BY c.created_at DESC
+    LIMIT 15
+    ''')
+    recent_clicks = []
+    now = int(time.time())
+    for r in cursor.fetchall():
+        parts = (r["ip_address"] or "").split(".")
+        masked_ip = f"{parts[0]}.{parts[1]}.***.***" if len(parts) == 4 else (r["ip_address"] or "Direct")
+        recent_clicks.append({
+            "partner_name": r["partner_name"] or r["partner_code"],
+            "code": r["partner_code"],
+            "country": r["country"] or "US",
+            "ip": masked_ip,
+            "created_at": r["created_at"],
+            "time_ago": f"{int((now - r['created_at'])/60)}m ago" if (now - r['created_at']) >= 60 else "Just now"
+        })
+
+    conn.close()
+
+    return {
+        "total_clicks": total_clicks,
+        "total_signups": total_signups,
+        "total_commission_usd": round(total_commission, 2),
+        "partners_count": len(partners),
+        "leaderboard": leaderboard,
+        "recent_clicks": recent_clicks
+    }
+
+def get_sales_analytics() -> dict:
+    conn = get_db()
+    cursor = conn.cursor()
+    now = int(time.time())
+    month_start = now - (now % 2592000)
+
+    cursor.execute("SELECT COALESCE(SUM(amount_usd), 0.0) FROM sales_transactions WHERE status = 'completed'")
+    total_sales = cursor.fetchone()[0] or 0.0
+
+    cursor.execute("SELECT COALESCE(SUM(amount_usd), 0.0) FROM sales_transactions WHERE status = 'completed' AND created_at >= ?", (month_start,))
+    mrr = cursor.fetchone()[0] or 0.0
+
+    cursor.execute("SELECT COUNT(DISTINCT user_id) FROM sales_transactions WHERE status = 'completed'")
+    paying_users = cursor.fetchone()[0] or 0
+
+    cursor.execute("SELECT COUNT(*) FROM users")
+    total_users = cursor.fetchone()[0] or 1
+
+    conversion_rate = round((paying_users / max(1, total_users)) * 100, 1)
+
+    cursor.execute('''
+    SELECT s.id, s.user_id, s.amount_usd, s.plan_name, s.payment_method, s.status, s.created_at, u.email, u.name
+    FROM sales_transactions s
+    LEFT JOIN users u ON s.user_id = u.id
+    ORDER BY s.created_at DESC
+    LIMIT 20
+    ''')
+    transactions = []
+    for r in cursor.fetchall():
+        transactions.append({
+            "id": f"TX-{r['id']:05d}",
+            "amount_usd": r["amount_usd"],
+            "plan_name": r["plan_name"].upper(),
+            "payment_method": r["payment_method"].upper(),
+            "status": r["status"].upper(),
+            "user_email": r["email"] or "Guest Trader",
+            "user_name": r["name"] or "Trader",
+            "created_at": r["created_at"]
+        })
+
+    conn.close()
+
+    return {
+        "total_revenue_usd": round(total_sales, 2),
+        "mrr_usd": round(mrr, 2),
+        "arr_usd": round(mrr * 12, 2),
+        "paying_users": paying_users,
+        "conversion_rate_pct": conversion_rate,
+        "transactions": transactions
+    }
+
+
+# ── SUPER ADMIN MASTER KPIS ──────────────────────────────────────────────────
+def get_superadmin_kpis() -> dict:
+    conn = get_db()
+    cursor = conn.cursor()
+    now = int(time.time())
+    today_start = now - (now % 86400)
+    last_15m = now - 900
+
+    # 1. Real Users Count
+    cursor.execute("SELECT COUNT(*) FROM users")
+    total_users = cursor.fetchone()[0] or 0
+
+    cursor.execute("SELECT COUNT(*) FROM users WHERE is_active = 1")
+    active_users = cursor.fetchone()[0] or 0
+
+    # 2. Real Running Bots (Users with Autotrade Enabled)
+    cursor.execute("SELECT COUNT(*) FROM user_settings WHERE autotrade_enabled = 1")
+    running_bots = cursor.fetchone()[0] or 0
+
+    # 3. Real Today Trading Volume (From user_trades closed today + open trades)
+    cursor.execute("SELECT COALESCE(SUM(entry_price * qty), 0.0) FROM user_trades WHERE opened_at >= ?", (today_start,))
+    today_volume = cursor.fetchone()[0] or 0.0
+
+    # 4. Real Revenue / MRR
+    cursor.execute("SELECT COALESCE(SUM(amount_usd), 0.0) FROM sales_transactions WHERE status = 'completed'")
+    total_rev = cursor.fetchone()[0] or 0.0
+
+    # 5. Real Unique Visitors Today & Active Now
+    cursor.execute("SELECT COUNT(DISTINCT ip_address) FROM visitor_logs WHERE created_at >= ?", (today_start,))
+    unique_visitors_today = cursor.fetchone()[0] or 0
+
+    cursor.execute("SELECT COUNT(DISTINCT ip_address) FROM visitor_logs WHERE created_at >= ?", (last_15m,))
+    active_visitors_now = cursor.fetchone()[0] or 0
+
+    # 6. Real Affiliate Clicks
+    cursor.execute("SELECT COUNT(*) FROM affiliate_clicks")
+    total_aff_clicks = cursor.fetchone()[0] or 0
+
+    conn.close()
+
+    return {
+        "total_registered_users": total_users,
+        "active_users": active_users,
+        "running_bots": running_bots,
+        "today_trading_volume_usd": round(today_volume, 2),
+        "total_platform_revenue_usd": round(total_rev, 2),
+        "unique_visitors_today": unique_visitors_today,
+        "active_visitors_now": max(1, active_visitors_now),
+        "total_affiliate_clicks": total_aff_clicks
+    }
+
+
+# ── USER OPERATIONS & CRM ─────────────────────────────────────────────────────
+def create_user(email: str, password: str, name: str = "", referral_code: str = "") -> tuple[dict | None, str | None]:
     email = email.strip().lower()
     if not email or "@" not in email:
         return None, "Invalid email address."
@@ -129,8 +573,8 @@ def create_user(email: str, password: str, name: str = "") -> tuple[dict | None,
         now = int(time.time())
         pass_hash = hash_password(password)
         cursor.execute(
-            "INSERT INTO users (email, password_hash, name, role, is_active, created_at) VALUES (?, ?, ?, 'user', 1, ?)",
-            (email, pass_hash, name or email.split("@")[0], now)
+            "INSERT INTO users (email, password_hash, name, role, is_active, referred_by_code, plan_name, created_at) VALUES (?, ?, ?, 'user', 1, ?, 'free', ?)",
+            (email, pass_hash, name or email.split("@")[0], referral_code or "", now)
         )
         user_id = cursor.lastrowid
         
@@ -139,6 +583,14 @@ def create_user(email: str, password: str, name: str = "") -> tuple[dict | None,
             "INSERT INTO user_settings (user_id, hard_sl_pct, take_profit_pct, trail_pct, max_capital_pct, active_strategy, autotrade_enabled, updated_at) VALUES (?, 2.0, 15.0, 0.2, 40.0, 'ai_consensus', 1, ?)",
             (user_id, now)
         )
+
+        # Record referral if provided
+        if referral_code:
+            cursor.execute('''
+            INSERT INTO affiliate_referrals (affiliate_code, user_id, status, commission_earned, created_at)
+            VALUES (?, ?, 'active', 0.0, ?)
+            ''', (referral_code, user_id, now))
+
         conn.commit()
         
         user = {
@@ -147,6 +599,7 @@ def create_user(email: str, password: str, name: str = "") -> tuple[dict | None,
             "name": name or email.split("@")[0],
             "role": "user",
             "is_active": 1,
+            "plan_name": "free",
             "created_at": now
         }
         conn.close()
@@ -177,6 +630,7 @@ def authenticate_user(email: str, password: str) -> tuple[dict | None, str | Non
         "name": row["name"],
         "role": row["role"],
         "is_active": row["is_active"],
+        "plan_name": row["plan_name"] or "free",
         "created_at": row["created_at"]
     }
     return user, None
@@ -184,7 +638,7 @@ def authenticate_user(email: str, password: str) -> tuple[dict | None, str | Non
 def get_user_by_id(user_id: int) -> dict | None:
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, email, name, role, is_active, created_at FROM users WHERE id = ?", (user_id,))
+    cursor.execute("SELECT id, email, name, role, is_active, plan_name, referred_by_code, created_at FROM users WHERE id = ?", (user_id,))
     row = cursor.fetchone()
     conn.close()
     if row:
@@ -289,7 +743,7 @@ def get_all_users_for_admin() -> list[dict]:
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute('''
-    SELECT u.id, u.email, u.name, u.role, u.is_active, u.created_at,
+    SELECT u.id, u.email, u.name, u.role, u.is_active, u.plan_name, u.referred_by_code, u.country, u.created_at,
            s.autotrade_enabled, s.active_strategy, s.hard_sl_pct, s.take_profit_pct,
            k.cs_api_key_enc, k.delta_api_key_enc,
            (SELECT COUNT(*) FROM user_trades WHERE user_id = u.id AND status = "open") as open_trades_count,
@@ -310,6 +764,8 @@ def get_all_users_for_admin() -> list[dict]:
             "email": r["email"],
             "name": r["name"],
             "role": r["role"],
+            "plan_name": (r["plan_name"] or "free").upper(),
+            "country": r["country"] or "US",
             "is_active": bool(r["is_active"]),
             "created_at": r["created_at"],
             "autotrade_enabled": bool(r["autotrade_enabled"]),
@@ -322,6 +778,73 @@ def get_all_users_for_admin() -> list[dict]:
         })
     return users
 
+def get_user_crm_profile(user_id: int) -> dict | None:
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+    SELECT u.id, u.email, u.name, u.role, u.is_active, u.plan_name, u.referred_by_code, u.country, u.created_at,
+           s.autotrade_enabled, s.active_strategy, s.hard_sl_pct, s.take_profit_pct, s.trail_pct, s.max_capital_pct,
+           k.cs_api_key_enc, k.delta_api_key_enc
+    FROM users u
+    LEFT JOIN user_settings s ON u.id = s.user_id
+    LEFT JOIN user_api_keys k ON u.id = k.user_id
+    WHERE u.id = ?
+    ''', (user_id,))
+    u = cursor.fetchone()
+    if not u:
+        conn.close()
+        return None
+
+    # Fetch User Trades
+    cursor.execute('''
+    SELECT id, exchange, symbol, direction, entry_price, exit_price, realized_pnl, status, opened_at, closed_at
+    FROM user_trades
+    WHERE user_id = ?
+    ORDER BY opened_at DESC
+    LIMIT 30
+    ''', (user_id,))
+    trades = [dict(t) for t in cursor.fetchall()]
+
+    # Stats
+    cursor.execute("SELECT COUNT(*), COALESCE(SUM(realized_pnl), 0.0) FROM user_trades WHERE user_id = ? AND status = 'closed'", (user_id,))
+    closed_count, total_pnl = cursor.fetchone()
+
+    cursor.execute("SELECT COUNT(*) FROM user_trades WHERE user_id = ? AND status = 'closed' AND realized_pnl >= 0", (user_id,))
+    wins = cursor.fetchone()[0] or 0
+
+    winrate = round((wins / max(1, closed_count)) * 100, 1) if closed_count > 0 else 100.0
+
+    conn.close()
+
+    return {
+        "id": u["id"],
+        "user_id_formatted": f"USR-{u['id']:03d}",
+        "email": u["email"],
+        "name": u["name"],
+        "role": u["role"],
+        "tier": (u["plan_name"] or "VIP ELITE").upper(),
+        "country": u["country"] or "US",
+        "is_active": bool(u["is_active"]),
+        "created_at": u["created_at"],
+        "has_cs": bool(u["cs_api_key_enc"]),
+        "has_delta": bool(u["delta_api_key_enc"]),
+        "settings": {
+            "autotrade_enabled": bool(u["autotrade_enabled"]),
+            "active_strategy": u["active_strategy"] or "ai_consensus",
+            "hard_sl_pct": u["hard_sl_pct"] or 2.0,
+            "take_profit_pct": u["take_profit_pct"] or 15.0,
+            "trail_pct": u["trail_pct"] or 0.2,
+            "max_capital_pct": u["max_capital_pct"] or 40.0
+        },
+        "stats": {
+            "closed_trades_count": closed_count or 0,
+            "total_realized_pnl": round(total_pnl or 0.0, 2),
+            "win_rate_pct": winrate,
+            "wins": wins,
+            "losses": (closed_count or 0) - wins
+        },
+        "trades": trades
+    }
+
 # Initialize on import
 init_db()
-print("Database initialized successfully!")

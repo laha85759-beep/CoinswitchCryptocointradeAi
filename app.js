@@ -22,6 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initCircuitBgCanvas();
   initNeuralBgCanvas();
   initUserSession();
+  initAffiliateClickListeners();
   fetchRealData();
   setInterval(fetchRealData, 4000);
   fetchNewsData();
@@ -29,6 +30,11 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchIndianMarketData();
   setInterval(fetchIndianMarketData, 8000);
   checkAdminAuth();
+  setInterval(() => {
+    if (adminToken && currentView === "admin") {
+      fetchAdminOverviewKPIs();
+    }
+  }, 6000);
   if (window.location.hash) {
     handleHashRouting();
   }
@@ -668,7 +674,11 @@ function checkAdminAuth() {
     if (dashPanel) dashPanel.style.display = "block";
     if (adminNavBtnText) adminNavBtnText.textContent = "ADMIN (LOGGED IN)";
     fetchAdminStatus();
+    fetchAdminOverviewKPIs();
+    fetchAdminVisitors();
     fetchAdminUsersList();
+    fetchAdminAffiliates();
+    fetchAdminSales();
   } else {
     if (loginBox) loginBox.style.display = "block";
     if (dashPanel) dashPanel.style.display = "none";
@@ -763,6 +773,334 @@ async function fetchAdminStatus() {
   }
 }
 
+// ── 9a. Super Admin Live Overview KPIs ──────────────────────────────────────
+async function fetchAdminOverviewKPIs() {
+  if (!adminToken) return;
+  try {
+    const res = await fetch("/api/admin/kpis", {
+      headers: { "Authorization": `Bearer ${adminToken}` }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+
+    if (document.getElementById("kpi-live-users")) {
+      document.getElementById("kpi-live-users").textContent = Number(data.users_total || 0).toLocaleString();
+    }
+    if (document.getElementById("kpi-active-traders-cnt")) {
+      document.getElementById("kpi-active-traders-cnt").textContent = Number(data.users_active || 0).toLocaleString();
+    }
+    if (document.getElementById("kpi-running-bots")) {
+      document.getElementById("kpi-running-bots").textContent = Number(data.running_bots || 0).toLocaleString();
+    }
+    if (document.getElementById("kpi-today-volume")) {
+      document.getElementById("kpi-today-volume").textContent = `$${Number(data.volume_today_usd || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    if (document.getElementById("kpi-platform-rev")) {
+      document.getElementById("kpi-platform-rev").textContent = `$${Number(data.revenue_mrr_usd || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    if (document.getElementById("kpi-vis-active-overview")) {
+      document.getElementById("kpi-vis-active-overview").textContent = Number(data.visitors_active_now || 0).toLocaleString();
+    }
+    if (document.getElementById("kpi-vis-unique-overview")) {
+      document.getElementById("kpi-vis-unique-overview").textContent = Number(data.visitors_unique_today || 0).toLocaleString();
+    }
+    if (document.getElementById("kpi-vis-total-overview")) {
+      document.getElementById("kpi-vis-total-overview").textContent = Number(data.visitors_total_hits || 0).toLocaleString();
+    }
+    if (document.getElementById("kpi-aff-clicks-overview")) {
+      document.getElementById("kpi-aff-clicks-overview").textContent = Number(data.affiliate_clicks_total || 0).toLocaleString();
+    }
+  } catch (err) {
+    console.debug("Admin overview KPIs error:", err);
+  }
+}
+
+// ── 9b. Real Website Visitor Tracking & Traffic Analytics ───────────────────
+async function fetchAdminVisitors(isManual = false) {
+  if (!adminToken) return;
+  try {
+    const res = await fetch("/api/admin/visitors", {
+      headers: { "Authorization": `Bearer ${adminToken}` }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+
+    // 1. KPI Cards
+    if (document.getElementById("vis-kpi-active-now")) {
+      document.getElementById("vis-kpi-active-now").textContent = Number(data.active_visitors_now || 0).toLocaleString();
+    }
+    if (document.getElementById("vis-kpi-unique-today")) {
+      document.getElementById("vis-kpi-unique-today").textContent = Number(data.unique_visitors_today || 0).toLocaleString();
+    }
+    if (document.getElementById("vis-kpi-pageviews-24h")) {
+      document.getElementById("vis-kpi-pageviews-24h").textContent = Number(data.page_views_24h || 0).toLocaleString();
+    }
+    if (document.getElementById("vis-kpi-total-visits")) {
+      document.getElementById("vis-kpi-total-visits").textContent = Number(data.total_all_time_visits || 0).toLocaleString();
+    }
+
+    // 2. Top Countries List
+    const cList = document.getElementById("vis-countries-list");
+    if (cList) {
+      const countries = data.top_countries || [];
+      if (countries.length === 0) {
+        cList.innerHTML = `<div class="empty-state text-center" style="padding:10px;">No country traffic recorded yet.</div>`;
+      } else {
+        const maxC = Math.max(...countries.map(c => c[1]), 1);
+        cList.innerHTML = countries.slice(0, 7).map(([code, count]) => {
+          const pct = Math.round((count / maxC) * 100);
+          return `
+            <div style="display:flex; flex-direction:column; gap:3px;">
+              <div style="display:flex; justify-content:space-between; font-size:11px; font-family:var(--font-mono);">
+                <span><span class="tsm-badge-pill admin font-mono" style="padding:1px 6px;">${escapeHtml(code)}</span> <strong>${escapeHtml(code)}</strong></span>
+                <span class="green"><strong>${count}</strong> visits</span>
+              </div>
+              <div class="server-bar" style="height:4px;"><div class="server-bar-fill green" style="width:${pct}%;"></div></div>
+            </div>
+          `;
+        }).join("");
+      }
+    }
+
+    // 3. Top Referrers List
+    const rList = document.getElementById("vis-referrers-list");
+    if (rList) {
+      const referrers = data.top_referrers || [];
+      if (referrers.length === 0) {
+        rList.innerHTML = `<div class="empty-state text-center" style="padding:10px;">Direct organic traffic active.</div>`;
+      } else {
+        const maxR = Math.max(...referrers.map(r => r[1]), 1);
+        rList.innerHTML = referrers.slice(0, 7).map(([ref, count]) => {
+          const pct = Math.round((count / maxR) * 100);
+          return `
+            <div style="display:flex; flex-direction:column; gap:3px;">
+              <div style="display:flex; justify-content:space-between; font-size:11px; font-family:var(--font-mono);">
+                <span class="text-dim" style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(ref)}</span>
+                <span class="cyan"><strong>${count}</strong> hits</span>
+              </div>
+              <div class="server-bar" style="height:4px;"><div class="server-bar-fill cyan" style="width:${pct}%;"></div></div>
+            </div>
+          `;
+        }).join("");
+      }
+    }
+
+    // 4. Live Visitor Request Stream Table
+    const vTbody = document.getElementById("admin-vis-tbody");
+    if (vTbody) {
+      const stream = data.recent_visitors || [];
+      if (stream.length === 0) {
+        vTbody.innerHTML = `<tr><td colspan="5" class="text-center empty-state">No visitor logs in database yet.</td></tr>`;
+      } else {
+        vTbody.innerHTML = stream.slice(0, 30).map(v => {
+          const ts = (v.timestamp || "").split("T")[1]?.split(".")[0] || v.timestamp || "--:--";
+          return `
+            <tr>
+              <td class="font-mono cyan"><code>${escapeHtml(v.ip)}</code></td>
+              <td><span class="tsm-badge-pill cyan font-mono" style="padding:1px 6px;">${escapeHtml(v.path)}</span></td>
+              <td><span class="tsm-badge-pill admin font-mono" style="padding:1px 6px;">${escapeHtml(v.country)}</span></td>
+              <td class="font-mono text-dim" style="max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(v.referrer || 'Direct')}</td>
+              <td class="font-mono text-muted">${escapeHtml(ts)}</td>
+            </tr>
+          `;
+        }).join("");
+      }
+    }
+
+    // 5. Hourly Traffic Chart Canvas
+    if (data.hourly_traffic) {
+      renderVisitorHourlyChart(data.hourly_traffic);
+    }
+
+    if (isManual) {
+      alert("✅ Real visitor tracking data refreshed from SQLite database!");
+    }
+  } catch (err) {
+    console.debug("Admin visitors fetch error:", err);
+  }
+}
+
+function renderVisitorHourlyChart(hourlyData) {
+  const canvas = document.getElementById("adminVisitorTrafficCanvas");
+  if (!canvas || !hourlyData) return;
+  const ctx = canvas.getContext("2d");
+  const w = canvas.parentElement.clientWidth || 800;
+  const h = 220;
+  canvas.width = w;
+  canvas.height = h;
+
+  ctx.clearRect(0, 0, w, h);
+
+  // Background Grid Lines
+  ctx.strokeStyle = "rgba(0, 240, 144, 0.08)";
+  ctx.lineWidth = 1;
+  for (let y = 20; y < h - 20; y += 35) {
+    ctx.beginPath();
+    ctx.moveTo(30, y);
+    ctx.lineTo(w - 10, y);
+    ctx.stroke();
+  }
+
+  const hours = Object.keys(hourlyData).sort();
+  if (hours.length === 0) return;
+
+  const vals = hours.map(k => hourlyData[k] || 0);
+  const maxVal = Math.max(...vals, 5);
+
+  const padLeft = 40;
+  const padRight = 20;
+  const padBottom = 30;
+  const padTop = 20;
+  const chartW = w - padLeft - padRight;
+  const chartH = h - padTop - padBottom;
+
+  const stepX = chartW / (hours.length - 1 || 1);
+  const pts = hours.map((hKey, idx) => {
+    const val = hourlyData[hKey] || 0;
+    const x = padLeft + idx * stepX;
+    const y = padTop + chartH - (val / maxVal) * chartH;
+    return { x, y, val, hour: hKey };
+  });
+
+  // Draw Smooth Curve
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) {
+    const xc = (pts[i].x + pts[i - 1].x) / 2;
+    const yc = (pts[i].y + pts[i - 1].y) / 2;
+    ctx.quadraticCurveTo(pts[i - 1].x, pts[i - 1].y, xc, yc);
+  }
+  ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
+  ctx.strokeStyle = "#00f090";
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Gradient fill under curve
+  ctx.lineTo(pts[pts.length - 1].x, h - padBottom);
+  ctx.lineTo(pts[0].x, h - padBottom);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, padTop, 0, h - padBottom);
+  grad.addColorStop(0, "rgba(0, 240, 144, 0.35)");
+  grad.addColorStop(1, "rgba(0, 240, 144, 0.0)");
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Draw Points & X-Axis Labels
+  ctx.fillStyle = "#8ab4cf";
+  ctx.font = "9px 'Share Tech Mono', monospace";
+  ctx.textAlign = "center";
+
+  pts.forEach((p, idx) => {
+    // Circle at vertex
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = "#00d4ff";
+    ctx.fill();
+
+    // Hour label on every 3rd point
+    if (idx % 3 === 0 || idx === pts.length - 1) {
+      const lbl = p.hour.substring(11, 16) || p.hour.substring(11, 13) + 'h';
+      ctx.fillStyle = "#6e7681";
+      ctx.fillText(lbl, p.x, h - 10);
+    }
+  });
+}
+
+// ── 9c. Real Verified Partner Affiliates & Click Engine ─────────────────────
+async function fetchAdminAffiliates(isManual = false) {
+  if (!adminToken) return;
+  const tbody = document.getElementById("admin-affiliates-tbody");
+  if (!tbody) return;
+
+  try {
+    const res = await fetch("/api/admin/affiliates", {
+      headers: { "Authorization": `Bearer ${adminToken}` }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+
+    if (document.getElementById("admin-rev-affiliate")) {
+      document.getElementById("admin-rev-affiliate").textContent = `$${Number(data.total_commission_usd || 0).toFixed(2)}`;
+    }
+    if (document.getElementById("admin-rev-clicks-cnt")) {
+      document.getElementById("admin-rev-clicks-cnt").textContent = Number(data.total_clicks || 0).toLocaleString();
+    }
+
+    const affList = data.affiliates || [];
+    if (affList.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center empty-state">No partner affiliate programs configured.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = affList.map(item => `
+      <tr>
+        <td><strong>${escapeHtml(item.partner_name)}</strong></td>
+        <td><span class="tsm-partner-badge cyan font-mono">${escapeHtml(item.category || 'PROP_FIRM')}</span></td>
+        <td><span class="tsm-badge-gold font-mono">${escapeHtml(item.promo_code)}</span></td>
+        <td class="font-mono cyan"><strong>${Number(item.clicks || 0).toLocaleString()}</strong> clicks</td>
+        <td class="font-mono green"><strong>${Number(item.conversions || 0).toLocaleString()}</strong> signups</td>
+        <td class="font-mono green"><strong>$${Number(item.commission_earned || 0).toFixed(2)}</strong></td>
+        <td><span class="tsm-badge-pill admin font-mono">TRACKING 🟢</span></td>
+      </tr>
+    `).join("");
+
+    if (isManual) {
+      alert("✅ Verified Partner Affiliate leaderboard updated with real SQLite click counters!");
+    }
+  } catch (err) {
+    console.debug("Admin affiliates fetch error:", err);
+  }
+}
+
+// ── 9d. Real SaaS Sales & Transaction Ledger ────────────────────────────────
+async function fetchAdminSales(isManual = false) {
+  if (!adminToken) return;
+  const tbody = document.getElementById("admin-sales-tbody");
+  if (!tbody) return;
+
+  try {
+    const res = await fetch("/api/admin/sales", {
+      headers: { "Authorization": `Bearer ${adminToken}` }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+
+    if (document.getElementById("admin-rev-mrr")) {
+      document.getElementById("admin-rev-mrr").textContent = `$${Number(data.mrr || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+    }
+    if (document.getElementById("admin-rev-arr")) {
+      document.getElementById("admin-rev-arr").textContent = `$${Number(data.arr || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+    }
+    if (document.getElementById("admin-rev-conversion")) {
+      document.getElementById("admin-rev-conversion").textContent = `${data.conversion_rate || 0}%`;
+    }
+
+    const txList = data.transactions || [];
+    if (txList.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center empty-state">No paid transactions recorded yet. Real sales appear here dynamically.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = txList.map(tx => `
+      <tr>
+        <td class="font-mono cyan">${escapeHtml(tx.transaction_id)}</td>
+        <td><strong>${escapeHtml(tx.user_name || 'Trader')}</strong></td>
+        <td><span class="tsm-badge-pill gold font-mono">${escapeHtml(tx.plan)}</span></td>
+        <td class="font-mono green"><strong>$${Number(tx.amount_usd).toFixed(2)}</strong></td>
+        <td class="font-mono text-dim">${escapeHtml(tx.payment_method || 'STRIPE')}</td>
+        <td><span class="tsm-badge-pill admin font-mono">${escapeHtml(tx.status.toUpperCase())}</span></td>
+      </tr>
+    `).join("");
+
+    if (isManual) {
+      alert("✅ Real SaaS sales transactions refreshed from SQLite database!");
+    }
+  } catch (err) {
+    console.debug("Admin sales fetch error:", err);
+  }
+}
+
+// ── 9e. Multi-Tenant User Directory with Live CRM Integration ───────────────
 async function fetchAdminUsersList() {
   if (!adminToken) return;
   const tbody = document.getElementById("admin-users-tbody");
@@ -776,7 +1114,7 @@ async function fetchAdminUsersList() {
     const data = await res.json();
 
     if (!data.users || data.users.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="9" class="text-center empty-state">No users registered yet.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="11" class="text-center empty-state">No registered traders in database.</td></tr>`;
       return;
     }
 
@@ -785,20 +1123,27 @@ async function fetchAdminUsersList() {
       const csBadge = u.has_cs ? '<span class="green font-mono">CS:✓</span>' : '<span class="text-muted font-mono">CS:✗</span>';
       const deltaBadge = u.has_delta ? '<span class="cyan font-mono">DELTA:✓</span>' : '<span class="text-muted font-mono">DELTA:✗</span>';
       const statusBadge = u.is_active ? '<span class="user-status-badge active">ACTIVE</span>' : '<span class="user-status-badge disabled">SUSPENDED</span>';
-      const autotradeBadge = u.autotrade_enabled ? '<span class="green">ON 🟢</span>' : '<span class="gold">OFF ⏸</span>';
+      const autotradeBadge = u.autotrade_enabled ? '<span class="green font-mono">ON 🟢</span>' : '<span class="gold font-mono">OFF ⏸</span>';
+      const pnlNum = Number(u.realized_pnl || 0);
+      const pnlClass = pnlNum >= 0 ? 'green' : 'red-text';
+      const pnlStr = `${pnlNum >= 0 ? '+' : ''}$${pnlNum.toFixed(2)}`;
 
       return `
         <tr>
-          <td class="font-mono">${u.id.substring(0, 8)}...</td>
+          <td class="font-mono cyan">USR-${u.id}</td>
           <td><strong>${escapeHtml(u.name || 'Trader')}</strong></td>
-          <td>${escapeHtml(u.email)}</td>
-          <td><span class="tsm-badge-pill ${isSuper ? 'admin' : 'cyan'}">${u.role.toUpperCase()}</span></td>
+          <td class="font-mono text-dim">${escapeHtml(u.email)}</td>
+          <td><span class="tsm-badge-pill ${isSuper ? 'gold' : 'cyan'} font-mono">${escapeHtml(u.tier || 'FREE')}</span></td>
+          <td><span class="tsm-badge-pill admin font-mono">${escapeHtml(u.country || 'GLOBAL')}</span></td>
           <td>${csBadge} &nbsp; ${deltaBadge}</td>
-          <td class="font-mono text-dim">${u.strategy || 'ai_consensus'}</td>
           <td>${autotradeBadge}</td>
+          <td class="font-mono text-center"><strong>${u.trades_count || 0}</strong></td>
+          <td class="font-mono ${pnlClass}"><strong>${pnlStr}</strong></td>
           <td>${statusBadge}</td>
           <td>
-            ${isSuper ? '<span class="text-muted font-mono">MASTER</span>' : `<button class="btn-sm-action" onclick="adminToggleUserStatus('${u.id}')">${u.is_active ? 'Disable' : 'Enable'}</button>`}
+            <button class="btn-sm-action gold" onclick="openUserProfileModal('${u.id}')" style="padding:3px 8px; font-size:10px; cursor:pointer;">
+              VIEW CRM 👤
+            </button>
           </td>
         </tr>
       `;
@@ -1420,7 +1765,17 @@ function switchAdminSubTab(sectionId, btn) {
   const target = document.getElementById(`admin-sec-${sectionId}`);
   if (target) target.classList.add("active");
 
-  if (sectionId === 'analytics') {
+  if (sectionId === 'overview') {
+    fetchAdminOverviewKPIs();
+    fetchAdminVisitors();
+  } else if (sectionId === 'visitors') {
+    fetchAdminVisitors(true);
+  } else if (sectionId === 'users') {
+    fetchAdminUsersList();
+  } else if (sectionId === 'revenue') {
+    fetchAdminAffiliates(true);
+    fetchAdminSales(true);
+  } else if (sectionId === 'analytics') {
     renderAdminAnalyticsCurve();
   }
 }
@@ -1481,21 +1836,115 @@ function renderAdminAnalyticsCurve() {
   ctx.fill();
 }
 
-// ── 12d. Trader CRM Profile Modal Controller ────────────────────────────────
-function openUserProfileModal(id, name, email, tier, balance) {
+// ── 12d. Trader CRM Profile Modal Controller (100% Real Database Profile) ────
+async function openUserProfileModal(userId) {
   const modal = document.getElementById("userProfileModal");
   if (!modal) return;
-  document.getElementById("crm-trader-name").textContent = name;
-  document.getElementById("crm-user-title").textContent = name;
-  document.getElementById("crm-user-id").textContent = `ID: ${id}`;
-  document.getElementById("crm-user-email").textContent = email;
-  document.getElementById("crm-user-tier").textContent = tier;
-  document.getElementById("crm-user-balance").textContent = `$${Number(balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
-  
-  const initials = name.split(" ").map(n => n[0]).join("").toUpperCase();
-  document.getElementById("crm-avatar-box").textContent = initials || "TR";
-  
+
+  // Show modal in loading state first
   modal.style.display = "flex";
+  
+  try {
+    const res = await fetch(`/api/admin/user/${userId}/crm`, {
+      headers: { "Authorization": `Bearer ${adminToken}` }
+    });
+    if (!res.ok) {
+      alert("Failed to fetch CRM user profile.");
+      return;
+    }
+    const data = await res.json();
+    if (data.status !== "success") {
+      alert("User CRM profile error: " + (data.message || "Unknown"));
+      return;
+    }
+
+    const u = data.user || {};
+    const crm = data.crm || {};
+    const settings = data.settings || {};
+    const trades = data.trades || [];
+
+    // Header & Meta
+    const traderName = u.name || "Trader";
+    if (document.getElementById("crm-trader-name")) document.getElementById("crm-trader-name").textContent = traderName;
+    if (document.getElementById("crm-user-title")) document.getElementById("crm-user-title").textContent = traderName;
+    if (document.getElementById("crm-user-id")) document.getElementById("crm-user-id").textContent = `ID: USR-${u.id}`;
+    if (document.getElementById("crm-user-email")) document.getElementById("crm-user-email").textContent = u.email;
+    if (document.getElementById("crm-user-tier")) document.getElementById("crm-user-tier").textContent = (u.tier || "VIP ELITE").toUpperCase();
+    if (document.getElementById("crm-user-balance")) document.getElementById("crm-user-balance").textContent = `$${Number(u.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+
+    const initials = traderName.split(" ").map(n => n[0]).join("").toUpperCase();
+    if (document.getElementById("crm-avatar-box")) document.getElementById("crm-avatar-box").textContent = initials || "TR";
+
+    // Overview Stats
+    if (document.getElementById("crm-card-winrate")) {
+      document.getElementById("crm-card-winrate").textContent = `${crm.winrate_pct}%`;
+    }
+    if (document.getElementById("crm-card-trades-sub")) {
+      document.getElementById("crm-card-trades-sub").textContent = `${crm.closed_trades_count || 0} Closed Trades`;
+    }
+    if (document.getElementById("crm-card-pnl")) {
+      const pnl = Number(crm.realized_pnl || 0);
+      document.getElementById("crm-card-pnl").textContent = `${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`;
+      document.getElementById("crm-card-pnl").className = `crm-card-val ${pnl >= 0 ? 'green' : 'red-text'}`;
+    }
+    if (document.getElementById("crm-card-keys")) {
+      const ex = crm.connected_exchanges || [];
+      document.getElementById("crm-card-keys").textContent = ex.length > 0 ? ex.join(", ") : "Standby";
+      document.getElementById("crm-card-keys").className = `crm-card-val ${ex.length > 0 ? 'green' : 'cyan'}`;
+    }
+
+    // Bio Settings
+    if (document.getElementById("crm-bio-settings")) {
+      document.getElementById("crm-bio-settings").innerHTML = `
+        Strategy: <strong>${escapeHtml(settings.strategy || 'AI Consensus Super Brain')}</strong> • 
+        Hard SL: <strong>${settings.hard_sl_pct || 2.0}%</strong> • 
+        Take Profit: <strong>${settings.take_profit_pct || 15.0}%</strong> • 
+        Trailing: <strong>${settings.trail_pct || 0.2}%</strong> • 
+        Max Capital: <strong>${settings.max_capital_pct || 40.0}%</strong>
+      `;
+    }
+
+    // Trades Table
+    const tTbody = document.getElementById("crm-trades-tbody");
+    if (tTbody) {
+      if (trades.length === 0) {
+        tTbody.innerHTML = `<tr><td colspan="7" class="text-center empty-state">No recorded trades for this account.</td></tr>`;
+      } else {
+        tTbody.innerHTML = trades.map(t => {
+          const isBuy = (t.direction || 'buy').toLowerCase() === 'buy' || (t.direction || '').toLowerCase() === 'long';
+          const pnlNum = Number(t.pnl || 0);
+          const pnlClass = pnlNum >= 0 ? 'green' : 'red-text';
+          const dt = (t.closed_at || t.opened_at || "").split("T")[0] || "--";
+          return `
+            <tr>
+              <td class="font-mono text-muted">${escapeHtml(dt)}</td>
+              <td><strong>${escapeHtml(t.symbol)}</strong></td>
+              <td><span class="tsm-badge-pill admin font-mono">${escapeHtml(t.exchange.toUpperCase())}</span></td>
+              <td><span class="${isBuy ? 'green' : 'red-text'} font-mono">${t.direction.toUpperCase()}</span></td>
+              <td class="font-mono">$${Number(t.entry_price || 0).toFixed(4)}</td>
+              <td class="font-mono ${pnlClass}"><strong>${pnlNum >= 0 ? '+' : ''}$${pnlNum.toFixed(2)}</strong></td>
+              <td><span class="tsm-badge-pill ${t.status === 'open' ? 'admin' : 'gold'} font-mono">${(t.status || 'CLOSED').toUpperCase()}</span></td>
+            </tr>
+          `;
+        }).join("");
+      }
+    }
+
+    // Security & Status
+    if (document.getElementById("crm-sec-status")) {
+      document.getElementById("crm-sec-status").textContent = u.is_active ? "ACTIVE 🟢" : "SUSPENDED 🔴";
+      document.getElementById("crm-sec-status").className = u.is_active ? "green font-mono" : "red-text font-mono";
+    }
+    if (document.getElementById("crm-sec-joined")) {
+      document.getElementById("crm-sec-joined").textContent = u.created_at || "2026-09-17";
+    }
+    if (document.getElementById("crm-bill-plan")) {
+      document.getElementById("crm-bill-plan").textContent = `${(u.tier || "VIP ELITE").toUpperCase()} (${u.role.toUpperCase()})`;
+    }
+
+  } catch (err) {
+    console.debug("CRM profile load error:", err);
+  }
 }
 
 function closeUserProfileModal() {
@@ -1511,6 +1960,47 @@ function switchCrmTab(tabId, btn) {
   document.querySelectorAll(".crm-pane").forEach(p => p.classList.remove("active"));
   const target = document.getElementById(`crm-pane-${tabId}`);
   if (target) target.classList.add("active");
+}
+
+// ── 12e. Real Outbound Partner Affiliate Click Tracker ──────────────────────
+function trackAffiliateClick(partnerCode, targetUrl) {
+  if (!partnerCode) return;
+  try {
+    const payload = JSON.stringify({ partner_code: partnerCode });
+    if (navigator.sendBeacon) {
+      const blob = new Blob([payload], { type: 'application/json' });
+      navigator.sendBeacon('/api/track/affiliate-click', blob);
+    } else {
+      fetch('/api/track/affiliate-click', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
+        keepalive: true
+      });
+    }
+  } catch (e) {
+    console.debug('Affiliate track notice:', e);
+  }
+}
+
+function initAffiliateClickListeners() {
+  document.querySelectorAll('.tsm-partner-card a, .tsm-partner-pill').forEach(link => {
+    link.addEventListener('click', () => {
+      const card = link.closest('.tsm-partner-card');
+      let code = "";
+      if (card) {
+        const strong = card.querySelector('.tsm-partner-code strong');
+        if (strong) code = strong.textContent.trim();
+        else {
+          const title = card.querySelector('.tsm-partner-title');
+          if (title) code = title.textContent.trim().toLowerCase().replace(/\s+/g, '_');
+        }
+      } else {
+        code = link.textContent.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+      }
+      if (code) trackAffiliateClick(code, link.href);
+    });
+  });
 }
 
 // ── 12e. Global Command Palette (Ctrl+K) ────────────────────────────────────

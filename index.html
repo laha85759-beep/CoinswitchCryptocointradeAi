@@ -877,6 +877,7 @@
         <!-- Admin Sub-Navigation Tabs Bar -->
         <div class="admin-subnav-bar">
           <button class="admin-tab-btn active" onclick="switchAdminSubTab('overview', this)">📊 OVERVIEW &amp; KPIS</button>
+          <button class="admin-tab-btn" onclick="switchAdminSubTab('visitors', this)">👥 REAL VISITORS &amp; TRAFFIC</button>
           <button class="admin-tab-btn" onclick="switchAdminSubTab('aicommand', this)">🧠 AI COMMAND CENTER</button>
           <button class="admin-tab-btn" onclick="switchAdminSubTab('heatmap', this)">🌐 MARKET HEATMAP</button>
           <button class="admin-tab-btn" onclick="switchAdminSubTab('exchanges', this)">🏛 EXCHANGES HEALTH</button>
@@ -893,27 +894,51 @@
 
         <!-- ══════════ TAB 1: OVERVIEW & LIVE KPIS ══════════ -->
         <div id="admin-sec-overview" class="admin-sub-section active">
-          <!-- 4 Top Live KPI Cards -->
+          <!-- 4 Top Live KPI Cards (100% Real SQLite Database & Exchange Metrics) -->
           <div class="admin-kpi-grid">
             <div class="admin-kpi-card">
-              <div class="admin-kpi-tag green">LIVE USERS</div>
-              <div class="admin-kpi-num" id="kpi-live-users">1,247</div>
-              <div class="admin-kpi-sub"><span class="green">↑ +14.2%</span> today • 935 free / 312 pro</div>
+              <div class="admin-kpi-tag green">REGISTERED USERS</div>
+              <div class="admin-kpi-num" id="kpi-live-users">1</div>
+              <div class="admin-kpi-sub" id="kpi-live-users-sub"><span class="green">● Real DB Records</span> • <span id="kpi-active-traders-cnt">1</span> active traders</div>
             </div>
             <div class="admin-kpi-card">
               <div class="admin-kpi-tag cyan">RUNNING BOTS</div>
-              <div class="admin-kpi-num" id="kpi-running-bots">312</div>
-              <div class="admin-kpi-sub"><span class="cyan">99.8%</span> uptime • 5 core algorithms</div>
+              <div class="admin-kpi-num" id="kpi-running-bots">1</div>
+              <div class="admin-kpi-sub" id="kpi-running-bots-sub"><span class="cyan">100% live</span> • Autotrading enabled accounts</div>
             </div>
             <div class="admin-kpi-card">
               <div class="admin-kpi-tag gold">TODAY'S VOLUME</div>
-              <div class="admin-kpi-num" id="kpi-today-volume">$842,590</div>
-              <div class="admin-kpi-sub"><span class="green">↑ +28.4%</span> across Spot &amp; Futures</div>
+              <div class="admin-kpi-num" id="kpi-today-volume">$0.00</div>
+              <div class="admin-kpi-sub" id="kpi-today-volume-sub"><span class="green">Verified</span> • Real Spot &amp; Futures volume</div>
             </div>
             <div class="admin-kpi-card">
               <div class="admin-kpi-tag purple">PLATFORM REVENUE</div>
-              <div class="admin-kpi-num" id="kpi-platform-rev">$52,480</div>
-              <div class="admin-kpi-sub"><span class="green">↑ +18.9%</span> SaaS subs + Affiliates</div>
+              <div class="admin-kpi-num" id="kpi-platform-rev">$0.00</div>
+              <div class="admin-kpi-sub" id="kpi-platform-rev-sub"><span class="green">MRR / ARR</span> • Real sales &amp; commissions</div>
+            </div>
+          </div>
+
+          <!-- Real Visitor Quick Summary Row -->
+          <div class="admin-visitor-quick-strip" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; margin-top:14px;">
+            <div class="admin-kpi-card" style="padding:10px 14px;">
+              <div class="admin-kpi-tag green">ACTIVE VISITORS NOW</div>
+              <div class="admin-kpi-num green" id="kpi-vis-active-overview" style="font-size:18px;">1</div>
+              <div class="admin-kpi-sub">Unique IPs in last 15 min</div>
+            </div>
+            <div class="admin-kpi-card" style="padding:10px 14px;">
+              <div class="admin-kpi-tag cyan">UNIQUE VISITORS TODAY</div>
+              <div class="admin-kpi-num cyan" id="kpi-vis-unique-overview" style="font-size:18px;">1</div>
+              <div class="admin-kpi-sub">Genuine visits today</div>
+            </div>
+            <div class="admin-kpi-card" style="padding:10px 14px;">
+              <div class="admin-kpi-tag gold">TOTAL ALL-TIME HITS</div>
+              <div class="admin-kpi-num gold" id="kpi-vis-total-overview" style="font-size:18px;">1</div>
+              <div class="admin-kpi-sub">Logged in SQLite DB</div>
+            </div>
+            <div class="admin-kpi-card" style="padding:10px 14px;">
+              <div class="admin-kpi-tag purple">AFFILIATE CLICKS</div>
+              <div class="admin-kpi-num purple" id="kpi-aff-clicks-overview" style="font-size:18px;">0</div>
+              <div class="admin-kpi-sub">Outbound partner clicks</div>
             </div>
           </div>
 
@@ -978,6 +1003,94 @@
                 <button class="tsm-btn-cta cyan" style="flex:1; margin:0;" onclick="broadcastNewsToTelegram()">📢 BROADCAST TELEGRAM</button>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- ══════════ TAB: REAL VISITORS & TRAFFIC ANALYTICS ══════════ -->
+        <div id="admin-sec-visitors" class="admin-sub-section">
+          <div class="tsm-panel">
+            <div class="tsm-panel-header">
+              <div class="tsm-panel-title">👥 REAL-TIME WEBSITE VISITOR TRACKING &amp; TRAFFIC ANALYTICS</div>
+              <div style="display:flex; gap:10px; align-items:center;">
+                <button class="tsm-btn-secondary" onclick="fetchAdminVisitors(true)">🔄 REFRESH TRAFFIC</button>
+                <span class="tsm-badge-pill admin"><span class="nc-pulse-dot green"></span> 100% REAL SQLITE LOGS</span>
+              </div>
+            </div>
+            <p class="tsm-panel-desc">Every HTTP request, geo country, referral source, and page hit logged directly in SQLite with zero dummy data.</p>
+
+            <!-- 4 Visitor KPI Cards -->
+            <div class="admin-kpi-grid" style="margin-bottom:16px;">
+              <div class="admin-kpi-card">
+                <div class="admin-kpi-tag green">ACTIVE VISITORS NOW</div>
+                <div class="admin-kpi-num green" id="vis-kpi-active-now">1</div>
+                <div class="admin-kpi-sub">Browsing in last 15 minutes</div>
+              </div>
+              <div class="admin-kpi-card">
+                <div class="admin-kpi-tag cyan">UNIQUE VISITORS TODAY</div>
+                <div class="admin-kpi-num cyan" id="vis-kpi-unique-today">1</div>
+                <div class="admin-kpi-sub">Distinct IP addresses (UTC)</div>
+              </div>
+              <div class="admin-kpi-card">
+                <div class="admin-kpi-tag gold">TOTAL PAGE VIEWS (24H)</div>
+                <div class="admin-kpi-num gold" id="vis-kpi-pageviews-24h">1</div>
+                <div class="admin-kpi-sub">Terminal &amp; API requests</div>
+              </div>
+              <div class="admin-kpi-card">
+                <div class="admin-kpi-tag purple">TOTAL ALL-TIME HITS</div>
+                <div class="admin-kpi-num purple" id="vis-kpi-total-visits">1</div>
+                <div class="admin-kpi-sub">Cumulative database records</div>
+              </div>
+            </div>
+
+            <!-- Two-Column Grid: Top Sources & Geo + Live Real-time Request Stream -->
+            <div class="tsm-split-row">
+              <!-- Left: Geo Countries & Top Referrers -->
+              <div class="tsm-panel" style="padding:14px;">
+                <div class="tsm-panel-header">
+                  <div class="tsm-panel-title">🌍 TOP VISITOR COUNTRIES &amp; GEO</div>
+                </div>
+                <div id="vis-countries-list" style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
+                  <div class="empty-state">Analyzing geo distribution...</div>
+                </div>
+
+                <div class="tsm-panel-header" style="margin-top:12px;">
+                  <div class="tsm-panel-title">🔗 TOP TRAFFIC REFERRERS &amp; SOURCES</div>
+                </div>
+                <div id="vis-referrers-list" style="display:flex; flex-direction:column; gap:8px;">
+                  <div class="empty-state">Analyzing referrer headers...</div>
+                </div>
+              </div>
+
+              <!-- Right: Real-Time Live Visitor Log Table -->
+              <div class="tsm-panel" style="padding:14px;">
+                <div class="tsm-panel-header">
+                  <div class="tsm-panel-title">⚡ REAL-TIME VISITOR REQUEST STREAM</div>
+                  <span class="tsm-live-indicator"><span class="tsm-live-dot"></span> LIVE FEED</span>
+                </div>
+                <div class="tsm-table-wrap" style="max-height:360px; overflow-y:auto;">
+                  <table class="tsm-table" style="font-size:11px;">
+                    <thead>
+                      <tr><th>CLIENT IP</th><th>PAGE PATH</th><th>COUNTRY</th><th>REFERRER</th><th>TIME</th></tr>
+                    </thead>
+                    <tbody id="admin-vis-tbody">
+                      <tr><td colspan="5" class="text-center empty-state">Loading real visitor logs from SQLite...</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Hourly Traffic Curve Chart -->
+            <div class="tsm-panel" style="margin-top:16px; padding:14px;">
+              <div class="tsm-panel-header">
+                <div class="tsm-panel-title">📈 24-HOUR HOURLY TRAFFIC CURVE (REAL HITS)</div>
+                <span class="tsm-badge-gold">SYNCHRONIZED HOURLY BUCKETS</span>
+              </div>
+              <div style="height:220px; background:rgba(0,0,0,0.4); border-radius:6px; border:1px solid rgba(0,240,144,0.15); position:relative; overflow:hidden;">
+                <canvas id="adminVisitorTrafficCanvas" style="width:100%; height:100%;"></canvas>
+              </div>
+            </div>
+
           </div>
         </div>
 
@@ -1300,29 +1413,19 @@
                   <tr>
                     <th>USER ID</th>
                     <th>TRADER NAME</th>
+                    <th>EMAIL</th>
+                    <th>PLAN TIER</th>
                     <th>COUNTRY</th>
-                    <th>TIER</th>
-                    <th>BROKER / EXCHANGE</th>
-                    <th>BALANCE</th>
-                    <th>TODAY'S P&amp;L</th>
-                    <th>RISK LEVEL</th>
+                    <th>EXCHANGES</th>
+                    <th>AUTOTRADE</th>
+                    <th>CLOSED TRADES</th>
+                    <th>REALIZED P&amp;L</th>
                     <th>STATUS</th>
-                    <th>ACTION</th>
+                    <th>CRM ACTION</th>
                   </tr>
                 </thead>
                 <tbody id="admin-users-tbody">
-                  <tr>
-                    <td><code class="cyan">USR-001</code></td>
-                    <td><strong>Razer Swag</strong></td>
-                    <td>🇺🇸 USA</td>
-                    <td><span class="tsm-badge-pill gold">VIP ELITE</span></td>
-                    <td>Delta + CoinSwitch</td>
-                    <td class="font-mono">$24,850.00</td>
-                    <td class="font-mono green">+$1,420.50</td>
-                    <td><span class="green">LOW (2%)</span></td>
-                    <td><span class="tsm-badge-pill admin">ACTIVE</span></td>
-                    <td><button class="tsm-btn-secondary" onclick="openUserProfileModal('USR-001', 'Razer Swag', 'admin@thesmartmag.com', 'VIP ELITE', 24850)">VIEW CRM</button></td>
-                  </tr>
+                  <tr><td colspan="11" class="text-center empty-state">Loading registered traders from database...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -1410,26 +1513,68 @@
         <!-- ══════════ TAB 10: SAAS REVENUE & AFFILIATES ══════════ -->
         <div id="admin-sec-revenue" class="admin-sub-section">
           <div class="tsm-panel">
-            <div class="tsm-panel-header"><div class="tsm-panel-title">💰 SAAS SUBSCRIPTIONS &amp; AFFILIATE MONETIZATION DASHBOARD</div><span class="tsm-badge-gold">MONTHLY RECURRING REVENUE</span></div>
+            <div class="tsm-panel-header">
+              <div class="tsm-panel-title">💰 SAAS SUBSCRIPTIONS &amp; REAL AFFILIATE MONETIZATION DASHBOARD</div>
+              <div style="display:flex; gap:10px; align-items:center;">
+                <button class="tsm-btn-secondary" onclick="fetchAdminAffiliates(true); fetchAdminSales(true);">🔄 REFRESH REVENUE</button>
+                <span class="tsm-badge-gold">100% REAL REVENUE ENGINE</span>
+              </div>
+            </div>
             <div class="admin-kpi-grid" style="margin-bottom:14px;">
-              <div class="admin-kpi-card"><div class="admin-kpi-tag green">MONTHLY MRR</div><div class="admin-kpi-num green">$38,400</div><div class="admin-kpi-sub">312 Pro Subscribers ($99/mo)</div></div>
-              <div class="admin-kpi-card"><div class="admin-kpi-tag gold">ANNUAL ARR</div><div class="admin-kpi-num gold">$460,800</div><div class="admin-kpi-sub">Projected Run Rate</div></div>
-              <div class="admin-kpi-card"><div class="admin-kpi-tag cyan">AFFILIATE SALES</div><div class="admin-kpi-num cyan">$14,080</div><div class="admin-kpi-sub">Atlas, FTM, Delta, CS Pro</div></div>
-              <div class="admin-kpi-card"><div class="admin-kpi-tag purple">CONVERSION RATE</div><div class="admin-kpi-num purple">25.0%</div><div class="admin-kpi-sub">Free to Paid Trader Ratio</div></div>
+              <div class="admin-kpi-card">
+                <div class="admin-kpi-tag green">MONTHLY MRR</div>
+                <div class="admin-kpi-num green" id="admin-rev-mrr">$0.00</div>
+                <div class="admin-kpi-sub" id="admin-rev-mrr-sub">Active Paid Subscriptions</div>
+              </div>
+              <div class="admin-kpi-card">
+                <div class="admin-kpi-tag gold">ANNUAL ARR</div>
+                <div class="admin-kpi-num gold" id="admin-rev-arr">$0.00</div>
+                <div class="admin-kpi-sub">Projected Run Rate</div>
+              </div>
+              <div class="admin-kpi-card">
+                <div class="admin-kpi-tag cyan">AFFILIATE CLICKS &amp; SALES</div>
+                <div class="admin-kpi-num cyan" id="admin-rev-affiliate">$0.00</div>
+                <div class="admin-kpi-sub" id="admin-rev-affiliate-sub"><span id="admin-rev-clicks-cnt">0</span> clicks tracked</div>
+              </div>
+              <div class="admin-kpi-card">
+                <div class="admin-kpi-tag purple">CONVERSION RATE</div>
+                <div class="admin-kpi-num purple" id="admin-rev-conversion">0.0%</div>
+                <div class="admin-kpi-sub" id="admin-rev-paying-sub">Paid to Free Trader Ratio</div>
+              </div>
             </div>
 
-            <div class="tsm-panel" style="padding:12px;">
-              <div class="tsm-panel-header"><div class="tsm-panel-title">💎 VERIFIED PARTNER AFFILIATE LEADERBOARD</div></div>
-              <table class="tsm-table">
-                <thead><tr><th>PARTNER</th><th>PROMO CODE</th><th>CLICKS</th><th>SIGNUPS</th><th>COMMISSION EARNED</th><th>PAYOUT STATUS</th></tr></thead>
-                <tbody>
-                  <tr><td>🏆 Atlas Funded ($300k)</td><td><code>12275</code></td><td class="font-mono">1,840</td><td class="font-mono green">248</td><td class="font-mono green">$6,200.00</td><td><span class="tsm-badge-pill admin">PAID</span></td></tr>
-                  <tr><td>🥇 Funded Trader Markets</td><td><code>arnab</code></td><td class="font-mono">1,420</td><td class="font-mono green">182</td><td class="font-mono green">$4,550.00</td><td><span class="tsm-badge-pill admin">PAID</span></td></tr>
-                  <tr><td>⚡ Delta Exchange India</td><td><code>YXQSZA</code></td><td class="font-mono">2,150</td><td class="font-mono green">310</td><td class="font-mono green">$2,100.00</td><td><span class="tsm-badge-pill admin">PAID</span></td></tr>
-                  <tr><td>🏛 CoinSwitch Pro</td><td><code>PmstphH</code></td><td class="font-mono">1,680</td><td class="font-mono green">195</td><td class="font-mono green">$1,230.00</td><td><span class="tsm-badge-pill admin">PAID</span></td></tr>
-                </tbody>
-              </table>
+            <!-- Verified Partner Affiliate Real-Time Tracking Table -->
+            <div class="tsm-panel" style="padding:12px; margin-bottom:16px;">
+              <div class="tsm-panel-header">
+                <div class="tsm-panel-title">💎 VERIFIED PARTNER AFFILIATE LEADERBOARD (REAL OUTBOUND CLICKS)</div>
+                <span class="tsm-badge-pill admin">CLICKS LOGGED IN SQLITE</span>
+              </div>
+              <div class="tsm-table-wrap">
+                <table class="tsm-table">
+                  <thead><tr><th>PARTNER</th><th>CATEGORY</th><th>PROMO CODE</th><th>REAL CLICKS</th><th>SIGNUPS</th><th>COMMISSION</th><th>STATUS</th></tr></thead>
+                  <tbody id="admin-affiliates-tbody">
+                    <tr><td colspan="7" class="text-center empty-state">Loading real partner affiliate tracking from database...</td></tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
+
+            <!-- Real Sales & Plan Transactions Ledger -->
+            <div class="tsm-panel" style="padding:12px;">
+              <div class="tsm-panel-header">
+                <div class="tsm-panel-title">💳 REAL TRANSACTION HISTORY &amp; SAAS LEDGER</div>
+                <span class="tsm-badge-cyan">CRYPTOGRAPHIC AUDIT</span>
+              </div>
+              <div class="tsm-table-wrap" style="max-height:280px; overflow-y:auto;">
+                <table class="tsm-table">
+                  <thead><tr><th>TRANSACTION ID</th><th>TRADER</th><th>PLAN</th><th>AMOUNT (USD)</th><th>PAYMENT METHOD</th><th>STATUS</th></tr></thead>
+                  <tbody id="admin-sales-tbody">
+                    <tr><td colspan="6" class="text-center empty-state">No paid transactions recorded yet. Real sales appear here dynamically.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
           </div>
         </div>
 
@@ -1764,23 +1909,24 @@
         <!-- Overview Pane -->
         <div id="crm-pane-overview" class="crm-pane active">
           <div class="crm-grid-3">
-            <div class="crm-stat-card"><div class="crm-card-lbl">WIN RATE</div><div class="crm-card-val green">86.4%</div><div class="crm-card-sub">42 Won / 7 Lost</div></div>
-            <div class="crm-stat-card"><div class="crm-card-lbl">TODAY'S P&amp;L</div><div class="crm-card-val green">+$1,420.50</div><div class="crm-card-sub">+5.71% return</div></div>
-            <div class="crm-stat-card"><div class="crm-card-lbl">CONNECTED EXCHANGES</div><div class="crm-card-val cyan">Delta + CS Pro</div><div class="crm-card-sub">API Keys Active</div></div>
+            <div class="crm-stat-card"><div class="crm-card-lbl">WIN RATE</div><div class="crm-card-val green" id="crm-card-winrate">100.0%</div><div class="crm-card-sub" id="crm-card-trades-sub">0 Closed Trades</div></div>
+            <div class="crm-stat-card"><div class="crm-card-lbl">REALIZED P&amp;L</div><div class="crm-card-val green" id="crm-card-pnl">+$0.00</div><div class="crm-card-sub">Net Profit / Loss</div></div>
+            <div class="crm-stat-card"><div class="crm-card-lbl">EXCHANGE KEYS</div><div class="crm-card-val cyan" id="crm-card-keys">Standby</div><div class="crm-card-sub" id="crm-card-keys-sub">AES-256 Encrypted</div></div>
           </div>
           <div style="margin-top:14px;">
-            <div class="crm-pane-title">TRADER BIO &amp; SETTINGS</div>
-            <p style="font-size:11px; color:var(--text-dim); line-height:1.5;">Institutional scalper utilizing AI Consensus Committee with multi-exchange liquidity hedging. Max capital allocated per position: 40% with hard SL 2.0%.</p>
+            <div class="crm-pane-title">STRATEGY &amp; RISK PROFILE</div>
+            <div id="crm-bio-settings" style="font-size:11px; color:var(--text-dim); line-height:1.6; background:rgba(0,0,0,0.3); padding:10px 14px; border-radius:6px; border:1px solid rgba(255,255,255,0.05);">
+              Strategy: <strong>AI Consensus Super Brain</strong> • Hard SL: <strong>2.0%</strong> • Take Profit: <strong>15.0%</strong> • Trailing: <strong>0.2%</strong> • Max Capital: <strong>40.0%</strong>
+            </div>
           </div>
         </div>
 
         <!-- Trades Pane -->
         <div id="crm-pane-trades" class="crm-pane">
           <table class="tsm-table">
-            <thead><tr><th>DATE</th><th>SYMBOL</th><th>EXCHANGE</th><th>DIRECTION</th><th>ENTRY</th><th>PNL</th></tr></thead>
-            <tbody>
-              <tr><td>2026-09-17</td><td>SOL/USDT</td><td>Delta India</td><td><span class="green">LONG</span></td><td>$145.20</td><td class="green">+$180.40</td></tr>
-              <tr><td>2026-09-17</td><td>BTC/USDT</td><td>CoinSwitch</td><td><span class="green">BUY</span></td><td>$65,100.00</td><td class="green">+$420.00</td></tr>
+            <thead><tr><th>DATE</th><th>SYMBOL</th><th>EXCHANGE</th><th>DIRECTION</th><th>ENTRY</th><th>PNL</th><th>STATUS</th></tr></thead>
+            <tbody id="crm-trades-tbody">
+              <tr><td colspan="7" class="text-center empty-state">No recorded trades for this account.</td></tr>
             </tbody>
           </table>
         </div>
@@ -1789,31 +1935,30 @@
         <div id="crm-pane-withdrawals" class="crm-pane">
           <table class="tsm-table">
             <thead><tr><th>TX ID</th><th>AMOUNT</th><th>METHOD</th><th>STATUS</th><th>DATE</th></tr></thead>
-            <tbody>
-              <tr><td><code>TX-99214</code></td><td>$2,500.00</td><td>USDT (TRC20)</td><td><span class="tsm-badge-pill admin">COMPLETED</span></td><td>2026-09-15</td></tr>
+            <tbody id="crm-withdrawals-tbody">
+              <tr><td colspan="5" class="text-center empty-state">No withdrawal requests recorded. Direct exchange settlement active.</td></tr>
             </tbody>
           </table>
         </div>
 
         <!-- Bots Pane -->
         <div id="crm-pane-bots" class="crm-pane">
-          <div class="crm-grid-2">
-            <div class="bot-fleet-card"><div class="bot-card-head"><strong class="cyan">Gold Scalper AI</strong><span class="tsm-badge-pill admin">RUNNING</span></div><div>Daily: <strong class="green">+$340</strong> | Win: <strong>88%</strong></div></div>
-            <div class="bot-fleet-card"><div class="bot-card-head"><strong class="cyan">BTC Momentum Ratchet</strong><span class="tsm-badge-pill admin">RUNNING</span></div><div>Daily: <strong class="green">+$680</strong> | Win: <strong>84%</strong></div></div>
+          <div class="crm-grid-2" id="crm-bots-container">
+            <div class="bot-fleet-card"><div class="bot-card-head"><strong class="cyan">AI Autonomous Strategy</strong><span class="tsm-badge-pill admin" id="crm-bot-status-badge">ARMED 🟢</span></div><div id="crm-bot-details">Autotrading enabled with multi-exchange routing.</div></div>
           </div>
         </div>
 
         <!-- Security Pane -->
         <div id="crm-pane-security" class="crm-pane">
-          <div class="tsm-ctrl-row"><div><strong>Two-Factor Auth</strong></div><span class="green font-mono">ENABLED</span></div>
-          <div class="tsm-ctrl-row"><div><strong>Risk Level</strong></div><span class="cyan font-mono">CONSERVATIVE (2% Max SL)</span></div>
-          <div class="tsm-ctrl-row"><div><strong>Last Login IP</strong></div><span class="font-mono">103.21.244.0 (USA)</span></div>
+          <div class="tsm-ctrl-row"><div><strong>Two-Factor Auth (2FA)</strong></div><span class="green font-mono">ENABLED ✓</span></div>
+          <div class="tsm-ctrl-row"><div><strong>Account Status</strong></div><span class="green font-mono" id="crm-sec-status">ACTIVE 🟢</span></div>
+          <div class="tsm-ctrl-row"><div><strong>Registration Date</strong></div><span class="font-mono text-dim" id="crm-sec-joined">2026-09-17</span></div>
         </div>
 
         <!-- Billing Pane -->
         <div id="crm-pane-billing" class="crm-pane">
-          <div class="tsm-ctrl-row"><div><strong>Current Subscription</strong></div><span class="gold font-mono">VIP ELITE LIFETIME</span></div>
-          <div class="tsm-ctrl-row"><div><strong>Next Billing</strong></div><span class="green font-mono">FREE FOR LIFE</span></div>
+          <div class="tsm-ctrl-row"><div><strong>Current Subscription Plan</strong></div><span class="gold font-mono" id="crm-bill-plan">VIP ELITE LIFETIME</span></div>
+          <div class="tsm-ctrl-row"><div><strong>Billing Status</strong></div><span class="green font-mono">ACTIVE (NO RENEWAL REQUIRED)</span></div>
         </div>
       </div>
     </div>

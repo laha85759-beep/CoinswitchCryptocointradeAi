@@ -45,6 +45,38 @@ app = Flask(__name__)
 from api_routes import api_bp
 app.register_blueprint(api_bp)
 
+from database import log_visitor, track_affiliate_click
+
+@app.before_request
+def record_real_visitor():
+    try:
+        path = request.path
+        # Skip static assets
+        if path.startswith("/static") or path.endswith((".css", ".js", ".png", ".jpg", ".jpeg", ".svg", ".ico", ".woff", ".woff2", ".map", ".jsonl")):
+            return
+        
+        # Real client IP detection
+        ip = (
+            request.headers.get("CF-Connecting-IP") or
+            request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or
+            request.headers.get("X-Real-IP") or
+            request.remote_addr or
+            "127.0.0.1"
+        )
+        country = request.headers.get("CF-IPCountry", "US")
+        referrer = request.referrer or ""
+        ua = request.headers.get("User-Agent", "")
+
+        # Log genuine visitor to SQLite database
+        log_visitor(ip, path, referrer, ua, country)
+
+        # Check for affiliate tracking parameter ?ref=CODE or ?code=CODE
+        ref_param = request.args.get("ref", "").strip() or request.args.get("code", "").strip()
+        if ref_param:
+            track_affiliate_click(ref_param, ip, referrer, ua, country)
+    except Exception:
+        pass
+
 try:
     from news_agent_core import news_core
     news_core.start_background_loop(interval_seconds=90)
