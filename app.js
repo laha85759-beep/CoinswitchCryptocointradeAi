@@ -504,179 +504,246 @@ setInterval(fetchAgentLogs, 3000);
 // ── 8. 3D WebGL Multi-Agent Holographic Neural Sphere Core ────────────────
 let scene3d, camera3d, renderer3d, sphereMesh, ringMesh1, ringMesh2, particles3d;
 
-function initAgent3dCore() {
-  const container = document.getElementById("agent3dContainer");
-  const canvas = document.getElementById("agent3dCanvas");
-  if (!container || !canvas || typeof THREE === "undefined") return;
 
-  const width = container.clientWidth || 400;
-  const height = container.clientHeight || 300;
 
-  scene3d = new THREE.Scene();
-  camera3d = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-  camera3d.position.z = 7;
+// ── 11. Circuit Board PCB Traces & Electric Pulses Background ──────────────
+function initCircuitBgCanvas() {
+  const canvas = document.getElementById("circuitBgCanvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
 
-  renderer3d = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
-  renderer3d.setSize(width, height);
-  renderer3d.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener("resize", resize);
 
-  // 1. Central Wireframe Quant Core (Icosahedron)
-  const sphereGeo = new THREE.IcosahedronGeometry(2.0, 2);
-  const sphereMat = new THREE.MeshBasicMaterial({
-    color: 0x00f090,
-    wireframe: true,
-    transparent: true,
-    opacity: 0.75
-  });
-  sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
-  scene3d.add(sphereMesh);
+  // Generate PCB circuit lines radiating outward
+  const lines = [];
+  const cx = window.innerWidth / 2;
+  const cy = window.innerHeight / 2 - 40;
 
-  // 2. Outer Gyro Orbit Ring 1 (Electric Cyan)
-  const ring1Geo = new THREE.TorusGeometry(2.8, 0.03, 16, 100);
-  const ring1Mat = new THREE.MeshBasicMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.85 });
-  ringMesh1 = new THREE.Mesh(ring1Geo, ring1Mat);
-  scene3d.add(ringMesh1);
-
-  // 3. Outer Gyro Orbit Ring 2 (TheSmartMag Gold)
-  const ring2Geo = new THREE.TorusGeometry(3.3, 0.03, 16, 100);
-  const ring2Mat = new THREE.MeshBasicMaterial({ color: 0xffd700, transparent: true, opacity: 0.65 });
-  ringMesh2 = new THREE.Mesh(ring2Geo, ring2Mat);
-  ringMesh2.rotation.x = Math.PI / 3;
-  scene3d.add(ringMesh2);
-
-  // 4. Orbiting Multi-Agent Particle Swarm (113 crypto nodes)
-  const particleCount = 113;
-  const particleGeo = new THREE.BufferGeometry();
-  const posArray = new Float32Array(particleCount * 3);
-
-  for (let i = 0; i < particleCount * 3; i += 3) {
-    const r = 3.6 + Math.random() * 1.5;
-    const theta = Math.random() * Math.PI * 2;
-    const phi = Math.acos((Math.random() * 2) - 1);
-    posArray[i] = r * Math.sin(phi) * Math.cos(theta);
-    posArray[i + 1] = r * Math.sin(phi) * Math.sin(theta);
-    posArray[i + 2] = r * Math.cos(phi);
+  for (let a = 0; a < Math.PI * 2; a += Math.PI / 16) {
+    const r1 = 180 + Math.random() * 40;
+    const r2 = 380 + Math.random() * 120;
+    const x1 = cx + Math.cos(a) * r1;
+    const y1 = cy + Math.sin(a) * r1;
+    const x2 = cx + Math.cos(a) * r2;
+    const y2 = cy + Math.sin(a) * r2;
+    lines.push({ x1, y1, x2, y2, angle: a, pulsePos: Math.random() });
   }
 
-  particleGeo.setAttribute("position", new THREE.BufferAttribute(posArray, 3));
-  const particleMat = new THREE.PointsMaterial({
-    size: 0.08,
-    color: 0x00f090,
+  function drawCircuits() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const time = Date.now() * 0.001;
+
+    for (let l of lines) {
+      // Draw PCB trace line
+      ctx.beginPath();
+      ctx.moveTo(l.x1, l.y1);
+      // Create stepped 45/90-degree circuit traces
+      const midX = (l.x1 + l.x2) / 2;
+      ctx.lineTo(midX, l.y1);
+      ctx.lineTo(l.x2, l.y2);
+      ctx.strokeStyle = "rgba(0, 240, 144, 0.12)";
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      // Draw end junction nodes
+      ctx.beginPath();
+      ctx.arc(l.x2, l.y2, 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(0, 212, 255, 0.3)";
+      ctx.fill();
+
+      // Draw active traveling light pulse
+      l.pulsePos = (l.pulsePos + 0.006) % 1.0;
+      const px = l.x1 + (l.x2 - l.x1) * l.pulsePos;
+      const py = l.y1 + (l.y2 - l.y1) * l.pulsePos;
+
+      ctx.beginPath();
+      ctx.arc(px, py, 2, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(0, 240, 144, 0.85)";
+      ctx.shadowColor = "#00f090";
+      ctx.shadowBlur = 8;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+    requestAnimationFrame(drawCircuits);
+  }
+  drawCircuits();
+}
+
+
+// ── 7. Procedural 3D Wireframe Brain & Neural Synapse Core ──────────────────
+function initAgent3dCore() {
+  const canvas = document.getElementById("agent3dCanvas");
+  const container = document.getElementById("agent3dContainer");
+  if (!canvas || !container || typeof THREE === "undefined") return;
+
+  const scene = new THREE.Scene();
+  const width = container.clientWidth || 450;
+  const height = container.clientHeight || 400;
+
+  const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+  camera.position.set(0, 0, 18);
+
+  const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+  renderer.setSize(width, height);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  // Brain Group
+  const brainGroup = new THREE.Group();
+  scene.add(brainGroup);
+
+  // 1. Procedural Cerebral Cortex (Point Cloud & Synapse Network)
+  const particleCount = 420;
+  const positions = new Float32Array(particleCount * 3);
+  const colors = new Float32Array(particleCount * 3);
+
+  const colorGreen = new THREE.Color(0x00f090);
+  const colorCyan = new THREE.Color(0x00d4ff);
+  const colorPurple = new THREE.Color(0xa855f7);
+
+  for (let i = 0; i < particleCount; i++) {
+    // Generate two brain hemispheres (left & right lobes)
+    const hemisphere = i % 2 === 0 ? 1 : -1;
+    const u = Math.random() * Math.PI;
+    const v = Math.random() * Math.PI * 2;
+
+    // Organic brain lobe deformation equations
+    const rx = 3.6 * Math.sin(u) * Math.cos(v) + hemisphere * 0.9;
+    const ry = 3.0 * Math.sin(u) * Math.sin(v) + (Math.cos(u * 2) * 0.4);
+    const rz = 4.2 * Math.cos(u) + (Math.sin(v * 3) * 0.3);
+
+    positions[i * 3] = rx;
+    positions[i * 3 + 1] = ry;
+    positions[i * 3 + 2] = rz;
+
+    const lerpC = (i % 3 === 0) ? colorGreen : (i % 3 === 1 ? colorCyan : colorPurple);
+    colors[i * 3] = lerpC.r;
+    colors[i * 3 + 1] = lerpC.g;
+    colors[i * 3 + 2] = lerpC.b;
+  }
+
+  const pGeo = new THREE.BufferGeometry();
+  pGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  pGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+  const pMat = new THREE.PointsMaterial({
+    size: 0.28,
+    vertexColors: true,
     transparent: true,
-    opacity: 0.9
+    opacity: 0.9,
+    blending: THREE.AdditiveBlending
   });
 
-  particles3d = new THREE.Points(particleGeo, particleMat);
-  scene3d.add(particles3d);
+  const brainPoints = new THREE.Points(pGeo, pMat);
+  brainGroup.add(brainPoints);
+
+  // 2. Synaptic Neural Connections (Lines between nearby vertices)
+  const lineMat = new THREE.LineBasicMaterial({
+    color: 0x00f090,
+    transparent: true,
+    opacity: 0.22,
+    blending: THREE.AdditiveBlending
+  });
+
+  const linePositions = [];
+  for (let i = 0; i < particleCount; i += 2) {
+    for (let j = i + 1; j < Math.min(i + 12, particleCount); j++) {
+      const dx = positions[i * 3] - positions[j * 3];
+      const dy = positions[i * 3 + 1] - positions[j * 3 + 1];
+      const dz = positions[i * 3 + 2] - positions[j * 3 + 2];
+      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      if (dist < 2.2) {
+        linePositions.push(
+          positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2],
+          positions[j * 3], positions[j * 3 + 1], positions[j * 3 + 2]
+        );
+      }
+    }
+  }
+
+  const lGeo = new THREE.BufferGeometry();
+  lGeo.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+  const brainLines = new THREE.LineSegments(lGeo, lineMat);
+  brainGroup.add(brainLines);
+
+  // 3. Gyroscopic Holographic Halo Rings
+  const ringGeo1 = new THREE.TorusGeometry(6.2, 0.04, 16, 100);
+  const ringMat1 = new THREE.MeshBasicMaterial({ color: 0x00f090, wireframe: true, transparent: true, opacity: 0.35 });
+  const ring1 = new THREE.Mesh(ringGeo1, ringMat1);
+  ring1.rotation.x = Math.PI / 3;
+  brainGroup.add(ring1);
+
+  const ringGeo2 = new THREE.TorusGeometry(6.8, 0.04, 16, 100);
+  const ringMat2 = new THREE.MeshBasicMaterial({ color: 0xa855f7, wireframe: true, transparent: true, opacity: 0.25 });
+  const ring2 = new THREE.Mesh(ringGeo2, ringMat2);
+  ring2.rotation.y = Math.PI / 4;
+  brainGroup.add(ring2);
+
+  // Mouse interaction
+  let mouseX = 0, mouseY = 0;
+  window.addEventListener('mousemove', (e) => {
+    mouseX = (e.clientX / window.innerWidth - 0.5) * 0.4;
+    mouseY = (e.clientY / window.innerHeight - 0.5) * 0.4;
+  });
 
   // Animation Loop
-  function animate3d() {
-    requestAnimationFrame(animate3d);
+  let clock = new THREE.Clock();
+  function animate() {
+    requestAnimationFrame(animate);
+    const time = clock.getElapsedTime();
 
-    if (sphereMesh) {
-      sphereMesh.rotation.y += 0.007;
-      sphereMesh.rotation.x += 0.004;
-    }
-    if (ringMesh1) {
-      ringMesh1.rotation.x += 0.012;
-      ringMesh1.rotation.y += 0.008;
-    }
-    if (ringMesh2) {
-      ringMesh2.rotation.y -= 0.009;
-      ringMesh2.rotation.z += 0.006;
-    }
-    if (particles3d) {
-      particles3d.rotation.y += 0.003;
-    }
+    brainGroup.rotation.y = time * 0.35 + mouseX;
+    brainGroup.rotation.x = Math.sin(time * 0.2) * 0.15 + mouseY;
 
-    renderer3d.render(scene3d, camera3d);
+    ring1.rotation.z = time * 0.25;
+    ring2.rotation.z = -time * 0.3;
+
+    // Brain pulsating glow effect
+    const scale = 1.0 + Math.sin(time * 2.0) * 0.03;
+    brainPoints.scale.set(scale, scale, scale);
+
+    renderer.render(scene, camera);
   }
+  animate();
 
-  animate3d();
-
-  // Resize Listener
-  window.addEventListener("resize", () => {
-    if (!container || !renderer3d || !camera3d) return;
+  window.addEventListener('resize', () => {
+    if (!container) return;
     const w = container.clientWidth;
     const h = container.clientHeight;
-    camera3d.aspect = w / h;
-    camera3d.updateProjectionMatrix();
-    renderer3d.setSize(w, h);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
   });
 }
 
-// ── 9. Autonomous 5-Stage Agent Workflow Pipeline Cycling ──────────────────
-let activeWfStep = 0;
-function initWorkflowCycle() {
-  const steps = document.querySelectorAll(".wf-step-item");
-  if (!steps || steps.length === 0) return;
 
-  setInterval(() => {
-    steps.forEach((s, idx) => {
-      if (idx === activeWfStep) {
-        s.classList.add("active");
-      } else {
-        s.classList.remove("active");
-      }
-    });
-    activeWfStep = (activeWfStep + 1) % steps.length;
-  }, 2500);
-}
-
-
-// ── 10. Quantum Neural Particle Matrix Background ──────────────────────────
 function initNeuralBgCanvas() {
   const canvas = document.getElementById("neuralBgCanvas");
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
-
-  function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  resize();
+  window.addEventListener("resize", resize);
+  const pts = [];
+  for (let i = 0; i < 40; i++) {
+    pts.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, vx: (Math.random()-0.5)*0.3, vy: (Math.random()-0.5)*0.3 });
   }
-  resizeCanvas();
-  window.addEventListener("resize", resizeCanvas);
-
-  const particles = [];
-  const count = Math.min(60, Math.floor(window.innerWidth / 28));
-  for (let i = 0; i < count; i++) {
-    particles.push({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      vx: (Math.random() - 0.5) * 0.35,
-      vy: (Math.random() - 0.5) * 0.35,
-      radius: Math.random() * 1.5 + 0.8
-    });
-  }
-
-  function drawMatrix() {
+  function loop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    for (let i = 0; i < particles.length; i++) {
-      const p = particles[i];
-      p.x += p.vx;
-      p.y += p.vy;
+    for (let p of pts) {
+      p.x += p.vx; p.y += p.vy;
       if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
       if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
-
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(0, 240, 144, 0.55)";
+      ctx.arc(p.x, p.y, 1.5, 0, Math.PI*2);
+      ctx.fillStyle = "rgba(0, 240, 144, 0.4)";
       ctx.fill();
-
-      for (let j = i + 1; j < particles.length; j++) {
-        const q = particles[j];
-        const dist = Math.hypot(p.x - q.x, p.y - q.y);
-        if (dist < 125) {
-          ctx.beginPath();
-          ctx.moveTo(p.x, p.y);
-          ctx.lineTo(q.x, q.y);
-          ctx.strokeStyle = `rgba(0, 212, 255, ${(1 - dist / 125) * 0.16})`;
-          ctx.lineWidth = 0.6;
-          ctx.stroke();
-        }
-      }
     }
-    requestAnimationFrame(drawMatrix);
+    requestAnimationFrame(loop);
   }
-  drawMatrix();
+  loop();
 }
