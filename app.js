@@ -89,24 +89,6 @@ function toggleAdminView() {
   switchView("admin");
 }
 
-function autofillAdminLogin(target) {
-  if (target === 'modal') {
-    const emailEl = document.getElementById("loginEmail");
-    const passEl = document.getElementById("loginPassword");
-    if (emailEl) emailEl.value = "admin@thesmartmag.com";
-    if (passEl) passEl.value = "SmartMag@Quant2026!";
-    const form = document.getElementById("userLoginForm");
-    if (form) form.dispatchEvent(new Event("submit", {cancelable: true, bubbles: true}));
-  } else {
-    const userEl = document.getElementById("adminUserInput");
-    const passEl = document.getElementById("adminPassInput");
-    if (userEl) userEl.value = "admin@thesmartmag.com";
-    if (passEl) passEl.value = "SmartMag@Quant2026!";
-    const form = document.getElementById("adminLoginForm");
-    if (form) form.dispatchEvent(new Event("submit", {cancelable: true, bubbles: true}));
-  }
-}
-
 // ── 4. TradingView Pro Chart Integration ──────────────────────────────────
 function initTradingViewWidget(containerId, symbol) {
   const container = document.getElementById(containerId);
@@ -171,6 +153,8 @@ function updateUserUI(user, settings, exConnections) {
   const userPill = document.getElementById("userProfilePill");
   const userTxt = document.getElementById("userProfileText");
   const keysBtn = document.getElementById("connectKeysBtn");
+  const adminNavBtn = document.getElementById("adminNavBtn");
+  const superAdminTab = document.getElementById("superAdminNavTab");
 
   if (user) {
     if (userTxt) userTxt.textContent = `👤 ${user.name || user.email.split('@')[0]}`;
@@ -179,9 +163,20 @@ function updateUserUI(user, settings, exConnections) {
       userPill.title = `Logged in as ${user.email} (Click for settings & profile)`;
       userPill.onclick = () => openUserSettingsModal();
     }
+
+    // STRICT ROLE CHECK: Only reveal Super Admin controls to authenticated superadmin
+    if (user.role === "superadmin") {
+      if (adminNavBtn) adminNavBtn.style.display = "flex";
+      if (superAdminTab) superAdminTab.style.display = "flex";
+    } else {
+      if (adminNavBtn) adminNavBtn.style.display = "none";
+      if (superAdminTab) superAdminTab.style.display = "none";
+    }
   } else {
     if (userTxt) userTxt.textContent = "SIGN IN / JOIN";
     if (keysBtn) keysBtn.style.display = "none";
+    if (adminNavBtn) adminNavBtn.style.display = "none";
+    if (superAdminTab) superAdminTab.style.display = "none";
     if (userPill) {
       userPill.title = "Login or Create Trader Account";
       userPill.onclick = () => openAuthModal();
@@ -319,9 +314,13 @@ async function handleUserRegister(e) {
 function handleUserLogout() {
   userToken = "";
   currentUser = null;
+  adminToken = "";
   localStorage.removeItem("tsm_user_token");
+  sessionStorage.removeItem("tsm_admin_token");
   updateUserUI(null);
+  checkAdminAuth();
   closeUserSettingsModal();
+  switchView("terminal");
   fetchRealData();
 }
 
