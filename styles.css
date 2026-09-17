@@ -1129,3 +1129,26 @@ body.light-mode #circuitBgCanvas, body.light-mode #neuralBgCanvas { opacity: 0.1
   border-color: var(--neon-green);
   color: var(--neon-green);
 }
+
+.nc-btn-logout {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  background: rgba(255, 51, 102, 0.1);
+  border: 1px solid rgba(255, 51, 102, 0.4);
+  border-radius: 20px;
+  color: var(--neon-red);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.nc-btn-logout:hover {
+  background: rgba(255, 51, 102, 0.22);
+  border-color: var(--neon-red);
+  box-shadow: 0 0 12px rgba(255, 51, 102, 0.35);
+}

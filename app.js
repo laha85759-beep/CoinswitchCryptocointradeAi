@@ -153,8 +153,15 @@ function updateUserUI(user, settings, exConnections) {
   const userPill = document.getElementById("userProfilePill");
   const userTxt = document.getElementById("userProfileText");
   const keysBtn = document.getElementById("connectKeysBtn");
+  const logoutBtn = document.getElementById("userLogoutBtn");
   const adminNavBtn = document.getElementById("adminNavBtn");
   const superAdminTab = document.getElementById("superAdminNavTab");
+
+  if (user) {
+    if (logoutBtn) logoutBtn.style.display = "flex";
+  } else {
+    if (logoutBtn) logoutBtn.style.display = "none";
+  }
 
   if (user) {
     if (userTxt) userTxt.textContent = `👤 ${user.name || user.email.split('@')[0]}`;
