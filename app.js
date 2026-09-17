@@ -1,10 +1,12 @@
 // ══════════════════════════════════════════════════════════════════════════
-// THESMARTMAG QUANT TERMINAL • CORE APPLICATION & ADMIN PORTAL ENGINE
+// THESMARTMAG QUANT TERMINAL • NEURAL OS & SAAS ENGINE
 // ══════════════════════════════════════════════════════════════════════════
 
 let currentTvSymbol = "BINANCE:BTCUSDT";
 let currentView = "terminal";
 let adminToken = sessionStorage.getItem("tsm_admin_token") || "";
+let userToken = localStorage.getItem("tsm_user_token") || "";
+let currentUser = null;
 let isBotPaused = false;
 let currentTheme = localStorage.getItem("tsm_theme") || "dark";
 
@@ -14,7 +16,9 @@ document.addEventListener("DOMContentLoaded", () => {
   initUtcClock();
   initTradingViewWidget("tradingview_widget_container", currentTvSymbol);
   initAgent3dCore();
-  initWorkflowCycle();
+  initCircuitBgCanvas();
+  initNeuralBgCanvas();
+  initUserSession();
   fetchRealData();
   setInterval(fetchRealData, 4000);
   checkAdminAuth();
@@ -59,7 +63,6 @@ function initUtcClock() {
 function switchView(viewName) {
   currentView = viewName;
   
-  // Update Tab Buttons
   document.querySelectorAll(".tsm-tab").forEach(tab => {
     if (tab.getAttribute("data-view") === viewName) {
       tab.classList.add("active");
@@ -68,7 +71,6 @@ function switchView(viewName) {
     }
   });
 
-  // Update View Sections
   document.querySelectorAll(".tsm-view-section").forEach(sec => {
     sec.classList.remove("active");
   });
@@ -78,7 +80,6 @@ function switchView(viewName) {
     targetSec.classList.add("active");
   }
 
-  // Handle Fullscreen Chart view
   if (viewName === "chart") {
     initTradingViewWidget("tradingview_widget_fullscreen", currentTvSymbol);
   }
@@ -125,19 +126,361 @@ function loadTvSymbol(symbol) {
   initTradingViewWidget("tradingview_widget_container", currentTvSymbol);
 }
 
-// ── 5. Real-Time Telemetry & Data Polling ──────────────────────────────────
+// ── 5. User Multi-Tenant Authentication & Session Engine ───────────────────
+async function initUserSession() {
+  if (!userToken) {
+    updateUserUI(null);
+    return;
+  }
+  
+  try {
+    const res = await fetch("/api/auth/me", {
+      headers: { "Authorization": `Bearer ${userToken}` }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      currentUser = data.user;
+      updateUserUI(data.user, data.settings, data.exchange_connections);
+    } else {
+      handleUserLogout();
+    }
+  } catch (err) {
+    console.debug("User session validation error:", err);
+  }
+}
+
+function updateUserUI(user, settings, exConnections) {
+  const userPill = document.getElementById("userProfilePill");
+  const userTxt = document.getElementById("userProfileText");
+  const keysBtn = document.getElementById("connectKeysBtn");
+
+  if (user) {
+    if (userTxt) userTxt.textContent = `👤 ${user.name || user.email.split('@')[0]}`;
+    if (keysBtn) keysBtn.style.display = "flex";
+    if (userPill) {
+      userPill.title = `Logged in as ${user.email} (Click for settings & profile)`;
+      userPill.onclick = () => openUserSettingsModal();
+    }
+  } else {
+    if (userTxt) userTxt.textContent = "SIGN IN / JOIN";
+    if (keysBtn) keysBtn.style.display = "none";
+    if (userPill) {
+      userPill.title = "Login or Create Trader Account";
+      userPill.onclick = () => openAuthModal();
+    }
+  }
+}
+
+function openAuthModal() {
+  const modal = document.getElementById("authModal");
+  if (modal) {
+    modal.style.display = "flex";
+    switchAuthTab("login");
+  }
+}
+
+function closeAuthModal() {
+  const modal = document.getElementById("authModal");
+  if (modal) modal.style.display = "none";
+}
+
+function switchAuthTab(tab) {
+  const loginTab = document.getElementById("authTabLogin");
+  const regTab = document.getElementById("authTabRegister");
+  const loginForm = document.getElementById("userLoginForm");
+  const regForm = document.getElementById("userRegisterForm");
+  const loginErr = document.getElementById("loginError");
+  const regErr = document.getElementById("regError");
+
+  if (loginErr) loginErr.style.display = "none";
+  if (regErr) regErr.style.display = "none";
+
+  if (tab === "login") {
+    if (loginTab) loginTab.classList.add("active");
+    if (regTab) regTab.classList.remove("active");
+    if (loginForm) loginForm.style.display = "flex";
+    if (regForm) regForm.style.display = "none";
+  } else {
+    if (regTab) regTab.classList.add("active");
+    if (loginTab) loginTab.classList.remove("active");
+    if (regForm) regForm.style.display = "flex";
+    if (loginForm) loginForm.style.display = "none";
+  }
+}
+
+async function handleUserLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value.trim();
+  const errBox = document.getElementById("loginError");
+  const submitBtn = document.getElementById("loginSubmitBtn");
+
+  if (submitBtn) { submitBtn.textContent = "AUTHENTICATING..."; submitBtn.disabled = true; }
+  if (errBox) errBox.style.display = "none";
+
+  try {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+
+    if (res.ok && data.status === "success") {
+      userToken = data.token;
+      localStorage.setItem("tsm_user_token", userToken);
+      currentUser = data.user;
+      closeAuthModal();
+      initUserSession();
+      fetchRealData();
+      
+      if (data.user.role === "superadmin") {
+        adminToken = data.token;
+        sessionStorage.setItem("tsm_admin_token", adminToken);
+        checkAdminAuth();
+      }
+    } else {
+      if (errBox) {
+        errBox.textContent = data.message || "Invalid trader credentials.";
+        errBox.style.display = "block";
+      }
+    }
+  } catch (err) {
+    if (errBox) {
+      errBox.textContent = "Connection error. Please try again.";
+      errBox.style.display = "block";
+    }
+  } finally {
+    if (submitBtn) { submitBtn.textContent = "ENTER TRADING TERMINAL"; submitBtn.disabled = false; }
+  }
+}
+
+async function handleUserRegister(e) {
+  e.preventDefault();
+  const name = document.getElementById("regName").value.trim();
+  const email = document.getElementById("regEmail").value.trim();
+  const password = document.getElementById("regPassword").value.trim();
+  const errBox = document.getElementById("regError");
+  const submitBtn = document.getElementById("regSubmitBtn");
+
+  if (submitBtn) { submitBtn.textContent = "CREATING ACCOUNT..."; submitBtn.disabled = true; }
+  if (errBox) errBox.style.display = "none";
+
+  try {
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password })
+    });
+    const data = await res.json();
+
+    if (res.ok && data.status === "success") {
+      userToken = data.token;
+      localStorage.setItem("tsm_user_token", userToken);
+      currentUser = data.user;
+      closeAuthModal();
+      initUserSession();
+      fetchRealData();
+      openExchangeKeysModal();
+    } else {
+      if (errBox) {
+        errBox.textContent = data.message || "Registration failed.";
+        errBox.style.display = "block";
+      }
+    }
+  } catch (err) {
+    if (errBox) {
+      errBox.textContent = "Connection error. Please try again.";
+      errBox.style.display = "block";
+    }
+  } finally {
+    if (submitBtn) { submitBtn.textContent = "CREATE TRADER ACCOUNT"; submitBtn.disabled = false; }
+  }
+}
+
+function handleUserLogout() {
+  userToken = "";
+  currentUser = null;
+  localStorage.removeItem("tsm_user_token");
+  updateUserUI(null);
+  closeUserSettingsModal();
+  fetchRealData();
+}
+
+// ── 6. Exchange API Keys Modal Handlers ────────────────────────────────────
+function openExchangeKeysModal() {
+  const modal = document.getElementById("exchangeKeysModal");
+  const msgBox = document.getElementById("keysSaveMsg");
+  if (msgBox) msgBox.style.display = "none";
+  if (modal) modal.style.display = "flex";
+}
+
+function closeExchangeKeysModal() {
+  const modal = document.getElementById("exchangeKeysModal");
+  if (modal) modal.style.display = "none";
+}
+
+async function handleSaveExchangeKeys(e) {
+  e.preventDefault();
+  if (!userToken) {
+    openAuthModal();
+    return;
+  }
+
+  const cs_key = document.getElementById("user_cs_key").value.trim();
+  const cs_secret = document.getElementById("user_cs_secret").value.trim();
+  const delta_key = document.getElementById("user_delta_key").value.trim();
+  const delta_secret = document.getElementById("user_delta_secret").value.trim();
+  const msgBox = document.getElementById("keysSaveMsg");
+
+  try {
+    const res = await fetch("/api/user/exchange-keys", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${userToken}`
+      },
+      body: JSON.stringify({ cs_key, cs_secret, delta_key, delta_secret })
+    });
+    const data = await res.json();
+
+    if (res.ok && data.status === "success") {
+      if (msgBox) {
+        msgBox.textContent = "✅ Exchange API credentials saved and encrypted securely!";
+        msgBox.style.display = "block";
+      }
+      setTimeout(() => {
+        closeExchangeKeysModal();
+        fetchRealData();
+      }, 1200);
+    } else {
+      if (msgBox) {
+        msgBox.textContent = "Failed to save keys: " + (data.message || "Unknown error");
+        msgBox.style.display = "block";
+      }
+    }
+  } catch (err) {
+    if (msgBox) {
+      msgBox.textContent = "Error saving keys: " + err;
+      msgBox.style.display = "block";
+    }
+  }
+}
+
+// ── 7. Personal User Settings & Risk Modal ─────────────────────────────────
+async function openUserSettingsModal() {
+  if (!userToken) {
+    openAuthModal();
+    return;
+  }
+
+  const modal = document.getElementById("userSettingsModal");
+  const msgBox = document.getElementById("userSettingsMsg");
+  if (msgBox) msgBox.style.display = "none";
+
+  try {
+    const res = await fetch("/api/auth/me", {
+      headers: { "Authorization": `Bearer ${userToken}` }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.settings) {
+        const s = data.settings;
+        if (document.getElementById("user_strategy_select") && s.strategy) document.getElementById("user_strategy_select").value = s.strategy;
+        if (document.getElementById("usr_cfg_hard_sl") && s.hard_sl_pct) document.getElementById("usr_cfg_hard_sl").value = s.hard_sl_pct;
+        if (document.getElementById("usr_cfg_tp") && s.take_profit_pct) document.getElementById("usr_cfg_tp").value = s.take_profit_pct;
+        if (document.getElementById("usr_cfg_trail") && s.trail_pct) document.getElementById("usr_cfg_trail").value = s.trail_pct;
+        if (document.getElementById("usr_cfg_max_cap") && s.max_capital_pct) document.getElementById("usr_cfg_max_cap").value = s.max_capital_pct;
+      }
+    }
+  } catch (err) {
+    console.debug("Error preloading user settings:", err);
+  }
+
+  if (modal) modal.style.display = "flex";
+}
+
+function closeUserSettingsModal() {
+  const modal = document.getElementById("userSettingsModal");
+  if (modal) modal.style.display = "none";
+}
+
+async function handleSaveUserSettings(e) {
+  e.preventDefault();
+  if (!userToken) return;
+
+  const payload = {
+    strategy: document.getElementById("user_strategy_select").value,
+    hard_sl_pct: parseFloat(document.getElementById("usr_cfg_hard_sl").value),
+    take_profit_pct: parseFloat(document.getElementById("usr_cfg_tp").value),
+    trail_pct: parseFloat(document.getElementById("usr_cfg_trail").value),
+    max_capital_pct: parseFloat(document.getElementById("usr_cfg_max_cap").value)
+  };
+
+  const msgBox = document.getElementById("userSettingsMsg");
+  try {
+    const res = await fetch("/api/user/settings", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${userToken}`
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+
+    if (res.ok && data.status === "success") {
+      if (msgBox) {
+        msgBox.textContent = "✅ Personal strategy and risk settings updated!";
+        msgBox.style.display = "block";
+      }
+      setTimeout(() => {
+        closeUserSettingsModal();
+        fetchRealData();
+      }, 1000);
+    } else {
+      if (msgBox) {
+        msgBox.textContent = "Failed to update: " + (data.message || "Unknown error");
+        msgBox.style.display = "block";
+      }
+    }
+  } catch (err) {
+    if (msgBox) {
+      msgBox.textContent = "Error saving settings: " + err;
+      msgBox.style.display = "block";
+    }
+  }
+}
+
+// ── 8. Real-Time Telemetry & Data Polling Engine ───────────────────────────
 async function fetchRealData() {
   try {
+    let userData = null;
+    if (userToken) {
+      try {
+        const uRes = await fetch("/api/user/terminal-data", {
+          headers: { "Authorization": `Bearer ${userToken}` }
+        });
+        if (uRes.ok) {
+          userData = await uRes.json();
+        } else if (uRes.status === 401) {
+          handleUserLogout();
+        }
+      } catch (e) {
+        console.debug("User data fetch error:", e);
+      }
+    }
+
     const res = await fetch("/api/terminal-data");
     if (!res.ok) return;
     const data = await res.json();
 
-    // 1. Balances & Capital
-    if (data.balances) {
-      const totalUsdt = Number(data.balances.total_capital_usdt || 6.57).toFixed(2);
-      const csUsdt = Number(data.balances.cs_usdt || 2.34).toFixed(2);
-      const csInr = Number(data.balances.cs_inr || 11.41).toFixed(2);
-      const deltaUsdt = Number(data.balances.delta_usdt || 4.17).toFixed(2);
+    const balances = userData && userData.balances ? userData.balances : data.balances;
+    if (balances) {
+      const totalUsdt = Number(balances.total_capital_usdt || 6.57).toFixed(2);
+      const csUsdt = Number(balances.cs_usdt || 2.34).toFixed(2);
+      const csInr = Number(balances.cs_inr || 11.41).toFixed(2);
+      const deltaUsdt = Number(balances.delta_usdt || 4.17).toFixed(2);
       const deltaInr = (deltaUsdt * 88.0).toFixed(2);
 
       const capEl = document.getElementById("total-capital");
@@ -150,19 +493,18 @@ async function fetchRealData() {
       if (deltaBalEl) deltaBalEl.textContent = `$${deltaUsdt} USDT (₹${deltaInr})`;
     }
 
-    // 2. Performance & PnL
-    if (data.performance) {
-      const pnlUsdt = Number(data.performance.total_realized_pnl_usdt || 0.0);
+    const perf = userData && userData.performance ? userData.performance : data.performance;
+    if (perf) {
+      const pnlUsdt = Number(perf.total_realized_pnl_usdt || 0.0);
       const pnlEl = document.getElementById("total-pnl-value");
       if (pnlEl) {
         pnlEl.textContent = (pnlUsdt >= 0 ? "+$" : "-$") + Math.abs(pnlUsdt).toFixed(2) + " USDT";
         pnlEl.className = `kpi-value-large ${pnlUsdt >= 0 ? "green-text" : "red-text"}`;
       }
       const tradesEl = document.getElementById("closed-trades-count");
-      if (tradesEl) tradesEl.textContent = data.performance.closed_trades_count || 0;
+      if (tradesEl) tradesEl.textContent = perf.closed_trades_count || 0;
     }
 
-    // 3. Tickers
     if (data.tickers) {
       updateTicker("header-btc", data.tickers.btc);
       updateTicker("header-eth", data.tickers.eth);
@@ -171,11 +513,11 @@ async function fetchRealData() {
       updateTicker("header-pepe", data.tickers.pepe || 0.0000078);
     }
 
-    // 4. Open Positions
-    if (data.open_positions) {
-      const csCount = data.open_positions.cs_count || 0;
-      const deltaCount = data.open_positions.delta_count || 0;
-      const totalCount = data.open_positions.total_count || 0;
+    const positions = userData && userData.open_positions ? userData.open_positions : data.open_positions;
+    if (positions) {
+      const csCount = (positions.coinswitch || []).length;
+      const deltaCount = (positions.delta || []).length;
+      const totalCount = positions.total_count !== undefined ? positions.total_count : (csCount + deltaCount);
 
       const posTag = document.getElementById("positions-tag");
       if (posTag) posTag.textContent = `${totalCount} OPEN`;
@@ -189,10 +531,9 @@ async function fetchRealData() {
       const deltaCountEl = document.getElementById("delta-open-count");
       if (deltaCountEl) deltaCountEl.textContent = deltaCount;
 
-      renderPositionsTable(data.open_positions);
+      renderPositionsTable(positions);
     }
 
-    // 5. Signals / Committee
     if (data.advanced && data.advanced.signals_feed) {
       renderSignalsFeed(data.advanced.signals_feed);
     }
@@ -255,7 +596,7 @@ function renderSignalsFeed(signals) {
   `).join("");
 }
 
-// ── 6. Protected Admin Portal Authentication & Actions ─────────────────────
+// ── 9. Super Admin Portal & Multi-Tenant User Management ───────────────────
 function checkAdminAuth() {
   const loginBox = document.getElementById("admin-login-box");
   const dashPanel = document.getElementById("admin-dashboard-panel");
@@ -266,6 +607,7 @@ function checkAdminAuth() {
     if (dashPanel) dashPanel.style.display = "block";
     if (adminNavBtnText) adminNavBtnText.textContent = "ADMIN (LOGGED IN)";
     fetchAdminStatus();
+    fetchAdminUsersList();
   } else {
     if (loginBox) loginBox.style.display = "block";
     if (dashPanel) dashPanel.style.display = "none";
@@ -280,8 +622,7 @@ async function handleAdminLogin(e) {
   const errBox = document.getElementById("loginErrorMsg");
   const submitBtn = document.getElementById("loginSubmitBtn");
 
-  submitBtn.textContent = "AUTHENTICATING...";
-  submitBtn.disabled = true;
+  if (submitBtn) { submitBtn.textContent = "AUTHENTICATING..."; submitBtn.disabled = true; }
   if (errBox) errBox.style.display = "none";
 
   try {
@@ -308,8 +649,7 @@ async function handleAdminLogin(e) {
       errBox.style.display = "block";
     }
   } finally {
-    submitBtn.textContent = "AUTHENTICATE ADMIN";
-    submitBtn.disabled = false;
+    if (submitBtn) { submitBtn.textContent = "AUTHENTICATE ADMIN"; submitBtn.disabled = false; }
   }
 }
 
@@ -359,6 +699,74 @@ async function fetchAdminStatus() {
 
   } catch (err) {
     console.debug("Admin status fetch error:", err);
+  }
+}
+
+async function fetchAdminUsersList() {
+  if (!adminToken) return;
+  const tbody = document.getElementById("admin-users-tbody");
+  if (!tbody) return;
+
+  try {
+    const res = await fetch("/api/admin/users", {
+      headers: { "Authorization": `Bearer ${adminToken}` }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+
+    if (!data.users || data.users.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9" class="text-center empty-state">No users registered yet.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = data.users.map(u => {
+      const isSuper = u.role === "superadmin";
+      const csBadge = u.has_cs ? '<span class="green font-mono">CS:✓</span>' : '<span class="text-muted font-mono">CS:✗</span>';
+      const deltaBadge = u.has_delta ? '<span class="cyan font-mono">DELTA:✓</span>' : '<span class="text-muted font-mono">DELTA:✗</span>';
+      const statusBadge = u.is_active ? '<span class="user-status-badge active">ACTIVE</span>' : '<span class="user-status-badge disabled">SUSPENDED</span>';
+      const autotradeBadge = u.autotrade_enabled ? '<span class="green">ON 🟢</span>' : '<span class="gold">OFF ⏸</span>';
+
+      return `
+        <tr>
+          <td class="font-mono">${u.id.substring(0, 8)}...</td>
+          <td><strong>${escapeHtml(u.name || 'Trader')}</strong></td>
+          <td>${escapeHtml(u.email)}</td>
+          <td><span class="tsm-badge-pill ${isSuper ? 'admin' : 'cyan'}">${u.role.toUpperCase()}</span></td>
+          <td>${csBadge} &nbsp; ${deltaBadge}</td>
+          <td class="font-mono text-dim">${u.strategy || 'ai_consensus'}</td>
+          <td>${autotradeBadge}</td>
+          <td>${statusBadge}</td>
+          <td>
+            ${isSuper ? '<span class="text-muted font-mono">MASTER</span>' : `<button class="btn-sm-action" onclick="adminToggleUserStatus('${u.id}')">${u.is_active ? 'Disable' : 'Enable'}</button>`}
+          </td>
+        </tr>
+      `;
+    }).join("");
+
+  } catch (err) {
+    console.debug("Error fetching admin users:", err);
+  }
+}
+
+async function adminToggleUserStatus(userId) {
+  if (!adminToken) return;
+  try {
+    const res = await fetch("/api/admin/users/toggle-status", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${adminToken}`
+      },
+      body: JSON.stringify({ user_id: userId })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      fetchAdminUsersList();
+    } else {
+      alert("Failed to toggle status: " + data.message);
+    }
+  } catch (err) {
+    alert("Error: " + err);
   }
 }
 
@@ -451,60 +859,54 @@ async function executeManualTrade(e) {
       body: JSON.stringify({symbol: sym, exchange: ex, action: act, amount_usd: amt})
     });
     const data = await res.json();
-    if (res.ok) {
-      alert("✅ " + (data.message || "Manual trade executed!"));
-      fetchRealData();
-    } else {
-      alert("Execution error: " + data.message);
-    }
+    alert(data.message || "Manual trade command submitted.");
+    fetchRealData();
   } catch (err) {
-    alert("Trade request error: " + err);
+    alert("Manual trade error: " + err);
   }
 }
 
-// ── 7. Real-Time 24/7 Background Agents Log Polling ───────────────────────
+// ── 10. Agent Execution Logs Console ───────────────────────────────────────
 async function fetchAgentLogs() {
-  const consoleEl = document.getElementById("agent-logs-console");
-  if (!consoleEl) return;
-
   try {
-    const res = await fetch("/api/agent-logs");
+    const res = await fetch("/api/logs");
     if (!res.ok) return;
     const data = await res.json();
-    if (data.logs && data.logs.length > 0) {
-      consoleEl.innerHTML = data.logs.map(logLine => {
-        let badgeType = "daemon";
-        let badgeText = "DAEMON";
 
-        if (logLine.includes("NVIDIA") || logLine.includes("Nemotron") || logLine.includes("Kumo")) {
-          badgeType = "nvidia"; badgeText = "NVIDIA_AI";
-        } else if (logLine.includes("Scanner") || logLine.includes("Collector") || logLine.includes("SMC")) {
-          badgeType = "scanner"; badgeText = "SCANNER";
-        } else if (logLine.includes("Risk") || logLine.includes("Trailing") || logLine.includes("Stop")) {
-          badgeType = "risk"; badgeText = "RISK_GUARD";
-        } else if (logLine.includes("Filled") || logLine.includes("Executed") || logLine.includes("order")) {
-          badgeType = "trade"; badgeText = "EXECUTION";
-        }
+    const logConsole = document.getElementById("agentLogConsole");
+    if (!logConsole || !data.logs || data.logs.length === 0) return;
 
-        return `<div class="log-entry"><span class="log-badge badge-${badgeType}">${badgeText}</span> <span>${escapeHtml(logLine)}</span></div>`;
-      }).join("");
-      consoleEl.scrollTop = consoleEl.scrollHeight;
-    }
-  } catch (e) {
-    console.debug("Log fetch notice:", e);
+    logConsole.innerHTML = data.logs.slice(-25).map(item => {
+      let badgeClass = "daemon";
+      let agent = item.agent || "SYSTEM";
+      if (agent.includes("SCANNER")) badgeClass = "scanner";
+      else if (agent.includes("AI") || agent.includes("SUPER_BRAIN")) badgeClass = "ai";
+      else if (agent.includes("RISK")) badgeClass = "risk";
+      else if (agent.includes("TRADE") || agent.includes("EXEC")) badgeClass = "trade";
+
+      const timeStr = item.time ? item.time.split("T")[1].split(".")[0] : "--:--:--";
+      return `
+        <div class="nc-term-line">
+          <span class="nc-term-ts">${timeStr}</span>
+          <span class="nc-term-badge ${badgeClass}">[${agent}]</span>
+          <span class="nc-term-msg">${escapeHtml(item.message)}</span>
+        </div>
+      `;
+    }).join("");
+    
+    logConsole.scrollTop = logConsole.scrollHeight;
+
+  } catch (err) {
+    console.debug("Error fetching logs:", err);
   }
-}
-
-function escapeHtml(str) {
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 setInterval(fetchAgentLogs, 3000);
 
-// ── 8. 3D WebGL Multi-Agent Holographic Neural Sphere Core ────────────────
-let scene3d, camera3d, renderer3d, sphereMesh, ringMesh1, ringMesh2, particles3d;
-
-
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
 
 // ── 11. Circuit Board PCB Traces & Electric Pulses Background ──────────────
 function initCircuitBgCanvas() {
@@ -519,7 +921,6 @@ function initCircuitBgCanvas() {
   resize();
   window.addEventListener("resize", resize);
 
-  // Generate PCB circuit lines radiating outward
   const lines = [];
   const cx = window.innerWidth / 2;
   const cy = window.innerHeight / 2 - 40;
@@ -536,13 +937,10 @@ function initCircuitBgCanvas() {
 
   function drawCircuits() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const time = Date.now() * 0.001;
 
     for (let l of lines) {
-      // Draw PCB trace line
       ctx.beginPath();
       ctx.moveTo(l.x1, l.y1);
-      // Create stepped 45/90-degree circuit traces
       const midX = (l.x1 + l.x2) / 2;
       ctx.lineTo(midX, l.y1);
       ctx.lineTo(l.x2, l.y2);
@@ -550,13 +948,11 @@ function initCircuitBgCanvas() {
       ctx.lineWidth = 1.2;
       ctx.stroke();
 
-      // Draw end junction nodes
       ctx.beginPath();
       ctx.arc(l.x2, l.y2, 2.5, 0, Math.PI * 2);
       ctx.fillStyle = "rgba(0, 212, 255, 0.3)";
       ctx.fill();
 
-      // Draw active traveling light pulse
       l.pulsePos = (l.pulsePos + 0.006) % 1.0;
       const px = l.x1 + (l.x2 - l.x1) * l.pulsePos;
       const py = l.y1 + (l.y2 - l.y1) * l.pulsePos;
@@ -574,8 +970,7 @@ function initCircuitBgCanvas() {
   drawCircuits();
 }
 
-
-// ── 7. Procedural 3D Wireframe Brain & Neural Synapse Core ──────────────────
+// ── 12. Procedural 3D Wireframe Brain & Neural Synapse Core ─────────────────
 function initAgent3dCore() {
   const canvas = document.getElementById("agent3dCanvas");
   const container = document.getElementById("agent3dContainer");
@@ -592,11 +987,9 @@ function initAgent3dCore() {
   renderer.setSize(width, height);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-  // Brain Group
   const brainGroup = new THREE.Group();
   scene.add(brainGroup);
 
-  // 1. Procedural Cerebral Cortex (Point Cloud & Synapse Network)
   const particleCount = 420;
   const positions = new Float32Array(particleCount * 3);
   const colors = new Float32Array(particleCount * 3);
@@ -606,12 +999,10 @@ function initAgent3dCore() {
   const colorPurple = new THREE.Color(0xa855f7);
 
   for (let i = 0; i < particleCount; i++) {
-    // Generate two brain hemispheres (left & right lobes)
     const hemisphere = i % 2 === 0 ? 1 : -1;
     const u = Math.random() * Math.PI;
     const v = Math.random() * Math.PI * 2;
 
-    // Organic brain lobe deformation equations
     const rx = 3.6 * Math.sin(u) * Math.cos(v) + hemisphere * 0.9;
     const ry = 3.0 * Math.sin(u) * Math.sin(v) + (Math.cos(u * 2) * 0.4);
     const rz = 4.2 * Math.cos(u) + (Math.sin(v * 3) * 0.3);
@@ -641,7 +1032,6 @@ function initAgent3dCore() {
   const brainPoints = new THREE.Points(pGeo, pMat);
   brainGroup.add(brainPoints);
 
-  // 2. Synaptic Neural Connections (Lines between nearby vertices)
   const lineMat = new THREE.LineBasicMaterial({
     color: 0x00f090,
     transparent: true,
@@ -670,7 +1060,6 @@ function initAgent3dCore() {
   const brainLines = new THREE.LineSegments(lGeo, lineMat);
   brainGroup.add(brainLines);
 
-  // 3. Gyroscopic Holographic Halo Rings
   const ringGeo1 = new THREE.TorusGeometry(6.2, 0.04, 16, 100);
   const ringMat1 = new THREE.MeshBasicMaterial({ color: 0x00f090, wireframe: true, transparent: true, opacity: 0.35 });
   const ring1 = new THREE.Mesh(ringGeo1, ringMat1);
@@ -683,14 +1072,12 @@ function initAgent3dCore() {
   ring2.rotation.y = Math.PI / 4;
   brainGroup.add(ring2);
 
-  // Mouse interaction
   let mouseX = 0, mouseY = 0;
   window.addEventListener('mousemove', (e) => {
     mouseX = (e.clientX / window.innerWidth - 0.5) * 0.4;
     mouseY = (e.clientY / window.innerHeight - 0.5) * 0.4;
   });
 
-  // Animation Loop
   let clock = new THREE.Clock();
   function animate() {
     requestAnimationFrame(animate);
@@ -702,7 +1089,6 @@ function initAgent3dCore() {
     ring1.rotation.z = time * 0.25;
     ring2.rotation.z = -time * 0.3;
 
-    // Brain pulsating glow effect
     const scale = 1.0 + Math.sin(time * 2.0) * 0.03;
     brainPoints.scale.set(scale, scale, scale);
 
@@ -720,7 +1106,7 @@ function initAgent3dCore() {
   });
 }
 
-
+// ── 13. Neural Matrix Particles Background ─────────────────────────────────
 function initNeuralBgCanvas() {
   const canvas = document.getElementById("neuralBgCanvas");
   if (!canvas) return;

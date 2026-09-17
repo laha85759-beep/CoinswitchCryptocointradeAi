@@ -42,6 +42,9 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 
 app = Flask(__name__)
 
+from api_routes import api_bp
+app.register_blueprint(api_bp)
+
 cs_client = CoinSwitchClient(CONFIG["api_key"], CONFIG["api_secret"])
 delta_client = DeltaClient(CONFIG["delta_api_key"], CONFIG["delta_api_secret"])
 notifier = TelegramNotifier(CONFIG.get("telegram_bot_token", ""), CONFIG.get("telegram_chat_id", ""))

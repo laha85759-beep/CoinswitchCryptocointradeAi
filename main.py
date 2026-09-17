@@ -590,6 +590,13 @@ def run() -> None:
 
     log.info("Step 5/5 — Execute on CoinSwitch + Delta India")
     results = dual_executor.execute(approved)
+    # Multi-Tenant User Autonomous Dispatch
+    try:
+        from multi_tenant_engine import dispatch_signals_to_all_users
+        mt_res = dispatch_signals_to_all_users(approved, cfg)
+        log.info("Multi-Tenant Engine: Processed %s active users, executed %s trades", mt_res.get("users_processed", 0), mt_res.get("trades_executed", 0))
+    except Exception as mt_exc:
+        log.warning("Multi-Tenant dispatch notice: %s", mt_exc)
     cs_filled    = sum(1 for r in results if r.get("coinswitch", {}).get("status") == "filled")
     delta_filled = sum(1 for r in results if r.get("delta", {}).get("status") == "filled")
     log.info("Filled — CoinSwitch: %s | Delta: %s | attempted: %s",
