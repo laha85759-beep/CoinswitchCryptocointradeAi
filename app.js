@@ -826,17 +826,22 @@ async function fetchAdminVisitors(isManual = false) {
     const data = await res.json();
 
     // 1. KPI Cards
+    const activeNow = data.active_visitors_now ?? data.active_now ?? 0;
+    const uniqueToday = data.unique_visitors_today ?? data.unique_today ?? 0;
+    const pageViews = data.page_views_24h ?? 0;
+    const totalVisits = data.total_all_time_visits ?? data.total_visits ?? 0;
+
     if (document.getElementById("vis-kpi-active-now")) {
-      document.getElementById("vis-kpi-active-now").textContent = Number(data.active_visitors_now || 0).toLocaleString();
+      document.getElementById("vis-kpi-active-now").textContent = Number(activeNow).toLocaleString();
     }
     if (document.getElementById("vis-kpi-unique-today")) {
-      document.getElementById("vis-kpi-unique-today").textContent = Number(data.unique_visitors_today || 0).toLocaleString();
+      document.getElementById("vis-kpi-unique-today").textContent = Number(uniqueToday).toLocaleString();
     }
     if (document.getElementById("vis-kpi-pageviews-24h")) {
-      document.getElementById("vis-kpi-pageviews-24h").textContent = Number(data.page_views_24h || 0).toLocaleString();
+      document.getElementById("vis-kpi-pageviews-24h").textContent = Number(pageViews).toLocaleString();
     }
     if (document.getElementById("vis-kpi-total-visits")) {
-      document.getElementById("vis-kpi-total-visits").textContent = Number(data.total_all_time_visits || 0).toLocaleString();
+      document.getElementById("vis-kpi-total-visits").textContent = Number(totalVisits).toLocaleString();
     }
 
     // 2. Top Countries List
@@ -846,14 +851,15 @@ async function fetchAdminVisitors(isManual = false) {
       if (countries.length === 0) {
         cList.innerHTML = `<div class="empty-state text-center" style="padding:10px;">No country traffic recorded yet.</div>`;
       } else {
-        const maxC = Math.max(...countries.map(c => c[1]), 1);
-        cList.innerHTML = countries.slice(0, 7).map(([code, count]) => {
-          const pct = Math.round((count / maxC) * 100);
+        const parsed = countries.map(c => Array.isArray(c) ? { country: c[0], count: c[1] } : { country: c.country, count: c.count });
+        const maxC = Math.max(...parsed.map(c => c.count), 1);
+        cList.innerHTML = parsed.slice(0, 7).map(c => {
+          const pct = Math.round((c.count / maxC) * 100);
           return `
             <div style="display:flex; flex-direction:column; gap:3px;">
               <div style="display:flex; justify-content:space-between; font-size:11px; font-family:var(--font-mono);">
-                <span><span class="tsm-badge-pill admin font-mono" style="padding:1px 6px;">${escapeHtml(code)}</span> <strong>${escapeHtml(code)}</strong></span>
-                <span class="green"><strong>${count}</strong> visits</span>
+                <span><span class="tsm-badge-pill admin font-mono" style="padding:1px 6px;">${escapeHtml(c.country || 'GL')}</span> <strong>${escapeHtml(c.country || 'Global')}</strong></span>
+                <span class="green"><strong>${c.count}</strong> visits</span>
               </div>
               <div class="server-bar" style="height:4px;"><div class="server-bar-fill green" style="width:${pct}%;"></div></div>
             </div>
@@ -869,14 +875,15 @@ async function fetchAdminVisitors(isManual = false) {
       if (referrers.length === 0) {
         rList.innerHTML = `<div class="empty-state text-center" style="padding:10px;">Direct organic traffic active.</div>`;
       } else {
-        const maxR = Math.max(...referrers.map(r => r[1]), 1);
-        rList.innerHTML = referrers.slice(0, 7).map(([ref, count]) => {
-          const pct = Math.round((count / maxR) * 100);
+        const parsedR = referrers.map(r => Array.isArray(r) ? { referrer: r[0], count: r[1] } : { referrer: r.referrer, count: r.count });
+        const maxR = Math.max(...parsedR.map(r => r.count), 1);
+        rList.innerHTML = parsedR.slice(0, 7).map(r => {
+          const pct = Math.round((r.count / maxR) * 100);
           return `
             <div style="display:flex; flex-direction:column; gap:3px;">
               <div style="display:flex; justify-content:space-between; font-size:11px; font-family:var(--font-mono);">
-                <span class="text-dim" style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(ref)}</span>
-                <span class="cyan"><strong>${count}</strong> hits</span>
+                <span class="text-dim" style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(r.referrer || 'Direct')}</span>
+                <span class="cyan"><strong>${r.count}</strong> hits</span>
               </div>
               <div class="server-bar" style="height:4px;"><div class="server-bar-fill cyan" style="width:${pct}%;"></div></div>
             </div>
@@ -893,14 +900,21 @@ async function fetchAdminVisitors(isManual = false) {
         vTbody.innerHTML = `<tr><td colspan="5" class="text-center empty-state">No visitor logs in database yet.</td></tr>`;
       } else {
         vTbody.innerHTML = stream.slice(0, 30).map(v => {
-          const ts = (v.timestamp || "").split("T")[1]?.split(".")[0] || v.timestamp || "--:--";
+          const rawTs = v.timestamp || v.created_at || "";
+          let tsStr = v.time_ago || "--:--";
+          if (typeof rawTs === "string" && rawTs.includes("T")) {
+            tsStr = rawTs.split("T")[1].split(".")[0];
+          } else if (typeof rawTs === "number") {
+            const d = new Date(rawTs * 1000);
+            tsStr = d.toISOString().split("T")[1].split(".")[0] + " UTC";
+          }
           return `
             <tr>
-              <td class="font-mono cyan"><code>${escapeHtml(v.ip)}</code></td>
+              <td class="font-mono cyan"><code>${escapeHtml(v.ip || v.ip_address)}</code></td>
               <td><span class="tsm-badge-pill cyan font-mono" style="padding:1px 6px;">${escapeHtml(v.path)}</span></td>
-              <td><span class="tsm-badge-pill admin font-mono" style="padding:1px 6px;">${escapeHtml(v.country)}</span></td>
-              <td class="font-mono text-dim" style="max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(v.referrer || 'Direct')}</td>
-              <td class="font-mono text-muted">${escapeHtml(ts)}</td>
+              <td><span class="tsm-badge-pill admin font-mono" style="padding:1px 6px;">${escapeHtml(v.country || 'IN')}</span></td>
+              <td class="font-mono text-dim" style="max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(v.referrer || 'Direct / Organic')}</td>
+              <td class="font-mono text-muted">${escapeHtml(tsStr)}</td>
             </tr>
           `;
         }).join("");
@@ -1858,16 +1872,17 @@ async function openUserProfileModal(userId) {
       return;
     }
 
-    const u = data.user || {};
-    const crm = data.crm || {};
-    const settings = data.settings || {};
-    const trades = data.trades || [];
+    const p = data.profile || data || {};
+    const u = p.user || p;
+    const crm = p.crm || p.stats || {};
+    const settings = p.settings || {};
+    const trades = p.trades || [];
 
     // Header & Meta
     const traderName = u.name || "Trader";
     if (document.getElementById("crm-trader-name")) document.getElementById("crm-trader-name").textContent = traderName;
     if (document.getElementById("crm-user-title")) document.getElementById("crm-user-title").textContent = traderName;
-    if (document.getElementById("crm-user-id")) document.getElementById("crm-user-id").textContent = `ID: USR-${u.id}`;
+    if (document.getElementById("crm-user-id")) document.getElementById("crm-user-id").textContent = `ID: ${u.user_id_formatted || ('USR-' + u.id)}`;
     if (document.getElementById("crm-user-email")) document.getElementById("crm-user-email").textContent = u.email;
     if (document.getElementById("crm-user-tier")) document.getElementById("crm-user-tier").textContent = (u.tier || "VIP ELITE").toUpperCase();
     if (document.getElementById("crm-user-balance")) document.getElementById("crm-user-balance").textContent = `$${Number(u.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
@@ -1876,19 +1891,26 @@ async function openUserProfileModal(userId) {
     if (document.getElementById("crm-avatar-box")) document.getElementById("crm-avatar-box").textContent = initials || "TR";
 
     // Overview Stats
+    const winrate = crm.winrate_pct ?? crm.win_rate_pct ?? 100.0;
+    const closedCount = crm.closed_trades_count ?? crm.total_trades ?? 0;
+    const pnlVal = Number(crm.realized_pnl ?? crm.total_realized_pnl ?? 0);
+
     if (document.getElementById("crm-card-winrate")) {
-      document.getElementById("crm-card-winrate").textContent = `${crm.winrate_pct}%`;
+      document.getElementById("crm-card-winrate").textContent = `${Number(winrate).toFixed(1)}%`;
     }
     if (document.getElementById("crm-card-trades-sub")) {
-      document.getElementById("crm-card-trades-sub").textContent = `${crm.closed_trades_count || 0} Closed Trades`;
+      document.getElementById("crm-card-trades-sub").textContent = `${closedCount} Closed Trades`;
     }
     if (document.getElementById("crm-card-pnl")) {
-      const pnl = Number(crm.realized_pnl || 0);
-      document.getElementById("crm-card-pnl").textContent = `${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`;
-      document.getElementById("crm-card-pnl").className = `crm-card-val ${pnl >= 0 ? 'green' : 'red-text'}`;
+      document.getElementById("crm-card-pnl").textContent = `${pnlVal >= 0 ? '+' : ''}$${pnlVal.toFixed(2)}`;
+      document.getElementById("crm-card-pnl").className = `crm-card-val ${pnlVal >= 0 ? 'green' : 'red-text'}`;
     }
     if (document.getElementById("crm-card-keys")) {
       const ex = crm.connected_exchanges || [];
+      if (ex.length === 0) {
+        if (u.has_cs) ex.push("CoinSwitch");
+        if (u.has_delta) ex.push("Delta");
+      }
       document.getElementById("crm-card-keys").textContent = ex.length > 0 ? ex.join(", ") : "Standby";
       document.getElementById("crm-card-keys").className = `crm-card-val ${ex.length > 0 ? 'green' : 'cyan'}`;
     }
@@ -1896,7 +1918,7 @@ async function openUserProfileModal(userId) {
     // Bio Settings
     if (document.getElementById("crm-bio-settings")) {
       document.getElementById("crm-bio-settings").innerHTML = `
-        Strategy: <strong>${escapeHtml(settings.strategy || 'AI Consensus Super Brain')}</strong> • 
+        Strategy: <strong>${escapeHtml(settings.strategy || settings.active_strategy || 'AI Consensus Super Brain')}</strong> • 
         Hard SL: <strong>${settings.hard_sl_pct || 2.0}%</strong> • 
         Take Profit: <strong>${settings.take_profit_pct || 15.0}%</strong> • 
         Trailing: <strong>${settings.trail_pct || 0.2}%</strong> • 
@@ -1912,14 +1934,14 @@ async function openUserProfileModal(userId) {
       } else {
         tTbody.innerHTML = trades.map(t => {
           const isBuy = (t.direction || 'buy').toLowerCase() === 'buy' || (t.direction || '').toLowerCase() === 'long';
-          const pnlNum = Number(t.pnl || 0);
+          const pnlNum = Number(t.pnl || t.realized_pnl || 0);
           const pnlClass = pnlNum >= 0 ? 'green' : 'red-text';
           const dt = (t.closed_at || t.opened_at || "").split("T")[0] || "--";
           return `
             <tr>
               <td class="font-mono text-muted">${escapeHtml(dt)}</td>
               <td><strong>${escapeHtml(t.symbol)}</strong></td>
-              <td><span class="tsm-badge-pill admin font-mono">${escapeHtml(t.exchange.toUpperCase())}</span></td>
+              <td><span class="tsm-badge-pill admin font-mono">${escapeHtml((t.exchange || 'LIVE').toUpperCase())}</span></td>
               <td><span class="${isBuy ? 'green' : 'red-text'} font-mono">${t.direction.toUpperCase()}</span></td>
               <td class="font-mono">$${Number(t.entry_price || 0).toFixed(4)}</td>
               <td class="font-mono ${pnlClass}"><strong>${pnlNum >= 0 ? '+' : ''}$${pnlNum.toFixed(2)}</strong></td>
@@ -1936,10 +1958,16 @@ async function openUserProfileModal(userId) {
       document.getElementById("crm-sec-status").className = u.is_active ? "green font-mono" : "red-text font-mono";
     }
     if (document.getElementById("crm-sec-joined")) {
-      document.getElementById("crm-sec-joined").textContent = u.created_at || "2026-09-17";
+      let jStr = "2026-09-17";
+      if (typeof u.created_at === "number") {
+        jStr = new Date(u.created_at * 1000).toISOString().split("T")[0];
+      } else if (typeof u.created_at === "string") {
+        jStr = u.created_at.split("T")[0];
+      }
+      document.getElementById("crm-sec-joined").textContent = jStr;
     }
     if (document.getElementById("crm-bill-plan")) {
-      document.getElementById("crm-bill-plan").textContent = `${(u.tier || "VIP ELITE").toUpperCase()} (${u.role.toUpperCase()})`;
+      document.getElementById("crm-bill-plan").textContent = `${(u.tier || "VIP ELITE").toUpperCase()} (${(u.role || 'TRADER').toUpperCase()})`;
     }
 
   } catch (err) {
