@@ -51,19 +51,19 @@ def _watchlist_env() -> list[str]:
 
 CONFIG = {
     # ── CoinSwitch Pro credentials ───────────────────────────────────────────
-    "api_key":    os.getenv("CS_API_KEY",    "d75f998ed6d14f67459f9d52c312d1f91bc7da4e5a246e8ae58f8c33e6e6850a"),
-    "api_secret": os.getenv("CS_API_SECRET", "57e0867584c4835cc24ca8c12f281d7c588c51fb27ef8fd68faa74a5c8b72140"),
+    "api_key":    os.getenv("CS_API_KEY", ""),
+    "api_secret": os.getenv("CS_API_SECRET", ""),
 
     # ── Delta Exchange India credentials ─────────────────────────────────────
-    "delta_api_key":    os.getenv("DELTA_API_KEY",    "vjEEk2mwin1lwPM862AJeRPbTVSZGC"),
-    "delta_api_secret": os.getenv("DELTA_API_SECRET", "4mv1fEWHjwuLz1pcpoqP5pxKC5XpylzsMuOqDTU74kBl309h1yuQKasGNEeV"),
+    "delta_api_key":    os.getenv("DELTA_API_KEY", ""),
+    "delta_api_secret": os.getenv("DELTA_API_SECRET", ""),
 
     # ── Telegram ─────────────────────────────────────────────────────────────
-    "telegram_token":   os.getenv("TELEGRAM_TOKEN",   "8802671362:AAGJQdrqAnI4aVuuH3sxqwetBv9F35m_2V8"),
-    "telegram_chat_id": os.getenv("TELEGRAM_CHAT_ID", "6207722743"),
+    "telegram_token":   os.getenv("TELEGRAM_TOKEN") or os.getenv("TELEGRAM_BOT_TOKEN", ""),
+    "telegram_chat_id": os.getenv("TELEGRAM_CHAT_ID", ""),
 
     # ── 1min.AI Multi-Model AI API ───────────────────────────────────────────
-    "onemin_ai_api_key": os.getenv("ONEMIN_AI_API_KEY", "5bbdd65d81492ca76dba5f864a7f0125e1bc0a2f6801c3a8134696d28327ffcd"),
+    "onemin_ai_api_key": os.getenv("ONEMIN_AI_API_KEY", ""),
 
     # ── Scanner ──────────────────────────────────────────────────────────────
     "quote_currency":        "USDT",
