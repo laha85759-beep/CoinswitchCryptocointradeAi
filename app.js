@@ -1012,6 +1012,11 @@ function initCircuitBgCanvas() {
 }
 
 // ── 12. Procedural 3D Wireframe Brain & Neural Synapse Core ─────────────────
+let globalJarvisRenderer = null;
+let globalJarvisScene = null;
+let globalJarvisCamera = null;
+let jarvisAnimationId = null;
+
 function initAgent3dCore() {
   const canvas = document.getElementById("agent3dCanvas");
   const container = document.getElementById("agent3dContainer");
@@ -1022,40 +1027,41 @@ function initAgent3dCore() {
   const height = container.clientHeight || 400;
 
   const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-  camera.position.set(0, 0, 18);
+  camera.position.set(0, 0, 20);
 
   const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
   renderer.setSize(width, height);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-  const brainGroup = new THREE.Group();
-  scene.add(brainGroup);
+  const mainGroup = new THREE.Group();
+  scene.add(mainGroup);
 
-  const particleCount = 420;
+  // 1. Core Synaptic Cloud (540 particles)
+  const particleCount = 540;
   const positions = new Float32Array(particleCount * 3);
   const colors = new Float32Array(particleCount * 3);
 
-  const colorGreen = new THREE.Color(0x00f090);
-  const colorCyan = new THREE.Color(0x00d4ff);
-  const colorPurple = new THREE.Color(0xa855f7);
+  const cGreen = new THREE.Color(0x00f090);
+  const cCyan = new THREE.Color(0x00d4ff);
+  const cGold = new THREE.Color(0xffd700);
 
   for (let i = 0; i < particleCount; i++) {
     const hemisphere = i % 2 === 0 ? 1 : -1;
     const u = Math.random() * Math.PI;
     const v = Math.random() * Math.PI * 2;
 
-    const rx = 3.6 * Math.sin(u) * Math.cos(v) + hemisphere * 0.9;
-    const ry = 3.0 * Math.sin(u) * Math.sin(v) + (Math.cos(u * 2) * 0.4);
-    const rz = 4.2 * Math.cos(u) + (Math.sin(v * 3) * 0.3);
+    const rx = 3.8 * Math.sin(u) * Math.cos(v) + hemisphere * 0.9;
+    const ry = 3.2 * Math.sin(u) * Math.sin(v) + (Math.cos(u * 2) * 0.45);
+    const rz = 4.4 * Math.cos(u) + (Math.sin(v * 3) * 0.35);
 
     positions[i * 3] = rx;
     positions[i * 3 + 1] = ry;
     positions[i * 3 + 2] = rz;
 
-    const lerpC = (i % 3 === 0) ? colorGreen : (i % 3 === 1 ? colorCyan : colorPurple);
-    colors[i * 3] = lerpC.r;
-    colors[i * 3 + 1] = lerpC.g;
-    colors[i * 3 + 2] = lerpC.b;
+    const col = (i % 3 === 0) ? cGreen : (i % 3 === 1 ? cCyan : cGold);
+    colors[i * 3] = col.r;
+    colors[i * 3 + 1] = col.g;
+    colors[i * 3 + 2] = col.b;
   }
 
   const pGeo = new THREE.BufferGeometry();
@@ -1063,31 +1069,25 @@ function initAgent3dCore() {
   pGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
   const pMat = new THREE.PointsMaterial({
-    size: 0.28,
+    size: 0.32,
     vertexColors: true,
     transparent: true,
-    opacity: 0.9,
+    opacity: 0.95,
     blending: THREE.AdditiveBlending
   });
 
   const brainPoints = new THREE.Points(pGeo, pMat);
-  brainGroup.add(brainPoints);
+  mainGroup.add(brainPoints);
 
-  const lineMat = new THREE.LineBasicMaterial({
-    color: 0x00f090,
-    transparent: true,
-    opacity: 0.22,
-    blending: THREE.AdditiveBlending
-  });
-
+  // 2. Synaptic Neural Connector Lines
   const linePositions = [];
   for (let i = 0; i < particleCount; i += 2) {
-    for (let j = i + 1; j < Math.min(i + 12, particleCount); j++) {
+    for (let j = i + 1; j < Math.min(i + 14, particleCount); j++) {
       const dx = positions[i * 3] - positions[j * 3];
       const dy = positions[i * 3 + 1] - positions[j * 3 + 1];
       const dz = positions[i * 3 + 2] - positions[j * 3 + 2];
       const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-      if (dist < 2.2) {
+      if (dist < 2.3) {
         linePositions.push(
           positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2],
           positions[j * 3], positions[j * 3 + 1], positions[j * 3 + 2]
@@ -1098,20 +1098,64 @@ function initAgent3dCore() {
 
   const lGeo = new THREE.BufferGeometry();
   lGeo.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
-  const brainLines = new THREE.LineSegments(lGeo, lineMat);
-  brainGroup.add(brainLines);
+  const lMat = new THREE.LineBasicMaterial({
+    color: 0x00f090,
+    transparent: true,
+    opacity: 0.25,
+    blending: THREE.AdditiveBlending
+  });
+  const brainLines = new THREE.LineSegments(lGeo, lMat);
+  mainGroup.add(brainLines);
 
-  const ringGeo1 = new THREE.TorusGeometry(6.2, 0.04, 16, 100);
-  const ringMat1 = new THREE.MeshBasicMaterial({ color: 0x00f090, wireframe: true, transparent: true, opacity: 0.35 });
-  const ring1 = new THREE.Mesh(ringGeo1, ringMat1);
+  // 3. Multi-Axis Concentric Gyroscopic Rings
+  const ringMat1 = new THREE.MeshBasicMaterial({ color: 0x00f090, wireframe: true, transparent: true, opacity: 0.45 });
+  const ringMat2 = new THREE.MeshBasicMaterial({ color: 0x00d4ff, wireframe: true, transparent: true, opacity: 0.35 });
+  const ringMat3 = new THREE.MeshBasicMaterial({ color: 0xffd700, wireframe: true, transparent: true, opacity: 0.3 });
+
+  const ring1 = new THREE.Mesh(new THREE.TorusGeometry(6.4, 0.05, 16, 80), ringMat1);
   ring1.rotation.x = Math.PI / 3;
-  brainGroup.add(ring1);
+  mainGroup.add(ring1);
 
-  const ringGeo2 = new THREE.TorusGeometry(6.8, 0.04, 16, 100);
-  const ringMat2 = new THREE.MeshBasicMaterial({ color: 0xa855f7, wireframe: true, transparent: true, opacity: 0.25 });
-  const ring2 = new THREE.Mesh(ringGeo2, ringMat2);
+  const ring2 = new THREE.Mesh(new THREE.TorusGeometry(7.2, 0.04, 16, 90), ringMat2);
   ring2.rotation.y = Math.PI / 4;
-  brainGroup.add(ring2);
+  mainGroup.add(ring2);
+
+  const ring3 = new THREE.Mesh(new THREE.TorusGeometry(8.0, 0.03, 16, 100), ringMat3);
+  ring3.rotation.z = Math.PI / 6;
+  mainGroup.add(ring3);
+
+  // 4. Orbiting 3D Trade & Asset Nodes (BTC, Gold, Nifty, ETH, SOL, Sensex)
+  const nodeAssets = [
+    { label: "BTC", color: 0xf7931a, radius: 9.0, speed: 0.4, angle: 0 },
+    { label: "GOLD", color: 0xffd700, radius: 9.5, speed: 0.32, angle: 1.2 },
+    { label: "NIFTY", color: 0x00f090, radius: 8.8, speed: 0.45, angle: 2.4 },
+    { label: "ETH", color: 0x627eea, radius: 9.2, speed: 0.38, angle: 3.6 },
+    { label: "SOL", color: 0x14f195, radius: 9.6, speed: 0.5, angle: 4.8 },
+    { label: "SENSEX", color: 0x00d4ff, radius: 8.5, speed: 0.35, angle: 5.8 }
+  ];
+
+  const nodeMeshes = [];
+  nodeAssets.forEach(asset => {
+    const nodeGeo = new THREE.SphereGeometry(0.45, 16, 16);
+    const nodeMat = new THREE.MeshBasicMaterial({ color: asset.color, wireframe: true });
+    const mesh = new THREE.Mesh(nodeGeo, nodeMat);
+    mainGroup.add(mesh);
+    nodeMeshes.push({ mesh, asset });
+  });
+
+  // 5. Procedural Lightning Arcs
+  const sparkGeo = new THREE.BufferGeometry();
+  const sparkCount = 24;
+  const sparkPositions = new Float32Array(sparkCount * 3);
+  sparkGeo.setAttribute('position', new THREE.BufferAttribute(sparkPositions, 3));
+  const sparkMat = new THREE.LineBasicMaterial({
+    color: 0x00d4ff,
+    transparent: true,
+    opacity: 0.8,
+    blending: THREE.AdditiveBlending
+  });
+  const sparkLine = new THREE.Line(sparkGeo, sparkMat);
+  mainGroup.add(sparkLine);
 
   let mouseX = 0, mouseY = 0;
   window.addEventListener('mousemove', (e) => {
@@ -1119,19 +1163,53 @@ function initAgent3dCore() {
     mouseY = (e.clientY / window.innerHeight - 0.5) * 0.4;
   });
 
-  let clock = new THREE.Clock();
+  const clock = new THREE.Clock();
   function animate() {
     requestAnimationFrame(animate);
     const time = clock.getElapsedTime();
 
-    brainGroup.rotation.y = time * 0.35 + mouseX;
-    brainGroup.rotation.x = Math.sin(time * 0.2) * 0.15 + mouseY;
+    mainGroup.rotation.y = time * 0.25 + mouseX;
+    mainGroup.rotation.x = Math.sin(time * 0.15) * 0.15 + mouseY;
 
-    ring1.rotation.z = time * 0.25;
-    ring2.rotation.z = -time * 0.3;
+    ring1.rotation.z = time * 0.3;
+    ring2.rotation.x = -time * 0.25;
+    ring3.rotation.y = time * 0.2;
 
-    const scale = 1.0 + Math.sin(time * 2.0) * 0.03;
+    // Organic double-pulse heartbeat
+    const heart = Math.pow(Math.sin(time * 3.4), 8) * 0.08 + Math.pow(Math.sin(time * 3.4 + 0.3), 8) * 0.04;
+    const scale = 1.0 + heart;
     brainPoints.scale.set(scale, scale, scale);
+    brainLines.scale.set(scale, scale, scale);
+
+    // Update orbiting trade nodes
+    nodeMeshes.forEach(n => {
+      const a = n.asset;
+      const curAngle = a.angle + time * a.speed;
+      n.mesh.position.x = Math.cos(curAngle) * a.radius;
+      n.mesh.position.z = Math.sin(curAngle) * a.radius;
+      n.mesh.position.y = Math.sin(curAngle * 2.0) * 2.0;
+      n.mesh.rotation.y = time * 2.0;
+    });
+
+    // Lightning discharge spark effect
+    if (Math.random() < 0.25) {
+      const pArr = sparkLine.geometry.attributes.position.array;
+      let startX = (Math.random() - 0.5) * 4.0;
+      let startY = (Math.random() - 0.5) * 4.0;
+      let startZ = (Math.random() - 0.5) * 4.0;
+      for (let k = 0; k < sparkCount; k++) {
+        pArr[k * 3] = startX + (Math.random() - 0.5) * 1.2;
+        pArr[k * 3 + 1] = startY + (Math.random() - 0.5) * 1.2;
+        pArr[k * 3 + 2] = startZ + (Math.random() - 0.5) * 1.2;
+        startX = pArr[k * 3];
+        startY = pArr[k * 3 + 1];
+        startZ = pArr[k * 3 + 2];
+      }
+      sparkLine.geometry.attributes.position.needsUpdate = true;
+      sparkMat.opacity = 0.9;
+    } else {
+      sparkMat.opacity *= 0.85;
+    }
 
     renderer.render(scene, camera);
   }
@@ -1146,6 +1224,272 @@ function initAgent3dCore() {
     renderer.setSize(w, h);
   });
 }
+
+// ── 12b. Fullscreen Holographic Jarvis 3D Core Engine ────────────────────────
+function openJarvisModal() {
+  const modal = document.getElementById("jarvisModal");
+  if (!modal) return;
+  modal.style.display = "flex";
+  initJarvis3dCore();
+}
+
+function closeJarvisModal() {
+  const modal = document.getElementById("jarvisModal");
+  if (modal) modal.style.display = "none";
+  if (jarvisAnimationId) cancelAnimationFrame(jarvisAnimationId);
+}
+
+function initJarvis3dCore() {
+  const canvas = document.getElementById("jarvis3dCanvas");
+  if (!canvas || typeof THREE === "undefined") return;
+
+  const width = canvas.parentElement.clientWidth || 700;
+  const height = canvas.parentElement.clientHeight || 500;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+  camera.position.set(0, 0, 24);
+
+  const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+  renderer.setSize(width, height);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  const jarvisGroup = new THREE.Group();
+  scene.add(jarvisGroup);
+
+  // Dense Jarvis Hologram Sphere (800 points)
+  const count = 800;
+  const pos = new Float32Array(count * 3);
+  const cols = new Float32Array(count * 3);
+
+  for (let i = 0; i < count; i++) {
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+    const r = 6.8 + (Math.random() - 0.5) * 1.2;
+
+    pos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+    pos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+    pos[i * 3 + 2] = r * Math.cos(phi);
+
+    cols[i * 3] = 0.0;
+    cols[i * 3 + 1] = 0.85 + Math.random() * 0.15;
+    cols[i * 3 + 2] = 0.95 + Math.random() * 0.05;
+  }
+
+  const pGeo = new THREE.BufferGeometry();
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  pGeo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+  const pMat = new THREE.PointsMaterial({ size: 0.35, vertexColors: true, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending });
+  const points = new THREE.Points(pGeo, pMat);
+  jarvisGroup.add(points);
+
+  // Triple Hologram Rings
+  const r1 = new THREE.Mesh(new THREE.TorusGeometry(8.5, 0.05, 16, 120), new THREE.MeshBasicMaterial({ color: 0x00d4ff, wireframe: true, transparent: true, opacity: 0.4 }));
+  r1.rotation.x = Math.PI / 2.5;
+  jarvisGroup.add(r1);
+
+  const r2 = new THREE.Mesh(new THREE.TorusGeometry(9.8, 0.05, 16, 120), new THREE.MeshBasicMaterial({ color: 0x00f090, wireframe: true, transparent: true, opacity: 0.35 }));
+  r2.rotation.y = Math.PI / 3;
+  jarvisGroup.add(r2);
+
+  let mouseX = 0, mouseY = 0;
+  window.addEventListener('mousemove', (e) => {
+    mouseX = (e.clientX / window.innerWidth - 0.5) * 0.6;
+    mouseY = (e.clientY / window.innerHeight - 0.5) * 0.6;
+  });
+
+  const clock = new THREE.Clock();
+  function jarvisLoop() {
+    jarvisAnimationId = requestAnimationFrame(jarvisLoop);
+    const t = clock.getElapsedTime();
+
+    jarvisGroup.rotation.y = t * 0.3 + mouseX;
+    jarvisGroup.rotation.x = Math.sin(t * 0.2) * 0.2 + mouseY;
+    r1.rotation.z = t * 0.4;
+    r2.rotation.z = -t * 0.35;
+
+    const scale = 1.0 + Math.sin(t * 3.0) * 0.04;
+    points.scale.set(scale, scale, scale);
+
+    renderer.render(scene, camera);
+  }
+  jarvisLoop();
+}
+
+// ── 12c. Enterprise Admin Sub-Navigation Router ─────────────────────────────
+function switchAdminSubTab(sectionId, btn) {
+  const bar = btn?.parentElement;
+  if (bar) {
+    bar.querySelectorAll(".admin-tab-btn").forEach(b => b.classList.remove("active"));
+  }
+  if (btn) btn.classList.add("active");
+
+  document.querySelectorAll(".admin-sub-section").forEach(sec => sec.classList.remove("active"));
+  const target = document.getElementById(`admin-sec-${sectionId}`);
+  if (target) target.classList.add("active");
+
+  if (sectionId === 'analytics') {
+    renderAdminAnalyticsCurve();
+  }
+}
+
+function renderAdminAnalyticsCurve() {
+  const canvas = document.getElementById("adminEquityCurveCanvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const w = canvas.parentElement.clientWidth || 800;
+  const h = 260;
+  canvas.width = w;
+  canvas.height = h;
+
+  ctx.clearRect(0, 0, w, h);
+  
+  // Background Grid Lines
+  ctx.strokeStyle = "rgba(0, 240, 144, 0.08)";
+  ctx.lineWidth = 1;
+  for (let y = 30; y < h; y += 40) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(w, y);
+    ctx.stroke();
+  }
+
+  // Draw Smooth Cumulative Profit Curve
+  const points = [
+    { x: 0, y: h * 0.8 },
+    { x: w * 0.15, y: h * 0.72 },
+    { x: w * 0.3, y: h * 0.65 },
+    { x: w * 0.45, y: h * 0.52 },
+    { x: w * 0.6, y: h * 0.42 },
+    { x: w * 0.75, y: h * 0.30 },
+    { x: w * 0.9, y: h * 0.22 },
+    { x: w, y: h * 0.12 }
+  ];
+
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  for (let i = 1; i < points.length; i++) {
+    const xc = (points[i].x + points[i - 1].x) / 2;
+    const yc = (points[i].y + points[i - 1].y) / 2;
+    ctx.quadraticCurveTo(points[i - 1].x, points[i - 1].y, xc, yc);
+  }
+  ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+  ctx.strokeStyle = "#00f090";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  // Gradient Fill Under Curve
+  ctx.lineTo(w, h);
+  ctx.lineTo(0, h);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, "rgba(0, 240, 144, 0.35)");
+  grad.addColorStop(1, "rgba(0, 240, 144, 0.0)");
+  ctx.fillStyle = grad;
+  ctx.fill();
+}
+
+// ── 12d. Trader CRM Profile Modal Controller ────────────────────────────────
+function openUserProfileModal(id, name, email, tier, balance) {
+  const modal = document.getElementById("userProfileModal");
+  if (!modal) return;
+  document.getElementById("crm-trader-name").textContent = name;
+  document.getElementById("crm-user-title").textContent = name;
+  document.getElementById("crm-user-id").textContent = `ID: ${id}`;
+  document.getElementById("crm-user-email").textContent = email;
+  document.getElementById("crm-user-tier").textContent = tier;
+  document.getElementById("crm-user-balance").textContent = `$${Number(balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+  
+  const initials = name.split(" ").map(n => n[0]).join("").toUpperCase();
+  document.getElementById("crm-avatar-box").textContent = initials || "TR";
+  
+  modal.style.display = "flex";
+}
+
+function closeUserProfileModal() {
+  const modal = document.getElementById("userProfileModal");
+  if (modal) modal.style.display = "none";
+}
+
+function switchCrmTab(tabId, btn) {
+  const bar = btn?.parentElement;
+  if (bar) bar.querySelectorAll(".crm-tab-btn").forEach(b => b.classList.remove("active"));
+  if (btn) btn.classList.add("active");
+
+  document.querySelectorAll(".crm-pane").forEach(p => p.classList.remove("active"));
+  const target = document.getElementById(`crm-pane-${tabId}`);
+  if (target) target.classList.add("active");
+}
+
+// ── 12e. Global Command Palette (Ctrl+K) ────────────────────────────────────
+function openCommandPalette() {
+  const modal = document.getElementById("commandPaletteModal");
+  if (!modal) return;
+  modal.style.display = "flex";
+  const inp = document.getElementById("paletteInput");
+  if (inp) {
+    inp.value = "";
+    inp.focus();
+  }
+}
+
+function closeCommandPalette() {
+  const modal = document.getElementById("commandPaletteModal");
+  if (modal) modal.style.display = "none";
+}
+
+function handlePaletteBackdropClick(e) {
+  if (e.target.id === "commandPaletteModal") closeCommandPalette();
+}
+
+function handlePaletteSearch(e) {
+  if (e.key === "Escape") {
+    closeCommandPalette();
+    return;
+  }
+  const query = (e.target.value || "").toLowerCase().trim();
+  const items = document.querySelectorAll(".palette-item");
+  items.forEach(item => {
+    const text = item.textContent.toLowerCase();
+    if (!query || text.includes(query)) {
+      item.style.display = "flex";
+    } else {
+      item.style.display = "none";
+    }
+  });
+}
+
+function executePaletteCmd(cmd) {
+  closeCommandPalette();
+  if (cmd === 'view_dashboard') {
+    switchView('terminal');
+  } else if (cmd === 'view_admin') {
+    switchView('admin');
+  } else if (cmd === 'open_jarvis') {
+    openJarvisModal();
+  } else if (cmd === 'pause_all_bots') {
+    toggleBotExecution();
+  } else if (cmd === 'refresh_data') {
+    fetchIndianMarketData(true);
+    triggerNewsScan();
+  } else if (cmd === 'panic_flatten') {
+    panicFlattenAll();
+  }
+}
+
+// Global Keyboard Shortcut: Ctrl+K / Cmd+K and Esc
+window.addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+    e.preventDefault();
+    const pal = document.getElementById("commandPaletteModal");
+    if (pal && pal.style.display === "flex") closeCommandPalette();
+    else openCommandPalette();
+  } else if (e.key === "Escape") {
+    closeCommandPalette();
+    closeJarvisModal();
+    closeUserProfileModal();
+  }
+});
 
 // ── 13. Neural Matrix Particles Background ─────────────────────────────────
 function initNeuralBgCanvas() {
