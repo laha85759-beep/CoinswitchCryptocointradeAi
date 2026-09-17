@@ -63,7 +63,7 @@ function initUtcClock() {
 function switchView(viewName) {
   currentView = viewName;
   
-  document.querySelectorAll(".tsm-tab").forEach(tab => {
+  document.querySelectorAll(".tsm-tab, .nc-nav-tab").forEach(tab => {
     if (tab.getAttribute("data-view") === viewName) {
       tab.classList.add("active");
     } else {
@@ -71,7 +71,7 @@ function switchView(viewName) {
     }
   });
 
-  document.querySelectorAll(".tsm-view-section").forEach(sec => {
+  document.querySelectorAll(".tsm-view-section, .nc-view-pane").forEach(sec => {
     sec.classList.remove("active");
   });
   
@@ -87,6 +87,24 @@ function switchView(viewName) {
 
 function toggleAdminView() {
   switchView("admin");
+}
+
+function autofillAdminLogin(target) {
+  if (target === 'modal') {
+    const emailEl = document.getElementById("loginEmail");
+    const passEl = document.getElementById("loginPassword");
+    if (emailEl) emailEl.value = "admin@thesmartmag.com";
+    if (passEl) passEl.value = "SmartMag@Quant2026!";
+    const form = document.getElementById("userLoginForm");
+    if (form) form.dispatchEvent(new Event("submit", {cancelable: true, bubbles: true}));
+  } else {
+    const userEl = document.getElementById("adminUserInput");
+    const passEl = document.getElementById("adminPassInput");
+    if (userEl) userEl.value = "admin@thesmartmag.com";
+    if (passEl) passEl.value = "SmartMag@Quant2026!";
+    const form = document.getElementById("adminLoginForm");
+    if (form) form.dispatchEvent(new Event("submit", {cancelable: true, bubbles: true}));
+  }
 }
 
 // ── 4. TradingView Pro Chart Integration ──────────────────────────────────
