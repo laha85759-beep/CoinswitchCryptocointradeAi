@@ -8,10 +8,13 @@ let adminToken = sessionStorage.getItem("tsm_admin_token") || "";
 let userToken = localStorage.getItem("tsm_user_token") || "";
 let currentUser = null;
 let isBotPaused = false;
-let currentTheme = localStorage.getItem("tsm_theme") || "dark";
+let currentTheme = "dark";
+localStorage.setItem("tsm_theme", "dark");
 
 // ── 1. Initialization ─────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
+  document.body.classList.remove("light-mode");
+  localStorage.setItem("tsm_theme", "dark");
   initTheme();
   initUtcClock();
   initTradingViewWidget("tradingview_widget_container", currentTvSymbol);
@@ -26,27 +29,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // ── 1.1 Theme Switcher (Dark / Light) ──────────────────────────────────────
 function initTheme() {
-  applyTheme(currentTheme);
+  document.body.classList.remove("light-mode");
+  localStorage.setItem("tsm_theme", "dark");
 }
 
 function toggleTheme() {
-  currentTheme = currentTheme === "dark" ? "light" : "dark";
-  localStorage.setItem("tsm_theme", currentTheme);
-  applyTheme(currentTheme);
+  // Permanently locked to approved 100% Dark Cyberpunk Holographic theme
+  document.body.classList.remove("light-mode");
+  localStorage.setItem("tsm_theme", "dark");
 }
 
 function applyTheme(theme) {
-  const icon = document.getElementById("themeToggleIcon");
-  const text = document.getElementById("themeToggleText");
-  if (theme === "light") {
-    document.body.classList.add("light-mode");
-    if (icon) icon.textContent = "☀️";
-    if (text) text.textContent = "LIGHT";
-  } else {
-    document.body.classList.remove("light-mode");
-    if (icon) icon.textContent = "🌙";
-    if (text) text.textContent = "DARK";
-  }
+  document.body.classList.remove("light-mode");
 }
 
 // ── 2. Real-Time UTC Clock ─────────────────────────────────────────────────

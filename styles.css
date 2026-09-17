@@ -37,17 +37,7 @@
   --font-body:      'Inter', -apple-system, sans-serif;
 }
 
-/* Light Mode Support */
-body.light-mode {
-  --bg-space:       #f1f5f9;
-  --bg-hud:         rgba(255, 255, 255, 0.92);
-  --bg-card:        rgba(241, 245, 249, 0.88);
-  --bg-term:        rgba(255, 255, 255, 0.95);
-  --text-main:      #0f172a;
-  --text-dim:       #475569;
-  --text-muted:     #94a3b8;
-  --matrix-green:   #059669;
-}
+
 
 html, body {
   min-height: 100vh;
@@ -74,7 +64,7 @@ body.neural-core-os {
 }
 #circuitBgCanvas { z-index: 1; opacity: 0.65; }
 #neuralBgCanvas { z-index: 2; opacity: 0.4; }
-body.light-mode #circuitBgCanvas, body.light-mode #neuralBgCanvas { opacity: 0.15; }
+
 
 .cyber-scanlines {
   position: fixed;
