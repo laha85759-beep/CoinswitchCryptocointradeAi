@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=99.0">
+  <link rel="stylesheet" href="styles.css?v=100.0">
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -22,8 +22,9 @@
   <canvas id="neuralBgCanvas"></canvas>
   <div class="cyber-scanlines"></div>
 
-  <!-- TOP HEADER HUD (MATCHES APPROVED MOCKUP) -->
+  <!-- TOP MASTER NAVIGATION BAR -->
   <header class="nc-top-header">
+    <!-- BRAND LOGO & SYSTEM STATUS -->
     <div class="nc-hdr-left">
       <a href="https://thesmartmag.com" target="_blank" class="nc-brand" title="TheSmartMag Quantum AI SuperBrain">
         <div class="nc-brain-icon-mini">
@@ -66,88 +67,65 @@
           </svg>
         </div>
         <div class="nc-brand-text">
-          <span class="nc-app-title">THESMARTMAG <span style="font-size:9px; padding:2px 6px; background:linear-gradient(135deg,rgba(0,240,144,0.2),rgba(0,212,255,0.2)); border:1px solid rgba(0,240,144,0.4); border-radius:3px; color:#00f090; font-family:var(--font-mono); font-weight:700; -webkit-text-fill-color: initial; vertical-align:middle; margin-left:4px;">OS v3</span></span>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span class="nc-app-title">THESMARTMAG</span>
+            <span class="nc-nav-os-badge">OS v3</span>
+          </div>
           <span class="nc-brand-sub">QUANTUM AI • MULTI-EXCHANGE TERMINAL</span>
         </div>
       </a>
-    </div>
-
-    <!-- CENTER PILLS (MATCHES APPROVED DESIGN) -->
-    <div class="nc-hdr-center">
-      <div class="nc-pill-badge green">
+      <div class="nc-sys-status-badge">
         <span class="nc-dot-pulse green"></span>
-        <span>COMMANDER</span>
-      </div>
-      <div class="nc-core-capsule">
-        <span class="nc-dot-trio">●●●</span>
-        <span class="nc-core-title">NEURAL CORE</span>
-        <span class="nc-core-online" id="engineStatusText">ONLINE</span>
-        <span class="nc-dot-trio">●●●</span>
-      </div>
-      <div class="nc-pill-badge purple">
-        <span class="nc-dot-pulse purple"></span>
-        <span>RISK SHIELD</span>
+        <span>AI CORE ONLINE</span>
       </div>
     </div>
 
-    <!-- RIGHT HUD CONTROLS -->
+    <!-- CENTER NAVIGATION TABS (INSTITUTIONAL MENUBAR) -->
+    <nav class="nc-hdr-nav tsm-nav">
+      <button class="nc-nav-tab tsm-tab active" data-view="terminal" onclick="switchView('terminal')">
+        <span class="nc-tab-ico">⚡</span><span>TERMINAL</span>
+      </button>
+      <button class="nc-nav-tab tsm-tab gold" data-view="india" onclick="switchView('india')">
+        <span class="nc-tab-ico">🇮🇳</span><span>INDIA EQUITIES &amp; F&amp;O</span><span class="nc-nav-chip gold">NSE/BSE</span>
+      </button>
+      <button class="nc-nav-tab tsm-tab cyan" data-view="news" onclick="switchView('news')">
+        <span class="nc-tab-ico">📰</span><span>NEWS &amp; CATALYSTS</span><span class="nc-nav-chip cyan">LIVE</span>
+      </button>
+      <button class="nc-nav-tab tsm-tab" data-view="rwa" onclick="switchView('rwa')">
+        <span class="nc-tab-ico">🏛</span><span>RWA MATRIX</span>
+      </button>
+      <button class="nc-nav-tab tsm-tab gold" data-view="partners" onclick="switchView('partners')">
+        <span class="nc-tab-ico">💎</span><span>PROP FIRMS</span>
+      </button>
+      <button class="nc-nav-tab tsm-tab" data-view="chart" onclick="switchView('chart')">
+        <span class="nc-tab-ico">📈</span><span>PRO CHART</span>
+      </button>
+      <button class="nc-nav-tab tsm-tab" data-view="trades" onclick="switchView('trades')">
+        <span class="nc-tab-ico">💼</span><span>AUDIT LOG</span>
+      </button>
+      <button class="nc-nav-tab tsm-tab cyan" id="superAdminNavTab" data-view="admin" onclick="switchView('admin')" style="display:none;">
+        <span class="nc-tab-ico">⚙</span><span>SUPER ADMIN</span>
+      </button>
+    </nav>
+
+    <!-- RIGHT HUD CONTROLS (CLEAN: USER, KEYS, LOGOUT, CLOCK) -->
     <div class="nc-hdr-right">
-      <div class="nc-ticker-marquee" id="tickerMarquee">
-        <span class="nc-tick-item"><span class="nc-tick-lbl">BTC</span> <span id="header-btc" class="nc-tick-val">—</span></span>
-        <span class="nc-tick-sep">◈</span>
-        <span class="nc-tick-item"><span class="nc-tick-lbl">ETH</span> <span id="header-eth" class="nc-tick-val">—</span></span>
-        <span class="nc-tick-sep">◈</span>
-        <span class="nc-tick-item"><span class="nc-tick-lbl">SOL</span> <span id="header-sol" class="nc-tick-val">—</span></span>
-        <span class="nc-tick-sep">◈</span>
-        <span class="nc-tick-item"><span class="nc-tick-lbl">ONDO</span> <span id="header-ondo" class="nc-tick-val">—</span></span>
-        <span class="nc-tick-sep">◈</span>
-        <span class="nc-tick-item"><span class="nc-tick-lbl">PEPE</span> <span id="header-pepe" class="nc-tick-val">—</span></span>
-      </div>
-      
-      <div id="userProfilePill" class="nc-user-pill" onclick="openAuthModal()" title="User Account">
+      <div id="userProfilePill" class="nc-user-pill" onclick="openAuthModal()" title="Trader Account">
         <span class="nc-user-icon">👤</span>
         <span id="userProfileText">SIGN IN / JOIN</span>
       </div>
-      <button class="nc-btn-logout" id="userLogoutBtn" onclick="handleUserLogout()" title="Logout from Account" style="display:none;">
-        <span>🚪</span><span>LOGOUT</span>
-      </button>
       <button class="nc-btn-keys" id="connectKeysBtn" onclick="openExchangeKeysModal()" title="Connect CoinSwitch & Delta API Keys" style="display:none;">
         <span>🔑</span><span>API KEYS</span>
       </button>
-      
+      <button class="nc-btn-logout" id="userLogoutBtn" onclick="handleUserLogout()" title="Logout from Account" style="display:none;">
+        <span>🚪</span><span>LOGOUT</span>
+      </button>
       <div class="nc-clock-pill" id="live-utc-clock">00:00:00 UTC</div>
       <button class="nc-btn-admin" id="adminNavBtn" onclick="toggleAdminView()" title="Admin Control Center" style="display:none;">
         <span>⚙</span><span id="adminNavBtnText">ADMIN</span>
       </button>
     </div>
   </header>
-  <!-- NAVIGATION SUB-BAR -->
-  <nav class="nc-nav-bar tsm-nav">
-    <button class="nc-nav-tab tsm-tab active" data-view="terminal" onclick="switchView('terminal')">
-      <span class="nc-tab-ico">⚡</span><span>NEURAL TERMINAL</span>
-    </button>
-    <button class="nc-nav-tab tsm-tab gold" data-view="india" onclick="switchView('india')" style="border:1px solid rgba(255,153,51,0.5); background:rgba(255,153,51,0.08); border-radius:4px; margin:0 4px;">
-      <span class="nc-tab-ico">🇮🇳</span><span>INDIA EQUITIES &amp; F&amp;O</span><span style="font-size:8px; padding:1px 5px; background:#ff9933; color:#000; font-weight:900; border-radius:3px; margin-left:4px;">NSE/BSE</span>
-    </button>
-    <button class="nc-nav-tab tsm-tab cyan" data-view="news" onclick="switchView('news')">
-      <span class="nc-tab-ico">📰</span><span>NEWS &amp; CATALYSTS</span><span style="font-size:8px; padding:1px 5px; background:var(--neon-cyan); color:#000; font-weight:900; border-radius:3px; margin-left:4px;">LIVE</span>
-    </button>
-    <button class="nc-nav-tab tsm-tab" data-view="rwa" onclick="switchView('rwa')">
-      <span class="nc-tab-ico">🏛</span><span>RWA MATRIX</span>
-    </button>
-    <button class="nc-nav-tab tsm-tab gold" data-view="partners" onclick="switchView('partners')">
-      <span class="nc-tab-ico">💎</span><span>PROP FIRMS &amp; DEALS</span>
-    </button>
-    <button class="nc-nav-tab tsm-tab" data-view="chart" onclick="switchView('chart')">
-      <span class="nc-tab-ico">📈</span><span>PRO CHART</span>
-    </button>
-    <button class="nc-nav-tab tsm-tab" data-view="trades" onclick="switchView('trades')">
-      <span class="nc-tab-ico">💼</span><span>AUDIT LOG</span>
-    </button>
-    <button class="nc-nav-tab tsm-tab cyan" id="superAdminNavTab" data-view="admin" onclick="switchView('admin')" style="display:none;">
-      <span class="nc-tab-ico">⚙</span><span>SUPER ADMIN</span>
-    </button>
-  </nav>
 
   <main class="nc-main-stage tsm-main">
 
