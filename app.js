@@ -2931,17 +2931,25 @@ function renderOptionTradeSuggestions(optData) {
   }
 
   container.innerHTML = suggestions.map(s => {
-    const isCall = (s.type || '').toUpperCase() === 'CE';
+    const isCall = (s.type || s.contract || '').toUpperCase().includes('CE') || (s.action || '').toUpperCase().includes('CALL');
     const typeBadge = isCall 
       ? `<span class="tsm-badge-pill admin font-mono">CALL (CE)</span>` 
       : `<span class="tsm-badge-pill gold font-mono" style="border-color:rgba(255,51,102,0.5); color:#ff3366;">PUT (PE)</span>`;
     
+    const contractName = s.contract || `${s.index || 'INDEX'} ${s.strike || ''} ${s.type || ''}`.trim();
+    const lotSize = typeof s.lot_size === 'number' ? `${s.lot_size} Qty / Lot` : (s.lot_size || '1 Lot');
+    const t1 = s.target1 || s.target_1 || 'N/A';
+    const t2 = s.target2 || s.target_2 || 'N/A';
+    const sl = s.stop_loss || s.sl || 'N/A';
+    const rr = s.risk_reward || s.rr_ratio || '1 : 2.5';
+    const confluence = s.confluence || s.pcr_confluence || 'Institutional order flow and Open Interest delta alignment.';
+
     return `
       <div class="opt-suggestion-card">
         <div class="opt-sug-header">
           <div>
-            <span class="opt-sug-symbol">${escapeHtml(s.index || 'NIFTY')} ${s.strike} ${s.type}</span>
-            <div class="opt-sug-sub">${escapeHtml(s.expiry || 'CURRENT WEEK')} • ${escapeHtml(s.lot_size || '')}</div>
+            <span class="opt-sug-symbol">${escapeHtml(contractName)}</span>
+            <div class="opt-sug-sub">${escapeHtml(s.expiry || 'CURRENT WEEKLY')} • ${escapeHtml(lotSize)}</div>
           </div>
           <div style="display:flex; gap:6px; align-items:center;">
             ${typeBadge}
@@ -2951,13 +2959,13 @@ function renderOptionTradeSuggestions(optData) {
         <div class="opt-sug-grid">
           <div class="opt-sug-cell"><span class="lbl">ACTION</span><span class="val green">${escapeHtml(s.action || 'BUY')}</span></div>
           <div class="opt-sug-cell"><span class="lbl">ENTRY RANGE</span><span class="val cyan">${escapeHtml(s.entry_range || '')}</span></div>
-          <div class="opt-sug-cell"><span class="lbl">TARGET 1</span><span class="val green">${escapeHtml(s.target_1 || '')}</span></div>
-          <div class="opt-sug-cell"><span class="lbl">TARGET 2</span><span class="val green">${escapeHtml(s.target_2 || '')}</span></div>
-          <div class="opt-sug-cell"><span class="lbl">STOP LOSS</span><span class="val red-text">${escapeHtml(s.stop_loss || '')}</span></div>
-          <div class="opt-sug-cell"><span class="lbl">R:R RATIO</span><span class="val gold">${escapeHtml(s.rr_ratio || '1:2.5')}</span></div>
+          <div class="opt-sug-cell"><span class="lbl">TARGET 1</span><span class="val green">${escapeHtml(t1)}</span></div>
+          <div class="opt-sug-cell"><span class="lbl">TARGET 2</span><span class="val green">${escapeHtml(t2)}</span></div>
+          <div class="opt-sug-cell"><span class="lbl">STOP LOSS</span><span class="val red-text">${escapeHtml(sl)}</span></div>
+          <div class="opt-sug-cell"><span class="lbl">R:R RATIO</span><span class="val gold">${escapeHtml(rr)}</span></div>
         </div>
         <div class="opt-sug-pcr">
-          ⚡ <strong>PCR & Flow Confluence:</strong> ${escapeHtml(s.pcr_confluence || 'Strong order book delta and open interest confirmation.')}
+          ⚡ <strong>PCR & Flow Confluence:</strong> ${escapeHtml(confluence)}
         </div>
       </div>
     `;
