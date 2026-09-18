@@ -650,7 +650,19 @@ def get_user_terminal_data(user):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM user_trades WHERE user_id = ? AND status = 'open'", (user["id"],))
-    open_rows = [dict(r) for r in cursor.fetchall()]
+    raw_open_rows = [dict(r) for r in cursor.fetchall()]
+    
+    sl_pct = float(settings.get("hard_sl_pct", 2.0))
+    tp_pct = float(settings.get("take_profit_pct", 15.0))
+    open_rows = []
+    for r in raw_open_rows:
+        entry = float(r.get("entry_price", 0.0) or 0.0)
+        is_long = str(r.get("direction", "long")).lower() in ("long", "buy")
+        if "hard_sl" not in r or not r["hard_sl"] or float(r["hard_sl"]) <= 0:
+            r["hard_sl"] = round(entry * (1 - sl_pct/100) if is_long else entry * (1 + sl_pct/100), 4) if entry > 0 else 0
+        if "take_profit" not in r or not r["take_profit"] or float(r["take_profit"]) <= 0:
+            r["take_profit"] = round(entry * (1 + tp_pct/100) if is_long else entry * (1 - tp_pct/100), 4) if entry > 0 else 0
+        open_rows.append(r)
     
     cursor.execute("SELECT * FROM user_trades WHERE user_id = ? AND status = 'closed' ORDER BY closed_at DESC LIMIT 20", (user["id"],))
     closed_rows = [dict(r) for r in cursor.fetchall()]

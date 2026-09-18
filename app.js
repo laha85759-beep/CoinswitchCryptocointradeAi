@@ -705,9 +705,12 @@ function renderProChartLiveTrades(posData, tickers, userData) {
     }
   }
 
+  const validCs = (posData.coinswitch || []).filter(p => p && p.symbol && Number(p.entry_price || p.price || 0) > 0);
+  const validDelta = (posData.delta || []).filter(p => p && p.symbol && Number(p.entry_price || p.price || 0) > 0);
+
   const allPositions = [
-    ...(posData.coinswitch || []).map(p => ({...p, exchange: "CoinSwitch (Spot)"})),
-    ...(posData.delta || []).map(p => ({...p, exchange: "Delta (Futures)"}))
+    ...validCs.map(p => ({...p, exchange: "CoinSwitch (Spot)"})),
+    ...validDelta.map(p => ({...p, exchange: "Delta (Futures)"}))
   ];
 
   if (countBadge) {
@@ -740,33 +743,51 @@ function renderProChartLiveTrades(posData, tickers, userData) {
   tbody.innerHTML = allPositions.map(pos => {
     const sym = pos.symbol || "BTC/USDT";
     const dir = String(pos.direction || "long").toUpperCase();
-    const entryP = Number(pos.entry_price || 0);
-    const markP = Number(pos.mark_price || pos.entry_price || entryP);
+    const isLong = dir === "LONG" || dir === "BUY";
+    const entryP = Number(pos.entry_price || pos.price || 0);
+    const markP = Number(pos.mark_price || pos.current_price || entryP);
     const qty = Number(pos.qty || pos.quantity || 1.0);
     const margin = Number(pos.margin_used || (entryP * qty) || 0);
 
-    let pnl = Number(pos.unrealized_pnl !== undefined ? pos.unrealized_pnl : (dir === 'LONG' || dir === 'BUY' ? (markP - entryP) * qty : (entryP - markP) * qty));
+    let pnl = pos.unrealized_pnl !== undefined && pos.unrealized_pnl !== null && Number(pos.unrealized_pnl) !== 0
+      ? Number(pos.unrealized_pnl)
+      : (isLong ? (markP - entryP) * qty : (entryP - markP) * qty);
     totalUnrealized += pnl;
 
-    const pnlPct = entryP > 0 ? ((markP - entryP) / entryP * 100 * (dir === 'LONG' || dir === 'BUY' ? 1 : -1)) : 0;
+    const pnlPct = entryP > 0 ? ((markP - entryP) / entryP * 100 * (isLong ? 1 : -1)) : 0.0;
     const pnlClass = pnl >= 0 ? "green-text" : "red-text";
     const pnlPrefix = pnl >= 0 ? "+$" : "-$";
 
-    const tpStr = Number(pos.take_profit || 0) > 0 ? `$${Number(pos.take_profit).toFixed(4)}` : "--";
-    const slStr = Number(pos.hard_sl || 0) > 0 ? `$${Number(pos.hard_sl).toFixed(4)}` : "--";
+    let slVal = Number(pos.hard_sl || pos.stop_loss || 0);
+    if (slVal <= 0 && entryP > 0) {
+      slVal = isLong ? entryP * (1 - 0.02) : entryP * (1 + 0.02);
+    }
+
+    let tpVal = Number(pos.take_profit || 0);
+    if (tpVal <= 0 && entryP > 0) {
+      tpVal = isLong ? entryP * (1 + 0.15) : entryP * (1 - 0.15);
+    }
+
+    const fmtPrice = (num) => {
+      if (num <= 0) return "--";
+      if (num >= 1000) return `$${num.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+      if (num >= 1) return `$${num.toFixed(4)}`;
+      return `$${num.toFixed(6)}`;
+    };
+
     const trailStr = pos.trail_active ? `<span class="green-text">🟢 ACTIVE (+0.2%)</span>` : `<span style="color:var(--text-muted);">ARMED</span>`;
 
     return `
       <tr>
         <td><span class="live-tag">${pos.exchange}</span></td>
         <td><strong>${sym}</strong></td>
-        <td><span class="${dir === 'LONG' || dir === 'BUY' ? 'green-text' : 'red-text'} font-mono">${dir}</span></td>
-        <td>$${entryP.toFixed(4)}</td>
-        <td><strong>$${markP.toFixed(4)}</strong></td>
+        <td><span class="${isLong ? 'green-text' : 'red-text'} font-mono font-bold">${dir}</span></td>
+        <td>${fmtPrice(entryP)}</td>
+        <td><strong>${fmtPrice(markP)}</strong></td>
         <td>$${margin.toFixed(2)} (${qty})</td>
         <td><strong class="${pnlClass}">${pnlPrefix}${Math.abs(pnl).toFixed(2)} (${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%)</strong></td>
-        <td class="green-text">${tpStr}</td>
-        <td class="red-text">${slStr}</td>
+        <td class="green-text font-mono">${fmtPrice(tpVal)}</td>
+        <td class="red-text font-mono">${fmtPrice(slVal)}</td>
         <td>${trailStr}</td>
         <td>
           <div style="display:flex; gap:6px; align-items:center;">
@@ -1694,31 +1715,76 @@ function updateTicker(elementId, val) {
 function renderPositionsTable(posData) {
   const tbody = document.getElementById("open-trades-tbody");
   const thead = document.getElementById("openTradesThead");
+  const badge = document.getElementById("pos-table-badge");
   if (!tbody) return;
 
+  const validCs = (posData.coinswitch || []).filter(p => p && p.symbol && Number(p.entry_price || p.price || 0) > 0);
+  const validDelta = (posData.delta || []).filter(p => p && p.symbol && Number(p.entry_price || p.price || 0) > 0);
+
   const allPositions = [
-    ...(posData.coinswitch || []).map(p => ({...p, exchange: "CoinSwitch (Spot)"})),
-    ...(posData.delta || []).map(p => ({...p, exchange: "Delta (Futures)"}))
+    ...validCs.map(p => ({...p, exchange: "CoinSwitch (Spot)"})),
+    ...validDelta.map(p => ({...p, exchange: "Delta (Futures)"}))
   ];
+
+  if (badge) {
+    badge.textContent = allPositions.length > 0 ? `${allPositions.length} RUNNING` : "SCANNING";
+  }
 
   const isUserLoggedIn = !!userToken;
 
   if (thead) {
     thead.innerHTML = isUserLoggedIn
-      ? `<tr><th>EXCHANGE</th><th>SYMBOL</th><th>TYPE</th><th>ENTRY</th><th>STOP LOSS</th><th>TAKE PROFIT</th><th>TRAILING STATUS</th><th>ACTION</th></tr>`
-      : `<tr><th>EXCHANGE</th><th>SYMBOL</th><th>TYPE</th><th>ENTRY</th><th>STOP LOSS</th><th>TAKE PROFIT</th><th>TRAILING STATUS</th></tr>`;
+      ? `<tr><th>EXCHANGE</th><th>SYMBOL</th><th>TYPE</th><th>ENTRY</th><th>RUNNING P&amp;L</th><th>STOP LOSS</th><th>TAKE PROFIT</th><th>TRAILING STATUS</th><th>ACTION</th></tr>`
+      : `<tr><th>EXCHANGE</th><th>SYMBOL</th><th>TYPE</th><th>ENTRY</th><th>RUNNING P&amp;L</th><th>STOP LOSS</th><th>TAKE PROFIT</th><th>TRAILING STATUS</th></tr>`;
   }
 
   if (allPositions.length === 0) {
-    const colSpan = isUserLoggedIn ? 8 : 7;
-    tbody.innerHTML = `<tr><td colspan="${colSpan}" class="text-center empty-state">No open positions. Autonomous scanner primed for high-conviction breakout setups.</td></tr>`;
+    const colSpan = isUserLoggedIn ? 9 : 8;
+    tbody.innerHTML = `<tr><td colspan="${colSpan}" class="text-center empty-state" style="padding:18px;">No open positions. Autonomous quantum scanner is actively monitoring liquidity blocks for momentum breakout entries.</td></tr>`;
     return;
   }
 
   tbody.innerHTML = allPositions.map(pos => {
+    const sym = pos.symbol || "BTC/USDT";
+    const dir = String(pos.direction || "long").toUpperCase();
+    const isLong = dir === "LONG" || dir === "BUY";
+    const entryP = Number(pos.entry_price || pos.price || 0);
+    const markP = Number(pos.mark_price || pos.current_price || entryP);
+    const qty = Number(pos.qty || pos.quantity || 1.0);
+
+    // Calculate Running PnL (Unrealized Profit & Loss)
+    let pnl = 0.0;
+    if (pos.unrealized_pnl !== undefined && pos.unrealized_pnl !== null && Number(pos.unrealized_pnl) !== 0) {
+      pnl = Number(pos.unrealized_pnl);
+    } else if (entryP > 0) {
+      pnl = isLong ? (markP - entryP) * qty : (entryP - markP) * qty;
+    }
+
+    const pnlPct = entryP > 0 ? ((markP - entryP) / entryP * 100 * (isLong ? 1 : -1)) : 0.0;
+    const pnlClass = pnl >= 0 ? "green-text" : "red-text";
+    const pnlPrefix = pnl >= 0 ? "+$" : "-$";
+
+    // Dynamic SL & TP computation if 0 or missing
+    let slVal = Number(pos.hard_sl || pos.stop_loss || 0);
+    if (slVal <= 0 && entryP > 0) {
+      slVal = isLong ? entryP * (1 - 0.02) : entryP * (1 + 0.02);
+    }
+
+    let tpVal = Number(pos.take_profit || 0);
+    if (tpVal <= 0 && entryP > 0) {
+      tpVal = isLong ? entryP * (1 + 0.15) : entryP * (1 - 0.15);
+    }
+
+    const fmtPrice = (num) => {
+      if (num <= 0) return "--";
+      if (num >= 1000) return `$${num.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+      if (num >= 1) return `$${num.toFixed(4)}`;
+      return `$${num.toFixed(6)}`;
+    };
+
     const actionCell = isUserLoggedIn ? `
       <td>
-        <button class="btn-trade-close-action" onclick="handleUserClosePosition('${pos.id || ''}', '${pos.symbol}', '${pos.exchange}')" title="Close ${pos.symbol} Position">
+        <button class="btn-trade-close-action" onclick="handleUserClosePosition('${pos.id || ''}', '${sym}', '${pos.exchange}')" title="Close ${sym} Position">
           <span>✕ CLOSE</span>
         </button>
       </td>
@@ -1727,11 +1793,12 @@ function renderPositionsTable(posData) {
     return `
       <tr>
         <td><span class="live-tag">${pos.exchange}</span></td>
-        <td><strong>${pos.symbol}</strong></td>
-        <td><span class="${pos.direction === 'buy' || pos.direction === 'long' ? 'green-text' : 'red-text'}">${pos.direction.toUpperCase()}</span></td>
-        <td>$${Number(pos.entry_price).toFixed(4)}</td>
-        <td class="red-text">$${Number(pos.hard_sl || 0).toFixed(4)}</td>
-        <td class="green-text">$${Number(pos.take_profit || 0).toFixed(4)}</td>
+        <td><strong>${sym}</strong></td>
+        <td><span class="${isLong ? 'green-text' : 'red-text'} font-mono font-bold">${dir}</span></td>
+        <td>${fmtPrice(entryP)}</td>
+        <td><strong class="${pnlClass} font-mono">${pnlPrefix}${Math.abs(pnl).toFixed(2)} (${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%)</strong></td>
+        <td class="red-text font-mono">${fmtPrice(slVal)}</td>
+        <td class="green-text font-mono">${fmtPrice(tpVal)}</td>
         <td><span class="green-text">${pos.trail_active ? '🟢 ACTIVE (+0.2%)' : 'ARMED'}</span></td>
         ${actionCell}
       </tr>

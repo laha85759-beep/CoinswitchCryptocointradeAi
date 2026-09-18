@@ -328,20 +328,25 @@ def get_terminal_data():
                         unrealized = float(unrealized_raw or 0)
                         liq_price = float(pos.get("liquidation_price", 0) or 0)
                         mark_price = float(pos.get("mark_price", 0) or 0)
-                        prod_dict = pos.get("product", {}) if isinstance(pos.get("product"), dict) else {}
                         cv = float(prod_dict.get("contract_value", 1.0) or 1.0)
                         cashflow = abs(float(pos.get("realized_cashflow", 0) or 0))
                         margin = float(pos.get("margin", 0) or pos.get("position_margin", 0) or 0)
                         if margin <= 0:
                             margin = cashflow if cashflow > 0 else (entry_p * abs(sz) * cv)
                         
+                        is_long = sz > 0
+                        sl_calc = round(entry_p * (1 - 0.02) if is_long else entry_p * (1 + 0.02), 4) if entry_p > 0 else 0
+                        tp_calc = round(entry_p * (1 + 0.15) if is_long else entry_p * (1 - 0.15), 4) if entry_p > 0 else 0
+
                         parsed_positions.append({
                             "symbol": sym_name,
-                            "direction": "long" if sz > 0 else "short",
+                            "direction": "long" if is_long else "short",
                             "qty": abs(sz),
                             "quantity": abs(sz),
                             "entry_price": entry_p,
                             "mark_price": round(mark_price, 4),
+                            "hard_sl": sl_calc,
+                            "take_profit": tp_calc,
                             "liquidation_price": round(liq_price, 4),
                             "margin_used": round(margin, 4),
                             "unrealized_pnl": round(unrealized, 4),
@@ -353,30 +358,14 @@ def get_terminal_data():
             except Exception as exc:
                 log.warning("Failed to fetch live Delta positions: %s", exc)
 
-        # Also populate non-dust CoinSwitch spot holdings as live positions
-        if cs_client is not None and not open_cs:
-            try:
-                portfolio = cs_client.get_portfolio()
-                for item in portfolio:
-                    curr = str(item.get("currency", "")).upper()
-                    if curr not in ("USDT", "INR", ""):
-                        bal = float(item.get("main_balance", 0) or 0)
-                        val = float(item.get("current_value", 0) or 0)
-                        if bal > 0 and val > 0.1:
-                            open_cs.append({
-                                "symbol": f"{curr}/USDT",
-                                "direction": "long",
-                                "qty": bal,
-                                "quantity": bal,
-                                "entry_price": round(val / bal, 4) if bal > 0 else 0,
-                                "mark_price": round(val / bal, 4) if bal > 0 else 0,
-                                "unrealized_pnl": 0.0,
-                                "margin_used": round(val, 2),
-                                "exchange": "coinswitch",
-                                "paper": False
-                            })
-            except Exception as cs_spot_err:
-                log.warning("Failed to parse CoinSwitch spot portfolio: %s", cs_spot_err)
+        # For real open CoinSwitch trades, compute proper SL & TP
+        for p in open_cs:
+            entry_p = float(p.get("entry_price", 0) or 0)
+            is_long = str(p.get("direction", "long")).lower() in ("long", "buy")
+            if not p.get("hard_sl") or float(p.get("hard_sl", 0)) <= 0:
+                p["hard_sl"] = round(entry_p * (1 - 0.02) if is_long else entry_p * (1 + 0.02), 4) if entry_p > 0 else 0
+            if not p.get("take_profit") or float(p.get("take_profit", 0)) <= 0:
+                p["take_profit"] = round(entry_p * (1 + 0.15) if is_long else entry_p * (1 - 0.15), 4) if entry_p > 0 else 0
 
         # Fetch LIVE Active Open Orders from both exchanges
         open_orders = []

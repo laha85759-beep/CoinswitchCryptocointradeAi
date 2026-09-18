@@ -61,7 +61,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=121.0">
+  <link rel="stylesheet" href="styles.css?v=122.0">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -485,15 +485,15 @@
         <div class="tsm-panel">
           <div class="tsm-panel-header">
             <div class="tsm-panel-title">💼 LIVE ACTIVE POSITIONS</div>
-            <span class="tsm-badge-cyan" id="pos-table-badge">1 RUNNING</span>
+            <span class="tsm-badge-cyan" id="pos-table-badge">SCANNING</span>
           </div>
           <div class="tsm-table-wrap">
             <table class="tsm-table">
               <thead id="openTradesThead">
-                <tr id="openTradesHeaderRow"><th>EXCHANGE</th><th>SYMBOL</th><th>TYPE</th><th>ENTRY</th><th>STOP LOSS</th><th>TAKE PROFIT</th><th>TRAILING STATUS</th></tr>
+                <tr id="openTradesHeaderRow"><th>EXCHANGE</th><th>SYMBOL</th><th>TYPE</th><th>ENTRY</th><th>RUNNING P&amp;L</th><th>STOP LOSS</th><th>TAKE PROFIT</th><th>TRAILING STATUS</th></tr>
               </thead>
               <tbody id="open-trades-tbody">
-                <tr><td colspan="7" class="text-center empty-state">Active scan in progress...</td></tr>
+                <tr><td colspan="8" class="text-center empty-state">Active scan in progress...</td></tr>
               </tbody>
             </table>
           </div>
@@ -2588,6 +2588,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=121.0"></script>
+  <script src="app.js?v=122.0"></script>
 </body>
 </html>
