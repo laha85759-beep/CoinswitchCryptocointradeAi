@@ -225,10 +225,13 @@ CONFIG = {
     "options_take_profit_pct":       _float_env("OPTIONS_TAKE_PROFIT_PCT", 100.0), # +100% TP on options premium
 }
 
-# ── Isolate proxy configuration to prevent affecting other clients (CoinSwitch / Telegram) ──
-_default_proxy = "http://hlyccewc:astbozgtek08@31.59.20.176:6754"
-CONFIG["http_proxy"] = os.environ.pop("HTTP_PROXY", os.environ.pop("http_proxy", _default_proxy))
-CONFIG["https_proxy"] = os.environ.pop("HTTPS_PROXY", os.environ.pop("https_proxy", _default_proxy))
+# ── Clear OS proxy variables to prevent proxy errors ──
+os.environ.pop("HTTP_PROXY", None)
+os.environ.pop("HTTPS_PROXY", None)
+os.environ.pop("http_proxy", None)
+os.environ.pop("https_proxy", None)
+CONFIG["http_proxy"] = os.getenv("CUSTOM_HTTP_PROXY", None)
+CONFIG["https_proxy"] = os.getenv("CUSTOM_HTTPS_PROXY", None)
 
 # ── Load config override if exists ──
 _override_path = os.path.join(os.path.dirname(__file__), "config_override.json")

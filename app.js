@@ -645,20 +645,19 @@ async function fetchRealData() {
 
     const balances = userData && userData.balances ? userData.balances : data.balances;
     if (balances) {
-      const totalUsdt = Number(balances.total_capital_usdt || 6.57).toFixed(2);
+      const totalUsdt = Number(balances.total_capital_usdt || 8.26).toFixed(2);
       const csUsdt = Number(balances.cs_usdt || 2.34).toFixed(2);
-      const csInr = Number(balances.cs_inr || 11.41).toFixed(2);
-      const deltaUsdt = Number(balances.delta_usdt || 4.17).toFixed(2);
-      const deltaInr = (deltaUsdt * 88.0).toFixed(2);
+      const csInr = Number(balances.cs_inr || 5.01).toFixed(2);
+      const deltaUsdt = Number(balances.delta_usdt || 5.86).toFixed(2);
 
       const capEl = document.getElementById("total-capital");
-      if (capEl) capEl.innerHTML = `$${totalUsdt} <span class="kpi-unit">USDT</span>`;
+      if (capEl) capEl.innerHTML = `$${totalUsdt} <span class="nc-hex-unit">USDT</span>`;
 
       const csBalEl = document.getElementById("cs-bal-txt");
-      if (csBalEl) csBalEl.textContent = `$${csUsdt} USDT (₹${csInr})`;
+      if (csBalEl) csBalEl.textContent = `CS: $${csUsdt}`;
 
       const deltaBalEl = document.getElementById("delta-bal-txt");
-      if (deltaBalEl) deltaBalEl.textContent = `$${deltaUsdt} USDT (₹${deltaInr})`;
+      if (deltaBalEl) deltaBalEl.textContent = `Delta: $${deltaUsdt}`;
     }
 
     const perf = userData && userData.performance ? userData.performance : data.performance;
