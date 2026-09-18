@@ -7,6 +7,7 @@ import json
 from security import verify_jwt_token, create_jwt_token
 from database import (
     create_user, authenticate_user, get_user_by_id, sync_supabase_user,
+    generate_password_reset_token, verify_and_reset_password,
     save_user_api_keys, get_user_api_keys,
     get_user_settings, save_user_settings,
     get_all_users_for_admin, get_user_crm_profile,
@@ -14,6 +15,7 @@ from database import (
     get_affiliate_analytics, get_sales_analytics,
     track_affiliate_click, record_sale, get_db
 )
+from email_service import send_welcome_email, send_password_reset_email, send_inquiry_confirmation
 from coinswitch_client import CoinSwitchClient
 from delta_client import DeltaClient
 
@@ -65,12 +67,37 @@ def register():
     email = data.get("email", "").strip()
     password = data.get("password", "")
     name = data.get("name", "").strip()
+    phone = data.get("phone", "").strip()
+    country = data.get("country", "US").strip()
+    preferred_exchange = data.get("preferred_exchange", "both").strip()
     referral_code = data.get("ref", "").strip() or request.cookies.get("referral_code", "").strip()
     
-    user, error = create_user(email, password, name, referral_code, role="trader")
+    user, error = create_user(
+        email=email,
+        password=password,
+        name=name,
+        referral_code=referral_code,
+        role="trader",
+        phone=phone,
+        country=country,
+        preferred_exchange=preferred_exchange
+    )
     if error:
         return jsonify({"status": "error", "message": error}), 400
     
+    # Send branded welcome & account confirmation email from support@thesmartmag.com
+    try:
+        send_welcome_email(
+            to_email=user["email"],
+            name=user["name"],
+            role=user["role"],
+            phone=phone,
+            country=country,
+            preferred_exchange=preferred_exchange
+        )
+    except Exception as em_err:
+        pass
+
     token = create_jwt_token({"user_id": user["id"], "email": user["email"], "role": user["role"]})
     return jsonify({
         "status": "success",
@@ -126,11 +153,82 @@ def forgot_password():
     data = request.get_json() or {}
     email = data.get("email", "").strip().lower()
     if not email or "@" not in email:
-        return jsonify({"status": "error", "message": "Please provide a valid email address."}), 400
+        return jsonify({"status": "error", "message": "Please provide a valid trader email address."}), 400
+    
+    otp_code, token, user_data = generate_password_reset_token(email)
+    if not user_data:
+        # Don't leak user enumeration in production, but provide clear message
+        return jsonify({
+            "status": "success",
+            "message": f"If an account exists for {email}, a 6-digit verification code has been dispatched from support@thesmartmag.com."
+        })
+    
+    # Send password reset email from support@thesmartmag.com
+    send_password_reset_email(
+        to_email=email,
+        name=user_data.get("name", "Trader"),
+        otp_code=otp_code,
+        reset_token=token
+    )
     
     return jsonify({
         "status": "success",
-        "message": f"Password reset instructions dispatched to {email}."
+        "message": f"A 6-digit verification code has been dispatched to {email} from support@thesmartmag.com. Please check your inbox."
+    })
+
+@api_bp.route("/api/auth/reset-password", methods=["POST"])
+def reset_password():
+    data = request.get_json() or {}
+    email = data.get("email", "").strip().lower()
+    token_code = data.get("token_code", "").strip() or data.get("otp_code", "").strip() or data.get("code", "").strip()
+    new_password = data.get("new_password", "")
+    
+    if not email or not token_code:
+        return jsonify({"status": "error", "message": "Email and 6-digit verification code are required."}), 400
+    if len(new_password) < 6:
+        return jsonify({"status": "error", "message": "New password must be at least 6 characters long."}), 400
+        
+    ok, msg = verify_and_reset_password(email, token_code, new_password)
+    if not ok:
+        return jsonify({"status": "error", "message": msg}), 400
+        
+    return jsonify({
+        "status": "success",
+        "message": "Password updated successfully. You can now log into your trading account."
+    })
+
+@api_bp.route("/api/contact/submit", methods=["POST"])
+def contact_submit():
+    data = request.get_json() or {}
+    name = data.get("name", "Trader").strip()
+    email = data.get("email", "").strip()
+    subject = data.get("subject", "General Inquiry").strip()
+    message = data.get("message", "").strip()
+    
+    if not email:
+        return jsonify({"status": "error", "message": "Email address is required."}), 400
+        
+    send_inquiry_confirmation(email, name, subject, sender_type="contact")
+    return jsonify({
+        "status": "success",
+        "message": "Thank you for reaching out! A confirmation has been sent to your email from contact@thesmartmag.com."
+    })
+
+@api_bp.route("/api/query/submit", methods=["POST"])
+def query_submit():
+    data = request.get_json() or {}
+    name = data.get("name", "Trader").strip()
+    email = data.get("email", "").strip()
+    subject = data.get("subject", "Technical Support Ticket").strip()
+    message = data.get("message", "").strip()
+    
+    if not email:
+        return jsonify({"status": "error", "message": "Email address is required."}), 400
+        
+    send_inquiry_confirmation(email, name, subject, sender_type="query")
+    return jsonify({
+        "status": "success",
+        "message": "Support query ticket logged! Our quant engineering team will respond from query@thesmartmag.com."
     })
 
 @api_bp.route("/api/admin/login", methods=["POST"])

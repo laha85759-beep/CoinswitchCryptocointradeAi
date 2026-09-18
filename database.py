@@ -26,7 +26,11 @@ def init_db():
         is_active INTEGER DEFAULT 1,
         referred_by_code TEXT DEFAULT "",
         supabase_id TEXT DEFAULT "",
+        phone TEXT DEFAULT "",
         country TEXT DEFAULT "US",
+        preferred_exchange TEXT DEFAULT "both",
+        reset_token TEXT DEFAULT "",
+        reset_token_expires INTEGER DEFAULT 0,
         plan_name TEXT DEFAULT "free",
         created_at INTEGER
     )
@@ -170,7 +174,11 @@ def init_db():
         for col_def, col_name in [
             ("referred_by_code TEXT DEFAULT ''", "referred_by_code"),
             ("supabase_id TEXT DEFAULT ''", "supabase_id"),
+            ("phone TEXT DEFAULT ''", "phone"),
             ("country TEXT DEFAULT 'US'", "country"),
+            ("preferred_exchange TEXT DEFAULT 'both'", "preferred_exchange"),
+            ("reset_token TEXT DEFAULT ''", "reset_token"),
+            ("reset_token_expires INTEGER DEFAULT 0", "reset_token_expires"),
             ("plan_name TEXT DEFAULT 'free'", "plan_name"),
         ]:
             if col_name not in existing_cols:
@@ -609,7 +617,7 @@ def get_superadmin_kpis() -> dict:
 
 
 # ── USER OPERATIONS & CRM ─────────────────────────────────────────────────────
-def create_user(email: str, password: str, name: str = "", referral_code: str = "", role: str = "trader") -> tuple[dict | None, str | None]:
+def create_user(email: str, password: str, name: str = "", referral_code: str = "", role: str = "trader", phone: str = "", country: str = "US", preferred_exchange: str = "both") -> tuple[dict | None, str | None]:
     email = email.strip().lower()
     if not email or "@" not in email:
         return None, "Invalid email address."
@@ -627,8 +635,8 @@ def create_user(email: str, password: str, name: str = "", referral_code: str = 
         now = int(time.time())
         pass_hash = hash_password(password)
         cursor.execute(
-            "INSERT INTO users (email, password_hash, name, role, is_active, referred_by_code, plan_name, created_at) VALUES (?, ?, ?, ?, 1, ?, 'free', ?)",
-            (email, pass_hash, name or email.split("@")[0], role or "trader", referral_code or "", now)
+            "INSERT INTO users (email, password_hash, name, role, is_active, referred_by_code, phone, country, preferred_exchange, plan_name, created_at) VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, 'free', ?)",
+            (email, pass_hash, name or email.split("@")[0], role or "trader", referral_code or "", phone or "", country or "US", preferred_exchange or "both", now)
         )
         user_id = cursor.lastrowid
         
@@ -652,6 +660,9 @@ def create_user(email: str, password: str, name: str = "", referral_code: str = 
             "email": email,
             "name": name or email.split("@")[0],
             "role": role or "trader",
+            "phone": phone or "",
+            "country": country or "US",
+            "preferred_exchange": preferred_exchange or "both",
             "is_active": 1,
             "plan_name": "free",
             "created_at": now
@@ -661,6 +672,62 @@ def create_user(email: str, password: str, name: str = "", referral_code: str = 
     except Exception as e:
         conn.close()
         return None, str(e)
+
+def generate_password_reset_token(email: str) -> tuple[str | None, str | None, dict | None]:
+    """Generates a 6-digit OTP code and a token for password reset."""
+    import random
+    import secrets
+    email = email.strip().lower()
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, name, email, role FROM users WHERE email = ?", (email,))
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        return None, None, None
+    
+    otp_code = f"{random.randint(100000, 999999)}"
+    token = secrets.token_hex(16)
+    expires = int(time.time()) + 900  # 15 minutes validity
+    
+    # Store the 6-digit code in reset_token column
+    cursor.execute("UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?", (otp_code, expires, row["id"]))
+    conn.commit()
+    conn.close()
+    
+    user_data = dict(row)
+    return otp_code, token, user_data
+
+def verify_and_reset_password(email: str, token_or_code: str, new_password: str) -> tuple[bool, str]:
+    """Verifies the reset code/token and updates the user password."""
+    email = email.strip().lower()
+    token_or_code = token_or_code.strip()
+    if len(new_password) < 6:
+        return False, "Password must be at least 6 characters."
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, reset_token, reset_token_expires FROM users WHERE email = ?", (email,))
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        return False, "User account not found."
+    
+    now = int(time.time())
+    if not row["reset_token"] or row["reset_token_expires"] < now:
+        conn.close()
+        return False, "Password reset code has expired or is invalid. Please request a new code."
+    
+    if str(row["reset_token"]).strip() != token_or_code:
+        conn.close()
+        return False, "Invalid verification code. Please check your email and try again."
+    
+    # Code is valid, update password
+    pass_hash = hash_password(new_password)
+    cursor.execute("UPDATE users SET password_hash = ?, reset_token = '', reset_token_expires = 0 WHERE id = ?", (pass_hash, row["id"]))
+    conn.commit()
+    conn.close()
+    return True, "Password has been reset successfully. You can now log in."
 
 def sync_supabase_user(supabase_id: str, email: str, name: str = "", referral_code: str = "", role: str = "trader") -> tuple[dict | None, str | None]:
     email = email.strip().lower()

@@ -990,53 +990,76 @@ function switchAuthTab(tab) {
   currentAuthTab = tab;
   const loginTab = document.getElementById("authTabLogin");
   const regTab = document.getElementById("authTabRegister");
-  const forgotTab = document.getElementById("authTabForgot");
-  const magicTab = document.getElementById("authTabMagic");
 
   const nameField = document.getElementById("authNameField");
-  const refField = document.getElementById("authRefField");
+  const emailField = document.getElementById("authEmailField");
+  const phoneField = document.getElementById("authPhoneField");
+  const countryField = document.getElementById("authCountryField");
+  const exchangeField = document.getElementById("authExchangeField");
   const passField = document.getElementById("authPasswordField");
+  const passConfirmField = document.getElementById("authPasswordConfirmField");
+  const refField = document.getElementById("authRefField");
+  const forgotLink = document.getElementById("authForgotLink");
   const roleBadge = document.getElementById("authTraderRoleBadge");
   const socialGroup = document.getElementById("authSocialLoginGroup");
+  const authForm = document.getElementById("authForm");
+  const resetSection = document.getElementById("authResetPasswordSection");
   const submitBtn = document.getElementById("authSubmitBtn");
   const statusMsg = document.getElementById("authStatusMsg");
 
   if (statusMsg) { statusMsg.textContent = ""; statusMsg.style.color = ""; }
 
-  [loginTab, regTab, forgotTab, magicTab].forEach(t => { if (t) t.classList.remove("active"); });
+  if (loginTab) loginTab.classList.remove("active");
+  if (regTab) regTab.classList.remove("active");
 
   if (tab === "login") {
     if (loginTab) loginTab.classList.add("active");
-    if (nameField) nameField.style.display = "none";
-    if (refField) refField.style.display = "none";
-    if (passField) passField.style.display = "block";
-    if (roleBadge) roleBadge.style.display = "none";
+    if (authForm) authForm.style.display = "flex";
+    if (resetSection) resetSection.style.display = "none";
     if (socialGroup) socialGroup.style.display = "block";
-    if (submitBtn) submitBtn.textContent = "SIGN IN TO TERMINAL";
+    if (roleBadge) roleBadge.style.display = "none";
+
+    if (nameField) nameField.style.display = "none";
+    if (phoneField) phoneField.style.display = "none";
+    if (countryField) countryField.style.display = "none";
+    if (exchangeField) exchangeField.style.display = "none";
+    if (passConfirmField) passConfirmField.style.display = "none";
+    if (refField) refField.style.display = "none";
+
+    if (emailField) emailField.style.display = "block";
+    if (passField) passField.style.display = "block";
+    if (forgotLink) forgotLink.style.display = "inline-block";
+
+    if (submitBtn) submitBtn.textContent = "ENTER TRADING TERMINAL";
   } else if (tab === "register") {
     if (regTab) regTab.classList.add("active");
-    if (nameField) nameField.style.display = "block";
-    if (refField) refField.style.display = "block";
-    if (passField) passField.style.display = "block";
-    if (roleBadge) roleBadge.style.display = "flex";
+    if (authForm) authForm.style.display = "flex";
+    if (resetSection) resetSection.style.display = "none";
     if (socialGroup) socialGroup.style.display = "block";
-    if (submitBtn) submitBtn.textContent = "CREATE TRADER ACCOUNT";
+    if (roleBadge) roleBadge.style.display = "flex";
+
+    if (nameField) nameField.style.display = "block";
+    if (phoneField) phoneField.style.display = "block";
+    if (countryField) countryField.style.display = "block";
+    if (exchangeField) exchangeField.style.display = "block";
+    if (passConfirmField) passConfirmField.style.display = "block";
+    if (refField) refField.style.display = "block";
+
+    if (emailField) emailField.style.display = "block";
+    if (passField) passField.style.display = "block";
+    if (forgotLink) forgotLink.style.display = "none";
+
+    if (submitBtn) submitBtn.textContent = "CREATE TRADER ACCOUNT & ACCESS TERMINAL";
   } else if (tab === "forgot") {
-    if (forgotTab) forgotTab.classList.add("active");
-    if (nameField) nameField.style.display = "none";
-    if (refField) refField.style.display = "none";
-    if (passField) passField.style.display = "none";
-    if (roleBadge) roleBadge.style.display = "none";
+    if (authForm) authForm.style.display = "none";
     if (socialGroup) socialGroup.style.display = "none";
-    if (submitBtn) submitBtn.textContent = "SEND PASSWORD RESET EMAIL";
-  } else if (tab === "magic") {
-    if (magicTab) magicTab.classList.add("active");
-    if (nameField) nameField.style.display = "none";
-    if (refField) refField.style.display = "none";
-    if (passField) passField.style.display = "none";
-    if (roleBadge) roleBadge.style.display = "none";
-    if (socialGroup) socialGroup.style.display = "none";
-    if (submitBtn) submitBtn.textContent = "SEND MAGIC LOGIN LINK";
+    if (resetSection) resetSection.style.display = "flex";
+
+    const mainEmail = document.getElementById("authEmail");
+    const resetReqEmail = document.getElementById("resetReqEmail");
+    if (mainEmail && resetReqEmail && mainEmail.value) {
+      resetReqEmail.value = mainEmail.value;
+    }
   }
 }
 
@@ -1044,87 +1067,71 @@ async function handleAuthSubmit(e) {
   e.preventDefault();
   const emailEl = document.getElementById("authEmail");
   const passEl = document.getElementById("authPassword");
+  const passConfirmEl = document.getElementById("authPasswordConfirm");
   const nameEl = document.getElementById("authName");
+  const phoneEl = document.getElementById("authPhone");
+  const countryEl = document.getElementById("authCountry");
+  const exchangeEl = document.getElementById("authPreferredExchange");
   const refEl = document.getElementById("authRefCode");
   const statusMsg = document.getElementById("authStatusMsg");
   const submitBtn = document.getElementById("authSubmitBtn");
 
   const email = emailEl ? emailEl.value.trim() : "";
   const password = passEl ? passEl.value.trim() : "";
+  const passConfirm = passConfirmEl ? passConfirmEl.value.trim() : "";
   const name = nameEl ? nameEl.value.trim() : "";
+  const phone = phoneEl ? phoneEl.value.trim() : "";
+  const country = countryEl ? countryEl.value.trim() : "US";
+  const preferred_exchange = exchangeEl ? exchangeEl.value.trim() : "both";
   const refCode = refEl ? refEl.value.trim() : "";
 
-  if (submitBtn) {
-    submitBtn.textContent = "PROCESSING...";
-    submitBtn.disabled = true;
-  }
   if (statusMsg) { statusMsg.textContent = ""; statusMsg.style.color = ""; }
 
-  // 1. Password Reset Handler
-  if (currentAuthTab === "forgot") {
-    try {
-      if (supabaseClient) {
-        await supabaseClient.auth.resetPasswordForEmail(email, {
-          redirectTo: window.location.origin
-        });
-      }
-      await fetch("/api/auth/forgot-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email })
-      });
-      if (statusMsg) {
-        statusMsg.textContent = "📧 Password reset email dispatched. Please check your inbox!";
-        statusMsg.style.color = "var(--neon-green)";
-      }
-    } catch (err) {
-      if (statusMsg) {
-        statusMsg.textContent = `Notice: ${err.message || err}`;
-        statusMsg.style.color = "var(--neon-pink)";
-      }
-    } finally {
-      if (submitBtn) {
-        submitBtn.textContent = "SEND PASSWORD RESET EMAIL";
-        submitBtn.disabled = false;
-      }
+  // Client validations
+  if (!email || !password) {
+    if (statusMsg) {
+      statusMsg.textContent = "Please provide your email and password.";
+      statusMsg.style.color = "var(--neon-pink, #ff3366)";
     }
     return;
   }
 
-  // 2. Magic Link Handler
-  if (currentAuthTab === "magic") {
-    try {
-      if (supabaseClient) {
-        const { error } = await supabaseClient.auth.signInWithOtp({
-          email: email,
-          options: { emailRedirectTo: window.location.origin }
-        });
-        if (error) throw error;
-      }
+  if (currentAuthTab === "register") {
+    if (password.length < 6) {
       if (statusMsg) {
-        statusMsg.textContent = "✨ Magic Login link dispatched. Check your email to sign in!";
-        statusMsg.style.color = "var(--neon-green)";
+        statusMsg.textContent = "Password must be at least 6 characters long.";
+        statusMsg.style.color = "var(--neon-pink, #ff3366)";
       }
-    } catch (err) {
-      if (statusMsg) {
-        statusMsg.textContent = `Notice: ${err.message || err}`;
-        statusMsg.style.color = "var(--neon-pink)";
-      }
-    } finally {
-      if (submitBtn) {
-        submitBtn.textContent = "SEND MAGIC LOGIN LINK";
-        submitBtn.disabled = false;
-      }
+      return;
     }
-    return;
+    if (passConfirm && password !== passConfirm) {
+      if (statusMsg) {
+        statusMsg.textContent = "Passwords do not match. Please verify.";
+        statusMsg.style.color = "var(--neon-pink, #ff3366)";
+      }
+      return;
+    }
   }
 
-  // 3. Register & Login Handlers
+  if (submitBtn) {
+    submitBtn.textContent = "CONNECTING TERMINAL...";
+    submitBtn.disabled = true;
+  }
+
   try {
     const endpoint = currentAuthTab === "login" ? "/api/auth/login" : "/api/auth/register";
     const payload = currentAuthTab === "login" 
       ? { email, password } 
-      : { name: name || email.split("@")[0], email, password, referral_code: refCode, role: "trader" };
+      : { 
+          name: name || email.split("@")[0], 
+          email, 
+          password, 
+          phone, 
+          country, 
+          preferred_exchange, 
+          ref: refCode, 
+          role: "trader" 
+        };
 
     const res = await fetch(endpoint, {
       method: "POST",
@@ -1148,25 +1155,219 @@ async function handleAuthSubmit(e) {
       }
 
       if (currentAuthTab === "register") {
+        // Welcome notification
+        showToast("🎉 Trader account created! Confirmation email dispatched from support@thesmartmag.com", "success");
         openExchangeKeysModal();
+      } else {
+        showToast(`Welcome back, ${data.user.name || "Trader"}!`, "success");
       }
     } else {
       if (statusMsg) {
-        statusMsg.textContent = data.message || "Authentication failed. Please check credentials.";
+        statusMsg.textContent = data.message || "Authentication failed. Please check your credentials.";
         statusMsg.style.color = "var(--neon-pink, #ff3366)";
       }
     }
   } catch (err) {
     if (statusMsg) {
-      statusMsg.textContent = "Network error connecting to auth service.";
+      statusMsg.textContent = "Network error connecting to auth service. Please check your internet connection.";
       statusMsg.style.color = "var(--neon-pink, #ff3366)";
     }
   } finally {
     if (submitBtn) {
-      submitBtn.textContent = currentAuthTab === "login" ? "SIGN IN TO TERMINAL" : "CREATE TRADER ACCOUNT";
+      submitBtn.textContent = currentAuthTab === "login" ? "ENTER TRADING TERMINAL" : "CREATE TRADER ACCOUNT & ACCESS TERMINAL";
       submitBtn.disabled = false;
     }
   }
+}
+
+async function handleSendResetCode() {
+  const emailEl = document.getElementById("resetReqEmail");
+  const btn = document.getElementById("btnSendResetCode");
+  const msg = document.getElementById("resetStatusMsg");
+  
+  const email = emailEl ? emailEl.value.trim() : "";
+  if (!email || !email.includes("@")) {
+    if (msg) {
+      msg.textContent = "Please enter a valid registered email address.";
+      msg.style.color = "var(--neon-pink, #ff3366)";
+    }
+    return;
+  }
+
+  if (btn) {
+    btn.textContent = "SENDING...";
+    btn.disabled = true;
+  }
+  if (msg) { msg.textContent = ""; msg.style.color = ""; }
+
+  try {
+    const res = await fetch("/api/auth/forgot-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+    if (msg) {
+      msg.textContent = data.message || "6-digit code dispatched from support@thesmartmag.com!";
+      msg.style.color = res.ok ? "var(--neon-green)" : "var(--neon-pink, #ff3366)";
+    }
+  } catch (err) {
+    if (msg) {
+      msg.textContent = "Network error requesting reset code.";
+      msg.style.color = "var(--neon-pink, #ff3366)";
+    }
+  } finally {
+    if (btn) {
+      btn.textContent = "RESEND CODE";
+      btn.disabled = false;
+    }
+  }
+}
+
+async function handleConfirmPasswordReset() {
+  const emailEl = document.getElementById("resetReqEmail");
+  const otpEl = document.getElementById("resetOtpCode");
+  const passEl = document.getElementById("resetNewPassword");
+  const confirmEl = document.getElementById("resetConfirmPassword");
+  const btn = document.getElementById("btnConfirmResetPass");
+  const msg = document.getElementById("resetStatusMsg");
+
+  const email = emailEl ? emailEl.value.trim() : "";
+  const code = otpEl ? otpEl.value.trim() : "";
+  const newPassword = passEl ? passEl.value.trim() : "";
+  const confirmPass = confirmEl ? confirmEl.value.trim() : "";
+
+  if (!email || !code || !newPassword) {
+    if (msg) {
+      msg.textContent = "Please fill in your email, 6-digit code, and new password.";
+      msg.style.color = "var(--neon-pink, #ff3366)";
+    }
+    return;
+  }
+
+  if (newPassword.length < 6) {
+    if (msg) {
+      msg.textContent = "New password must be at least 6 characters long.";
+      msg.style.color = "var(--neon-pink, #ff3366)";
+    }
+    return;
+  }
+
+  if (confirmPass && newPassword !== confirmPass) {
+    if (msg) {
+      msg.textContent = "Passwords do not match.";
+      msg.style.color = "var(--neon-pink, #ff3366)";
+    }
+    return;
+  }
+
+  if (btn) {
+    btn.textContent = "UPDATING PASSWORD...";
+    btn.disabled = true;
+  }
+  if (msg) { msg.textContent = ""; msg.style.color = ""; }
+
+  try {
+    const res = await fetch("/api/auth/reset-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        token_code: code,
+        new_password: newPassword
+      })
+    });
+    const data = await res.json();
+
+    if (res.ok && data.status === "success") {
+      if (msg) {
+        msg.textContent = "✅ Password reset successfully! Logging into trading terminal...";
+        msg.style.color = "var(--neon-green)";
+      }
+      // Attempt auto-login with new password
+      setTimeout(async () => {
+        try {
+          const loginRes = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password: newPassword })
+          });
+          const loginData = await loginRes.json();
+          if (loginRes.ok && loginData.status === "success") {
+            userToken = loginData.token;
+            localStorage.setItem("tsm_user_token", userToken);
+            currentUser = loginData.user;
+            closeAuthModal();
+            initUserSession();
+            fetchRealData();
+            showToast("Password reset & logged in successfully!", "success");
+          } else {
+            switchAuthTab("login");
+          }
+        } catch (_) {
+          switchAuthTab("login");
+        }
+      }, 1000);
+    } else {
+      if (msg) {
+        msg.textContent = data.message || "Failed to reset password. Please check your verification code.";
+        msg.style.color = "var(--neon-pink, #ff3366)";
+      }
+    }
+  } catch (err) {
+    if (msg) {
+      msg.textContent = "Network error processing password reset.";
+      msg.style.color = "var(--neon-pink, #ff3366)";
+    }
+  } finally {
+    if (btn) {
+      btn.textContent = "RESET PASSWORD & LOGIN";
+      btn.disabled = false;
+    }
+  }
+}
+
+// Helper Toast Notification Function
+function showToast(message, type = "info") {
+  const existing = document.getElementById("tsm-toast-notification");
+  if (existing) existing.remove();
+
+  const toast = document.createElement("div");
+  toast.id = "tsm-toast-notification";
+  toast.style.position = "fixed";
+  toast.style.bottom = "24px";
+  toast.style.right = "24px";
+  toast.style.zIndex = "99999";
+  toast.style.padding = "12px 18px";
+  toast.style.borderRadius = "6px";
+  toast.style.fontFamily = "var(--font-mono, monospace)";
+  toast.style.fontSize = "11.5px";
+  toast.style.fontWeight = "700";
+  toast.style.boxShadow = "0 8px 24px rgba(0,0,0,0.6)";
+  toast.style.display = "flex";
+  toast.style.alignItems = "center";
+  toast.style.gap = "8px";
+  toast.style.animation = "modal-pop 0.25s ease";
+
+  if (type === "success") {
+    toast.style.background = "rgba(4, 28, 18, 0.95)";
+    toast.style.border = "1.5px solid var(--neon-green, #00f090)";
+    toast.style.color = "#00f090";
+  } else if (type === "error") {
+    toast.style.background = "rgba(28, 4, 12, 0.95)";
+    toast.style.border = "1.5px solid var(--neon-pink, #ff3366)";
+    toast.style.color = "#ff3366";
+  } else {
+    toast.style.background = "rgba(4, 18, 30, 0.95)";
+    toast.style.border = "1.5px solid var(--neon-cyan, #00d4ff)";
+    toast.style.color = "#00d4ff";
+  }
+
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    if (toast.parentNode) toast.remove();
+  }, 4500);
 }
 
 // Legacy Aliases
