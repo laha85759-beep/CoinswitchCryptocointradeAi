@@ -4375,6 +4375,69 @@ body.neural-core-os {
   color: var(--neon-red);
 }
 
+.pro-order-auth-notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, rgba(255, 51, 102, 0.12), rgba(168, 85, 247, 0.1));
+  border: 1.5px dashed rgba(255, 51, 102, 0.5);
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.pro-order-auth-notice:hover {
+  background: linear-gradient(135deg, rgba(255, 51, 102, 0.2), rgba(168, 85, 247, 0.2));
+  border-color: var(--neon-pink);
+  box-shadow: 0 0 15px rgba(255, 51, 102, 0.3);
+}
+
+.pro-order-auth-notice .lock-icon {
+  font-size: 18px;
+}
+
+.pro-order-auth-notice .lock-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-main);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.btn-execute-pro-order.auth-locked {
+  background: linear-gradient(135deg, rgba(255, 51, 102, 0.35), rgba(168, 85, 247, 0.35)) !important;
+  border: 1px solid var(--neon-pink) !important;
+  color: #fff !important;
+  box-shadow: 0 0 12px rgba(255, 51, 102, 0.3) !important;
+}
+
+.btn-trade-close-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(255, 51, 102, 0.15);
+  border: 1px solid rgba(255, 51, 102, 0.4);
+  color: #ff4d79;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-trade-close-action:hover {
+  background: rgba(255, 51, 102, 0.35);
+  border-color: #ff3366;
+  color: #fff;
+  box-shadow: 0 0 10px rgba(255, 51, 102, 0.4);
+}
+
+
 
 
 

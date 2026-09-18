@@ -505,6 +505,76 @@ async function handleProChartOrderSubmit(e) {
   }
 }
 
+async function handleUserClosePosition(tradeId, symbol, exchange) {
+  if (!userToken) {
+    openAuthModal();
+    const loginMsg = document.getElementById("authStatusMsg");
+    if (loginMsg) {
+      loginMsg.textContent = "🔒 Login Required: You must be logged in to close live positions.";
+      loginMsg.style.color = "var(--neon-red)";
+    }
+    return;
+  }
+
+  const cleanEx = (exchange || "").toLowerCase().includes("delta") ? "delta" : ((exchange || "").toLowerCase().includes("coinswitch") ? "coinswitch" : (exchange || "").toLowerCase());
+  const confirmed = confirm(`Are you sure you want to CLOSE your ${symbol} position on ${exchange || 'connected broker'}?`);
+  if (!confirmed) return;
+
+  try {
+    const res = await fetch("/api/user/close-trade", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${userToken}`
+      },
+      body: JSON.stringify({ trade_id: tradeId, symbol: symbol, exchange: cleanEx })
+    });
+    const data = await res.json();
+    if (res.ok && data.status === "success") {
+      alert(`✅ ${data.message || 'Position closed successfully.'}`);
+      fetchRealData();
+    } else {
+      alert(`⚠️ ${data.message || 'Failed to close position.'}`);
+    }
+  } catch (err) {
+    alert(`❌ Connection error: ${err.message || err}`);
+  }
+}
+
+async function handleUserCloseAllPositions() {
+  if (!userToken) {
+    openAuthModal();
+    const loginMsg = document.getElementById("authStatusMsg");
+    if (loginMsg) {
+      loginMsg.textContent = "🔒 Login Required: You must be logged in to close positions.";
+      loginMsg.style.color = "var(--neon-red)";
+    }
+    return;
+  }
+
+  const confirmed = confirm("Are you sure you want to CLOSE ALL your open positions across all connected brokers?");
+  if (!confirmed) return;
+
+  try {
+    const res = await fetch("/api/user/close-all", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${userToken}`
+      }
+    });
+    const data = await res.json();
+    if (res.ok && data.status === "success") {
+      alert(`✅ ${data.message || 'All positions closed successfully.'}`);
+      fetchRealData();
+    } else {
+      alert(`⚠️ ${data.message || 'Failed to close positions.'}`);
+    }
+  } catch (err) {
+    alert(`❌ Connection error: ${err.message || err}`);
+  }
+}
+
 function changeTvTimeframe(interval) {
   currentTvTimeframe = interval;
 
@@ -699,9 +769,14 @@ function renderProChartLiveTrades(posData, tickers, userData) {
         <td class="red-text">${slStr}</td>
         <td>${trailStr}</td>
         <td>
-          <button class="btn-chart-jump" onclick="jumpToProChartSymbol('${sym}')" title="Load ${sym} on TradingView Pro Chart">
-            <span>📈 VIEW</span>
-          </button>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <button class="btn-chart-jump" onclick="jumpToProChartSymbol('${sym}')" title="Load ${sym} on TradingView Pro Chart">
+              <span>📈 VIEW</span>
+            </button>
+            <button class="btn-trade-close-action" onclick="handleUserClosePosition('${pos.id || ''}', '${sym}', '${pos.exchange}')" title="Close ${sym} Position">
+              <span>✕ CLOSE</span>
+            </button>
+          </div>
         </td>
       </tr>
     `;
@@ -747,19 +822,30 @@ function updateUserUI(user, settings, exConnections) {
   const superAdminTab = document.getElementById("superAdminNavTab");
   const dockAdminBtn = document.getElementById("dockAdminBtn");
 
-  if (user) {
-    if (logoutBtn) logoutBtn.style.display = "flex";
-  } else {
-    if (logoutBtn) logoutBtn.style.display = "none";
-  }
+  const proExecBtn = document.getElementById("btnExecuteProOrder");
+  const proExecText = document.getElementById("btnExecuteProOrderText");
+  const authLockNotice = document.getElementById("proOrderAuthLockNotice");
 
   if (user) {
+    if (logoutBtn) logoutBtn.style.display = "flex";
     if (userTxt) userTxt.textContent = `👤 ${user.name || user.email.split('@')[0]}`;
     if (keysBtn) keysBtn.style.display = "flex";
     if (userPill) {
       userPill.title = `Logged in as ${user.email} (Click for settings & profile)`;
       userPill.onclick = () => openUserSettingsModal();
     }
+
+    if (proExecBtn) {
+      proExecBtn.classList.remove("auth-locked");
+      if (proOrderSide === "buy") {
+        proExecBtn.className = "btn-execute-pro-order buy";
+        if (proExecText) proExecText.textContent = "EXECUTE BUY ORDER";
+      } else {
+        proExecBtn.className = "btn-execute-pro-order sell";
+        if (proExecText) proExecText.textContent = "EXECUTE SELL SHORT ORDER";
+      }
+    }
+    if (authLockNotice) authLockNotice.style.display = "none";
 
     // STRICT ROLE CHECK: Only reveal Super Admin controls to authenticated superadmin
     if (user.role === "superadmin") {
@@ -772,6 +858,7 @@ function updateUserUI(user, settings, exConnections) {
       if (dockAdminBtn) dockAdminBtn.style.display = "none";
     }
   } else {
+    if (logoutBtn) logoutBtn.style.display = "none";
     if (userTxt) userTxt.textContent = "SIGN IN / JOIN";
     if (keysBtn) keysBtn.style.display = "none";
     if (adminNavBtn) adminNavBtn.style.display = "none";
@@ -781,6 +868,12 @@ function updateUserUI(user, settings, exConnections) {
       userPill.title = "Login or Create Trader Account";
       userPill.onclick = () => openAuthModal();
     }
+
+    if (proExecBtn) {
+      proExecBtn.className = "btn-execute-pro-order auth-locked";
+      if (proExecText) proExecText.textContent = "🔐 SIGN IN TO PLACE LIVE ORDERS";
+    }
+    if (authLockNotice) authLockNotice.style.display = "flex";
   }
 }
 
@@ -1240,7 +1333,11 @@ function renderPositionsTable(posData) {
       <td class="red-text">$${Number(pos.hard_sl || 0).toFixed(4)}</td>
       <td class="green-text">$${Number(pos.take_profit || 0).toFixed(4)}</td>
       <td><span class="green-text">${pos.trail_active ? '🟢 ACTIVE (+0.2%)' : 'ARMED'}</span></td>
-      <td><span class="live-pill">LIVE</span></td>
+      <td>
+        <button class="btn-trade-close-action" onclick="handleUserClosePosition('${pos.id || ''}', '${pos.symbol}', '${pos.exchange}')" title="Close ${pos.symbol} Position">
+          <span>✕ CLOSE</span>
+        </button>
+      </td>
     </tr>
   `).join("");
 }

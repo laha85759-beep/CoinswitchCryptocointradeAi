@@ -61,7 +61,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=118.0">
+  <link rel="stylesheet" href="styles.css?v=119.0">
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -489,10 +489,10 @@
           <div class="tsm-table-wrap">
             <table class="tsm-table">
               <thead>
-                <tr><th>EXCHANGE</th><th>SYMBOL</th><th>TYPE</th><th>ENTRY</th><th>STOP LOSS</th><th>TAKE PROFIT</th><th>STATUS</th></tr>
+                <tr><th>EXCHANGE</th><th>SYMBOL</th><th>TYPE</th><th>ENTRY</th><th>STOP LOSS</th><th>TAKE PROFIT</th><th>TRAILING STATUS</th><th>ACTION</th></tr>
               </thead>
               <tbody id="open-trades-tbody">
-                <tr><td colspan="7" class="text-center empty-state">Active scan in progress...</td></tr>
+                <tr><td colspan="8" class="text-center empty-state">Active scan in progress...</td></tr>
               </tbody>
             </table>
           </div>
@@ -1096,6 +1096,15 @@
               <span>🪙 COINSWITCH PRO (SPOT)</span>
             </label>
             <button type="button" class="btn-broker-all" onclick="selectAllBrokers()">⚡ BOTH BROKERS</button>
+          </div>
+        </div>
+
+        <!-- Auth Lock Notice (Visible when user is not logged in) -->
+        <div id="proOrderAuthLockNotice" class="pro-order-auth-notice" onclick="openAuthModal()" style="display:flex;">
+          <span class="lock-icon">🔒</span>
+          <div class="lock-text">
+            <strong>TRADER LOGIN REQUIRED TO PLACE OR CLOSE REAL ORDERS:</strong>
+            <span>You must sign in or create an account to route manual trades or manage positions. <u style="color:var(--neon-green); cursor:pointer;">Click here to Sign In / Register</u>.</span>
           </div>
         </div>
 
@@ -2578,6 +2587,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=118.0"></script>
+  <script src="app.js?v=119.0"></script>
 </body>
 </html>

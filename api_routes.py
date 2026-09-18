@@ -343,6 +343,146 @@ def execute_user_manual_trade(user):
             "errors": errors
         }), 400
 
+@api_bp.route("/api/user/close-trade", methods=["POST"])
+@user_required
+def user_close_trade(user):
+    data = request.get_json() or {}
+    trade_id = data.get("trade_id")
+    symbol = str(data.get("symbol") or "").strip().upper()
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    if trade_id:
+        cursor.execute("SELECT * FROM user_trades WHERE id = ? AND user_id = ? AND status = 'open'", (trade_id, user["id"]))
+    else:
+        cursor.execute("SELECT * FROM user_trades WHERE symbol = ? AND user_id = ? AND status = 'open' LIMIT 1", (symbol, user["id"]))
+    
+    trade = cursor.fetchone()
+    if not trade:
+        conn.close()
+        return jsonify({"status": "error", "message": "Open position not found or does not belong to your account."}), 404
+        
+    trade = dict(trade)
+    keys = get_user_api_keys(user["id"])
+    now_ts = int(time.time())
+    exit_price = float(trade["entry_price"])
+    realized_pnl = 0.0
+    
+    if trade["exchange"] == "delta" and keys["has_delta"]:
+        try:
+            d_client = DeltaClient(keys["delta_key"], keys["delta_secret"])
+            p_id = d_client.symbol_to_product_id(trade["symbol"])
+            if p_id:
+                opp_side = "sell" if trade["direction"] in ("buy", "long") else "buy"
+                d_client.place_order(symbol=trade["symbol"], side=opp_side, order_type="market", quantity=trade["qty"])
+                try:
+                    t_res = d_client._request("GET", f"/v2/tickers/{p_id}", auth=False, use_cdn=True)
+                    r_data = t_res.get("result", t_res)
+                    if isinstance(r_data, dict):
+                        exit_price = float(r_data.get("mark_price") or r_data.get("close") or exit_price)
+                except Exception:
+                    pass
+        except Exception as e:
+            pass
+
+    elif trade["exchange"] == "coinswitch" and keys["has_cs"]:
+        try:
+            cs_cl = CoinSwitchClient(keys["cs_key"], keys["cs_secret"])
+            opp_side = "sell" if trade["direction"] in ("buy", "long") else "buy"
+            cur_p = cs_cl.get_ticker_price(trade["symbol"])
+            if cur_p > 0:
+                exit_price = cur_p
+            cs_cl.place_order(symbol=trade["symbol"], side=opp_side, order_type="limit", quantity=trade["qty"], price=exit_price)
+        except Exception as e:
+            pass
+            
+    if trade["direction"] in ("buy", "long"):
+        realized_pnl = (exit_price - float(trade["entry_price"])) * float(trade["qty"])
+    else:
+        realized_pnl = (float(trade["entry_price"]) - exit_price) * float(trade["qty"])
+        
+    cursor.execute('''
+        UPDATE user_trades 
+        SET status = 'closed', exit_price = ?, realized_pnl = ?, closed_at = ?
+        WHERE id = ? AND user_id = ?
+    ''', (exit_price, round(realized_pnl, 4), now_ts, trade["id"], user["id"]))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({
+        "status": "success",
+        "message": f"Closed position in {trade['symbol']} on {trade['exchange'].upper()} with realized PnL: {'+' if realized_pnl >= 0 else ''}${round(realized_pnl, 2)} USDT.",
+        "realized_pnl": round(realized_pnl, 4),
+        "exit_price": exit_price
+    })
+
+@api_bp.route("/api/user/close-all", methods=["POST"])
+@user_required
+def user_close_all_trades(user):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM user_trades WHERE user_id = ? AND status = 'open'", (user["id"],))
+    open_trades = [dict(r) for r in cursor.fetchall()]
+    
+    if not open_trades:
+        conn.close()
+        return jsonify({"status": "success", "message": "No open positions to close for your account.", "closed_count": 0})
+        
+    keys = get_user_api_keys(user["id"])
+    now_ts = int(time.time())
+    closed_count = 0
+    total_pnl = 0.0
+    
+    d_client = None
+    if keys["has_delta"]:
+        try:
+            d_client = DeltaClient(keys["delta_key"], keys["delta_secret"])
+        except Exception:
+            pass
+            
+    cs_cl = None
+    if keys["has_cs"]:
+        try:
+            cs_cl = CoinSwitchClient(keys["cs_key"], keys["cs_secret"])
+        except Exception:
+            pass
+            
+    for trade in open_trades:
+        exit_price = float(trade["entry_price"])
+        if trade["exchange"] == "delta" and d_client:
+            try:
+                opp_side = "sell" if trade["direction"] in ("buy", "long") else "buy"
+                d_client.place_order(symbol=trade["symbol"], side=opp_side, order_type="market", quantity=trade["qty"])
+            except Exception:
+                pass
+        elif trade["exchange"] == "coinswitch" and cs_cl:
+            try:
+                opp_side = "sell" if trade["direction"] in ("buy", "long") else "buy"
+                cs_cl.place_order(symbol=trade["symbol"], side=opp_side, order_type="limit", quantity=trade["qty"], price=exit_price)
+            except Exception:
+                pass
+                
+        pnl = (exit_price - float(trade["entry_price"])) * float(trade["qty"]) if trade["direction"] in ("buy", "long") else (float(trade["entry_price"]) - exit_price) * float(trade["qty"])
+        total_pnl += pnl
+        
+        cursor.execute('''
+            UPDATE user_trades 
+            SET status = 'closed', exit_price = ?, realized_pnl = ?, closed_at = ?
+            WHERE id = ? AND user_id = ?
+        ''', (exit_price, round(pnl, 4), now_ts, trade["id"], user["id"]))
+        closed_count += 1
+        
+    conn.commit()
+    conn.close()
+    
+    return jsonify({
+        "status": "success",
+        "message": f"Closed all {closed_count} open positions for your account.",
+        "closed_count": closed_count,
+        "total_realized_pnl": round(total_pnl, 2)
+    })
+
 # ── 3. USER ISOLATED TERMINAL DATA ──────────────────────────────────────────
 @api_bp.route("/api/user/terminal-data", methods=["GET"])
 @user_required
