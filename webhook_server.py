@@ -142,6 +142,24 @@ def serve_dashboard():
     response.headers["Expires"] = "0"
     return response
 
+@app.route("/robots.txt", methods=["GET"])
+def serve_robots():
+    response = send_from_directory(os.path.dirname(os.path.abspath(__file__)), "robots.txt")
+    response.mimetype = "text/plain"
+    response.headers["Cache-Control"] = "public, max-age=86400"
+    return response
+
+@app.route("/sitemap.xml", methods=["GET"])
+def serve_sitemap():
+    response = send_from_directory(os.path.dirname(os.path.abspath(__file__)), "sitemap.xml")
+    response.mimetype = "application/xml"
+    response.headers["Cache-Control"] = "public, max-age=3600"
+    return response
+
+@app.route("/sitemap", methods=["GET"])
+def serve_sitemap_alias():
+    return serve_sitemap()
+
 @app.route("/<path:filename>", methods=["GET"])
 def serve_static(filename):
     response = send_from_directory(os.path.dirname(os.path.abspath(__file__)), filename)

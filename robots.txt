@@ -1,0 +1,62 @@
+# Robots.txt for TheSmartMag Quant Terminal & AI Trading Engine
+# Crawl-rate and indexing configuration for search engines
+User-agent: Googlebot
+Allow: /
+Allow: /#terminal
+Allow: /#india
+Allow: /#news
+Allow: /#chart
+Allow: /#rwa
+Allow: /#partners
+Allow: /#trades
+Disallow: /api/admin/
+Disallow: /api/user/
+Disallow: /api/trade/
+Disallow: /api/panic-flatten
+Disallow: /api/emergency-stop
+
+User-agent: Googlebot-Image
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+Disallow: /api/admin/
+Disallow: /api/user/
+Disallow: /api/trade/
+Crawl-delay: 1
+
+User-agent: Slurp
+Allow: /
+Disallow: /api/admin/
+Disallow: /api/user/
+Disallow: /api/trade/
+
+User-agent: DuckDuckBot
+Allow: /
+Disallow: /api/admin/
+Disallow: /api/user/
+Disallow: /api/trade/
+
+User-agent: Baiduspider
+Allow: /
+Disallow: /api/admin/
+Disallow: /api/user/
+Disallow: /api/trade/
+
+User-agent: YandexBot
+Allow: /
+Disallow: /api/admin/
+Disallow: /api/user/
+Disallow: /api/trade/
+
+User-agent: *
+Allow: /
+Disallow: /api/admin/
+Disallow: /api/user/
+Disallow: /api/trade/
+Disallow: /api/panic-flatten
+Disallow: /api/emergency-stop
+
+# XML Sitemaps
+Sitemap: https://trade.thesmartmag.com/sitemap.xml
+Sitemap: https://thesmartmag.com/sitemap.xml

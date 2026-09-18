@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+  <!-- Homepage / Master Terminal -->
+  <url>
+    <loc>https://trade.thesmartmag.com/</loc>
+    <lastmod>2026-09-18</lastmod>
+    <changefreq>always</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Indian EQ & F&O Options Intelligence -->
+  <url>
+    <loc>https://trade.thesmartmag.com/#india</loc>
+    <lastmod>2026-09-18</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.95</priority>
+  </url>
+
+  <!-- Live Financial News & Macro Catalysts -->
+  <url>
+    <loc>https://trade.thesmartmag.com/#news</loc>
+    <lastmod>2026-09-18</lastmod>
+    <changefreq>always</changefreq>
+    <priority>0.90</priority>
+  </url>
+
+  <!-- Pro TradingView Chart -->
+  <url>
+    <loc>https://trade.thesmartmag.com/#chart</loc>
+    <lastmod>2026-09-18</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- RWA Matrix -->
+  <url>
+    <loc>https://trade.thesmartmag.com/#rwa</loc>
+    <lastmod>2026-09-18</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.80</priority>
+  </url>
+
+  <!-- Prop Firms -->
+  <url>
+    <loc>https://trade.thesmartmag.com/#partners</loc>
+    <lastmod>2026-09-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.80</priority>
+  </url>
+
+  <!-- Audit Log -->
+  <url>
+    <loc>https://trade.thesmartmag.com/#trades</loc>
+    <lastmod>2026-09-18</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <!-- Live Public API Overview -->
+  <url>
+    <loc>https://trade.thesmartmag.com/api/india/overview</loc>
+    <lastmod>2026-09-18</lastmod>
+    <changefreq>always</changefreq>
+    <priority>0.70</priority>
+  </url>
+
+  <!-- Live News Stream -->
+  <url>
+    <loc>https://trade.thesmartmag.com/api/news/live</loc>
+    <lastmod>2026-09-18</lastmod>
+    <changefreq>always</changefreq>
+    <priority>0.70</priority>
+  </url>
+</urlset>
