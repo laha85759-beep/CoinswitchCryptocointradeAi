@@ -2316,10 +2316,15 @@ let currentNewsFilter = 'all';
 
 async function fetchNewsData() {
   try {
-    // 1. Fetch Live News & Sentiment
-    const nRes = await fetch("/api/news/live");
-    if (nRes.ok) {
-      const nData = await nRes.json();
+    const [nRes, cRes, sRes] = await Promise.allSettled([
+      fetch("/api/news/live"),
+      fetch("/api/news/calendar"),
+      fetch("/api/news/signals")
+    ]);
+
+    // 1. Process Live News & Sentiment
+    if (nRes.status === "fulfilled" && nRes.value.ok) {
+      const nData = await nRes.value.json();
       if (nData.sentiment) {
         const s = nData.sentiment;
         const sentVal = document.getElementById("news-sentiment-val");
@@ -2388,10 +2393,9 @@ async function fetchNewsData() {
       }
     }
 
-    // 2. Fetch Economic Calendar
-    const cRes = await fetch("/api/news/calendar");
-    if (cRes.ok) {
-      const cData = await cRes.json();
+    // 2. Process Economic Calendar
+    if (cRes.status === "fulfilled" && cRes.value.ok) {
+      const cData = await cRes.value.json();
       const events = cData.events || cData.calendar || [];
       if (events.length > 0) {
         const calCount = document.getElementById("news-cal-count");
@@ -2400,10 +2404,9 @@ async function fetchNewsData() {
       }
     }
 
-    // 3. Fetch Macro & Forex Signals
-    const sRes = await fetch("/api/news/signals");
-    if (sRes.ok) {
-      const sData = await sRes.json();
+    // 3. Process Macro & Forex Signals
+    if (sRes.status === "fulfilled" && sRes.value.ok) {
+      const sData = await sRes.value.json();
       const sigs = sData.signals || [];
       if (sigs.length > 0) {
         renderMacroSignals(sigs);
@@ -2577,7 +2580,7 @@ let currentStockFilter = 'all';
 async function fetchIndianMarketData(isManual = false) {
   try {
     if (isManual) {
-      await fetch("/api/india/trigger-refresh", { method: "POST" });
+      fetch("/api/india/trigger-refresh", { method: "POST" }).catch(() => {});
     }
 
     const res = await fetch("/api/india/overview");

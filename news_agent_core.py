@@ -415,5 +415,9 @@ class NewsAgentCore:
         t.start()
         log.info(f"🚀 News Agent 24/7 background worker started (poll every {interval_seconds}s)")
 
+    def trigger_async_refresh(self):
+        """Trigger an asynchronous refresh without blocking the caller."""
+        threading.Thread(target=self.refresh_all, daemon=True).start()
+
 # Global Singleton Instance
 news_core = NewsAgentCore()

@@ -500,10 +500,10 @@ def get_macro_signals():
 
 @api_bp.route("/api/news/trigger-scan", methods=["POST"])
 def trigger_news_scan():
-    news_core.refresh_all()
+    news_core.trigger_async_refresh()
     return jsonify({
         "status": "success",
-        "message": "Live news, Indian market radar & macro signals refreshed successfully!",
+        "message": "Live news, Indian market radar & macro signals refresh initiated in background!",
         "articles": len(news_core.cached_news),
         "calendar_events": len(news_core.cached_calendar),
         "signals": len(news_core.cached_signals),
@@ -591,10 +591,10 @@ def get_india_options():
 
 @api_bp.route("/api/india/trigger-refresh", methods=["POST"])
 def trigger_india_refresh():
-    indian_agent.refresh_all()
+    indian_agent.trigger_async_refresh()
     return jsonify({
         "status": "success",
-        "message": "Indian market equities & F&O options intelligence refreshed!",
+        "message": "Indian market equities & F&O options intelligence refresh initiated in background!",
         "stocks_count": len(indian_agent.cached_stocks),
         "indices_count": len(indian_agent.cached_indices)
     })
