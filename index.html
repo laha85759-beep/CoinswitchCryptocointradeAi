@@ -61,7 +61,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=114.0">
+  <link rel="stylesheet" href="styles.css?v=115.0">
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -236,6 +236,75 @@
   </div>
 
   <main class="nc-main-stage tsm-main">
+
+    <!-- ══════════ MASTER SECTION COMMAND DOCK (ALL MENU OPTIONS VISIBLE & INTERACTIVE) ══════════ -->
+    <div class="tsm-section-command-dock" id="sectionCommandDock">
+      <div class="tsm-dock-grid">
+        <button class="tsm-dock-item active" data-view="terminal" onclick="switchView('terminal')" title="Live Master Terminal Cockpit &amp; PnL">
+          <span class="tsm-dock-icon">⚡</span>
+          <div class="tsm-dock-info">
+            <span class="tsm-dock-title">TERMINAL</span>
+            <span class="tsm-dock-chip green">LIVE COCKPIT</span>
+          </div>
+        </button>
+
+        <button class="tsm-dock-item gold" data-view="india" onclick="switchView('india')" title="Indian Equities, F&amp;O Chains &amp; Strike Suggestions">
+          <span class="tsm-dock-icon">🇮🇳</span>
+          <div class="tsm-dock-info">
+            <span class="tsm-dock-title">INDIA F&amp;O</span>
+            <span class="tsm-dock-chip gold">OPTIONS RADAR</span>
+          </div>
+        </button>
+
+        <button class="tsm-dock-item cyan" data-view="news" onclick="switchView('news')" title="Live Economic Calendar, Date Picker &amp; Macro Signals">
+          <span class="tsm-dock-icon">📰</span>
+          <div class="tsm-dock-info">
+            <span class="tsm-dock-title">NEWS &amp; MACRO</span>
+            <span class="tsm-dock-chip cyan">DATE CALENDAR</span>
+          </div>
+        </button>
+
+        <button class="tsm-dock-item" data-view="chart" onclick="switchView('chart')" title="Interactive Pro TradingView Chart">
+          <span class="tsm-dock-icon">📈</span>
+          <div class="tsm-dock-info">
+            <span class="tsm-dock-title">PRO CHART</span>
+            <span class="tsm-dock-chip purple">MULTISYMBOL</span>
+          </div>
+        </button>
+
+        <button class="tsm-dock-item" data-view="rwa" onclick="switchView('rwa')" title="Real-World Asset Tokenization Matrix">
+          <span class="tsm-dock-icon">🏛</span>
+          <div class="tsm-dock-info">
+            <span class="tsm-dock-title">RWA MATRIX</span>
+            <span class="tsm-dock-chip blue">INSTITUTIONAL</span>
+          </div>
+        </button>
+
+        <button class="tsm-dock-item gold" data-view="partners" onclick="switchView('partners')" title="Verified Prop Firms &amp; Exclusive Challenges">
+          <span class="tsm-dock-icon">💎</span>
+          <div class="tsm-dock-info">
+            <span class="tsm-dock-title">PROP FIRMS</span>
+            <span class="tsm-dock-chip gold">EXCLUSIVE DEALS</span>
+          </div>
+        </button>
+
+        <button class="tsm-dock-item" data-view="trades" onclick="switchView('trades')" title="Closed Trades &amp; Blockchain Audit Trail">
+          <span class="tsm-dock-icon">💼</span>
+          <div class="tsm-dock-info">
+            <span class="tsm-dock-title">AUDIT LOG</span>
+            <span class="tsm-dock-chip green">PROVEN TRADES</span>
+          </div>
+        </button>
+
+        <button class="tsm-dock-item magenta" id="dockAdminBtn" data-view="admin" onclick="switchView('admin')" title="Super Admin Control Portal">
+          <span class="tsm-dock-icon">⚙</span>
+          <div class="tsm-dock-info">
+            <span class="tsm-dock-title">SUPER ADMIN</span>
+            <span class="tsm-dock-chip magenta">MANAGEMENT</span>
+          </div>
+        </button>
+      </div>
+    </div>
 
     <!-- ══════════ VIEW 1: SUPERBRAIN NEURAL DASHBOARD ══════════ -->
     <div id="view-terminal" class="nc-view-pane tsm-view-section active">
@@ -804,18 +873,46 @@
 
         <!-- Two Column Intel Grid -->
         <div class="tsm-split-row">
-          <!-- Left Column: Economic Calendar with Impact & Region Filters -->
-          <div class="tsm-panel" style="padding:14px;">
-            <div class="tsm-panel-header">
-              <div class="tsm-panel-title">🏛 ECONOMIC CALENDAR • GLOBAL CATALYSTS</div>
+          <!-- Left Column: Economic Calendar with Date Picker, Presets, Search & Filters -->
+          <div class="tsm-panel" style="padding:14px; flex:1.2;">
+            <div class="tsm-panel-header" style="flex-wrap:wrap; gap:8px;">
+              <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <div class="tsm-panel-title">🏛 ECONOMIC CALENDAR • GLOBAL CATALYSTS</div>
+                <span class="tsm-badge-pill admin font-mono" id="cal-selected-date-badge">📅 ALL DATES</span>
+              </div>
               <span class="tsm-badge-gold" id="cal-filter-label">ALL RELEASES</span>
             </div>
             
-            <!-- Calendar Filter Sub-Bar -->
-            <div class="news-filter-bar" style="margin-bottom:10px; padding:4px 0;">
-              <button class="news-filter-btn active" style="padding:2px 8px; font-size:9px;" onclick="filterCalendarEvents('all', this)">ALL</button>
-              <button class="news-filter-btn" style="padding:2px 8px; font-size:9px; border-color:rgba(255,51,102,0.4); color:#ff3366;" onclick="filterCalendarEvents('high', this)">🔴 HIGH IMPACT</button>
-              <button class="news-filter-btn" style="padding:2px 8px; font-size:9px; border-color:rgba(255,170,0,0.4); color:#ffaa00;" onclick="filterCalendarEvents('med', this)">🟠 MEDIUM</button>
+            <!-- Interactive Date Picker & Search Toolbar -->
+            <div class="cal-toolbar-wrap">
+              <!-- Quick Date Presets -->
+              <div class="cal-preset-bar">
+                <button class="cal-date-btn active" onclick="filterCalendarByDatePreset('all', this)">📅 ALL DATES</button>
+                <button class="cal-date-btn gold" onclick="filterCalendarByDatePreset('today', this)">⚡ TODAY (18TH)</button>
+                <button class="cal-date-btn" onclick="filterCalendarByDatePreset('tomorrow', this)">📅 TOMORROW (19TH)</button>
+                <button class="cal-date-btn" onclick="filterCalendarByDatePreset('this_week', this)">🗓️ THIS WEEK</button>
+                <button class="cal-date-btn" onclick="filterCalendarByDatePreset('next_week', this)">🗓️ NEXT WEEK</button>
+              </div>
+
+              <!-- Custom Date Picker + Live Event Search -->
+              <div class="cal-inputs-row">
+                <div class="cal-picker-group">
+                  <span class="cal-input-icon">📅</span>
+                  <input type="date" id="calDateSelector" class="tsm-input cal-date-input" title="Select Specific Calendar Date" onchange="filterCalendarByCustomDate(this.value)" />
+                  <button class="cal-clear-btn" onclick="clearCalendarDateFilter()" title="Reset Date Filter">✕</button>
+                </div>
+                <div class="cal-search-group">
+                  <span class="cal-input-icon">🔍</span>
+                  <input type="text" id="calSearchBox" class="tsm-input cal-search-box" placeholder="Search event (CPI, FOMC, NFP, RBI, GDP, PMI)..." oninput="filterCalendarBySearch(this.value)" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Currency & Impact Filter Sub-Bar -->
+            <div class="news-filter-bar" style="margin-bottom:10px; padding:4px 0; gap:4px;">
+              <button class="news-filter-btn active" style="padding:2px 8px; font-size:9px;" onclick="filterCalendarEvents('all', this)">ALL IMPACTS</button>
+              <button class="news-filter-btn" style="padding:2px 8px; font-size:9px; border-color:rgba(255,51,102,0.5); color:#ff3366;" onclick="filterCalendarEvents('high', this)">🔴 HIGH IMPACT</button>
+              <button class="news-filter-btn" style="padding:2px 8px; font-size:9px; border-color:rgba(255,170,0,0.5); color:#ffaa00;" onclick="filterCalendarEvents('med', this)">🟠 MEDIUM</button>
               <button class="news-filter-btn" style="padding:2px 8px; font-size:9px;" onclick="filterCalendarEvents('USD', this)">🇺🇸 USD</button>
               <button class="news-filter-btn" style="padding:2px 8px; font-size:9px;" onclick="filterCalendarEvents('INR', this)">🇮🇳 INR</button>
               <button class="news-filter-btn" style="padding:2px 8px; font-size:9px;" onclick="filterCalendarEvents('EUR', this)">🇪🇺 EUR</button>
@@ -824,20 +921,22 @@
               <button class="news-filter-btn" style="padding:2px 8px; font-size:9px;" onclick="filterCalendarEvents('AUD', this)">🇦🇺 AUD</button>
             </div>
 
-            <div class="tsm-table-wrap" style="max-height:460px; overflow-y:auto;">
-              <table class="tsm-table">
+            <div class="tsm-table-wrap" style="max-height:480px; overflow-y:auto;">
+              <table class="tsm-table cal-table">
                 <thead>
                   <tr>
+                    <th style="min-width:105px;">DATE &amp; TIME</th>
                     <th>COUNTRY</th>
                     <th>EVENT TITLE</th>
                     <th>IMPACT</th>
                     <th>ACTUAL</th>
                     <th>FORECAST</th>
                     <th>PREVIOUS</th>
+                    <th>AI CATALYST BIAS</th>
                   </tr>
                 </thead>
                 <tbody id="economic-calendar-tbody">
-                  <tr><td colspan="6" class="text-center empty-state">Loading global economic calendar...</td></tr>
+                  <tr><td colspan="8" class="text-center empty-state">Loading global economic calendar...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -2285,6 +2384,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=114.0"></script>
+  <script src="app.js?v=115.0"></script>
 </body>
 </html>

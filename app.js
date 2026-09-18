@@ -202,7 +202,7 @@ function switchView(viewName, updateHash = true) {
     history.replaceState(null, null, `#${viewName}`);
   }
   
-  document.querySelectorAll(".tsm-tab, .nc-nav-tab").forEach(tab => {
+  document.querySelectorAll(".tsm-tab, .nc-nav-tab, .tsm-dock-item, .tsm-drawer-item, .tsm-dropdown-item").forEach(tab => {
     if (tab.getAttribute("data-view") === viewName) {
       tab.classList.add("active");
     } else {
@@ -2468,6 +2468,9 @@ function renderNewsFeed() {
 
 let cachedCalendarEvents = [];
 let currentCalFilter = 'all';
+let currentCalDatePreset = 'all';
+let currentCalCustomDate = '';
+let currentCalSearchQuery = '';
 
 function filterCalendarEvents(filterType, btn) {
   currentCalFilter = filterType;
@@ -2485,6 +2488,73 @@ function filterCalendarEvents(filterType, btn) {
   renderEconomicCalendar(cachedCalendarEvents);
 }
 
+function filterCalendarByDatePreset(preset, btn) {
+  currentCalDatePreset = preset;
+  currentCalCustomDate = '';
+  const dateInput = document.getElementById("calDateSelector");
+  if (dateInput) dateInput.value = '';
+
+  const parent = btn?.parentElement;
+  if (parent) {
+    parent.querySelectorAll(".cal-date-btn").forEach(b => b.classList.remove("active"));
+  }
+  if (btn) btn.classList.add("active");
+
+  const badge = document.getElementById("cal-selected-date-badge");
+  if (badge) {
+    const titles = {
+      'all': '📅 ALL DATES',
+      'today': '⚡ TODAY: SEP 18',
+      'tomorrow': '📅 TOMORROW: SEP 19',
+      'this_week': '🗓️ THIS WEEK',
+      'next_week': '🗓️ NEXT WEEK'
+    };
+    badge.textContent = titles[preset] || '📅 SELECTED DATES';
+  }
+
+  renderEconomicCalendar(cachedCalendarEvents);
+}
+
+function filterCalendarByCustomDate(dateVal) {
+  if (!dateVal) {
+    clearCalendarDateFilter();
+    return;
+  }
+  currentCalCustomDate = dateVal;
+  currentCalDatePreset = 'custom';
+
+  document.querySelectorAll(".cal-date-btn").forEach(b => b.classList.remove("active"));
+
+  const badge = document.getElementById("cal-selected-date-badge");
+  if (badge) {
+    badge.textContent = `📅 DATE: ${dateVal}`;
+  }
+
+  renderEconomicCalendar(cachedCalendarEvents);
+}
+
+function filterCalendarBySearch(query) {
+  currentCalSearchQuery = (query || '').toLowerCase().trim();
+  renderEconomicCalendar(cachedCalendarEvents);
+}
+
+function clearCalendarDateFilter() {
+  currentCalCustomDate = '';
+  currentCalDatePreset = 'all';
+  const dateInput = document.getElementById("calDateSelector");
+  if (dateInput) dateInput.value = '';
+
+  document.querySelectorAll(".cal-date-btn").forEach(b => {
+    if (b.textContent.includes('ALL')) b.classList.add("active");
+    else b.classList.remove("active");
+  });
+
+  const badge = document.getElementById("cal-selected-date-badge");
+  if (badge) badge.textContent = '📅 ALL DATES';
+
+  renderEconomicCalendar(cachedCalendarEvents);
+}
+
 function renderEconomicCalendar(events) {
   const tbody = document.getElementById("economic-calendar-tbody");
   if (!tbody) return;
@@ -2495,6 +2565,20 @@ function renderEconomicCalendar(events) {
 
   let list = cachedCalendarEvents || [];
 
+  // 1. Date Filter
+  if (currentCalDatePreset === 'today') {
+    list = list.filter(e => e.date === '2026-09-18' || (e.time && e.time.includes('18:30')));
+  } else if (currentCalDatePreset === 'tomorrow') {
+    list = list.filter(e => e.date === '2026-09-19');
+  } else if (currentCalDatePreset === 'this_week') {
+    list = list.filter(e => ['2026-09-18', '2026-09-19', '2026-09-20', '2026-09-21'].includes(e.date));
+  } else if (currentCalDatePreset === 'next_week') {
+    list = list.filter(e => ['2026-09-22', '2026-09-23', '2026-09-24', '2026-09-25'].includes(e.date));
+  } else if (currentCalDatePreset === 'custom' && currentCalCustomDate) {
+    list = list.filter(e => e.date === currentCalCustomDate);
+  }
+
+  // 2. Impact / Country Filter
   if (currentCalFilter === 'high') {
     list = list.filter(e => (e.impact || '').toLowerCase() === 'high');
   } else if (currentCalFilter === 'med') {
@@ -2507,25 +2591,64 @@ function renderEconomicCalendar(events) {
     });
   }
 
+  // 3. Search Query Filter
+  if (currentCalSearchQuery) {
+    list = list.filter(e => 
+      (e.title || '').toLowerCase().includes(currentCalSearchQuery) ||
+      (e.country || '').toLowerCase().includes(currentCalSearchQuery) ||
+      (e.currency || '').toLowerCase().includes(currentCalSearchQuery) ||
+      (e.bias || '').toLowerCase().includes(currentCalSearchQuery)
+    );
+  }
+
   if (!list || list.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="text-center empty-state">No economic events match '${currentCalFilter}' filter.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="text-center empty-state" style="padding:24px;">No economic events match the active date &amp; impact filters.</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = list.slice(0, 30).map(ev => {
+  tbody.innerHTML = list.map(ev => {
     const imp = (ev.impact || 'low').toLowerCase();
     let impBadge = `<span class="cal-impact-low">LOW</span>`;
     if (imp === 'high') impBadge = `<span class="cal-impact-high">HIGH 🔴</span>`;
     else if (imp === 'medium' || imp === 'med') impBadge = `<span class="cal-impact-med">MED 🟠</span>`;
 
+    const countryFlags = {
+      'US': '🇺🇸 US', 'USA': '🇺🇸 US', 'USD': '🇺🇸 USD',
+      'IN': '🇮🇳 IN', 'INDIA': '🇮🇳 IN', 'INR': '🇮🇳 INR',
+      'EU': '🇪🇺 EU', 'EUR': '🇪🇺 EUR',
+      'GB': '🇬🇧 GB', 'GBP': '🇬🇧 GBP', 'UK': '🇬🇧 UK',
+      'JP': '🇯🇵 JP', 'JPY': '🇯🇵 JPY', 'JAPAN': '🇯🇵 JP',
+      'AU': '🇦🇺 AU', 'AUD': '🇦🇺 AUD',
+      'CA': '🇨🇦 CA', 'CAD': '🇨🇦 CAD',
+      'CH': '🇨🇭 CH', 'CHF': '🇨🇭 CHF',
+      'CN': '🇨🇳 CN', 'CNY': '🇨🇳 CNY'
+    };
+    const cTag = countryFlags[(ev.country || ev.currency || '').toUpperCase()] || `${ev.country || 'GLOBAL'}`;
+
+    const dateDisplay = ev.date_formatted || ev.date || 'Sep 18, 2026';
+    const timeDisplay = ev.time || '12:30 UTC';
+    const statusPill = ev.status ? `<span class="cal-status-pill ${ev.status.includes('✓') ? 'done' : 'upcoming'}">${escapeHtml(ev.status)}</span>` : '';
+    const biasText = ev.bias ? `<span class="cal-bias-tag">${escapeHtml(ev.bias)}</span>` : `<span class="text-dim font-mono">-</span>`;
+
     return `
       <tr>
-        <td><span class="tsm-badge-pill admin font-mono">${escapeHtml(ev.country || 'ALL')}</span></td>
-        <td><strong>${escapeHtml(ev.title)}</strong></td>
+        <td>
+          <div style="font-family:var(--font-mono); font-size:10.5px; font-weight:700; color:var(--text-main);">${escapeHtml(dateDisplay)}</div>
+          <div style="font-size:9.5px; color:var(--text-muted); display:flex; align-items:center; gap:4px; margin-top:2px;">
+            <span>⏱ ${escapeHtml(timeDisplay)}</span>
+            ${statusPill}
+          </div>
+        </td>
+        <td><span class="tsm-badge-pill admin font-mono" style="font-size:10px;">${escapeHtml(cTag)}</span></td>
+        <td>
+          <strong style="font-size:11.5px; color:var(--text-main);">${escapeHtml(ev.title)}</strong>
+          <div style="font-size:9px; color:var(--text-dim); margin-top:1px;">Category: ${escapeHtml(ev.currency || 'MACRO')} Catalyst</div>
+        </td>
         <td>${impBadge}</td>
-        <td class="font-mono green"><strong>${escapeHtml(ev.actual || 'N/A')}</strong></td>
+        <td class="font-mono green" style="font-size:11.5px;"><strong>${escapeHtml(ev.actual || 'N/A')}</strong></td>
         <td class="font-mono text-dim">${escapeHtml(ev.forecast || 'N/A')}</td>
         <td class="font-mono text-muted">${escapeHtml(ev.previous || 'N/A')}</td>
+        <td style="font-size:10px; color:var(--neon-cyan);">${biasText}</td>
       </tr>
     `;
   }).join("");
