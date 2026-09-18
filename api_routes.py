@@ -637,11 +637,17 @@ def get_user_terminal_data(user):
         except Exception:
             pass
             
+    delta_live_positions = []
     if keys["has_delta"]:
         try:
             client = DeltaClient(keys["delta_key"], keys["delta_secret"])
-            bal = client.get_wallet_balances()
-            delta_usdt = float(bal.get("USDT", 0.0))
+            delta_usdt = float(client.get_usdt_balance())
+            try:
+                raw_d_pos = client.get_open_positions()
+                if isinstance(raw_d_pos, list):
+                    delta_live_positions = raw_d_pos
+            except Exception:
+                pass
         except Exception:
             pass
             
@@ -664,6 +670,37 @@ def get_user_terminal_data(user):
         if "take_profit" not in r or not r["take_profit"] or float(r["take_profit"]) <= 0:
             r["take_profit"] = round(entry * (1 + tp_pct/100) if is_long else entry * (1 - tp_pct/100), 4) if entry > 0 else 0
         open_rows.append(r)
+        
+    # Merge live Delta Exchange positions not already tracked in DB
+    for dp in delta_live_positions:
+        size = float(dp.get("size") or dp.get("open_qty") or 0.0)
+        if abs(size) > 0:
+            prod_sym = str(dp.get("product_symbol") or dp.get("symbol") or "BTCUSD").upper()
+            std_sym = f"{prod_sym[:-3]}/USDT" if prod_sym.endswith("USD") else (f"{prod_sym[:-4]}/USDT" if prod_sym.endswith("USDT") else prod_sym)
+            already_tracked = any(r.get("symbol") in (prod_sym, std_sym) for r in open_rows)
+            if not already_tracked:
+                entry_p = float(dp.get("entry_price") or 0.0)
+                mark_p = float(dp.get("mark_price") or entry_p)
+                pnl = float(dp.get("unrealized_pnl") or 0.0)
+                margin = float(dp.get("margin") or 0.0)
+                direction = "long" if size > 0 else "short"
+                open_rows.append({
+                    "id": f"delta-{dp.get('product_id', int(time.time()))}",
+                    "user_id": user["id"],
+                    "exchange": "delta",
+                    "symbol": std_sym,
+                    "direction": direction,
+                    "entry_price": entry_p,
+                    "mark_price": mark_p,
+                    "qty": abs(size),
+                    "quantity": abs(size),
+                    "unrealized_pnl": pnl,
+                    "margin_used": margin,
+                    "hard_sl": round(entry_p * (1 - sl_pct/100) if direction == "long" else entry_p * (1 + sl_pct/100), 4) if entry_p > 0 else 0,
+                    "take_profit": round(entry_p * (1 + tp_pct/100) if direction == "long" else entry_p * (1 - tp_pct/100), 4) if entry_p > 0 else 0,
+                    "created_at": int(time.time()),
+                    "paper": False
+                })
     
     cursor.execute("SELECT * FROM user_trades WHERE user_id = ? AND status = 'closed' ORDER BY closed_at DESC LIMIT 30", (user["id"],))
     closed_rows = [dict(r) for r in cursor.fetchall()]
