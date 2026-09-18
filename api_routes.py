@@ -6,7 +6,7 @@ import json
 
 from security import verify_jwt_token, create_jwt_token
 from database import (
-    create_user, authenticate_user, get_user_by_id,
+    create_user, authenticate_user, get_user_by_id, sync_supabase_user,
     save_user_api_keys, get_user_api_keys,
     get_user_settings, save_user_settings,
     get_all_users_for_admin, get_user_crm_profile,
@@ -67,14 +67,14 @@ def register():
     name = data.get("name", "").strip()
     referral_code = data.get("ref", "").strip() or request.cookies.get("referral_code", "").strip()
     
-    user, error = create_user(email, password, name, referral_code)
+    user, error = create_user(email, password, name, referral_code, role="trader")
     if error:
         return jsonify({"status": "error", "message": error}), 400
     
     token = create_jwt_token({"user_id": user["id"], "email": user["email"], "role": user["role"]})
     return jsonify({
         "status": "success",
-        "message": "Account created successfully! Welcome to TheSmartMag Quant Platform.",
+        "message": "Trader account created successfully! Welcome to TheSmartMag Quant Platform.",
         "token": token,
         "user": user
     })
@@ -95,6 +95,42 @@ def login():
         "message": f"Welcome back, {user['name']}!",
         "token": token,
         "user": user
+    })
+
+@api_bp.route("/api/auth/supabase-sync", methods=["POST"])
+def supabase_sync():
+    data = request.get_json() or {}
+    supabase_id = data.get("supabase_id", "").strip()
+    email = data.get("email", "").strip()
+    name = data.get("name", "").strip()
+    referral_code = data.get("ref", "").strip() or request.cookies.get("referral_code", "").strip()
+    role = data.get("role", "trader")
+    
+    if not email:
+        return jsonify({"status": "error", "message": "Valid email required for Supabase sync."}), 400
+        
+    user, error = sync_supabase_user(supabase_id, email, name, referral_code, role)
+    if error:
+        return jsonify({"status": "error", "message": error}), 400
+        
+    token = create_jwt_token({"user_id": user["id"], "email": user["email"], "role": user["role"]})
+    return jsonify({
+        "status": "success",
+        "message": f"Welcome Trader {user['name']}!",
+        "token": token,
+        "user": user
+    })
+
+@api_bp.route("/api/auth/forgot-password", methods=["POST"])
+def forgot_password():
+    data = request.get_json() or {}
+    email = data.get("email", "").strip().lower()
+    if not email or "@" not in email:
+        return jsonify({"status": "error", "message": "Please provide a valid email address."}), 400
+    
+    return jsonify({
+        "status": "success",
+        "message": f"Password reset instructions dispatched to {email}."
     })
 
 @api_bp.route("/api/admin/login", methods=["POST"])

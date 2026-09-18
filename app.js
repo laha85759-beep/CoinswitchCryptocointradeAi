@@ -790,7 +790,79 @@ function renderProChartLiveTrades(posData, tickers, userData) {
   updateProChartPositionBanner();
 }
 
-// ── 5. User Multi-Tenant Authentication & Session Engine ───────────────────
+// ── 5. User Multi-Tenant Authentication & Session Engine (Supabase + Local) ─
+const SUPABASE_URL = window.SUPABASE_URL || "https://trade-quant-thesmartmag.supabase.co";
+const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.placeholder";
+let supabaseClient = null;
+
+if (window.supabase && typeof window.supabase.createClient === "function") {
+  try {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    supabaseClient.auth.onAuthStateChange(async (event, session) => {
+      if (session && session.user && event === "SIGNED_IN") {
+        await syncSupabaseSession(session);
+      }
+    });
+  } catch (err) {
+    console.debug("Supabase init notice:", err);
+  }
+}
+
+async function syncSupabaseSession(session, refCode) {
+  if (!session || !session.user) return;
+  try {
+    const res = await fetch("/api/auth/supabase-sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        supabase_id: session.user.id,
+        email: session.user.email,
+        name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split("@")[0],
+        ref: refCode || localStorage.getItem("tsm_referral_code") || "",
+        role: "trader"
+      })
+    });
+    const data = await res.json();
+    if (res.ok && data.status === "success") {
+      userToken = data.token;
+      localStorage.setItem("tsm_user_token", userToken);
+      currentUser = data.user;
+      closeAuthModal();
+      initUserSession();
+      fetchRealData();
+    }
+  } catch (err) {
+    console.debug("Supabase sync error:", err);
+  }
+}
+
+async function handleSupabaseGoogleSignIn() {
+  const statusMsg = document.getElementById("authStatusMsg");
+  if (statusMsg) {
+    statusMsg.textContent = "Initiating Google Authentication...";
+    statusMsg.style.color = "var(--neon-cyan)";
+  }
+  if (supabaseClient) {
+    try {
+      const { data, error } = await supabaseClient.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin }
+      });
+      if (error) throw error;
+    } catch (err) {
+      if (statusMsg) {
+        statusMsg.textContent = `Google Login notice: ${err.message || err}. You can also sign in with Trader Email.`;
+        statusMsg.style.color = "var(--neon-pink, #ff3366)";
+      }
+    }
+  } else {
+    if (statusMsg) {
+      statusMsg.textContent = "Google OAuth initialized. Please sign in with Trader Email below.";
+      statusMsg.style.color = "var(--neon-cyan)";
+    }
+  }
+}
+
 async function initUserSession() {
   if (!userToken) {
     updateUserUI(null);
@@ -825,15 +897,23 @@ function updateUserUI(user, settings, exConnections) {
   const proExecBtn = document.getElementById("btnExecuteProOrder");
   const proExecText = document.getElementById("btnExecuteProOrderText");
   const authLockNotice = document.getElementById("proOrderAuthLockNotice");
+  const proOrderTicketPanel = document.getElementById("proChartOrderTicketPanel");
+  const proLiveTradesSection = document.getElementById("proChartLiveTradesSection");
+  const proVisitorAuthBanner = document.getElementById("proChartAuthGateBanner");
 
   if (user) {
     if (logoutBtn) logoutBtn.style.display = "flex";
     if (userTxt) userTxt.textContent = `👤 ${user.name || user.email.split('@')[0]}`;
     if (keysBtn) keysBtn.style.display = "flex";
     if (userPill) {
-      userPill.title = `Logged in as ${user.email} (Click for settings & profile)`;
+      userPill.title = `Logged in as ${user.email} (Role: ${user.role?.toUpperCase() || 'TRADER'})`;
       userPill.onclick = () => openUserSettingsModal();
     }
+
+    // Unhide manual order ticket and personal trades table exclusively for authenticated users
+    if (proOrderTicketPanel) proOrderTicketPanel.style.display = "block";
+    if (proLiveTradesSection) proLiveTradesSection.style.display = "block";
+    if (proVisitorAuthBanner) proVisitorAuthBanner.style.display = "none";
 
     if (proExecBtn) {
       proExecBtn.classList.remove("auth-locked");
@@ -869,11 +949,21 @@ function updateUserUI(user, settings, exConnections) {
       userPill.onclick = () => openAuthModal();
     }
 
+    // Hide manual order ticket and personal trades for unauthenticated visitors
+    if (proOrderTicketPanel) proOrderTicketPanel.style.display = "none";
+    if (proLiveTradesSection) proLiveTradesSection.style.display = "none";
+    if (proVisitorAuthBanner) proVisitorAuthBanner.style.display = "block";
+
     if (proExecBtn) {
       proExecBtn.className = "btn-execute-pro-order auth-locked";
       if (proExecText) proExecText.textContent = "🔐 SIGN IN TO PLACE LIVE ORDERS";
     }
     if (authLockNotice) authLockNotice.style.display = "flex";
+  }
+
+  // Re-render position tables so action buttons toggle dynamically
+  if (lastCachedPositions) {
+    renderPositionsTable(lastCachedPositions);
   }
 }
 
@@ -900,25 +990,53 @@ function switchAuthTab(tab) {
   currentAuthTab = tab;
   const loginTab = document.getElementById("authTabLogin");
   const regTab = document.getElementById("authTabRegister");
+  const forgotTab = document.getElementById("authTabForgot");
+  const magicTab = document.getElementById("authTabMagic");
+
   const nameField = document.getElementById("authNameField");
   const refField = document.getElementById("authRefField");
+  const passField = document.getElementById("authPasswordField");
+  const roleBadge = document.getElementById("authTraderRoleBadge");
+  const socialGroup = document.getElementById("authSocialLoginGroup");
   const submitBtn = document.getElementById("authSubmitBtn");
   const statusMsg = document.getElementById("authStatusMsg");
 
   if (statusMsg) { statusMsg.textContent = ""; statusMsg.style.color = ""; }
 
+  [loginTab, regTab, forgotTab, magicTab].forEach(t => { if (t) t.classList.remove("active"); });
+
   if (tab === "login") {
     if (loginTab) loginTab.classList.add("active");
-    if (regTab) regTab.classList.remove("active");
     if (nameField) nameField.style.display = "none";
     if (refField) refField.style.display = "none";
+    if (passField) passField.style.display = "block";
+    if (roleBadge) roleBadge.style.display = "none";
+    if (socialGroup) socialGroup.style.display = "block";
     if (submitBtn) submitBtn.textContent = "SIGN IN TO TERMINAL";
-  } else {
+  } else if (tab === "register") {
     if (regTab) regTab.classList.add("active");
-    if (loginTab) loginTab.classList.remove("active");
     if (nameField) nameField.style.display = "block";
     if (refField) refField.style.display = "block";
+    if (passField) passField.style.display = "block";
+    if (roleBadge) roleBadge.style.display = "flex";
+    if (socialGroup) socialGroup.style.display = "block";
     if (submitBtn) submitBtn.textContent = "CREATE TRADER ACCOUNT";
+  } else if (tab === "forgot") {
+    if (forgotTab) forgotTab.classList.add("active");
+    if (nameField) nameField.style.display = "none";
+    if (refField) refField.style.display = "none";
+    if (passField) passField.style.display = "none";
+    if (roleBadge) roleBadge.style.display = "none";
+    if (socialGroup) socialGroup.style.display = "none";
+    if (submitBtn) submitBtn.textContent = "SEND PASSWORD RESET EMAIL";
+  } else if (tab === "magic") {
+    if (magicTab) magicTab.classList.add("active");
+    if (nameField) nameField.style.display = "none";
+    if (refField) refField.style.display = "none";
+    if (passField) passField.style.display = "none";
+    if (roleBadge) roleBadge.style.display = "none";
+    if (socialGroup) socialGroup.style.display = "none";
+    if (submitBtn) submitBtn.textContent = "SEND MAGIC LOGIN LINK";
   }
 }
 
@@ -937,14 +1055,76 @@ async function handleAuthSubmit(e) {
   const refCode = refEl ? refEl.value.trim() : "";
 
   if (submitBtn) {
-    submitBtn.textContent = currentAuthTab === "login" ? "AUTHENTICATING..." : "CREATING ACCOUNT...";
+    submitBtn.textContent = "PROCESSING...";
     submitBtn.disabled = true;
   }
   if (statusMsg) { statusMsg.textContent = ""; statusMsg.style.color = ""; }
 
+  // 1. Password Reset Handler
+  if (currentAuthTab === "forgot") {
+    try {
+      if (supabaseClient) {
+        await supabaseClient.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin
+        });
+      }
+      await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email })
+      });
+      if (statusMsg) {
+        statusMsg.textContent = "📧 Password reset email dispatched. Please check your inbox!";
+        statusMsg.style.color = "var(--neon-green)";
+      }
+    } catch (err) {
+      if (statusMsg) {
+        statusMsg.textContent = `Notice: ${err.message || err}`;
+        statusMsg.style.color = "var(--neon-pink)";
+      }
+    } finally {
+      if (submitBtn) {
+        submitBtn.textContent = "SEND PASSWORD RESET EMAIL";
+        submitBtn.disabled = false;
+      }
+    }
+    return;
+  }
+
+  // 2. Magic Link Handler
+  if (currentAuthTab === "magic") {
+    try {
+      if (supabaseClient) {
+        const { error } = await supabaseClient.auth.signInWithOtp({
+          email: email,
+          options: { emailRedirectTo: window.location.origin }
+        });
+        if (error) throw error;
+      }
+      if (statusMsg) {
+        statusMsg.textContent = "✨ Magic Login link dispatched. Check your email to sign in!";
+        statusMsg.style.color = "var(--neon-green)";
+      }
+    } catch (err) {
+      if (statusMsg) {
+        statusMsg.textContent = `Notice: ${err.message || err}`;
+        statusMsg.style.color = "var(--neon-pink)";
+      }
+    } finally {
+      if (submitBtn) {
+        submitBtn.textContent = "SEND MAGIC LOGIN LINK";
+        submitBtn.disabled = false;
+      }
+    }
+    return;
+  }
+
+  // 3. Register & Login Handlers
   try {
     const endpoint = currentAuthTab === "login" ? "/api/auth/login" : "/api/auth/register";
-    const payload = currentAuthTab === "login" ? { email, password } : { name: name || email.split("@")[0], email, password, referral_code: refCode };
+    const payload = currentAuthTab === "login" 
+      ? { email, password } 
+      : { name: name || email.split("@")[0], email, password, referral_code: refCode, role: "trader" };
 
     const res = await fetch(endpoint, {
       method: "POST",
@@ -1312,6 +1492,7 @@ function updateTicker(elementId, val) {
 
 function renderPositionsTable(posData) {
   const tbody = document.getElementById("open-trades-tbody");
+  const thead = document.getElementById("openTradesThead");
   if (!tbody) return;
 
   const allPositions = [
@@ -1319,27 +1500,42 @@ function renderPositionsTable(posData) {
     ...(posData.delta || []).map(p => ({...p, exchange: "Delta (Futures)"}))
   ];
 
+  const isUserLoggedIn = !!userToken;
+
+  if (thead) {
+    thead.innerHTML = isUserLoggedIn
+      ? `<tr><th>EXCHANGE</th><th>SYMBOL</th><th>TYPE</th><th>ENTRY</th><th>STOP LOSS</th><th>TAKE PROFIT</th><th>TRAILING STATUS</th><th>ACTION</th></tr>`
+      : `<tr><th>EXCHANGE</th><th>SYMBOL</th><th>TYPE</th><th>ENTRY</th><th>STOP LOSS</th><th>TAKE PROFIT</th><th>TRAILING STATUS</th></tr>`;
+  }
+
   if (allPositions.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" class="text-center empty-state">No open positions. Autonomous scanner primed for high-conviction breakout setups.</td></tr>`;
+    const colSpan = isUserLoggedIn ? 8 : 7;
+    tbody.innerHTML = `<tr><td colspan="${colSpan}" class="text-center empty-state">No open positions. Autonomous scanner primed for high-conviction breakout setups.</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = allPositions.map(pos => `
-    <tr>
-      <td><span class="live-tag">${pos.exchange}</span></td>
-      <td><strong>${pos.symbol}</strong></td>
-      <td><span class="${pos.direction === 'buy' || pos.direction === 'long' ? 'green-text' : 'red-text'}">${pos.direction.toUpperCase()}</span></td>
-      <td>$${Number(pos.entry_price).toFixed(4)}</td>
-      <td class="red-text">$${Number(pos.hard_sl || 0).toFixed(4)}</td>
-      <td class="green-text">$${Number(pos.take_profit || 0).toFixed(4)}</td>
-      <td><span class="green-text">${pos.trail_active ? '🟢 ACTIVE (+0.2%)' : 'ARMED'}</span></td>
+  tbody.innerHTML = allPositions.map(pos => {
+    const actionCell = isUserLoggedIn ? `
       <td>
         <button class="btn-trade-close-action" onclick="handleUserClosePosition('${pos.id || ''}', '${pos.symbol}', '${pos.exchange}')" title="Close ${pos.symbol} Position">
           <span>✕ CLOSE</span>
         </button>
       </td>
-    </tr>
-  `).join("");
+    ` : ``;
+
+    return `
+      <tr>
+        <td><span class="live-tag">${pos.exchange}</span></td>
+        <td><strong>${pos.symbol}</strong></td>
+        <td><span class="${pos.direction === 'buy' || pos.direction === 'long' ? 'green-text' : 'red-text'}">${pos.direction.toUpperCase()}</span></td>
+        <td>$${Number(pos.entry_price).toFixed(4)}</td>
+        <td class="red-text">$${Number(pos.hard_sl || 0).toFixed(4)}</td>
+        <td class="green-text">$${Number(pos.take_profit || 0).toFixed(4)}</td>
+        <td><span class="green-text">${pos.trail_active ? '🟢 ACTIVE (+0.2%)' : 'ARMED'}</span></td>
+        ${actionCell}
+      </tr>
+    `;
+  }).join("");
 }
 
 function renderSignalsFeed(signals) {

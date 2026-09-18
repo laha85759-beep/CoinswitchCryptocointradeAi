@@ -22,9 +22,10 @@ def init_db():
         email TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
         name TEXT,
-        role TEXT DEFAULT "user",
+        role TEXT DEFAULT "trader",
         is_active INTEGER DEFAULT 1,
         referred_by_code TEXT DEFAULT "",
+        supabase_id TEXT DEFAULT "",
         country TEXT DEFAULT "US",
         plan_name TEXT DEFAULT "free",
         created_at INTEGER
@@ -168,6 +169,7 @@ def init_db():
         existing_cols = [r["name"] for r in cursor.fetchall()]
         for col_def, col_name in [
             ("referred_by_code TEXT DEFAULT ''", "referred_by_code"),
+            ("supabase_id TEXT DEFAULT ''", "supabase_id"),
             ("country TEXT DEFAULT 'US'", "country"),
             ("plan_name TEXT DEFAULT 'free'", "plan_name"),
         ]:
@@ -607,7 +609,7 @@ def get_superadmin_kpis() -> dict:
 
 
 # ── USER OPERATIONS & CRM ─────────────────────────────────────────────────────
-def create_user(email: str, password: str, name: str = "", referral_code: str = "") -> tuple[dict | None, str | None]:
+def create_user(email: str, password: str, name: str = "", referral_code: str = "", role: str = "trader") -> tuple[dict | None, str | None]:
     email = email.strip().lower()
     if not email or "@" not in email:
         return None, "Invalid email address."
@@ -625,8 +627,8 @@ def create_user(email: str, password: str, name: str = "", referral_code: str = 
         now = int(time.time())
         pass_hash = hash_password(password)
         cursor.execute(
-            "INSERT INTO users (email, password_hash, name, role, is_active, referred_by_code, plan_name, created_at) VALUES (?, ?, ?, 'user', 1, ?, 'free', ?)",
-            (email, pass_hash, name or email.split("@")[0], referral_code or "", now)
+            "INSERT INTO users (email, password_hash, name, role, is_active, referred_by_code, plan_name, created_at) VALUES (?, ?, ?, ?, 1, ?, 'free', ?)",
+            (email, pass_hash, name or email.split("@")[0], role or "trader", referral_code or "", now)
         )
         user_id = cursor.lastrowid
         
@@ -649,7 +651,78 @@ def create_user(email: str, password: str, name: str = "", referral_code: str = 
             "id": user_id,
             "email": email,
             "name": name or email.split("@")[0],
-            "role": "user",
+            "role": role or "trader",
+            "is_active": 1,
+            "plan_name": "free",
+            "created_at": now
+        }
+        conn.close()
+        return user, None
+    except Exception as e:
+        conn.close()
+        return None, str(e)
+
+def sync_supabase_user(supabase_id: str, email: str, name: str = "", referral_code: str = "", role: str = "trader") -> tuple[dict | None, str | None]:
+    email = email.strip().lower()
+    if not email or "@" not in email:
+        return None, "Invalid email address."
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    now = int(time.time())
+    
+    try:
+        # Check by supabase_id first, then by email
+        cursor.execute("SELECT * FROM users WHERE supabase_id = ? AND supabase_id != ''", (supabase_id,))
+        row = cursor.fetchone()
+        
+        if not row:
+            cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+            row = cursor.fetchone()
+            if row and supabase_id:
+                cursor.execute("UPDATE users SET supabase_id = ? WHERE id = ?", (supabase_id, row["id"]))
+                conn.commit()
+                
+        if row:
+            # User already exists
+            user = {
+                "id": row["id"],
+                "email": row["email"],
+                "name": row["name"] or name or email.split("@")[0],
+                "role": row["role"] or "trader",
+                "is_active": row["is_active"],
+                "plan_name": row["plan_name"] or "free",
+                "created_at": row["created_at"]
+            }
+            conn.close()
+            return user, None
+            
+        # Create new user for Supabase trader
+        pass_hash = hash_password(f"supa_oauth_{supabase_id}_{now}")
+        cursor.execute(
+            "INSERT INTO users (email, password_hash, name, role, is_active, referred_by_code, supabase_id, plan_name, created_at) VALUES (?, ?, ?, ?, 1, ?, ?, 'free', ?)",
+            (email, pass_hash, name or email.split("@")[0], role or "trader", referral_code or "", supabase_id or "", now)
+        )
+        user_id = cursor.lastrowid
+        
+        cursor.execute(
+            "INSERT INTO user_settings (user_id, hard_sl_pct, take_profit_pct, trail_pct, max_capital_pct, active_strategy, autotrade_enabled, updated_at) VALUES (?, 2.0, 15.0, 0.2, 40.0, 'ai_consensus', 1, ?)",
+            (user_id, now)
+        )
+
+        if referral_code:
+            cursor.execute('''
+            INSERT INTO affiliate_referrals (affiliate_code, user_id, status, commission_earned, created_at)
+            VALUES (?, ?, 'active', 0.0, ?)
+            ''', (referral_code, user_id, now))
+
+        conn.commit()
+        
+        user = {
+            "id": user_id,
+            "email": email,
+            "name": name or email.split("@")[0],
+            "role": role or "trader",
             "is_active": 1,
             "plan_name": "free",
             "created_at": now
