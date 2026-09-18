@@ -1984,6 +1984,81 @@ body.neural-core-os {
   display: block;
 }
 
+/* ══════════ DEDICATED QUANT TRADER COCKPIT (USER DASHBOARD) ══════════ */
+.trader-subnav-bar {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 10px 0 14px;
+  border-bottom: 1px solid var(--border-neon);
+  margin-bottom: 16px;
+  scrollbar-width: none;
+}
+.trader-subnav-bar::-webkit-scrollbar { display: none; }
+.trader-tab-btn {
+  padding: 8px 16px;
+  background: rgba(0, 240, 144, 0.05);
+  border: 1px solid rgba(0, 240, 144, 0.25);
+  border-radius: 4px;
+  color: var(--text-sec);
+  font-family: var(--font-orb);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.trader-tab-btn:hover {
+  background: rgba(0, 212, 255, 0.12);
+  border-color: var(--neon-cyan);
+  color: #fff;
+  transform: translateY(-1px);
+}
+.trader-tab-btn.active {
+  background: linear-gradient(135deg, rgba(0, 240, 144, 0.22), rgba(0, 212, 255, 0.15));
+  border-color: var(--neon-green);
+  color: var(--neon-green);
+  box-shadow: 0 0 15px rgba(0, 240, 144, 0.3);
+}
+.trader-sub-section {
+  display: none;
+  animation: fadeIn 0.25s ease;
+}
+.trader-sub-section.active {
+  display: block;
+}
+.trader-vault-card {
+  background: rgba(6, 16, 32, 0.85);
+  border: 1px solid rgba(0, 240, 144, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+.trader-vault-title {
+  font-family: var(--font-orb);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--neon-cyan);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.trader-vault-val {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+}
+.trader-risk-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
 /* ══════════ ADMIN KPI CARDS ══════════ */
 .admin-kpi-grid {
   display: grid;

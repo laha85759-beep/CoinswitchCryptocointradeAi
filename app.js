@@ -914,6 +914,8 @@ function updateUserUI(user, settings, exConnections) {
   const adminNavBtn = document.getElementById("adminNavBtn");
   const superAdminTab = document.getElementById("superAdminNavTab");
   const dockAdminBtn = document.getElementById("dockAdminBtn");
+  const dockTraderBtn = document.getElementById("dockTraderBtn");
+  const drawerTraderTab = document.getElementById("drawerTraderTab");
 
   const proExecBtn = document.getElementById("btnExecuteProOrder");
   const proExecText = document.getElementById("btnExecuteProOrderText");
@@ -926,9 +928,12 @@ function updateUserUI(user, settings, exConnections) {
     if (logoutBtn) logoutBtn.style.display = "flex";
     if (userTxt) userTxt.textContent = `👤 ${user.name || user.email.split('@')[0]}`;
     if (keysBtn) keysBtn.style.display = "flex";
+    if (dockTraderBtn) dockTraderBtn.style.display = "flex";
+    if (drawerTraderTab) drawerTraderTab.style.display = "flex";
+
     if (userPill) {
-      userPill.title = `Logged in as ${user.email} (Role: ${user.role?.toUpperCase() || 'TRADER'})`;
-      userPill.onclick = () => openUserSettingsModal();
+      userPill.title = `Logged in as ${user.email} • Click to open Trader Cockpit`;
+      userPill.onclick = () => switchView("trader");
     }
 
     // Unhide manual order ticket and personal trades table exclusively for authenticated users
@@ -965,6 +970,9 @@ function updateUserUI(user, settings, exConnections) {
     if (adminNavBtn) adminNavBtn.style.display = "none";
     if (superAdminTab) superAdminTab.style.display = "none";
     if (dockAdminBtn) dockAdminBtn.style.display = "none";
+    if (dockTraderBtn) dockTraderBtn.style.display = "none";
+    if (drawerTraderTab) drawerTraderTab.style.display = "none";
+
     if (userPill) {
       userPill.title = "Login or Create Trader Account";
       userPill.onclick = () => openAuthModal();
@@ -985,6 +993,474 @@ function updateUserUI(user, settings, exConnections) {
   // Re-render position tables so action buttons toggle dynamically
   if (lastCachedPositions) {
     renderPositionsTable(lastCachedPositions);
+  }
+}
+
+// ── 7.5. Dedicated Quant Trader Dashboard Engine ──────────────────────────────
+function switchTraderSubTab(tabName, btnElement) {
+  document.querySelectorAll(".trader-tab-btn").forEach(b => b.classList.remove("active"));
+  if (btnElement) btnElement.classList.add("active");
+  
+  document.querySelectorAll(".trader-sub-section").forEach(sec => sec.classList.remove("active"));
+  const target = document.getElementById(`trader-sec-${tabName}`);
+  if (target) target.classList.add("active");
+}
+
+function renderTraderDashboard(userData, fullData) {
+  if (!userData) return;
+  const u = userData.user || {};
+  const bal = userData.balances || {};
+  const set = userData.settings || {};
+  const conn = userData.exchange_connections || {};
+  const perf = userData.performance || {};
+  const openPos = userData.open_positions || {};
+  const closedTrades = userData.closed_trades || [];
+
+  // 1. Header & Profile
+  const welcomeTitle = document.getElementById("traderHeaderWelcomeTitle");
+  if (welcomeTitle) welcomeTitle.textContent = `Welcome, ${u.name || u.email.split('@')[0]}`;
+
+  const emailEl = document.getElementById("traderHeaderEmail");
+  if (emailEl) emailEl.textContent = u.email || "--";
+
+  const tierEl = document.getElementById("traderHeaderTier");
+  if (tierEl) tierEl.textContent = (u.plan_name || "QUANT PRO").toUpperCase();
+
+  const roleBadge = document.getElementById("traderHeaderRoleBadge");
+  if (roleBadge) roleBadge.textContent = u.role === "superadmin" ? "👑 SUPER ADMIN ACTIVE" : "🛡️ QUANT TRADER ACTIVE";
+
+  const profName = document.getElementById("traderProfName");
+  if (profName) profName.textContent = u.name || "--";
+
+  const profEmail = document.getElementById("traderProfEmail");
+  if (profEmail) profEmail.textContent = u.email || "--";
+
+  const profPhone = document.getElementById("traderProfPhone");
+  if (profPhone) profPhone.textContent = u.phone || "Not set";
+
+  const profCountry = document.getElementById("traderProfCountry");
+  if (profCountry) profCountry.textContent = `${u.country || 'Global'}`;
+
+  const profBroker = document.getElementById("traderProfBroker");
+  if (profBroker) profBroker.textContent = u.preferred_exchange === 'delta' ? '⚡ Delta Exchange India' : (u.preferred_exchange === 'coinswitch' ? '🏛 CoinSwitch Pro' : '⚡ Dual Engine (Delta + CoinSwitch)');
+
+  const refLinkInput = document.getElementById("traderProfRefLink");
+  if (refLinkInput) refLinkInput.value = u.referral_url || `https://trade.thesmartmag.com/?ref=${u.referral_code || u.id}`;
+
+  // 2. Balances & KPI Cards
+  const totCapEl = document.getElementById("traderOverviewTotalCap");
+  if (totCapEl) totCapEl.innerHTML = `$${Number(bal.total_capital_usdt || 0).toFixed(2)} <span style="font-size:12px; color:var(--text-dim);">USDT</span>`;
+
+  const csBalEl = document.getElementById("traderOverviewCsBal");
+  if (csBalEl) csBalEl.textContent = `$${Number(bal.cs_usdt || 0).toFixed(2)}`;
+
+  const csInrEl = document.getElementById("traderOverviewCsInr");
+  if (csInrEl) csInrEl.textContent = `INR: ₹${Number(bal.cs_inr || 0).toLocaleString('en-IN', {minimumFractionDigits:2})}`;
+
+  const deltaBalEl = document.getElementById("traderOverviewDeltaBal");
+  if (deltaBalEl) deltaBalEl.textContent = `$${Number(bal.delta_usdt || 0).toFixed(2)}`;
+
+  const realPnlEl = document.getElementById("traderOverviewRealizedPnl");
+  const pnlNum = Number(perf.total_realized_pnl_usdt || 0);
+  if (realPnlEl) {
+    realPnlEl.textContent = (pnlNum >= 0 ? "+$" : "-$") + Math.abs(pnlNum).toFixed(2);
+    realPnlEl.className = `admin-kpi-num ${pnlNum >= 0 ? "green-text" : "red-text"}`;
+  }
+
+  const winRateEl = document.getElementById("traderOverviewWinRate");
+  if (winRateEl) winRateEl.textContent = `Win Rate: ${perf.win_rate_pct || 100}% (${perf.closed_trades_count || 0} Closed)`;
+
+  const journalBadge = document.getElementById("traderJournalSummaryBadge");
+  if (journalBadge) journalBadge.textContent = `REALIZED P&L: ${(pnlNum >= 0 ? '+$' : '-$')}${Math.abs(pnlNum).toFixed(2)} (${perf.closed_trades_count || 0} TRADES)`;
+
+  // 3. Telemetry HUD
+  const hudSl = document.getElementById("traderHudSl");
+  if (hudSl) hudSl.textContent = `-${Number(set.hard_sl_pct || 2.0).toFixed(1)}% (Dynamic)`;
+
+  const hudTp = document.getElementById("traderHudTp");
+  if (hudTp) hudTp.textContent = `+${Number(set.take_profit_pct || 15.0).toFixed(1)}% (Dynamic)`;
+
+  const hudTrail = document.getElementById("traderHudTrail");
+  if (hudTrail) hudTrail.textContent = `+${Number(set.trail_pct || 0.2).toFixed(2)}% Step Lock`;
+
+  const hudConn = document.getElementById("traderHudConnStatus");
+  if (hudConn) {
+    const hasKeys = conn.coinswitch || conn.delta;
+    hudConn.textContent = hasKeys ? "API KEYS CONNECTED 🟢" : "AWAITING API KEYS ⚪";
+    hudConn.className = hasKeys ? "green-text font-bold" : "text-dim font-bold";
+  }
+
+  // 4. AI Command & Strategy
+  const stratSel = document.getElementById("traderStrategySelect");
+  if (stratSel && set.active_strategy) stratSel.value = set.active_strategy;
+
+  const stratBadge = document.getElementById("traderStrategyBadge");
+  if (stratBadge && stratSel) {
+    stratBadge.textContent = stratSel.options[stratSel.selectedIndex]?.text.split('(')[0].trim().toUpperCase() || "AI CONSENSUS";
+  }
+
+  const autoBtn = document.getElementById("traderAutotradeHeaderBtn");
+  const autoToggleBtn = document.getElementById("traderAutotradeToggleBtn");
+  const autoTxt = document.getElementById("traderAutotradeStatusTxt");
+  const isAuto = set.autotrade_enabled !== undefined ? !!set.autotrade_enabled : true;
+
+  if (autoBtn) {
+    autoBtn.textContent = isAuto ? "🤖 AUTOTRADE: ON" : "⏸ AUTOTRADE: PAUSED";
+    autoBtn.className = isAuto ? "tsm-btn-cta green" : "tsm-btn-cta gold";
+  }
+  if (autoToggleBtn) {
+    autoToggleBtn.textContent = isAuto ? "PAUSE AUTOTRADE" : "RESUME AUTOTRADE";
+    autoToggleBtn.className = isAuto ? "tsm-btn-danger" : "tsm-btn-cta green";
+  }
+  if (autoTxt) {
+    autoTxt.textContent = isAuto ? "AUTOTRADING: ENABLED 🟢" : "AUTOTRADING: PAUSED ⏸";
+    autoTxt.style.color = isAuto ? "var(--neon-green)" : "var(--neon-gold)";
+  }
+
+  // 5. Risk Safeguards inputs
+  const hardSlInput = document.getElementById("traderRiskHardSl");
+  if (hardSlInput && document.activeElement !== hardSlInput) hardSlInput.value = set.hard_sl_pct || 2.0;
+
+  const tpInput = document.getElementById("traderRiskTp");
+  if (tpInput && document.activeElement !== tpInput) tpInput.value = set.take_profit_pct || 15.0;
+
+  const trailInput = document.getElementById("traderRiskTrail");
+  if (trailInput && document.activeElement !== trailInput) trailInput.value = set.trail_pct || 0.2;
+
+  const maxCapInput = document.getElementById("traderRiskMaxCap");
+  if (maxCapInput && document.activeElement !== maxCapInput) maxCapInput.value = set.max_capital_pct || 40;
+
+  // 6. Keys status badges
+  const csBadge = document.getElementById("traderKeysCsStatusBadge");
+  if (csBadge) {
+    csBadge.textContent = conn.coinswitch ? "CONNECTED 🟢" : "NOT CONFIGURED ⚪";
+    csBadge.className = conn.coinswitch ? "tsm-badge-pill green" : "tsm-badge-pill";
+  }
+
+  const deltaBadge = document.getElementById("traderKeysDeltaStatusBadge");
+  if (deltaBadge) {
+    deltaBadge.textContent = conn.delta ? "CONNECTED 🟢" : "NOT CONFIGURED ⚪";
+    deltaBadge.className = conn.delta ? "tsm-badge-pill green" : "tsm-badge-pill";
+  }
+
+  // 7. Active positions table
+  renderTraderActivePositions(openPos);
+
+  // 8. Closed trades journal table
+  renderTraderClosedTrades(closedTrades);
+
+  // 9. Heatmap
+  if (fullData && fullData.heatmap_coins) {
+    renderTraderHeatmap(fullData.heatmap_coins);
+  }
+}
+
+function renderTraderActivePositions(openPos) {
+  const tbody = document.getElementById("traderActivePosTbody");
+  const badge = document.getElementById("traderPosCountBadge");
+  if (!tbody) return;
+
+  const validCs = (openPos.coinswitch || []).map(p => ({...p, exchange: "CoinSwitch (Spot)"}));
+  const validDelta = (openPos.delta || []).map(p => ({...p, exchange: "Delta (Futures)"}));
+  const allPos = [...validCs, ...validDelta];
+
+  if (badge) badge.textContent = `${allPos.length} POSITION${allPos.length === 1 ? '' : 'S'}`;
+
+  if (allPos.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="11" class="text-center empty-state" style="padding:22px;">
+          No open positions in your account. The AI engine is actively monitoring liquidity blocks for momentum entries.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = allPos.map(pos => {
+    const sym = pos.symbol || "BTC/USDT";
+    const dir = String(pos.direction || "long").toUpperCase();
+    const isLong = dir === "LONG" || dir === "BUY";
+    const entryP = Number(pos.entry_price || pos.price || 0);
+    const markP = Number(pos.mark_price || entryP);
+    const qty = Number(pos.qty || pos.quantity || 1.0);
+    const margin = Number(pos.margin_used || (entryP * qty) || 0);
+
+    let pnl = pos.unrealized_pnl !== undefined && pos.unrealized_pnl !== null && Number(pos.unrealized_pnl) !== 0
+      ? Number(pos.unrealized_pnl)
+      : (isLong ? (markP - entryP) * qty : (entryP - markP) * qty);
+
+    const pnlPct = entryP > 0 ? ((markP - entryP) / entryP * 100 * (isLong ? 1 : -1)) : 0.0;
+    const pnlClass = pnl >= 0 ? "green-text" : "red-text";
+    const pnlPrefix = pnl >= 0 ? "+$" : "-$";
+
+    const slVal = Number(pos.hard_sl || (isLong ? entryP * 0.98 : entryP * 1.02));
+    const tpVal = Number(pos.take_profit || (isLong ? entryP * 1.15 : entryP * 0.85));
+
+    const fmtP = (n) => n >= 1000 ? `$${n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}` : (n >= 1 ? `$${n.toFixed(4)}` : `$${n.toFixed(6)}`);
+
+    return `
+      <tr>
+        <td><span class="live-tag">${pos.exchange}</span></td>
+        <td><strong>${sym}</strong></td>
+        <td><span class="${isLong ? 'green-text' : 'red-text'} font-mono font-bold">${dir}</span></td>
+        <td>${fmtP(entryP)}</td>
+        <td><strong>${fmtP(markP)}</strong></td>
+        <td>$${margin.toFixed(2)} (${qty})</td>
+        <td><strong class="${pnlClass} font-mono">${pnlPrefix}${Math.abs(pnl).toFixed(2)} (${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%)</strong></td>
+        <td class="red-text font-mono">${fmtP(slVal)}</td>
+        <td class="green-text font-mono">${fmtP(tpVal)}</td>
+        <td><span class="green-text">🟢 ARMED</span></td>
+        <td>
+          <button class="btn-trade-close-action" onclick="handleUserClosePosition('${pos.id || ''}', '${sym}', '${pos.exchange}')" title="Close ${sym}">
+            <span>✕ CLOSE</span>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function renderTraderClosedTrades(closedList) {
+  const tbody = document.getElementById("traderClosedTradesTbody");
+  if (!tbody) return;
+
+  if (!closedList || closedList.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9" class="text-center empty-state" style="padding:20px;">No closed trades logged yet for this account.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = closedList.map(t => {
+    const pnl = Number(t.realized_pnl || 0);
+    const pnlClass = pnl >= 0 ? "green-text" : "red-text";
+    const pnlSign = pnl >= 0 ? "+$" : "-$";
+    const dt = t.closed_at ? new Date(Number(t.closed_at) * 1000).toLocaleString() : (t.created_at || "--");
+    return `
+      <tr>
+        <td class="font-mono" style="font-size:10px;">${dt}</td>
+        <td><span class="live-tag">${(t.exchange || 'CS').toUpperCase()}</span></td>
+        <td><strong>${t.symbol || '--'}</strong></td>
+        <td><span class="${String(t.direction).toLowerCase().includes('long') ? 'green-text' : 'red-text'} font-bold">${String(t.direction || 'LONG').toUpperCase()}</span></td>
+        <td>$${Number(t.entry_price || 0).toFixed(4)}</td>
+        <td>$${Number(t.exit_price || t.entry_price || 0).toFixed(4)}</td>
+        <td>${t.quantity || t.qty || 1}</td>
+        <td><strong class="${pnlClass} font-mono">${pnlSign}${Math.abs(pnl).toFixed(2)}</strong></td>
+        <td><span class="green-text font-bold">FILLED ✅</span></td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function renderTraderHeatmap(coins) {
+  const grid = document.getElementById("traderHeatmapGrid");
+  if (!grid || !coins) return;
+
+  grid.innerHTML = coins.slice(0, 16).map(c => {
+    const sym = c.symbol || "";
+    const p = Number(c.price || 0);
+    const sig = String(c.signal || "bull").toLowerCase();
+    const isBull = sig.includes("bull") || sig.includes("catalyst") || sig.includes("cluster");
+    const fmt = p >= 1000 ? `$${p.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}` : (p >= 1 ? `$${p.toFixed(4)}` : `$${p.toFixed(6)}`);
+    return `
+      <div class="tsm-rwa-card" style="cursor:pointer;" onclick="jumpToProChartSymbol('${sym}')" title="Click to view ${sym} on Pro Chart">
+        <div class="tsm-rwa-ticker">${sym}</div>
+        <div class="tsm-rwa-name font-mono">${fmt}</div>
+        <div class="tsm-rwa-sector" style="font-size:9.5px;">Signal: ${sig.toUpperCase()}</div>
+        <div class="tsm-rwa-status ${isBull ? 'green' : 'gold'}">${isBull ? 'ARMED BREAKOUT' : 'MONITORING'}</div>
+      </div>
+    `;
+  }).join("");
+}
+
+async function handleTraderRiskSubmit(e) {
+  if (e) e.preventDefault();
+  await saveTraderRiskSettings(true);
+}
+
+async function saveTraderRiskSettings(showMsg = true) {
+  if (!userToken) return;
+  const hardSl = parseFloat(document.getElementById("traderRiskHardSl")?.value || "2.0");
+  const tp = parseFloat(document.getElementById("traderRiskTp")?.value || "15.0");
+  const trail = parseFloat(document.getElementById("traderRiskTrail")?.value || "0.2");
+  const maxCap = parseFloat(document.getElementById("traderRiskMaxCap")?.value || "40.0");
+  const strategy = document.getElementById("traderStrategySelect")?.value || "ai_consensus";
+  const msgEl = document.getElementById("traderRiskSavedMsg");
+
+  try {
+    const res = await fetch("/api/user/settings", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${userToken}`
+      },
+      body: JSON.stringify({
+        hard_sl_pct: hardSl,
+        take_profit_pct: tp,
+        trail_pct: trail,
+        max_capital_pct: maxCap,
+        active_strategy: strategy
+      })
+    });
+    const data = await res.json();
+    if (res.ok && data.status === "success") {
+      if (showMsg && msgEl) {
+        msgEl.textContent = "✅ Risk Safeguards Saved Successfully!";
+        msgEl.style.color = "var(--neon-green)";
+        setTimeout(() => { if (msgEl) msgEl.textContent = ""; }, 4000);
+      }
+      fetchRealData();
+    } else {
+      if (msgEl) {
+        msgEl.textContent = `⚠️ ${data.message || 'Failed to save settings'}`;
+        msgEl.style.color = "var(--neon-pink)";
+      }
+    }
+  } catch (err) {
+    if (msgEl) {
+      msgEl.textContent = `❌ ${err.message || err}`;
+      msgEl.style.color = "var(--neon-pink)";
+    }
+  }
+}
+
+async function handleTraderKeysSubmit(e) {
+  if (e) e.preventDefault();
+  if (!userToken) return;
+
+  const csKey = document.getElementById("traderKeysCsKey")?.value.trim() || "";
+  const csSecret = document.getElementById("traderKeysCsSecret")?.value.trim() || "";
+  const deltaKey = document.getElementById("traderKeysDeltaKey")?.value.trim() || "";
+  const deltaSecret = document.getElementById("traderKeysDeltaSecret")?.value.trim() || "";
+  const msgEl = document.getElementById("traderKeysMsg");
+
+  if (msgEl) {
+    msgEl.textContent = "Encrypting and verifying credentials with exchange APIs...";
+    msgEl.style.color = "var(--neon-cyan)";
+  }
+
+  try {
+    const res = await fetch("/api/user/exchange-keys", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${userToken}`
+      },
+      body: JSON.stringify({
+        cs_key: csKey,
+        cs_secret: csSecret,
+        delta_key: deltaKey,
+        delta_secret: deltaSecret
+      })
+    });
+    const data = await res.json();
+    if (res.ok && data.status === "success") {
+      if (msgEl) {
+        msgEl.textContent = "✅ Exchange API Keys Verified & Encrypted with AES-256!";
+        msgEl.style.color = "var(--neon-green)";
+      }
+      fetchRealData();
+    } else {
+      if (msgEl) {
+        msgEl.textContent = `⚠️ ${data.message || 'Verification error'}`;
+        msgEl.style.color = "var(--neon-pink)";
+      }
+    }
+  } catch (err) {
+    if (msgEl) {
+      msgEl.textContent = `❌ ${err.message || err}`;
+      msgEl.style.color = "var(--neon-pink)";
+    }
+  }
+}
+
+async function handleTraderToggleAutotrade() {
+  if (!userToken) {
+    openAuthModal();
+    return;
+  }
+  try {
+    const res = await fetch("/api/user/toggle-bot", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${userToken}` }
+    });
+    const data = await res.json();
+    if (res.ok && data.status === "success") {
+      fetchRealData();
+    }
+  } catch (err) {
+    console.debug("Autotrade toggle error:", err);
+  }
+}
+
+function copyTraderReferralLink() {
+  const linkInput = document.getElementById("traderProfRefLink");
+  const confirmMsg = document.getElementById("traderCopyConfirmMsg");
+  if (!linkInput) return;
+  
+  navigator.clipboard.writeText(linkInput.value).then(() => {
+    if (confirmMsg) {
+      confirmMsg.textContent = "✅ Referral link copied to clipboard!";
+      setTimeout(() => { if (confirmMsg) confirmMsg.textContent = ""; }, 3000);
+    }
+  }).catch(() => {
+    linkInput.select();
+    document.execCommand("copy");
+    if (confirmMsg) {
+      confirmMsg.textContent = "✅ Referral link copied!";
+      setTimeout(() => { if (confirmMsg) confirmMsg.textContent = ""; }, 3000);
+    }
+  });
+}
+
+async function handleTraderQuickOrder(e) {
+  if (e) e.preventDefault();
+  if (!userToken) {
+    openAuthModal();
+    return;
+  }
+  const ex = document.getElementById("traderOrderEx")?.value || "both";
+  const sym = document.getElementById("traderOrderSym")?.value || "BTC/USDT";
+  const side = document.getElementById("traderOrderSide")?.value || "buy";
+  const amt = parseFloat(document.getElementById("traderOrderAmt")?.value || "10");
+  const msgEl = document.getElementById("traderOrderMsg");
+
+  if (msgEl) {
+    msgEl.textContent = `Routing ${side.toUpperCase()} order for ${sym} to ${ex.toUpperCase()}...`;
+    msgEl.style.color = "var(--neon-cyan)";
+  }
+
+  try {
+    const res = await fetch("/api/user/manual-trade", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${userToken}`
+      },
+      body: JSON.stringify({
+        symbol: sym,
+        side: side,
+        amount_usd: amt,
+        exchanges: ex === "both" ? ["coinswitch", "delta"] : [ex]
+      })
+    });
+    const data = await res.json();
+    if (res.ok && data.status === "success") {
+      if (msgEl) {
+        msgEl.textContent = `✅ Order Executed Successfully! (ID: ${data.order_id || 'LIVE'})`;
+        msgEl.style.color = "var(--neon-green)";
+      }
+      fetchRealData();
+    } else {
+      if (msgEl) {
+        msgEl.textContent = `⚠️ ${data.message || 'Execution error'}`;
+        msgEl.style.color = "var(--neon-pink)";
+      }
+    }
+  } catch (err) {
+    if (msgEl) {
+      msgEl.textContent = `❌ ${err.message || err}`;
+      msgEl.style.color = "var(--neon-pink)";
+    }
   }
 }
 
@@ -1694,6 +2170,10 @@ async function fetchRealData() {
 
       renderPositionsTable(positions);
       renderProChartLiveTrades(positions, data.tickers || {}, userData);
+    }
+
+    if (userData) {
+      renderTraderDashboard(userData, data);
     }
 
     if (data.advanced && data.advanced.signals_feed) {

@@ -646,10 +646,11 @@ def get_user_terminal_data(user):
             pass
             
     total_capital_usdt = round(cs_usdt + (cs_inr / 88.0) + delta_usdt, 2)
+    available_margin = round(total_capital_usdt * 0.95, 2)
     
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM user_trades WHERE user_id = ? AND status = 'open'", (user["id"],))
+    cursor.execute("SELECT * FROM user_trades WHERE user_id = ? AND status = 'open' ORDER BY created_at DESC", (user["id"],))
     raw_open_rows = [dict(r) for r in cursor.fetchall()]
     
     sl_pct = float(settings.get("hard_sl_pct", 2.0))
@@ -664,23 +665,36 @@ def get_user_terminal_data(user):
             r["take_profit"] = round(entry * (1 + tp_pct/100) if is_long else entry * (1 - tp_pct/100), 4) if entry > 0 else 0
         open_rows.append(r)
     
-    cursor.execute("SELECT * FROM user_trades WHERE user_id = ? AND status = 'closed' ORDER BY closed_at DESC LIMIT 20", (user["id"],))
+    cursor.execute("SELECT * FROM user_trades WHERE user_id = ? AND status = 'closed' ORDER BY closed_at DESC LIMIT 30", (user["id"],))
     closed_rows = [dict(r) for r in cursor.fetchall()]
     
     cursor.execute("SELECT COUNT(*), COALESCE(SUM(realized_pnl), 0.0) FROM user_trades WHERE user_id = ? AND status = 'closed'", (user["id"],))
     closed_count, total_pnl = cursor.fetchone()
     conn.close()
     
+    winning_trades = [r for r in closed_rows if float(r.get("realized_pnl", 0.0) or 0.0) >= 0]
+    win_rate = 100.0 if not closed_rows else round(len(winning_trades) / len(closed_rows) * 100.0, 1)
+    
+    ref_code = user.get("referral_code") or f"TRADER{user['id']}"
+    
     return jsonify({
         "status": "success",
         "user": {
             "id": user["id"],
             "email": user["email"],
-            "name": user["name"],
-            "role": user["role"]
+            "name": user.get("name") or user["email"].split("@")[0],
+            "role": user.get("role", "trader"),
+            "phone": user.get("phone", ""),
+            "country": user.get("country", "US"),
+            "preferred_exchange": user.get("preferred_exchange", "both"),
+            "plan_name": user.get("plan_name", "QUANT TRADER PRO"),
+            "referral_code": ref_code,
+            "referral_url": f"https://trade.thesmartmag.com/?ref={ref_code}",
+            "created_at": user.get("created_at")
         },
         "balances": {
             "total_capital_usdt": total_capital_usdt,
+            "available_margin_usdt": available_margin,
             "cs_usdt": round(cs_usdt, 4),
             "cs_inr": round(cs_inr, 2),
             "delta_usdt": round(delta_usdt, 2)
@@ -690,10 +704,11 @@ def get_user_terminal_data(user):
             "delta": [p for p in open_rows if p["exchange"] == "delta"],
             "total_count": len(open_rows)
         },
+        "closed_trades": closed_rows,
         "performance": {
             "closed_trades_count": closed_count or 0,
             "total_realized_pnl_usdt": round(total_pnl or 0.0, 2),
-            "win_rate_pct": 100.0
+            "win_rate_pct": win_rate
         },
         "settings": settings,
         "exchange_connections": {

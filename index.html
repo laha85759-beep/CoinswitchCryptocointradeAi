@@ -61,7 +61,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=123.0">
+  <link rel="stylesheet" href="styles.css?v=124.0">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -192,6 +192,9 @@
         <button class="tsm-drawer-item" data-view="trades" onclick="switchView('trades'); toggleMobileNavDrawer();">
           <span class="nc-tab-ico">💼</span><span>AUDIT LOG</span>
         </button>
+        <button class="tsm-drawer-item green" id="drawerTraderTab" data-view="trader" onclick="switchView('trader'); toggleMobileNavDrawer();" style="display:none;">
+          <span class="nc-tab-ico">👤</span><span>TRADER COCKPIT</span>
+        </button>
         <button class="tsm-drawer-item magenta" id="drawerAdminTab" data-view="admin" onclick="switchView('admin'); toggleMobileNavDrawer();">
           <span class="nc-tab-ico">⚙</span><span>SUPER ADMIN PORTAL</span>
         </button>
@@ -257,6 +260,14 @@
           <div class="tsm-dock-info">
             <span class="tsm-dock-title">AUDIT LOG</span>
             <span class="tsm-dock-chip green">PROVEN TRADES</span>
+          </div>
+        </button>
+
+        <button class="tsm-dock-item green" id="dockTraderBtn" data-view="trader" onclick="switchView('trader')" title="My Personal Trader Cockpit &amp; Account Operations" style="display:none;">
+          <span class="tsm-dock-icon">👤</span>
+          <div class="tsm-dock-info">
+            <span class="tsm-dock-title">MY COCKPIT</span>
+            <span class="tsm-dock-chip green">TRADER PORTAL</span>
           </div>
         </button>
 
@@ -1259,15 +1270,387 @@
       </div>
     </div>
 
-    <!-- VIEW 5: AUDIT TRAIL -->
-    <div id="view-trades" class="nc-view-pane tsm-view-section">
-      <div class="tsm-panel">
-        <div class="tsm-panel-header"><div class="tsm-panel-title">📜 VERIFIED EXECUTION LOG &amp; AUDIT TRAIL</div></div>
-        <div class="tsm-table-wrap">
-          <table class="tsm-table">
-            <thead><tr><th>TIMESTAMP</th><th>EXCHANGE</th><th>SYMBOL</th><th>ACTION</th><th>ENTRY PRICE</th><th>EXIT / STATUS</th><th>REALIZED PNL</th></tr></thead>
-            <tbody id="closed-trades-tbody"><tr><td colspan="7" class="text-center empty-state">No closed trades today. All trades executed on live APIs with verified cryptographic audit trail.</td></tr></tbody>
-          </table>
+    <!-- ══════════ VIEW 5.5: DEDICATED QUANT TRADER COCKPIT (USER DASHBOARD) ══════════ -->
+    <div id="view-trader" class="nc-view-pane tsm-view-section">
+      <!-- Top Trader Header Bar -->
+      <div class="tsm-panel tsm-admin-head-panel" style="border-color:var(--neon-green); box-shadow:0 0 25px rgba(0,240,144,0.15);">
+        <div>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+            <span class="tsm-badge-pill green" id="traderHeaderRoleBadge">🛡️ QUANT TRADER ACTIVE</span>
+            <span class="tsm-badge-pill cyan" id="traderHeaderExchangeBadge">⚡ DUAL ENGINE (COINSWITCH + DELTA)</span>
+          </div>
+          <h2 class="tsm-admin-title" id="traderHeaderWelcomeTitle">Welcome, Trader</h2>
+          <div class="tsm-admin-sub">
+            Account: <strong id="traderHeaderEmail" class="font-mono text-neon">--</strong> • 
+            Status: <span class="green">🟢 24/7 AUTONOMOUS RISK SYNCED</span> • 
+            Tier: <span class="cyan font-bold" id="traderHeaderTier">QUANT PRO</span>
+          </div>
+        </div>
+        <div class="tsm-admin-actions">
+          <button class="tsm-btn-secondary" onclick="openExchangeKeysModal()" title="Manage API Keys">🔑 API KEYS</button>
+          <button class="tsm-btn-cta green" onclick="handleTraderToggleAutotrade()" id="traderAutotradeHeaderBtn">🤖 AUTOTRADE: ON</button>
+          <button class="tsm-btn-secondary" onclick="handleUserLogout()">🚪 LOGOUT</button>
+        </div>
+      </div>
+
+      <!-- Trader Sub-Navigation Tabs Bar -->
+      <div class="trader-subnav-bar">
+        <button class="trader-tab-btn active" onclick="switchTraderSubTab('overview', this)">📊 BALANCES &amp; PORTFOLIO</button>
+        <button class="trader-tab-btn" onclick="switchTraderSubTab('aicommand', this)">🧠 AI COMMAND CENTER</button>
+        <button class="trader-tab-btn" onclick="switchTraderSubTab('risk', this)">🛡️ RISK SAFEGUARDS</button>
+        <button class="trader-tab-btn" onclick="switchTraderSubTab('keys', this)">🔑 API CREDENTIALS</button>
+        <button class="trader-tab-btn" onclick="switchTraderSubTab('positions', this)">💼 ACTIVE POSITIONS</button>
+        <button class="trader-tab-btn" onclick="switchTraderSubTab('analytics', this)">📈 TRADING JOURNAL</button>
+        <button class="trader-tab-btn" onclick="switchTraderSubTab('heatmap', this)">🌐 MARKET HEATMAP</button>
+        <button class="trader-tab-btn" onclick="switchTraderSubTab('profile', this)">👤 PROFILE &amp; REFERRALS</button>
+      </div>
+
+      <!-- ── TAB 1: OVERVIEW & BALANCES ────────────────────────────── -->
+      <div id="trader-sec-overview" class="trader-sub-section active">
+        <div class="admin-kpi-grid" style="margin-bottom:18px;">
+          <div class="admin-kpi-card" style="border-color:rgba(0,240,144,0.35);">
+            <div class="admin-kpi-tag green">TOTAL NET CAPITAL</div>
+            <div class="admin-kpi-num green-text" id="traderOverviewTotalCap">$0.00 <span style="font-size:12px; color:var(--text-dim);">USDT</span></div>
+            <div class="admin-kpi-sub">Combined CoinSwitch Spot &amp; Delta Vaults</div>
+          </div>
+          <div class="admin-kpi-card" style="border-color:rgba(0,212,255,0.35);">
+            <div class="admin-kpi-tag cyan">COINSWITCH PRO VAULT</div>
+            <div class="admin-kpi-num" id="traderOverviewCsBal">$0.00</div>
+            <div class="admin-kpi-sub" id="traderOverviewCsInr">INR: ₹0.00 (Spot Wallet)</div>
+          </div>
+          <div class="admin-kpi-card" style="border-color:rgba(255,215,0,0.35);">
+            <div class="admin-kpi-tag gold">DELTA INDIA VAULT</div>
+            <div class="admin-kpi-num" id="traderOverviewDeltaBal">$0.00</div>
+            <div class="admin-kpi-sub">F&amp;O Derivatives Margin Available</div>
+          </div>
+          <div class="admin-kpi-card" style="border-color:rgba(168,85,247,0.35);">
+            <div class="admin-kpi-tag purple">REALIZED PROFIT / WIN RATE</div>
+            <div class="admin-kpi-num" id="traderOverviewRealizedPnl">$0.00</div>
+            <div class="admin-kpi-sub" id="traderOverviewWinRate">Win Rate: 100% (0 Closed)</div>
+          </div>
+        </div>
+
+        <!-- Quick Exchange Actions Row -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:16px;">
+          <!-- Left: Account & Strategy Status Card -->
+          <div class="tsm-panel" style="margin:0;">
+            <div class="tsm-panel-header">
+              <div class="tsm-panel-title">🤖 ACTIVE AI STRATEGY TELEMETRY</div>
+              <span class="tsm-badge-green" id="traderStrategyBadge">AI CONSENSUS</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:10px; font-size:11px; margin-top:8px;">
+              <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:6px;">
+                <span style="color:var(--text-dim);">Execution Engine:</span>
+                <strong class="green-text">Autonomous Multi-Exchange</strong>
+              </div>
+              <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:6px;">
+                <span style="color:var(--text-dim);">Stop Loss Target:</span>
+                <strong class="red-text" id="traderHudSl">-2.0% (Dynamic)</strong>
+              </div>
+              <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:6px;">
+                <span style="color:var(--text-dim);">Take Profit Target:</span>
+                <strong class="green-text" id="traderHudTp">+15.0% (Dynamic)</strong>
+              </div>
+              <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:6px;">
+                <span style="color:var(--text-dim);">Trailing Ratchet:</span>
+                <strong class="cyan-text" id="traderHudTrail">+0.2% Step Lock</strong>
+              </div>
+              <div style="display:flex; justify-content:space-between;">
+                <span style="color:var(--text-dim);">Broker Connectivity:</span>
+                <span id="traderHudConnStatus" class="green-text font-bold">API KEYS CONFIGURED</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Direct Order Execution Quick Ticket -->
+          <div class="tsm-panel" style="margin:0;">
+            <div class="tsm-panel-header">
+              <div class="tsm-panel-title">⚡ DIRECT MULTI-BROKER ORDER TICKET</div>
+              <span class="tsm-badge-cyan">INSTANT ROUTING</span>
+            </div>
+            <form onsubmit="handleTraderQuickOrder(event)" style="display:flex; flex-direction:column; gap:8px; margin-top:6px;">
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                <div>
+                  <label style="font-size:9.5px; color:var(--text-dim); font-family:var(--font-mono);">EXCHANGE</label>
+                  <select id="traderOrderEx" class="tsm-input font-mono" style="width:100%; padding:6px 8px; margin-top:2px;">
+                    <option value="coinswitch">🏛 CoinSwitch Pro (Spot)</option>
+                    <option value="delta">⚡ Delta India (Derivatives)</option>
+                    <option value="both" selected>⚡ Both (Dual Engine)</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-size:9.5px; color:var(--text-dim); font-family:var(--font-mono);">SYMBOL</label>
+                  <select id="traderOrderSym" class="tsm-input font-mono" style="width:100%; padding:6px 8px; margin-top:2px;">
+                    <option value="BTC/USDT">BTC/USDT</option>
+                    <option value="ETH/USDT">ETH/USDT</option>
+                    <option value="SOL/USDT">SOL/USDT</option>
+                    <option value="XRP/USDT">XRP/USDT</option>
+                    <option value="DOGE/USDT">DOGE/USDT</option>
+                  </select>
+                </div>
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                <div>
+                  <label style="font-size:9.5px; color:var(--text-dim); font-family:var(--font-mono);">SIDE</label>
+                  <select id="traderOrderSide" class="tsm-input font-mono" style="width:100%; padding:6px 8px; margin-top:2px;">
+                    <option value="buy" class="green-text">BUY / LONG 🟢</option>
+                    <option value="sell" class="red-text">SELL / SHORT 🔴</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-size:9.5px; color:var(--text-dim); font-family:var(--font-mono);">ALLOCATION (USDT)</label>
+                  <input type="number" id="traderOrderAmt" class="tsm-input font-mono" value="10" min="1" step="1" style="width:100%; padding:6px 8px; margin-top:2px;">
+                </div>
+              </div>
+              <div id="traderOrderMsg" style="font-size:10.5px; min-height:14px;"></div>
+              <button type="submit" class="tsm-btn-cta green" style="width:100%; justify-content:center; padding:9px; font-size:11px;">
+                🚀 EXECUTE ORDER NOW
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB 2: AI COMMAND CENTER ──────────────────────────────── -->
+      <div id="trader-sec-aicommand" class="trader-sub-section">
+        <div class="tsm-panel">
+          <div class="tsm-panel-header">
+            <div class="tsm-panel-title">🧠 PERSONAL QUANT AI STRATEGY &amp; AUTONOMOUS COMMAND</div>
+            <span class="tsm-badge-pill green">ACTIVE STRATEGY RUNTIME</span>
+          </div>
+          <div class="trader-risk-grid" style="margin-top:12px;">
+            <div class="trader-vault-card">
+              <div class="trader-vault-title"><span>STRATEGY MODEL SELECTION</span> <span>⚙</span></div>
+              <select id="traderStrategySelect" class="tsm-input font-mono" style="width:100%; margin-top:4px;" onchange="saveTraderRiskSettings(false)">
+                <option value="ai_consensus" selected>🧠 Multi-Model AI Consensus (99% Confidence)</option>
+                <option value="liquidity_gap">⚡ Liquidity Gap Run Hunter</option>
+                <option value="supertrend_ghost">👻 SuperTrend Ghost Momentum</option>
+                <option value="options_hedger">🇮🇳 Options Delta/Gamma Risk Hedger</option>
+              </select>
+              <div style="font-size:10px; color:var(--text-sec); line-height:1.4; margin-top:6px;">
+                Selects the real-time mathematical model applied to scan and execute trades with your connected API keys.
+              </div>
+            </div>
+
+            <div class="trader-vault-card">
+              <div class="trader-vault-title"><span>AUTONOMOUS EXECUTION SWITCH</span> <span>🤖</span></div>
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px;">
+                <span style="font-size:12px; font-weight:700;" id="traderAutotradeStatusTxt">AUTOTRADING: ENABLED 🟢</span>
+                <button type="button" class="tsm-btn-cta green" onclick="handleTraderToggleAutotrade()" id="traderAutotradeToggleBtn">PAUSE BOT</button>
+              </div>
+              <div style="font-size:10px; color:var(--text-sec); line-height:1.4; margin-top:8px;">
+                When enabled, the bot automatically enters breakout trades on your exchange accounts based on your risk rules.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB 3: RISK SAFEGUARDS ────────────────────────────────── -->
+      <div id="trader-sec-risk" class="trader-sub-section">
+        <div class="tsm-panel">
+          <div class="tsm-panel-header">
+            <div class="tsm-panel-title">🛡️ PERSONAL RISK MANAGEMENT &amp; CIRCUIT BREAKERS</div>
+            <span class="tsm-badge-pill gold">ISOLATED ACCOUNT SAFETY</span>
+          </div>
+          <form onsubmit="handleTraderRiskSubmit(event)" style="margin-top:14px;">
+            <div class="trader-risk-grid">
+              <div class="trader-vault-card">
+                <div class="trader-vault-title"><span>HARD STOP LOSS (%)</span> <span class="red-text">⛔</span></div>
+                <input type="number" step="0.1" min="0.5" max="20" id="traderRiskHardSl" class="tsm-input font-mono" value="2.0" style="width:100%; font-size:16px;">
+                <div style="font-size:10px; color:var(--text-sec);">Position will be strictly market-liquidated if loss reaches this percentage.</div>
+              </div>
+
+              <div class="trader-vault-card">
+                <div class="trader-vault-title"><span>TAKE PROFIT TARGET (%)</span> <span class="green-text">🎯</span></div>
+                <input type="number" step="0.5" min="1.0" max="100" id="traderRiskTp" class="tsm-input font-mono" value="15.0" style="width:100%; font-size:16px;">
+                <div style="font-size:10px; color:var(--text-sec);">Automated profit harvest target level calculated at entry.</div>
+              </div>
+
+              <div class="trader-vault-card">
+                <div class="trader-vault-title"><span>TRAILING STOP RATCHET (%)</span> <span class="cyan-text">📈</span></div>
+                <input type="number" step="0.05" min="0.1" max="5.0" id="traderRiskTrail" class="tsm-input font-mono" value="0.2" style="width:100%; font-size:16px;">
+                <div style="font-size:10px; color:var(--text-sec);">Trailing lock step once position achieves +0.2% net profit.</div>
+              </div>
+
+              <div class="trader-vault-card">
+                <div class="trader-vault-title"><span>MAX CAPITAL PER TRADE (%)</span> <span class="gold-text">💰</span></div>
+                <input type="number" step="1" min="5" max="100" id="traderRiskMaxCap" class="tsm-input font-mono" value="40" style="width:100%; font-size:16px;">
+                <div style="font-size:10px; color:var(--text-sec);">Maximum percentage of total vault margin allowed per single entry.</div>
+              </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; flex-wrap:wrap; gap:10px;">
+              <button type="button" class="tsm-btn-danger" onclick="handleUserCloseAllPositions()">🚨 PANIC CLOSE ALL MY POSITIONS</button>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span id="traderRiskSavedMsg" style="font-size:11px; color:var(--neon-green);"></span>
+                <button type="submit" class="tsm-btn-cta green" style="padding:10px 24px;">💾 SAVE RISK PARAMETERS</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- ── TAB 4: API CREDENTIALS ────────────────────────────────── -->
+      <div id="trader-sec-keys" class="trader-sub-section">
+        <div class="tsm-panel">
+          <div class="tsm-panel-header">
+            <div class="tsm-panel-title">🔑 MULTI-BROKER EXCHANGE API CREDENTIALS</div>
+            <span class="tsm-badge-pill cyan">AES-256 ENCRYPTED</span>
+          </div>
+          <p class="tsm-panel-desc">
+            Connect your CoinSwitch Pro and Delta Exchange India API keys. Your keys are client-isolated, encrypted with industry-standard AES-256, and used exclusively to execute your trades.
+          </p>
+          <form onsubmit="handleTraderKeysSubmit(event)" style="display:flex; flex-direction:column; gap:14px; margin-top:12px;">
+            <!-- CoinSwitch Card -->
+            <div class="trader-vault-card">
+              <div class="trader-vault-title">
+                <span>🏛 COINSWITCH PRO (SPOT &amp; INR)</span>
+                <span id="traderKeysCsStatusBadge" class="tsm-badge-pill">CHECKING...</span>
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:6px;">
+                <div>
+                  <label style="font-size:9.5px; color:var(--text-dim); font-family:var(--font-mono);">API KEY</label>
+                  <input type="password" id="traderKeysCsKey" class="tsm-input font-mono" placeholder="Enter CoinSwitch API Key" style="width:100%; margin-top:2px;">
+                </div>
+                <div>
+                  <label style="font-size:9.5px; color:var(--text-dim); font-family:var(--font-mono);">API SECRET</label>
+                  <input type="password" id="traderKeysCsSecret" class="tsm-input font-mono" placeholder="Enter CoinSwitch API Secret" style="width:100%; margin-top:2px;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Delta India Card -->
+            <div class="trader-vault-card">
+              <div class="trader-vault-title">
+                <span>⚡ DELTA EXCHANGE INDIA (DERIVATIVES &amp; F&amp;O)</span>
+                <span id="traderKeysDeltaStatusBadge" class="tsm-badge-pill">CHECKING...</span>
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:6px;">
+                <div>
+                  <label style="font-size:9.5px; color:var(--text-dim); font-family:var(--font-mono);">API KEY</label>
+                  <input type="password" id="traderKeysDeltaKey" class="tsm-input font-mono" placeholder="Enter Delta API Key" style="width:100%; margin-top:2px;">
+                </div>
+                <div>
+                  <label style="font-size:9.5px; color:var(--text-dim); font-family:var(--font-mono);">API SECRET</label>
+                  <input type="password" id="traderKeysDeltaSecret" class="tsm-input font-mono" placeholder="Enter Delta API Secret" style="width:100%; margin-top:2px;">
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+              <span id="traderKeysMsg" style="font-size:11px;"></span>
+              <button type="submit" class="tsm-btn-cta green" style="padding:10px 24px;">🔒 VERIFY &amp; ENCRYPT KEYS</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- ── TAB 5: ACTIVE POSITIONS ───────────────────────────────── -->
+      <div id="trader-sec-positions" class="trader-sub-section">
+        <div class="tsm-panel">
+          <div class="tsm-panel-header">
+            <div class="tsm-panel-title">💼 MY LIVE ACTIVE POSITIONS</div>
+            <span class="tsm-badge-cyan" id="traderPosCountBadge">0 POSITIONS</span>
+          </div>
+          <div class="tsm-table-wrap">
+            <table class="tsm-table">
+              <thead>
+                <tr>
+                  <th>EXCHANGE</th><th>SYMBOL</th><th>SIDE</th><th>ENTRY</th><th>MARK PRICE</th><th>MARGIN (QTY)</th><th>RUNNING P&amp;L</th><th>STOP LOSS</th><th>TAKE PROFIT</th><th>STATUS</th><th>ACTION</th>
+                </tr>
+              </thead>
+              <tbody id="traderActivePosTbody">
+                <tr><td colspan="11" class="text-center empty-state" style="padding:20px;">No open positions in your account. The AI engine is actively monitoring breakout liquidity.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB 6: TRADING JOURNAL & ANALYTICS ────────────────────── -->
+      <div id="trader-sec-analytics" class="trader-sub-section">
+        <div class="tsm-panel">
+          <div class="tsm-panel-header">
+            <div class="tsm-panel-title">📈 PERSONAL TRADING JOURNAL &amp; CLOSED TRADES</div>
+            <span class="tsm-badge-green" id="traderJournalSummaryBadge">REALIZED P&amp;L: $0.00</span>
+          </div>
+          <div class="tsm-table-wrap">
+            <table class="tsm-table">
+              <thead>
+                <tr>
+                  <th>CLOSED AT</th><th>EXCHANGE</th><th>SYMBOL</th><th>DIRECTION</th><th>ENTRY</th><th>EXIT PRICE</th><th>QTY</th><th>REALIZED P&amp;L</th><th>STATUS</th>
+                </tr>
+              </thead>
+              <tbody id="traderClosedTradesTbody">
+                <tr><td colspan="9" class="text-center empty-state" style="padding:20px;">No closed trades logged yet for this account.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB 7: MARKET HEATMAP ─────────────────────────────────── -->
+      <div id="trader-sec-heatmap" class="trader-sub-section">
+        <div class="tsm-panel">
+          <div class="tsm-panel-header">
+            <div class="tsm-panel-title">🌐 REAL-TIME ALGORITHMIC SCANNER HEATMAP</div>
+            <span class="tsm-badge-cyan">LIVE 24/7</span>
+          </div>
+          <div id="traderHeatmapGrid" class="tsm-rwa-grid" style="margin-top:10px;">
+            <!-- Populated dynamically via JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB 8: PROFILE & REFERRALS ────────────────────────────── -->
+      <div id="trader-sec-profile" class="trader-sub-section">
+        <div class="tsm-panel">
+          <div class="tsm-panel-header">
+            <div class="tsm-panel-title">👤 TRADER PROFILE &amp; REFERRAL SYSTEM</div>
+            <span class="tsm-badge-pill green">VERIFIED TRADER ID</span>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:16px; margin-top:14px;">
+            <!-- Left: Profile Info -->
+            <div class="trader-vault-card">
+              <div class="trader-vault-title"><span>TRADER CREDENTIALS</span> <span>📋</span></div>
+              <div style="display:flex; flex-direction:column; gap:8px; font-size:11px; margin-top:4px;">
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:4px;">
+                  <span style="color:var(--text-dim);">Full Name / Alias:</span>
+                  <strong id="traderProfName">--</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:4px;">
+                  <span style="color:var(--text-dim);">Trader Email:</span>
+                  <strong id="traderProfEmail" class="font-mono">--</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:4px;">
+                  <span style="color:var(--text-dim);">Country / Region:</span>
+                  <strong id="traderProfCountry">--</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:4px;">
+                  <span style="color:var(--text-dim);">Mobile:</span>
+                  <strong id="traderProfPhone" class="font-mono">--</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                  <span style="color:var(--text-dim);">Preferred Broker:</span>
+                  <strong id="traderProfBroker" class="cyan-text">--</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Referral System -->
+            <div class="trader-vault-card" style="border-color:rgba(255,215,0,0.35);">
+              <div class="trader-vault-title"><span class="gold-text">🎁 MY EXCLUSIVE REFERRAL LINK</span> <span>💎</span></div>
+              <div style="font-size:10.5px; color:var(--text-sec); line-height:1.4;">
+                Share your personal link to earn trading fee rebates and VIP referral bonuses when traders join the network.
+              </div>
+              <div style="display:flex; gap:8px; margin-top:8px;">
+                <input type="text" id="traderProfRefLink" class="tsm-input font-mono" readonly style="width:100%; font-size:11px; background:rgba(0,0,0,0.5);">
+                <button type="button" class="tsm-btn-cta gold" onclick="copyTraderReferralLink()" style="padding:6px 14px; font-size:10.5px; white-space:nowrap;">📋 COPY</button>
+              </div>
+              <div id="traderCopyConfirmMsg" style="font-size:10px; color:var(--neon-green); min-height:14px; margin-top:4px;"></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -2588,6 +2971,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=123.0"></script>
+  <script src="app.js?v=124.0"></script>
 </body>
 </html>
