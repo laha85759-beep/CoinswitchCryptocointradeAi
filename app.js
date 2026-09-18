@@ -1447,7 +1447,7 @@ async function executeManualTrade(e) {
 // ── 10. Agent Execution Logs Console ───────────────────────────────────────
 async function fetchAgentLogs() {
   try {
-    const res = await fetch("/api/logs");
+    const res = await fetch("/api/agent-logs");
     if (!res.ok) return;
     const data = await res.json();
 
@@ -1455,19 +1455,42 @@ async function fetchAgentLogs() {
     if (!logConsole || !data.logs || data.logs.length === 0) return;
 
     logConsole.innerHTML = data.logs.slice(-30).map(item => {
-      let badgeClass = "badge-daemon";
-      let agent = item.agent || "DAEMON";
-      if (agent.includes("SCANNER")) badgeClass = "badge-scanner";
-      else if (agent.includes("AI") || agent.includes("SUPER_BRAIN") || agent.includes("QUANT")) badgeClass = "badge-nvidia";
-      else if (agent.includes("RISK") || agent.includes("GUARD")) badgeClass = "badge-risk";
-      else if (agent.includes("TRADE") || agent.includes("EXEC")) badgeClass = "badge-trade";
+      let timeStr = "--:--:--";
+      let agent = "DAEMON";
+      let msg = "";
 
-      const timeStr = item.time ? (item.time.includes("T") ? item.time.split("T")[1].split(".")[0] : item.time.slice(0, 8)) : "--:--:--";
+      if (typeof item === "string") {
+        // e.g. "2026-09-18 05:22:56 [INFO] [CONTINUOUS_DAEMON] 24/7 Multi-Agent Engine..."
+        const parts = item.split(" ");
+        if (parts.length >= 2 && parts[1].includes(":")) {
+          timeStr = parts[1].slice(0, 8);
+        }
+        const agentMatch = item.match(/\[([A-Za-z0-9_\-]+)\]/g);
+        if (agentMatch && agentMatch.length >= 2) {
+          agent = agentMatch[1].replace(/[\[\]]/g, "");
+        } else if (agentMatch && agentMatch.length === 1) {
+          agent = agentMatch[0].replace(/[\[\]]/g, "");
+        }
+        const lastBracket = item.lastIndexOf("]");
+        msg = lastBracket !== -1 ? item.substring(lastBracket + 1).trim() : item;
+      } else {
+        timeStr = item.time ? (item.time.includes("T") ? item.time.split("T")[1].split(".")[0] : item.time.slice(0, 8)) : "--:--:--";
+        agent = item.agent || "DAEMON";
+        msg = item.message || "";
+      }
+
+      let badgeClass = "badge-daemon";
+      const agentUpper = agent.toUpperCase();
+      if (agentUpper.includes("SCAN")) badgeClass = "badge-scanner";
+      else if (agentUpper.includes("AI") || agentUpper.includes("SUPER_BRAIN") || agentUpper.includes("QUANT") || agentUpper.includes("NVIDIA") || agentUpper.includes("SMC") || agentUpper.includes("KRONOS")) badgeClass = "badge-nvidia";
+      else if (agentUpper.includes("RISK") || agentUpper.includes("GUARD")) badgeClass = "badge-risk";
+      else if (agentUpper.includes("TRADE") || agentUpper.includes("EXEC") || agentUpper.includes("ORDER")) badgeClass = "badge-trade";
+
       return `
         <div class="log-entry">
           <span class="log-badge ${badgeClass}">${escapeHtml(agent)}</span>
           <span style="color:rgba(255,255,255,0.4); font-size:10px; margin-right:4px;">${timeStr}</span>
-          <span>${escapeHtml(item.message)}</span>
+          <span>${escapeHtml(msg)}</span>
         </div>
       `;
     }).join("");

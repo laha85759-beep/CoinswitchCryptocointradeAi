@@ -1741,6 +1741,7 @@ def panic_close_all_positions():
         return jsonify({"status": "error", "message": str(exc)}), 500
 
 @app.route("/api/agent-logs", methods=["GET"])
+@app.route("/api/logs", methods=["GET"])
 def get_agent_logs():
     """Returns real-time formatted execution logs from all running 24/7 background agents."""
     try:
