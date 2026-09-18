@@ -559,24 +559,61 @@ async function fetchRealData() {
       updateTicker("header-ondo", data.tickers.ondo || 0.72);
       updateTicker("header-pepe", data.tickers.pepe || 0.0000078);
 
-      // Update 3D Floating Coin Node Badges
-      if (data.tickers.btc && document.getElementById("fnode-price-btc")) {
-        document.getElementById("fnode-price-btc").textContent = `$${Number(data.tickers.btc).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+      const sf = data.tickers.spot_and_futures || {};
+      const g = sf.gold || {};
+      const b = sf.btc || {};
+      const e = sf.eth || {};
+      const s = sf.sol || {};
+      const x = sf.xrp || {};
+      const n = sf.nifty || {};
+
+      // Update 3D Floating Indicative Coin Node Badges with Dual Spot & Futures
+      if (document.getElementById("fnode-spot-gold")) {
+        document.getElementById("fnode-spot-gold").textContent = `$${Number(g.price_spot || data.tickers.gold || 4355.60).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
       }
-      if (data.tickers.eth && document.getElementById("fnode-price-eth")) {
-        document.getElementById("fnode-price-eth").textContent = `$${Number(data.tickers.eth).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+      if (document.getElementById("fnode-fut-gold")) {
+        document.getElementById("fnode-fut-gold").textContent = `$${Number(g.price_futures || data.tickers.gold_futures || 4354.00).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
       }
-      if (data.tickers.sol && document.getElementById("fnode-price-sol")) {
-        document.getElementById("fnode-price-sol").textContent = `$${Number(data.tickers.sol).toFixed(2)}`;
+      if (document.getElementById("fnode-basis-gold")) {
+        document.getElementById("fnode-basis-gold").textContent = `Δ ${g.basis_pct !== undefined ? (g.basis_pct > 0 ? '+' : '') + g.basis_pct + '%' : '-0.04%'}`;
       }
-      if (data.tickers.xrp && document.getElementById("fnode-price-xrp")) {
-        document.getElementById("fnode-price-xrp").textContent = `$${Number(data.tickers.xrp).toFixed(4)}`;
+
+      if (document.getElementById("fnode-spot-btc")) {
+        document.getElementById("fnode-spot-btc").textContent = `$${Number(b.price_spot || data.tickers.btc || 77264.28).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
       }
-      if (data.tickers.doge && document.getElementById("fnode-price-doge")) {
-        document.getElementById("fnode-price-doge").textContent = `$${Number(data.tickers.doge).toFixed(4)}`;
+      if (document.getElementById("fnode-fut-btc")) {
+        document.getElementById("fnode-fut-btc").textContent = `$${Number(b.price_futures || data.tickers.btc_futures || 77236.90).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
       }
-      if (data.tickers.gold && document.getElementById("fnode-price-gold")) {
-        document.getElementById("fnode-price-gold").textContent = `$${Number(data.tickers.gold).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+      if (document.getElementById("fnode-basis-btc")) {
+        document.getElementById("fnode-basis-btc").textContent = `Δ ${b.basis_pct !== undefined ? (b.basis_pct > 0 ? '+' : '') + b.basis_pct + '%' : '-0.035%'}`;
+      }
+
+      if (document.getElementById("fnode-spot-eth")) {
+        document.getElementById("fnode-spot-eth").textContent = `$${Number(e.price_spot || data.tickers.eth || 2472.30).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+      }
+      if (document.getElementById("fnode-fut-eth")) {
+        document.getElementById("fnode-fut-eth").textContent = `$${Number(e.price_futures || data.tickers.eth_futures || 2471.37).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+      }
+
+      if (document.getElementById("fnode-spot-sol")) {
+        document.getElementById("fnode-spot-sol").textContent = `$${Number(s.price_spot || data.tickers.sol || 104.88).toFixed(2)}`;
+      }
+      if (document.getElementById("fnode-fut-sol")) {
+        document.getElementById("fnode-fut-sol").textContent = `$${Number(s.price_futures || data.tickers.sol_futures || 104.91).toFixed(2)}`;
+      }
+
+      if (document.getElementById("fnode-spot-xrp")) {
+        document.getElementById("fnode-spot-xrp").textContent = `$${Number(x.price_spot || data.tickers.xrp || 1.3187).toFixed(4)}`;
+      }
+      if (document.getElementById("fnode-fut-xrp")) {
+        document.getElementById("fnode-fut-xrp").textContent = `$${Number(x.price_futures || data.tickers.xrp_futures || 1.3184).toFixed(4)}`;
+      }
+
+      if (document.getElementById("fnode-spot-nifty")) {
+        document.getElementById("fnode-spot-nifty").textContent = `₹${Number(n.price_spot || data.tickers.nifty || 23286.30).toLocaleString('en-IN', {minimumFractionDigits:2})}`;
+      }
+      if (document.getElementById("fnode-fut-nifty")) {
+        document.getElementById("fnode-fut-nifty").textContent = `₹${Number(n.price_futures || data.tickers.nifty_futures || 23328.50).toLocaleString('en-IN', {minimumFractionDigits:2})}`;
       }
     }
 
@@ -2810,9 +2847,35 @@ function playJarvisChime(type = 'activate') {
   }
 }
 
-function getJarvisVoice() {
+function getJarvisVoice(langCode = "en-US") {
   if (!('speechSynthesis' in window)) return null;
   const voices = window.speechSynthesis.getVoices();
+  const targetLang = (langCode || "en-US").toLowerCase();
+
+  // 1. Exact or prefix match for language code (e.g. 'hi-IN', 'bn-IN', 'ta-IN', 'es-ES', 'en-US')
+  let match = voices.find(v => v.lang && v.lang.toLowerCase() === targetLang);
+  if (match) return match;
+
+  const prefix = targetLang.split("-")[0];
+  match = voices.find(v => v.lang && v.lang.toLowerCase().startsWith(prefix));
+  if (match) return match;
+
+  // 2. Specific language name matches
+  if (prefix === "hi") {
+    match = voices.find(v => v.name.includes("Hindi") || v.name.includes("हिन्दी") || v.name.includes("Kalpana") || v.name.includes("Hemant"));
+    if (match) return match;
+  } else if (prefix === "bn") {
+    match = voices.find(v => v.name.includes("Bengali") || v.name.includes("বাংলা") || v.name.includes("Bashkar"));
+    if (match) return match;
+  } else if (prefix === "ta") {
+    match = voices.find(v => v.name.includes("Tamil") || v.name.includes("தமிழ்") || v.name.includes("Valluvar"));
+    if (match) return match;
+  } else if (prefix === "es") {
+    match = voices.find(v => v.name.includes("Spanish") || v.name.includes("Español") || v.name.includes("Jorge") || v.name.includes("Monica"));
+    if (match) return match;
+  }
+
+  // 3. Fallback to British / Natural English Jarvis voice
   return (
     voices.find(v => v.name.includes("Google UK English Male")) ||
     voices.find(v => v.name.includes("Daniel") || v.name.includes("Oliver") || v.name.includes("Arthur")) ||
@@ -2823,24 +2886,35 @@ function getJarvisVoice() {
   );
 }
 
-function speakText(text, onEnd) {
+function speakText(text, langCode = "en-US", onEnd) {
   if (!('speechSynthesis' in window) || !text) return;
   window.speechSynthesis.cancel();
 
+  // If onEnd was passed as 2nd argument (backward compatibility)
+  if (typeof langCode === "function") {
+    onEnd = langCode;
+    langCode = "en-US";
+  }
+
   const cleanSpeech = text
     .replace(/[#*`_~]/g, '')
-    .replace(/₹/g, 'rupees ')
-    .replace(/\$/g, 'dollars ')
-    .replace(/\+/g, 'plus ')
-    .replace(/%/g, ' percent')
+    .replace(/₹/g, ' rupees ')
+    .replace(/\$/g, ' dollars ')
+    .replace(/\+/g, ' plus ')
+    .replace(/%/g, ' percent ')
     .replace(/\n+/g, '. ')
     .trim();
 
   const utter = new SpeechSynthesisUtterance(cleanSpeech);
-  const voice = getJarvisVoice();
-  if (voice) utter.voice = voice;
+  const voice = getJarvisVoice(langCode);
+  if (voice) {
+    utter.voice = voice;
+    utter.lang = voice.lang || langCode;
+  } else {
+    utter.lang = langCode || 'en-US';
+  }
   utter.pitch = 0.95;
-  utter.rate = 1.05;
+  utter.rate = 1.02;
 
   playJarvisChime('activate');
   setJarvisSpeakingState(true);
@@ -3121,14 +3195,14 @@ async function sendJarvisMessage(query) {
         ${formattedHtml}
         <div class="chat-bubble-footer">
           <span class="green" style="font-weight:700;">● 100% VERIFIED LIVE DATA</span>
-          <button class="chat-speak-btn" onclick="speakText('${safeVoice}')">🔊 Listen</button>
+          <button class="chat-speak-btn" onclick="speakText('${safeVoice}', '${data.lang || 'en-US'}')">🔊 Listen</button>
         </div>
       `;
       list.appendChild(jarvisBubble);
       list.scrollTop = list.scrollHeight;
 
       if (chatVoiceEnabled && data.voice_script) {
-        speakText(data.voice_script);
+        speakText(data.voice_script, data.lang || 'en-US');
       }
     } else {
       const errBubble = document.createElement("div");
@@ -3145,5 +3219,361 @@ async function sendJarvisMessage(query) {
     list.appendChild(errBubble);
   }
   list.scrollTop = list.scrollHeight;
+}
+
+// ══════════ 20. 3D WEBGL MULTI-AGENT NEURAL SPHERE & LIVE FLOATING NODES ══════════
+let scene3d, camera3d, renderer3d, sphereMesh, ringMesh1, ringMesh2, particles3d;
+let floatingNodes = [
+  { id: "gold", symbol: "XAU/USD", name: "Gold", icon: "🥇", spotId: "fnode-spot-gold", futId: "fnode-fut-gold", basisId: "fnode-basis-gold", defaultSpot: "$4,355.60", defaultFut: "$4,354.00", defaultBasis: "Δ -0.037%", colorClass: "gold-badge", theta: 0, phi: 0.35, radius: 4.2 },
+  { id: "btc", symbol: "BTC/USDT", name: "BTC", icon: "₿", spotId: "fnode-spot-btc", futId: "fnode-fut-btc", basisId: "fnode-basis-btc", defaultSpot: "$77,264.28", defaultFut: "$77,236.90", defaultBasis: "Δ -0.035%", colorClass: "cyan-badge", theta: Math.PI * 0.35, phi: -0.25, radius: 4.4 },
+  { id: "eth", symbol: "ETH/USDT", name: "ETH", icon: "Ξ", spotId: "fnode-spot-eth", futId: "fnode-fut-eth", basisId: "fnode-basis-eth", defaultSpot: "$2,472.30", defaultFut: "$2,471.37", defaultBasis: "Δ -0.038%", colorClass: "cyan-badge", theta: Math.PI * 0.70, phi: 0.40, radius: 4.3 },
+  { id: "sol", symbol: "SOL/USDT", name: "SOL", icon: "◎", spotId: "fnode-spot-sol", futId: "fnode-fut-sol", basisId: "fnode-basis-sol", defaultSpot: "$104.88", defaultFut: "$104.91", defaultBasis: "Δ +0.029%", colorClass: "", theta: Math.PI * 1.05, phi: -0.30, radius: 4.5 },
+  { id: "xrp", symbol: "XRP/USDT", name: "XRP", icon: "✕", spotId: "fnode-spot-xrp", futId: "fnode-fut-xrp", basisId: "fnode-basis-xrp", defaultSpot: "$1.3187", defaultFut: "$1.3184", defaultBasis: "Δ -0.023%", colorClass: "cyan-badge", theta: Math.PI * 1.40, phi: 0.25, radius: 4.2 },
+  { id: "nifty", symbol: "NIFTY 50", name: "NIFTY", icon: "🇮🇳", spotId: "fnode-spot-nifty", futId: "fnode-fut-nifty", basisId: "fnode-basis-nifty", defaultSpot: "₹23,286.30", defaultFut: "₹23,328.50", defaultBasis: "Δ +42.20", colorClass: "gold-badge", theta: Math.PI * 1.75, phi: -0.35, radius: 4.4 }
+];
+
+function initAgent3dCore() {
+  const container = document.getElementById("agent3dContainer");
+  const canvas = document.getElementById("agent3dCanvas");
+  if (!container || !canvas || typeof THREE === "undefined") return;
+
+  const width = container.clientWidth || 450;
+  const height = container.clientHeight || 340;
+
+  scene3d = new THREE.Scene();
+  camera3d = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+  camera3d.position.z = 8.5;
+
+  renderer3d = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+  renderer3d.setSize(width, height);
+  renderer3d.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  // 1. Central Wireframe Quant Core (Icosahedron with glowing neon shader/material)
+  const sphereGeo = new THREE.IcosahedronGeometry(2.2, 2);
+  const sphereMat = new THREE.MeshBasicMaterial({
+    color: 0x00f090,
+    wireframe: true,
+    transparent: true,
+    opacity: 0.8
+  });
+  sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
+  scene3d.add(sphereMesh);
+
+  // 2. Outer Gyro Orbit Ring 1 (Electric Cyan)
+  const ring1Geo = new THREE.TorusGeometry(3.2, 0.035, 16, 120);
+  const ring1Mat = new THREE.MeshBasicMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.85 });
+  ringMesh1 = new THREE.Mesh(ring1Geo, ring1Mat);
+  ringMesh1.rotation.x = Math.PI / 3.5;
+  scene3d.add(ringMesh1);
+
+  // 3. Outer Gyro Orbit Ring 2 (TheSmartMag Gold)
+  const ring2Geo = new THREE.TorusGeometry(3.7, 0.035, 16, 120);
+  const ring2Mat = new THREE.MeshBasicMaterial({ color: 0xffd700, transparent: true, opacity: 0.75 });
+  ringMesh2 = new THREE.Mesh(ring2Geo, ring2Mat);
+  ringMesh2.rotation.y = Math.PI / 3;
+  scene3d.add(ringMesh2);
+
+  // 4. Orbiting Multi-Agent Particle Swarm (113 live streaming nodes)
+  const particleCount = 113;
+  const particleGeo = new THREE.BufferGeometry();
+  const posArray = new Float32Array(particleCount * 3);
+
+  for (let i = 0; i < particleCount * 3; i += 3) {
+    const r = 3.8 + Math.random() * 1.8;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos((Math.random() * 2) - 1);
+    posArray[i] = r * Math.sin(phi) * Math.cos(theta);
+    posArray[i + 1] = r * Math.sin(phi) * Math.sin(theta);
+    posArray[i + 2] = r * Math.cos(phi);
+  }
+
+  particleGeo.setAttribute("position", new THREE.BufferAttribute(posArray, 3));
+  const particleMat = new THREE.PointsMaterial({
+    size: 0.09,
+    color: 0x00f090,
+    transparent: true,
+    opacity: 0.95
+  });
+
+  particles3d = new THREE.Points(particleGeo, particleMat);
+  scene3d.add(particles3d);
+
+  // 5. Render 3D Floating Indicative Coin Badges with Dual Spot & Futures Display
+  const overlay = document.getElementById("floatingNodesOverlay");
+  if (overlay) {
+    overlay.innerHTML = floatingNodes.map(node => `
+      <div class="floating-coin-badge ${node.colorClass}" id="fnode-badge-${node.id}" onclick="handleFloatingNodeClick('${node.symbol}')" title="Click for live ${node.symbol} Spot & Futures telemetry">
+        <span class="coin-badge-icon">${node.icon}</span>
+        <div class="coin-badge-dual">
+          <div class="coin-badge-line">
+            <span class="coin-badge-name">${node.name}</span>
+            <span class="coin-badge-price" id="${node.spotId}">${node.defaultSpot}</span>
+          </div>
+          <div class="coin-badge-line">
+            <span class="lbl">FUT:</span>
+            <span class="val fut" id="${node.futId}">${node.defaultFut}</span>
+            <span class="coin-badge-basis" id="${node.basisId}">${node.defaultBasis}</span>
+          </div>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  // Animation Loop with Real-Time Screen Projection for Badges
+  let clock = new THREE.Clock();
+  function animate3d() {
+    requestAnimationFrame(animate3d);
+    const elapsedTime = clock.getElapsedTime();
+
+    if (sphereMesh) {
+      sphereMesh.rotation.y += 0.006;
+      sphereMesh.rotation.x += 0.003;
+      // Pulsing heartbeat
+      const pulse = 1.0 + Math.sin(elapsedTime * 2.5) * 0.04;
+      sphereMesh.scale.set(pulse, pulse, pulse);
+    }
+    if (ringMesh1) {
+      ringMesh1.rotation.x += 0.010;
+      ringMesh1.rotation.y += 0.006;
+    }
+    if (ringMesh2) {
+      ringMesh2.rotation.y -= 0.008;
+      ringMesh2.rotation.z += 0.005;
+    }
+    if (particles3d) {
+      particles3d.rotation.y += 0.0025;
+    }
+
+    // Update 3D Floating Badges positions
+    const containerW = container.clientWidth || 450;
+    const containerH = container.clientHeight || 340;
+
+    floatingNodes.forEach((node, idx) => {
+      const el = document.getElementById(`fnode-badge-${node.id}`);
+      if (!el) return;
+
+      const currentTheta = node.theta + (elapsedTime * 0.25 * (idx % 2 === 0 ? 1 : -1));
+      const currentPhi = node.phi + Math.sin(elapsedTime * 0.5 + idx) * 0.15;
+      const r = node.radius;
+
+      const x = r * Math.sin(currentTheta) * Math.cos(currentPhi);
+      const y = r * Math.sin(currentPhi);
+      const z = r * Math.cos(currentTheta) * Math.cos(currentPhi);
+
+      const vector = new THREE.Vector3(x, y, z);
+      vector.project(camera3d);
+
+      const screenX = (vector.x * 0.5 + 0.5) * containerW;
+      const screenY = (-(vector.y * 0.5) + 0.5) * containerH;
+
+      el.style.left = `${screenX}px`;
+      el.style.top = `${screenY}px`;
+      el.style.opacity = vector.z > 1 ? "0.2" : (0.55 + ((1 - vector.z) * 0.45)).toFixed(2);
+      el.style.transform = `translate(-50%, -50%) scale(${Math.max(0.75, Math.min(1.15, 1.0 - (vector.z * 0.25)))})`;
+    });
+
+    renderer3d.render(scene3d, camera3d);
+  }
+
+  animate3d();
+
+  // Resize Listener
+  window.addEventListener("resize", () => {
+    if (!container || !renderer3d || !camera3d) return;
+    const w = container.clientWidth;
+    const h = container.clientHeight;
+    camera3d.aspect = w / h;
+    camera3d.updateProjectionMatrix();
+    renderer3d.setSize(w, h);
+  });
+}
+
+function handleFloatingNodeClick(symbol) {
+  if (symbol.includes("BTC")) {
+    loadTvSymbol("BINANCE:BTCUSDT");
+  } else if (symbol.includes("ETH")) {
+    loadTvSymbol("BINANCE:ETHUSDT");
+  } else if (symbol.includes("SOL")) {
+    loadTvSymbol("BINANCE:SOLUSDT");
+  } else if (symbol.includes("XRP")) {
+    loadTvSymbol("BINANCE:XRPUSDT");
+  } else if (symbol.includes("NIFTY")) {
+    switchView('india');
+  }
+
+  speakAssetIntel(symbol);
+}
+
+// ══════════ 21. JARVIS 3D HOLOGRAPHIC MODAL ══════════
+let jarvisScene, jarvisCamera, jarvisRenderer, jarvisBrainGroup;
+
+function openJarvisModal() {
+  const modal = document.getElementById("jarvisHologramModal");
+  if (modal) modal.style.display = "flex";
+  playJarvisChime('activate');
+  initJarvis3dHologram();
+}
+
+function closeJarvisModal() {
+  const modal = document.getElementById("jarvisHologramModal");
+  if (modal) modal.style.display = "none";
+}
+
+function initJarvis3dHologram() {
+  const canvas = document.getElementById("jarvis3dCanvas");
+  if (!canvas || typeof THREE === "undefined" || jarvisRenderer) return;
+
+  const w = canvas.parentElement.clientWidth || 400;
+  const h = canvas.parentElement.clientHeight || 350;
+
+  jarvisScene = new THREE.Scene();
+  jarvisCamera = new THREE.PerspectiveCamera(50, w / h, 0.1, 1000);
+  jarvisCamera.position.z = 8;
+
+  jarvisRenderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+  jarvisRenderer.setSize(w, h);
+  jarvisRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  jarvisBrainGroup = new THREE.Group();
+
+  const coreGeo = new THREE.IcosahedronGeometry(2.4, 3);
+  const coreMat = new THREE.MeshBasicMaterial({ color: 0x00f090, wireframe: true, transparent: true, opacity: 0.65 });
+  const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+  jarvisBrainGroup.add(coreMesh);
+
+  const ringGeo1 = new THREE.TorusGeometry(3.6, 0.04, 16, 100);
+  const ringMat1 = new THREE.MeshBasicMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.8 });
+  const ring1 = new THREE.Mesh(ringGeo1, ringMat1);
+  ring1.rotation.x = Math.PI / 4;
+  jarvisBrainGroup.add(ring1);
+
+  const ringGeo2 = new THREE.TorusGeometry(4.2, 0.04, 16, 100);
+  const ringMat2 = new THREE.MeshBasicMaterial({ color: 0xffd700, transparent: true, opacity: 0.7 });
+  const ring2 = new THREE.Mesh(ringGeo2, ringMat2);
+  ring2.rotation.y = Math.PI / 3;
+  jarvisBrainGroup.add(ring2);
+
+  jarvisScene.add(jarvisBrainGroup);
+
+  function animateHologram() {
+    requestAnimationFrame(animateHologram);
+    if (jarvisBrainGroup) {
+      jarvisBrainGroup.rotation.y += 0.008;
+      jarvisBrainGroup.rotation.x += 0.004;
+      ring1.rotation.z += 0.012;
+      ring2.rotation.z -= 0.009;
+    }
+    jarvisRenderer.render(jarvisScene, jarvisCamera);
+  }
+  animateHologram();
+}
+
+// ══════════ 22. CANVAS BACKGROUNDS & 5-STAGE WORKFLOW ══════════
+function initCircuitBgCanvas() {
+  const canvas = document.getElementById("circuitBgCanvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  resize();
+  window.addEventListener("resize", resize);
+
+  const traces = [];
+  for (let i = 0; i < 24; i++) {
+    traces.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      len: 50 + Math.random() * 150,
+      dir: Math.random() > 0.5 ? 0 : 1,
+      speed: 0.3 + Math.random() * 0.7,
+      progress: Math.random() * 100
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = "rgba(0, 240, 144, 0.06)";
+    ctx.lineWidth = 1;
+    traces.forEach(t => {
+      ctx.beginPath();
+      ctx.moveTo(t.x, t.y);
+      if (t.dir === 0) {
+        ctx.lineTo(t.x + t.len, t.y);
+      } else {
+        ctx.lineTo(t.x, t.y + t.len);
+      }
+      ctx.stroke();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+function initNeuralBgCanvas() {
+  const canvas = document.getElementById("neuralBgCanvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  resize();
+  window.addEventListener("resize", resize);
+
+  const particles = [];
+  const count = Math.min(45, Math.floor(window.innerWidth / 35));
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.35,
+      vy: (Math.random() - 0.5) * 0.35,
+      radius: Math.random() * 1.5 + 0.8
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+      if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(0, 240, 144, 0.4)";
+      ctx.fill();
+
+      for (let j = i + 1; j < particles.length; j++) {
+        const q = particles[j];
+        const dist = Math.hypot(p.x - q.x, p.y - q.y);
+        if (dist < 110) {
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(q.x, q.y);
+          ctx.strokeStyle = `rgba(0, 212, 255, ${(1 - dist / 110) * 0.12})`;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+let activeWfStep = 0;
+function initWorkflowCycle() {
+  const steps = document.querySelectorAll(".wf-step-item");
+  if (!steps || steps.length === 0) return;
+
+  setInterval(() => {
+    steps.forEach((s, idx) => {
+      if (idx === activeWfStep) {
+        s.classList.add("active");
+      } else {
+        s.classList.remove("active");
+      }
+    });
+    activeWfStep = (activeWfStep + 1) % steps.length;
+  }, 2500);
 }
 

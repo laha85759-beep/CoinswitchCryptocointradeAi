@@ -2388,6 +2388,42 @@ body.neural-core-os {
   color: var(--neon-green);
 }
 
+.coin-badge-dual {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.coin-badge-line {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.coin-badge-line .lbl {
+  font-size: 8px;
+  color: var(--text-dim);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.coin-badge-line .val {
+  font-weight: 700;
+  font-size: 10px;
+  color: var(--neon-green);
+}
+
+.coin-badge-line .val.fut {
+  color: var(--neon-cyan);
+}
+
+.coin-badge-basis {
+  font-size: 8.5px;
+  color: var(--neon-gold);
+  font-family: var(--font-mono);
+  margin-left: 2px;
+}
+
 .coin-badge-chg {
   font-size: 9.5px;
   padding: 1px 4px;
