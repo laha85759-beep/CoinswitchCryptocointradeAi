@@ -616,6 +616,7 @@ def jarvis_chat():
             "status": "success",
             "reply": response["reply"],
             "voice_script": response.get("voice_script", ""),
+            "lang": response.get("lang", "en-US"),
             "category": response.get("category", "general"),
             "timestamp": time.time()
         })
