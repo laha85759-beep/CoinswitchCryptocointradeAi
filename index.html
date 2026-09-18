@@ -76,35 +76,44 @@
       </a>
     </div>
 
-    <!-- CENTER NAVIGATION TABS (INSTITUTIONAL MENUBAR) -->
+    <!-- CENTER NAVIGATION TABS (INSTITUTIONAL RESPONSIVE MENUBAR) -->
     <nav class="nc-hdr-nav tsm-nav">
       <button class="nc-nav-tab tsm-tab active" data-view="terminal" onclick="switchView('terminal')">
         <span class="nc-tab-ico">⚡</span><span>TERMINAL</span>
       </button>
       <button class="nc-nav-tab tsm-tab gold" data-view="india" onclick="switchView('india')">
-        <span class="nc-tab-ico">🇮🇳</span><span>INDIA EQUITIES &amp; F&amp;O</span><span class="nc-nav-chip gold">NSE/BSE</span>
+        <span class="nc-tab-ico">🇮🇳</span><span>INDIA F&amp;O</span><span class="nc-nav-chip gold">NSE/BSE</span>
       </button>
       <button class="nc-nav-tab tsm-tab cyan" data-view="news" onclick="switchView('news')">
-        <span class="nc-tab-ico">📰</span><span>NEWS &amp; CATALYSTS</span><span class="nc-nav-chip cyan">LIVE</span>
-      </button>
-      <button class="nc-nav-tab tsm-tab" data-view="rwa" onclick="switchView('rwa')">
-        <span class="nc-tab-ico">🏛</span><span>RWA MATRIX</span>
-      </button>
-      <button class="nc-nav-tab tsm-tab gold" data-view="partners" onclick="switchView('partners')">
-        <span class="nc-tab-ico">💎</span><span>PROP FIRMS</span>
+        <span class="nc-tab-ico">📰</span><span>NEWS &amp; MACRO</span><span class="nc-nav-chip cyan">LIVE</span>
       </button>
       <button class="nc-nav-tab tsm-tab" data-view="chart" onclick="switchView('chart')">
         <span class="nc-tab-ico">📈</span><span>PRO CHART</span>
       </button>
-      <button class="nc-nav-tab tsm-tab" data-view="trades" onclick="switchView('trades')">
-        <span class="nc-tab-ico">💼</span><span>AUDIT LOG</span>
-      </button>
-      <button class="nc-nav-tab tsm-tab magenta" id="superAdminNavTab" data-view="admin" onclick="switchView('admin')">
-        <span class="nc-tab-ico">⚙</span><span>SUPER ADMIN</span><span class="nc-nav-chip magenta">PORTAL</span>
-      </button>
+
+      <!-- MORE DROPDOWN MENU FOR REMAINING TABS (NO HORIZONTAL OVERFLOW) -->
+      <div class="tsm-nav-dropdown" id="navMoreDropdown">
+        <button class="nc-nav-tab tsm-tab tsm-nav-dropdown-btn" onclick="toggleNavDropdown(event)" title="More Views">
+          <span>MORE ▾</span>
+        </button>
+        <div class="tsm-dropdown-menu" id="navDropdownMenu">
+          <button class="tsm-dropdown-item" data-view="rwa" onclick="switchView('rwa'); closeNavMenus();">
+            <span class="nc-tab-ico">🏛</span><span>RWA MATRIX</span>
+          </button>
+          <button class="tsm-dropdown-item gold" data-view="partners" onclick="switchView('partners'); closeNavMenus();">
+            <span class="nc-tab-ico">💎</span><span>PROP FIRMS</span>
+          </button>
+          <button class="tsm-dropdown-item" data-view="trades" onclick="switchView('trades'); closeNavMenus();">
+            <span class="nc-tab-ico">💼</span><span>AUDIT LOG</span>
+          </button>
+          <button class="tsm-dropdown-item magenta" id="superAdminNavTab" data-view="admin" onclick="switchView('admin'); closeNavMenus();">
+            <span class="nc-tab-ico">⚙</span><span>SUPER ADMIN PORTAL</span>
+          </button>
+        </div>
+      </div>
     </nav>
 
-    <!-- RIGHT HUD CONTROLS (CLEAN: USER, KEYS, LOGOUT, CLOCK, JARVIS VOICE) -->
+    <!-- RIGHT HUD CONTROLS (CLEAN: USER, KEYS, LOGOUT, CLOCK, JARVIS VOICE, MOBILE HAMBURGER) -->
     <div class="nc-hdr-right">
       <button class="nc-btn-jarvis-voice" id="headerJarvisVoiceBtn" onclick="toggleJarvisBriefingVoice()" title="Jarvis Voice AI Market Briefing">
         <span class="voice-wave-visualizer">
@@ -131,8 +140,50 @@
       <button class="nc-btn-admin" id="adminNavBtn" onclick="toggleAdminView()" title="Admin Control Center">
         <span>⚙</span><span id="adminNavBtnText">ADMIN</span>
       </button>
+      <button class="nc-btn-mobile-menu" id="mobileMenuBtn" onclick="toggleMobileNavDrawer()" title="Navigation Menu">
+        <span>☰</span>
+      </button>
     </div>
   </header>
+
+  <!-- MOBILE NAVIGATION SLIDE-OUT DRAWER -->
+  <div class="tsm-mobile-drawer" id="mobileNavDrawer" style="display:none;" onclick="handleMobileDrawerBackdrop(event)">
+    <div class="tsm-mobile-drawer-content">
+      <div class="tsm-drawer-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div class="nc-brain-icon-mini" style="width:28px; height:28px;"><div class="nc-brain-core" style="width:14px; height:14px;"></div></div>
+          <span class="nc-app-title" style="font-size:13px;">NAVIGATION</span>
+        </div>
+        <button class="tsm-drawer-close-btn" onclick="toggleMobileNavDrawer()">✕</button>
+      </div>
+      <div class="tsm-drawer-body">
+        <button class="tsm-drawer-item active" data-view="terminal" onclick="switchView('terminal'); toggleMobileNavDrawer();">
+          <span class="nc-tab-ico">⚡</span><span>TERMINAL DASHBOARD</span>
+        </button>
+        <button class="tsm-drawer-item gold" data-view="india" onclick="switchView('india'); toggleMobileNavDrawer();">
+          <span class="nc-tab-ico">🇮🇳</span><span>INDIA EQUITIES &amp; F&amp;O</span>
+        </button>
+        <button class="tsm-drawer-item cyan" data-view="news" onclick="switchView('news'); toggleMobileNavDrawer();">
+          <span class="nc-tab-ico">📰</span><span>NEWS &amp; CATALYSTS</span>
+        </button>
+        <button class="tsm-drawer-item" data-view="chart" onclick="switchView('chart'); toggleMobileNavDrawer();">
+          <span class="nc-tab-ico">📈</span><span>PRO TRADINGVIEW CHART</span>
+        </button>
+        <button class="tsm-drawer-item" data-view="rwa" onclick="switchView('rwa'); toggleMobileNavDrawer();">
+          <span class="nc-tab-ico">🏛</span><span>RWA MATRIX</span>
+        </button>
+        <button class="tsm-drawer-item gold" data-view="partners" onclick="switchView('partners'); toggleMobileNavDrawer();">
+          <span class="nc-tab-ico">💎</span><span>PROP FIRMS</span>
+        </button>
+        <button class="tsm-drawer-item" data-view="trades" onclick="switchView('trades'); toggleMobileNavDrawer();">
+          <span class="nc-tab-ico">💼</span><span>AUDIT LOG</span>
+        </button>
+        <button class="tsm-drawer-item magenta" id="drawerAdminTab" data-view="admin" onclick="switchView('admin'); toggleMobileNavDrawer();">
+          <span class="nc-tab-ico">⚙</span><span>SUPER ADMIN PORTAL</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <main class="nc-main-stage tsm-main">
 
@@ -495,7 +546,19 @@
           </div>
         </div>
 
-        <!-- Section 2: F&O & Options Derivatives Matrix -->
+        <!-- Section 2: High-Conviction Option Trade Suggestions -->
+        <div class="tsm-panel" style="margin-bottom:16px;">
+          <div class="tsm-panel-header">
+            <div class="tsm-panel-title">⚡ HIGH-CONVICTION OPTION TRADE SUGGESTIONS (INTRADAY &amp; EXPIRY SETUPS)</div>
+            <span class="tsm-badge-gold">AI DERIVATIVES QUANT ENGINE</span>
+          </div>
+          <div class="opt-trade-suggestion-grid" id="opt-suggestions-container">
+            <!-- Dynamic Option Trade Cards Rendered Here -->
+            <div class="empty-state text-center" style="padding:20px; grid-column:1/-1;">Loading high-conviction option setups...</div>
+          </div>
+        </div>
+
+        <!-- Section 3: F&O & Options Derivatives Matrix -->
         <div class="tsm-panel" style="margin-bottom:16px;">
           <div class="tsm-panel-header">
             <div class="tsm-panel-title">📊 NSE &amp; BSE F&amp;O OPTIONS INTELLIGENCE (NIFTY, BANK NIFTY, SENSEX)</div>
@@ -1962,6 +2025,143 @@
     </div>
   </div>
 
+  <!-- ══════════ 1. USER AUTHENTICATION MODAL (SIGN IN / REGISTER) ══════════ -->
+  <div id="authModal" class="palette-overlay" style="display:none;" onclick="handleAuthBackdropClick(event)">
+    <div class="tsm-auth-modal-card">
+      <div class="tsm-auth-tabs">
+        <button class="tsm-auth-tab active" id="authTabLogin" onclick="switchAuthTab('login')">SIGN IN</button>
+        <button class="tsm-auth-tab" id="authTabRegister" onclick="switchAuthTab('register')">CREATE ACCOUNT</button>
+        <button class="tsm-auth-close-btn" onclick="closeAuthModal()">✕</button>
+      </div>
+      
+      <form id="authForm" onsubmit="handleAuthSubmit(event)" style="display:flex; flex-direction:column; gap:12px; margin-top:14px;">
+        <div id="authNameField" style="display:none;">
+          <label style="font-size:10px; color:var(--text-dim); font-family:var(--font-mono);">FULL NAME</label>
+          <input type="text" id="authName" class="tsm-input" placeholder="e.g., Alex Trader" style="width:100%; margin-top:4px;">
+        </div>
+        
+        <div>
+          <label style="font-size:10px; color:var(--text-dim); font-family:var(--font-mono);">EMAIL ADDRESS</label>
+          <input type="email" id="authEmail" class="tsm-input" placeholder="trader@domain.com" required style="width:100%; margin-top:4px;">
+        </div>
+        
+        <div>
+          <label style="font-size:10px; color:var(--text-dim); font-family:var(--font-mono);">PASSWORD</label>
+          <input type="password" id="authPassword" class="tsm-input" placeholder="••••••••" required style="width:100%; margin-top:4px;">
+        </div>
+        
+        <div id="authRefField" style="display:none;">
+          <label style="font-size:10px; color:var(--text-dim); font-family:var(--font-mono);">REFERRAL CODE (OPTIONAL)</label>
+          <input type="text" id="authRefCode" class="tsm-input font-mono" placeholder="VIP100" style="width:100%; margin-top:4px;">
+        </div>
+
+        <div id="authStatusMsg" style="font-size:11px; min-height:16px;"></div>
+
+        <button type="submit" id="authSubmitBtn" class="tsm-btn-cta green" style="width:100%; justify-content:center; padding:10px; font-size:11px;">
+          SIGN IN TO TERMINAL
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ══════════ 2. CONNECT EXCHANGE API KEYS MODAL (COINSWITCH & DELTA) ══════════ -->
+  <div id="exchangeKeysModal" class="palette-overlay" style="display:none;" onclick="handleKeysBackdropClick(event)">
+    <div class="tsm-auth-modal-card" style="max-width:520px;">
+      <div class="tsm-drawer-header" style="margin-bottom:12px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:16px;">🔑</span>
+          <span class="tsm-panel-title">CONNECT EXCHANGE API KEYS</span>
+        </div>
+        <button class="tsm-auth-close-btn" onclick="closeExchangeKeysModal()">✕</button>
+      </div>
+
+      <div style="font-size:10.5px; color:var(--text-sec); margin-bottom:14px; line-height:1.4;">
+        Connect your CoinSwitch Pro and Delta Exchange India API credentials. Keys are encrypted client-to-server with AES-256 and used exclusively for your individual portfolio execution.
+      </div>
+
+      <form id="exchangeKeysForm" onsubmit="handleExchangeKeysSubmit(event)" style="display:flex; flex-direction:column; gap:12px;">
+        <!-- CoinSwitch Keys -->
+        <div style="background:rgba(0,0,0,0.3); border:1px solid rgba(0,240,144,0.3); padding:10px 12px; border-radius:6px;">
+          <div style="font-weight:700; font-size:11px; color:var(--neon-green); margin-bottom:8px;">1. COINSWITCH PRO API</div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <input type="text" id="userCsApiKey" class="tsm-input font-mono" placeholder="CoinSwitch API Key" style="width:100%; font-size:10.5px;">
+            <input type="password" id="userCsSecretKey" class="tsm-input font-mono" placeholder="CoinSwitch Secret Key" style="width:100%; font-size:10.5px;">
+          </div>
+        </div>
+
+        <!-- Delta India Keys -->
+        <div style="background:rgba(0,0,0,0.3); border:1px solid rgba(0,212,255,0.3); padding:10px 12px; border-radius:6px;">
+          <div style="font-weight:700; font-size:11px; color:var(--neon-cyan); margin-bottom:8px;">2. DELTA EXCHANGE INDIA API</div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <input type="text" id="userDeltaApiKey" class="tsm-input font-mono" placeholder="Delta India API Key" style="width:100%; font-size:10.5px;">
+            <input type="password" id="userDeltaSecretKey" class="tsm-input font-mono" placeholder="Delta India Secret Key" style="width:100%; font-size:10.5px;">
+          </div>
+        </div>
+
+        <div id="keysStatusMsg" style="font-size:11px; min-height:16px;"></div>
+
+        <div style="display:flex; gap:10px;">
+          <button type="submit" class="tsm-btn-cta cyan" style="flex:1; justify-content:center; padding:10px; font-size:11px;">
+            💾 ENCRYPT &amp; SAVE KEYS
+          </button>
+          <button type="button" class="tsm-btn-secondary" onclick="closeExchangeKeysModal()" style="padding:10px 16px;">
+            CANCEL
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ══════════ 3. 3D COIN INTELLIGENCE & TELEMETRY POPUP MODAL ══════════ -->
+  <div id="coinDetailsModal" class="palette-overlay" style="display:none;" onclick="handleCoinDetailsBackdropClick(event)">
+    <div class="tsm-coin-modal-card">
+      <div class="tsm-coin-modal-header">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div class="tsm-coin-modal-icon" id="cmodal-icon">₿</div>
+          <div>
+            <div class="tsm-coin-modal-title" id="cmodal-title">BITCOIN (BTC/USDT)</div>
+            <div class="tsm-coin-modal-cat" id="cmodal-cat">CRYPTO ASSET • DUAL-EXCHANGE LIVE</div>
+          </div>
+        </div>
+        <button class="tsm-auth-close-btn" onclick="closeCoinDetailsModal()">✕</button>
+      </div>
+
+      <div class="tsm-coin-modal-grid">
+        <div class="tsm-cstat-card"><span class="lbl">SPOT PRICE</span><span class="val green" id="cmodal-spot">$77,264.28</span></div>
+        <div class="tsm-cstat-card"><span class="lbl">FUTURES PRICE</span><span class="val cyan" id="cmodal-fut">$77,236.90</span></div>
+        <div class="tsm-cstat-card"><span class="lbl">BASIS SPREAD</span><span class="val gold" id="cmodal-basis">Δ -$27.38 (-0.035%)</span></div>
+        <div class="tsm-cstat-card"><span class="lbl">24H CHANGE</span><span class="val green" id="cmodal-chg">+1.37% 🟢</span></div>
+        <div class="tsm-cstat-card"><span class="lbl">SUPERTREND (15M)</span><span class="val green" id="cmodal-supertrend">BULLISH 🟢</span></div>
+        <div class="tsm-cstat-card"><span class="lbl">RSI (14) MOMENTUM</span><span class="val cyan" id="cmodal-rsi">62.4 (STRONG BUY)</span></div>
+      </div>
+
+      <!-- AI Trade Setup Recommendation -->
+      <div class="tsm-coin-setup-box">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <strong style="color:var(--neon-green); font-size:11px;">⚡ AI QUANT CONVICTION SETUP:</strong>
+          <span class="tsm-badge-pill admin" id="cmodal-confidence">94% CONVICTION</span>
+        </div>
+        <div style="font-size:11px; color:var(--text-sec); line-height:1.5;" id="cmodal-setup-text">
+          Target long scalp entry on pullback with dynamic trailing ratchet stop. High institutional order book support above $76,500.
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-top:8px; font-family:var(--font-mono); font-size:10px;">
+          <div style="background:rgba(0,0,0,0.3); padding:5px 8px; border-radius:4px;">ENTRY: <strong class="cyan" id="cmodal-entry">$77,100</strong></div>
+          <div style="background:rgba(0,0,0,0.3); padding:5px 8px; border-radius:4px;">TARGET 1: <strong class="green" id="cmodal-target">$78,200</strong></div>
+          <div style="background:rgba(0,0,0,0.3); padding:5px 8px; border-radius:4px;">STOP LOSS: <strong class="red-text" id="cmodal-sl">$76,400</strong></div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:14px;">
+        <button class="tsm-btn-cta cyan" id="cmodal-chart-btn" style="flex:1; justify-content:center; padding:9px; font-size:11px;" onclick="handleCoinModalOpenChart()">
+          <span>📊</span><span>VIEW PRO CHART</span>
+        </button>
+        <button class="tsm-btn-cta green" id="cmodal-trade-btn" style="flex:1; justify-content:center; padding:9px; font-size:11px;" onclick="handleCoinModalSimulateTrade()">
+          <span>⚡</span><span>SIMULATE TRADE</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ══════════ GLOBAL QUICK COMMAND PALETTE (CTRL+K) ══════════ -->
   <div id="commandPaletteModal" class="palette-overlay" style="display:none;" onclick="handlePaletteBackdropClick(event)">
     <div class="palette-box">
@@ -2035,6 +2235,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=111.0"></script>
+  <script src="app.js?v=114.0"></script>
 </body>
 </html>

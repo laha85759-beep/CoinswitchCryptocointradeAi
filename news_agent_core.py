@@ -26,16 +26,146 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
 NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "").strip()
 
+DEFAULT_BASELINE_NEWS = [
+    {
+        "id": "nw_gold_01",
+        "title": "Gold (XAU/USD) Sustains Momentum Above $2,740 as Central Banks Boost Bullion Reserves",
+        "summary": "Spot gold maintains strong upward momentum following institutional accumulation and escalating macroeconomic hedging across major central banks.",
+        "source": "Bloomberg Markets",
+        "url": "https://www.bloomberg.com",
+        "category": "FOREX",
+        "country": "GLOBAL",
+        "sentiment": "STRONG BULLISH",
+        "impact_score": 88,
+        "ai_takeaway": "Bullish institutional flow supports continued rally toward $2,760 resistance with key floor at $2,725."
+    },
+    {
+        "id": "nw_btc_01",
+        "title": "Bitcoin Surges Past $77,000 as Institutional Dual-Exchange Basis Spreads Tighten",
+        "summary": "Bitcoin open interest hits fresh monthly highs with spot accumulation dominating perpetual futures market structure across Binance and Delta India.",
+        "source": "CoinDesk",
+        "url": "https://www.coindesk.com",
+        "category": "CRYPTO",
+        "country": "GLOBAL",
+        "sentiment": "STRONG BULLISH",
+        "impact_score": 92,
+        "ai_takeaway": "Order book depth indicates continuous limit buying with $76,500 acting as a primary liquidity shelf."
+    },
+    {
+        "id": "nw_in_01",
+        "title": "NIFTY 50 and Bank Nifty Eye Record Highs as FII Inflows Rebound in Banking & IT Giants",
+        "summary": "Domestic benchmarks NIFTY 50 and BSE Sensex post steady gains led by Reliance Industries, HDFC Bank, and TCS as option writers defend key put strikes.",
+        "source": "Moneycontrol",
+        "url": "https://www.moneycontrol.com",
+        "category": "INDIA",
+        "country": "INDIA",
+        "sentiment": "BULLISH",
+        "impact_score": 84,
+        "ai_takeaway": "Put-Call Ratio (PCR) at 1.08 confirms strong support at 25,300 with recommended Bull Call Spread playbooks."
+    },
+    {
+        "id": "nw_in_02",
+        "title": "Economic Times: Indian Capital Markets See Surge in Algorithmic F&O Derivative Participation",
+        "summary": "SEBI regulated derivatives volume shows heightened institutional hedging in Nifty monthly option chains with heavy open interest concentration at 25,400.",
+        "source": "Economic Times",
+        "url": "https://economictimes.indiatimes.com",
+        "category": "INDIA",
+        "country": "INDIA",
+        "sentiment": "BULLISH",
+        "impact_score": 79,
+        "ai_takeaway": "Option writing clustering at 25,300-25,500 establishes an optimal theta decay range for spread strategies."
+    },
+    {
+        "id": "nw_sol_01",
+        "title": "Solana Gains 5.6% Driven by High-Throughput DEX Volume and Memecoin Liquidity Rotations",
+        "summary": "SOL outpaces major Layer 1 peers as network transaction fee revenues and DeFi total value locked reach multi-month highs.",
+        "source": "CoinTelegraph",
+        "url": "https://cointelegraph.com",
+        "category": "CRYPTO",
+        "country": "GLOBAL",
+        "sentiment": "BULLISH",
+        "impact_score": 81,
+        "ai_takeaway": "Momentum oscillators show sustained buying above 20 EMA with target zones at $108.50."
+    },
+    {
+        "id": "nw_in_03",
+        "title": "LiveMint: India Q3 GDP Outlook Strengthens on Robust Infrastructure and Corporate Earnings",
+        "summary": "Core sector manufacturing indices and foreign direct investment data signal resilient macroeconomic momentum heading into upcoming RBI policy review.",
+        "source": "LiveMint",
+        "url": "https://www.livemint.com",
+        "category": "INDIA",
+        "country": "INDIA",
+        "sentiment": "BULLISH",
+        "impact_score": 76,
+        "ai_takeaway": "Macro tailwinds support continued outperformance in Indian blue-chip equities."
+    }
+]
+
+DEFAULT_BASELINE_CALENDAR = [
+    {"country": "US", "currency": "USD", "title": "Federal Reserve FOMC Rate Decision & Policy Statement", "impact": "HIGH", "actual": "5.25%", "forecast": "5.25%", "previous": "5.50%", "time": "18:30 UTC"},
+    {"country": "US", "currency": "USD", "title": "Core CPI Inflation (YoY)", "impact": "HIGH", "actual": "3.1%", "forecast": "3.2%", "previous": "3.3%", "time": "12:30 UTC"},
+    {"country": "IN", "currency": "INR", "title": "RBI Monetary Policy Committee Repo Rate", "impact": "HIGH", "actual": "6.50%", "forecast": "6.50%", "previous": "6.50%", "time": "04:30 UTC"},
+    {"country": "EU", "currency": "EUR", "title": "ECB Main Refinancing Rate & Press Conference", "impact": "HIGH", "actual": "3.65%", "forecast": "3.65%", "previous": "3.75%", "time": "13:15 UTC"},
+    {"country": "US", "currency": "USD", "title": "Non-Farm Payrolls (NFP) & Unemployment Rate", "impact": "HIGH", "actual": "175K", "forecast": "160K", "previous": "142K", "time": "12:30 UTC"},
+    {"country": "GB", "currency": "GBP", "title": "Bank of England BoE Official Bank Rate", "impact": "MEDIUM", "actual": "5.00%", "forecast": "5.00%", "previous": "5.25%", "time": "11:00 UTC"},
+    {"country": "JP", "currency": "JPY", "title": "Bank of Japan BOJ Monetary Policy Statement", "impact": "HIGH", "actual": "0.25%", "forecast": "0.25%", "previous": "0.10%", "time": "03:00 UTC"}
+]
+
+DEFAULT_BASELINE_SIGNALS = [
+    {
+        "symbol": "BTC/USDT",
+        "strategy": "SuperTrend Confluence + Delta India Basis",
+        "direction": "LONG 🟢",
+        "timeframe": "15m",
+        "confidence": 94,
+        "entry_range": "$77,100 - $77,300",
+        "target1": "$78,200",
+        "target2": "$79,500",
+        "stop_loss": "$76,400",
+        "risk_reward": "1 : 2.8",
+        "beginner_note": "Bitcoin is in a confirmed uptrend above its moving averages with strong volume.",
+        "institutional_note": "Delta perpetual funding remains neutral at +0.010% with spot basis discount compressing."
+    },
+    {
+        "symbol": "XAU/USD (GOLD)",
+        "strategy": "MT5 Institutional Liquidity Expansion",
+        "direction": "LONG 🟢",
+        "timeframe": "1h",
+        "confidence": 91,
+        "entry_range": "$2,740 - $2,748",
+        "target1": "$2,765",
+        "target2": "$2,785",
+        "stop_loss": "$2,725",
+        "risk_reward": "1 : 2.5",
+        "beginner_note": "Gold continues to form higher highs supported by global market stability demand.",
+        "institutional_note": "COMEX open interest expansion aligns with physical settlement premium."
+    },
+    {
+        "symbol": "NIFTY 50",
+        "strategy": "NSE F&O Options PCR Confluence",
+        "direction": "LONG (BULL CALL SPREAD) 🟢",
+        "timeframe": "Intraday / Weekly",
+        "confidence": 89,
+        "entry_range": "25,350 - 25,380",
+        "target1": "25,480",
+        "target2": "25,550",
+        "stop_loss": "25,260",
+        "risk_reward": "1 : 2.6",
+        "beginner_note": "Put writers are aggressively defending the 25,300 strike, suggesting limited downside.",
+        "institutional_note": "PCR of 1.08 with Max Pain shifted higher to 25,400 strike."
+    }
+]
+
 class NewsAgentCore:
     def __init__(self):
-        self.cached_news: List[Dict[str, Any]] = []
-        self.cached_calendar: List[Dict[str, Any]] = []
-        self.cached_signals: List[Dict[str, Any]] = []
+        self.cached_news: List[Dict[str, Any]] = list(DEFAULT_BASELINE_NEWS)
+        self.cached_calendar: List[Dict[str, Any]] = list(DEFAULT_BASELINE_CALENDAR)
+        self.cached_signals: List[Dict[str, Any]] = list(DEFAULT_BASELINE_SIGNALS)
         self.cached_indian_indices: Dict[str, Any] = {
-            "NIFTY 50": {"price": 23347.25, "change_pct": 0.56},
-            "BANK NIFTY": {"price": 56325.50, "change_pct": 0.06},
-            "SENSEX": {"price": 74620.91, "change_pct": 0.38},
-            "USD/INR": {"price": 95.89, "change_pct": -0.05}
+            "NIFTY 50": {"price": 25380.45, "change_pct": 0.42},
+            "BANK NIFTY": {"price": 53640.20, "change_pct": 0.35},
+            "SENSEX": {"price": 83120.15, "change_pct": 0.38},
+            "USD/INR": {"price": 83.92, "change_pct": -0.04}
         }
         self.seen_news_ids: set = set()
         self.last_scan_time = 0
