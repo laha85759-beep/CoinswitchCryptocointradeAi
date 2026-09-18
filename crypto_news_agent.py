@@ -23,6 +23,7 @@ from typing import Any, Dict, List, Optional
 
 from notifier import TelegramNotifier
 from nvidia_super_brain import NvidiaSuperBrainEngine
+from news_telegram_broadcaster import news_broadcaster
 
 log = logging.getLogger(__name__)
 
@@ -220,12 +221,16 @@ class CryptoNewsIntelligenceAgent:
                 f"🤖 *NVIDIA AI Super Brain • Selective High-Conviction Feed*"
             )
 
-            if self.notifier:
-                try:
+            # Broadcast to dedicated News Bot (@ForexIndian_bot / LiveForexSignalsAI_bot)
+            try:
+                if news_broadcaster.is_active:
+                    news_broadcaster.send_message(msg, parse_mode="Markdown")
+                    log.info("📢 Broadcasted Crypto News for %s to @ForexIndian_bot: %s", primary_asset, title[:45])
+                elif self.notifier:
                     self.notifier.send(msg)
                     log.info("📢 Broadcasted Crypto News for %s to Telegram: %s", primary_asset, title[:45])
-                except Exception as exc:
-                    log.warning("Telegram news broadcast error: %s", exc)
+            except Exception as exc:
+                log.warning("Telegram news broadcast error: %s", exc)
 
             broadcasted.append({
                 "asset": primary_asset,

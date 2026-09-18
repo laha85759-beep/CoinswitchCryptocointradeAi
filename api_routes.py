@@ -623,4 +623,36 @@ def jarvis_chat():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-print("api_routes.py Blueprint updated with Real Visitors, Affiliates, Sales & User CRM successfully!")
+# ── 9. NEWS & FOREX TELEGRAM BROADCASTER ────────────────────────────────────
+from news_agent_core import news_core
+from news_telegram_broadcaster import news_broadcaster
+
+@api_bp.route("/api/news/broadcast-telegram", methods=["POST"])
+def broadcast_news_telegram():
+    try:
+        count = news_core.broadcast_all_fresh_news()
+        return jsonify({
+            "status": "success",
+            "message": f"Dispatched {count} market intelligence updates to @ForexIndian_bot",
+            "broadcast_count": count,
+            "channel_id": news_broadcaster.chat_id,
+            "is_active": news_broadcaster.is_active
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@api_bp.route("/api/news/status", methods=["GET"])
+def get_news_status():
+    sentiment = news_core.get_market_sentiment_summary()
+    return jsonify({
+        "status": "success",
+        "broadcaster_active": news_broadcaster.is_active,
+        "chat_id": news_broadcaster.chat_id,
+        "cached_news_count": len(news_core.cached_news),
+        "cached_calendar_count": len(news_core.cached_calendar),
+        "cached_signals_count": len(news_core.cached_signals),
+        "market_sentiment": sentiment,
+        "last_scan_time": news_core.last_scan_time
+    })
+
+print("api_routes.py Blueprint updated with Real Visitors, Affiliates, Sales, User CRM & News Broadcaster successfully!")

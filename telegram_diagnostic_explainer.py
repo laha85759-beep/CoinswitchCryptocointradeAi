@@ -31,8 +31,8 @@ class TelegramDiagnosticExplainerAgent:
         self.dc = DeltaClient(self.cfg["delta_api_key"], self.cfg["delta_api_secret"])
         self.notifier = TelegramNotifier(self.cfg["telegram_token"], self.cfg["telegram_chat_id"])
 
-    def run_audit_and_notify_telegram(self) -> Dict[str, Any]:
-        """Runs a complete system audit and dispatches explanation to Telegram."""
+    def run_audit_and_notify_telegram(self, notify_telegram: bool = False) -> Dict[str, Any]:
+        """Runs a complete system audit and dispatches explanation to Telegram if requested."""
         log.info("TelegramDiagnosticExplainerAgent: Auditing daily trade pipeline...")
 
         # 1. Exchange Balances
@@ -107,9 +107,14 @@ class TelegramDiagnosticExplainerAgent:
             f"💡 *Summary*: Capital (`${delta_usdt:.2f} USDT`) protected by Instant Trailing Stops (+0.2%). Scanning 250+ pairs for next breakout."
         )
 
-        # 6. Send Telegram Notification
-        sent = self.notifier.send(msg)
-        log.info("TelegramDiagnosticExplainerAgent: Sent daily trade explanation to Telegram (success=%s)", sent)
+        # 6. Send Telegram Notification only when explicitly requested (e.g., manual audit test)
+        # Suppressed by default to prevent spamming Telegram when no trades are taken.
+        sent = False
+        if notify_telegram:
+            sent = self.notifier.send(msg)
+            log.info("TelegramDiagnosticExplainerAgent: Sent trade explanation to Telegram (success=%s)", sent)
+        else:
+            log.info("TelegramDiagnosticExplainerAgent: Audit complete (Telegram dispatch suppressed to avoid spam). State: %s", reason_title)
 
         return {
             "status": "success",

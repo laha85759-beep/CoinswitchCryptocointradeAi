@@ -376,13 +376,26 @@ class NewsAgentCore:
             
         log.info(f"✅ News Engine Synced: {len(news)} articles, {len(cal)} calendar events, {len(sigs)} macro signals, Indian Indices: {list(indices.keys())}.")
         
-        # Broadcast high impact fresh breaking news to dedicated News Telegram channel
+        # 1. Broadcast fresh breaking news to dedicated News Telegram channel (@ForexIndian_bot)
         if news and news_broadcaster.is_active:
-            for item in news[:3]:
-                if item["id"] not in self.seen_news_ids and item.get("impact_score", 0) >= 70:
+            for item in news[:5]:
+                if item["id"] not in self.seen_news_ids and item.get("impact_score", 0) >= 60:
                     self.seen_news_ids.add(item["id"])
                     news_broadcaster.broadcast_breaking_news(item, item.get("ai_takeaway"))
                     time.sleep(1)
+
+        # 2. Periodic comprehensive market digest broadcast (every 2 hours)
+        now_ts = time.time()
+        if not hasattr(self, "last_digest_time"):
+            self.last_digest_time = 0
+            
+        if (now_ts - self.last_digest_time) >= 7200 and news_broadcaster.is_active:
+            try:
+                self.last_digest_time = now_ts
+                self.broadcast_all_fresh_news()
+                log.info("📢 Broadcasted scheduled institutional market digest to @ForexIndian_bot")
+            except Exception as dig_err:
+                log.warning(f"Market digest broadcast notice: {dig_err}")
 
     def start_background_loop(self, interval_seconds: int = 90):
         """Run continuous 24/7 news monitoring."""

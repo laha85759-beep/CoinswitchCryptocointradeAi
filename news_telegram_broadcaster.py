@@ -13,14 +13,15 @@ from typing import Optional, Dict, Any
 
 log = logging.getLogger("news_telegram")
 
-# Environment variable keys specifically for News & Forex Channel
+# Environment variable keys specifically for News & Forex Channel (@ForexIndian_bot / LiveForexSignalsAI_bot)
 NEWS_BOT_TOKEN = (
     os.getenv("NEWS_BOT_TOKEN") or 
     os.getenv("NEWS_TELEGRAM_BOT_TOKEN") or 
     os.getenv("FOREX_NEWS_BOT_TOKEN") or 
     os.getenv("TELEGRAM_NEWS_BOT_TOKEN") or
     os.getenv("TELEGRAM_BOT_TOKEN") or
-    ""
+    os.getenv("TELEGRAM_TOKEN") or
+    "8710452375:AAG-pqR8amkjx772hAYiLC_0WymUcoruVqE"
 ).strip()
 
 NEWS_CHAT_ID = (
@@ -29,7 +30,7 @@ NEWS_CHAT_ID = (
     os.getenv("FOREX_NEWS_CHAT_ID") or 
     os.getenv("TELEGRAM_NEWS_CHAT_ID") or
     os.getenv("TELEGRAM_CHAT_ID") or
-    ""
+    "6207722743"
 ).strip()
 
 class NewsTelegramBroadcaster:

@@ -137,8 +137,8 @@ def run_diagnostics() -> None:
     try:
         from telegram_diagnostic_explainer import TelegramDiagnosticExplainerAgent
         explainer = TelegramDiagnosticExplainerAgent()
-        explainer.run_audit_and_notify_telegram()
-        print("[PASS] TelegramDiagnosticExplainerAgent successfully sent detailed trade explanation to Telegram!")
+        explainer.run_audit_and_notify_telegram(notify_telegram=False)
+        print("[PASS] TelegramDiagnosticExplainerAgent internal audit completed (Telegram dispatch silenced).")
     except Exception as exp_exc:
         print(f"[NOTICE] TelegramDiagnosticExplainerAgent notice: {exp_exc}")
 
