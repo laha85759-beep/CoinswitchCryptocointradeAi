@@ -57,14 +57,134 @@ function applyTheme(theme) {
   document.body.classList.remove("light-mode");
 }
 
-// ── 2. Real-Time UTC Clock ─────────────────────────────────────────────────
-function initUtcClock() {
+// ── 2. Real-Time Country & Timezone Adaptive Clock Engine ──────────────────
+let clockMode = localStorage.getItem("tsm_clock_mode") || "local"; // 'local' or 'utc'
+
+function getUserTimezoneInfo() {
+  let timeZone = "UTC";
+  try {
+    timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  } catch (e) {
+    timeZone = "UTC";
+  }
+
+  const tzLower = timeZone.toLowerCase();
+  let flag = "🌐";
+  let tzCode = "UTC";
+  let countryName = "Global";
+
+  if (tzLower.includes("kolkata") || tzLower.includes("calcutta") || tzLower.includes("india")) {
+    flag = "🇮🇳"; tzCode = "IST"; countryName = "India";
+  } else if (tzLower.includes("new_york") || tzLower.includes("detroit")) {
+    flag = "🇺🇸"; tzCode = "EDT"; countryName = "United States (East)";
+  } else if (tzLower.includes("chicago") || tzLower.includes("central")) {
+    flag = "🇺🇸"; tzCode = "CDT"; countryName = "United States (Central)";
+  } else if (tzLower.includes("denver") || tzLower.includes("mountain") || tzLower.includes("phoenix")) {
+    flag = "🇺🇸"; tzCode = "MDT"; countryName = "United States (Mountain)";
+  } else if (tzLower.includes("los_angeles") || tzLower.includes("pacific")) {
+    flag = "🇺🇸"; tzCode = "PDT"; countryName = "United States (West)";
+  } else if (tzLower.includes("london") || tzLower.includes("belfast")) {
+    flag = "🇬🇧"; tzCode = "BST/GMT"; countryName = "United Kingdom";
+  } else if (tzLower.includes("dubai") || tzLower.includes("uae") || tzLower.includes("muscat")) {
+    flag = "🇦🇪"; tzCode = "GST"; countryName = "United Arab Emirates";
+  } else if (tzLower.includes("singapore")) {
+    flag = "🇸🇬"; tzCode = "SGT"; countryName = "Singapore";
+  } else if (tzLower.includes("tokyo") || tzLower.includes("japan")) {
+    flag = "🇯🇵"; tzCode = "JST"; countryName = "Japan";
+  } else if (tzLower.includes("paris") || tzLower.includes("berlin") || tzLower.includes("rome") || tzLower.includes("madrid") || tzLower.includes("amsterdam") || tzLower.includes("brussels") || tzLower.includes("vienna") || tzLower.includes("stockholm")) {
+    flag = "🇪🇺"; tzCode = "CEST"; countryName = "European Union";
+  } else if (tzLower.includes("toronto") || tzLower.includes("vancouver") || tzLower.includes("montreal")) {
+    flag = "🇨🇦"; tzCode = "EDT/PDT"; countryName = "Canada";
+  } else if (tzLower.includes("sydney") || tzLower.includes("melbourne") || tzLower.includes("brisbane") || tzLower.includes("perth")) {
+    flag = "🇦🇺"; tzCode = "AEST"; countryName = "Australia";
+  } else if (tzLower.includes("dhaka") || tzLower.includes("bangladesh")) {
+    flag = "🇧🇩"; tzCode = "BST"; countryName = "Bangladesh";
+  } else if (tzLower.includes("hong_kong")) {
+    flag = "🇭🇰"; tzCode = "HKT"; countryName = "Hong Kong";
+  } else if (tzLower.includes("karachi") || tzLower.includes("pakistan")) {
+    flag = "🇵🇰"; tzCode = "PKT"; countryName = "Pakistan";
+  } else if (tzLower.includes("shanghai") || tzLower.includes("beijing")) {
+    flag = "🇨🇳"; tzCode = "CST"; countryName = "China";
+  } else if (tzLower.includes("saopaulo") || tzLower.includes("brazil")) {
+    flag = "🇧🇷"; tzCode = "BRT"; countryName = "Brazil";
+  } else if (tzLower.includes("riyadh") || tzLower.includes("saudi")) {
+    flag = "🇸🇦"; tzCode = "AST"; countryName = "Saudi Arabia";
+  } else if (tzLower.includes("zurich") || tzLower.includes("geneva")) {
+    flag = "🇨🇭"; tzCode = "CEST"; countryName = "Switzerland";
+  } else if (tzLower.includes("johannesburg")) {
+    flag = "🇿🇦"; tzCode = "SAST"; countryName = "South Africa";
+  } else {
+    try {
+      const parts = new Intl.DateTimeFormat(navigator.language || "en-US", { timeZoneName: "short" }).formatToParts(new Date());
+      const tzPart = parts.find(p => p.type === "timeZoneName");
+      if (tzPart && tzPart.value) tzCode = tzPart.value;
+    } catch (e) {}
+  }
+
+  return { timeZone, flag, tzCode, countryName };
+}
+
+function updateClockDisplay() {
   const clockEl = document.getElementById("live-utc-clock");
-  setInterval(() => {
-    const now = new Date();
-    const utcStr = now.toUTCString().split(" ")[4] + " UTC";
-    if (clockEl) clockEl.textContent = utcStr;
-  }, 1000);
+  if (!clockEl) return;
+
+  const now = new Date();
+  const tzInfo = getUserTimezoneInfo();
+
+  if (clockMode === "local") {
+    // User Country Local Time
+    const timeStr = now.toLocaleTimeString(navigator.language || "en-US", {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
+    clockEl.innerHTML = `<span class="nc-clock-flag">${tzInfo.flag}</span> <span>${timeStr}</span> <span class="nc-clock-tz-badge">${tzInfo.tzCode}</span>`;
+    clockEl.title = `Your Country: ${tzInfo.countryName} (${tzInfo.timeZone})\nLocal Time Active • Click to switch to UTC Market Time`;
+  } else {
+    // Global UTC Market Time
+    const utcHours = String(now.getUTCHours()).padStart(2, '0');
+    const utcMins = String(now.getUTCMinutes()).padStart(2, '0');
+    const utcSecs = String(now.getUTCSeconds()).padStart(2, '0');
+    clockEl.innerHTML = `<span class="nc-clock-flag">🌐</span> <span>${utcHours}:${utcMins}:${utcSecs}</span> <span class="nc-clock-tz-badge">UTC</span>`;
+    clockEl.title = `Global UTC Market Time Active • Click to switch to your Country Time (${tzInfo.flag} ${tzInfo.tzCode})`;
+  }
+}
+
+function toggleClockMode() {
+  clockMode = clockMode === "local" ? "utc" : "local";
+  localStorage.setItem("tsm_clock_mode", clockMode);
+  updateClockDisplay();
+}
+
+function initUtcClock() {
+  updateClockDisplay();
+  setInterval(updateClockDisplay, 1000);
+}
+
+// Universal Localized DateTime Formatter for Trades, Logs & News
+function formatLocalizedDateTime(timestamp) {
+  if (!timestamp) return "—";
+  try {
+    let d;
+    if (typeof timestamp === "number") {
+      d = new Date(timestamp > 1e11 ? timestamp : timestamp * 1000);
+    } else {
+      d = new Date(timestamp);
+    }
+    if (isNaN(d.getTime())) return String(timestamp);
+
+    return d.toLocaleString(navigator.language || "en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true
+    });
+  } catch (e) {
+    return String(timestamp);
+  }
 }
 
 // ── 3. Tab & View Navigation ──────────────────────────────────────────────

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Jarvis AI Quant Assistant & Multilingual Real-Time Intelligence Engine
 =====================================================================
 - 100% Verified Live Market Data with Spot & Futures Dual Feed
@@ -364,6 +364,22 @@ class JarvisAssistantEngine:
                 voice = f"बिटकॉइन स्पॉट {btc.get('price_spot', 77264.0):,.2f} डॉलर और फ्यूचर्स {btc.get('price_futures', 77236.0):,.2f} डॉलर पर बुलिश मोमेंटम में ट्रेड कर रहा है।"
                 return {"reply": reply, "voice_script": voice, "lang": speech_lang, "category": "crypto"}
 
+            elif any(w in q_lower for w in ["time", "samay", "baje", "ghadi", "waqt"]):
+                import datetime
+                now_utc = datetime.datetime.now(datetime.timezone.utc)
+                ist_time = now_utc + datetime.timedelta(hours=5, minutes=30)
+                ist_str = ist_time.strftime("%I:%M:%S %p")
+                utc_str = now_utc.strftime("%H:%M:%S UTC")
+                reply = (
+                    f"### ⏰ **लाइव समय और मार्केट टाइमजोन (Time & Market Sessions)**\n\n"
+                    f"- **भारतीय मानक समय (IST)**: **`{ist_str}`** 🇮🇳\n"
+                    f"- **ग्लोबल मार्केट समय (UTC)**: **`{utc_str}`** 🌐\n"
+                    f"- **मार्केट स्टेटस**: क्रिप्टो 24/7 लाइव • NSE/BSE इक्विटी और F&O सत्र सक्रिय।\n\n"
+                    f"💡 *वेबसाइट के टॉप हेडर में आपकी कंट्री का लाइव टाइम हमेशा ऑटो-डिटेक्ट होकर दिखाई देता है।*"
+                )
+                voice = f"सर, वर्तमान में भारतीय समय {ist_str} है, और ग्लोबल UTC टाइम {utc_str} है।"
+                return {"reply": reply, "voice_script": voice, "lang": speech_lang, "category": "time"}
+
             elif any(w in q_lower for w in ["nifty", "sensex", "banknifty", "option", "pcr"]):
                 reply = (
                     f"### 🇮🇳 **भारतीय बाजार (NSE/BSE) लाइव स्पॉट, फ्यूचर्स और ऑप्शन चेन**\n\n"
@@ -482,6 +498,27 @@ class JarvisAssistantEngine:
                 )
                 voice = f"NIFTY 50 Spot is at {nifty.get('price_spot', 23286.0):,.2f} and Futures is at {nifty.get('price_futures', 23328.0):,.2f} with Put-Call ratio {nifty_pcr}."
                 return {"reply": reply, "voice_script": voice, "lang": "en-US", "category": "india"}
+
+            elif any(w in q_lower for w in ["time", "clock", "timezone", "what time", "session"]):
+                import datetime
+                now_utc = datetime.datetime.now(datetime.timezone.utc)
+                ist_time = now_utc + datetime.timedelta(hours=5, minutes=30)
+                ist_str = ist_time.strftime("%I:%M:%S %p IST")
+                utc_str = now_utc.strftime("%H:%M:%S UTC")
+                ny_str = (now_utc - datetime.timedelta(hours=4)).strftime("%I:%M:%S %p EDT")
+                lon_str = (now_utc + datetime.timedelta(hours=1)).strftime("%I:%M:%S %p BST")
+                tok_str = (now_utc + datetime.timedelta(hours=9)).strftime("%I:%M:%S %p JST")
+                reply = (
+                    f"### ⏰ **Global Market Clock & User Country Timezones**\n\n"
+                    f"- **Coordinated Universal Time (UTC)**: **`{utc_str}`** 🌐\n"
+                    f"- **India Standard Time (IST)**: **`{ist_str}`** 🇮🇳\n"
+                    f"- **New York Financial Session (EDT)**: **`{ny_str}`** 🇺🇸\n"
+                    f"- **London Financial Session (BST)**: **`{lon_str}`** 🇬🇧\n"
+                    f"- **Tokyo Asian Session (JST)**: **`{tok_str}`** 🇯🇵\n\n"
+                    f"💡 *The header clock on the terminal automatically displays the exact real-time clock for your country.*"
+                )
+                voice = f"The global market time is {utc_str}. Indian Standard Time is {ist_str}, and New York time is {(now_utc - datetime.timedelta(hours=4)).strftime('%I:%M %p')}."
+                return {"reply": reply, "voice_script": voice, "lang": "en-US", "category": "time"}
 
             else:
                 reply = (

@@ -129,7 +129,9 @@
       <button class="nc-btn-logout" id="userLogoutBtn" onclick="handleUserLogout()" title="Logout from Account" style="display:none;">
         <span>🚪</span><span>LOGOUT</span>
       </button>
-      <div class="nc-clock-pill" id="live-utc-clock">00:00:00 UTC</div>
+      <div class="nc-clock-pill" id="live-utc-clock" onclick="toggleClockMode()" title="Click to toggle between Your Country Local Time and UTC Market Time">
+        <span class="nc-clock-flag">🌐</span> <span>00:00:00</span> <span class="nc-clock-tz-badge">LOCAL</span>
+      </div>
       <button class="nc-btn-admin" id="adminNavBtn" onclick="toggleAdminView()" title="Admin Control Center" style="display:none;">
         <span>⚙</span><span id="adminNavBtnText">ADMIN</span>
       </button>
