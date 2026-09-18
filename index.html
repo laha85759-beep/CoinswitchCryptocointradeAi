@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=100.0">
+  <link rel="stylesheet" href="styles.css?v=105.0">
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -103,8 +103,8 @@
       <button class="nc-nav-tab tsm-tab" data-view="trades" onclick="switchView('trades')">
         <span class="nc-tab-ico">💼</span><span>AUDIT LOG</span>
       </button>
-      <button class="nc-nav-tab tsm-tab cyan" id="superAdminNavTab" data-view="admin" onclick="switchView('admin')" style="display:none;">
-        <span class="nc-tab-ico">⚙</span><span>SUPER ADMIN</span>
+      <button class="nc-nav-tab tsm-tab magenta" id="superAdminNavTab" data-view="admin" onclick="switchView('admin')">
+        <span class="nc-tab-ico">⚙</span><span>SUPER ADMIN</span><span class="nc-nav-chip magenta">PORTAL</span>
       </button>
     </nav>
 
@@ -132,7 +132,7 @@
       <div class="nc-clock-pill" id="live-utc-clock" onclick="toggleClockMode()" title="Click to toggle between Your Country Local Time and UTC Market Time">
         <span class="nc-clock-flag">🌐</span> <span>00:00:00</span> <span class="nc-clock-tz-badge">LOCAL</span>
       </div>
-      <button class="nc-btn-admin" id="adminNavBtn" onclick="toggleAdminView()" title="Admin Control Center" style="display:none;">
+      <button class="nc-btn-admin" id="adminNavBtn" onclick="toggleAdminView()" title="Admin Control Center">
         <span>⚙</span><span id="adminNavBtnText">ADMIN</span>
       </button>
     </div>
@@ -2039,6 +2039,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=101.0"></script>
+  <script src="app.js?v=105.0"></script>
 </body>
 </html>
