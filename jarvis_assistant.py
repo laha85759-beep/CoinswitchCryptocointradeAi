@@ -43,25 +43,25 @@ class JarvisIntentRouter:
     def route(query: str) -> str:
         q = (query or "").lower().strip()
 
-        # 1. Indian Markets (NSE / BSE / Equities / F&O / Options / PCR / Nifty / Sensex)
-        if any(w in q for w in ["nifty", "sensex", "banknifty", "nse", "bse", "pcr", "option", "strike", "reliance", "hdfc", "icici", "sbin", "tcs", "infy", "vix", "india"]):
-            return INTENT_INDIAN_MARKETS
+        # 1. TradingView & Technical Indicators (highest specificity for chart/technicals)
+        if any(w in q for w in ["chart", "tradingview", "rsi", "supertrend", "ema", "vwap", "indicator", "technical", "graph", "candle"]):
+            return INTENT_TRADINGVIEW
 
-        # 2. Crypto APIs (Binance / CoinSwitch / Delta India / BTC / ETH / SOL / Altcoins / Memecoins)
-        if any(w in q for w in ["btc", "bitcoin", "eth", "ethereum", "sol", "solana", "xrp", "doge", "pepe", "wif", "bonk", "memecoin", "crypto", "coinswitch", "delta", "usdt", "position", "trade", "bot", "funding"]):
-            return INTENT_CRYPTO_APIS
-
-        # 3. Market Data (MT5 / Forex / Commodities / Gold / Oil / EURUSD / GBPUSD)
-        if any(w in q for w in ["gold", "xau", "xauusd", "silver", "crude", "oil", "commodity", "eurusd", "gbpusd", "usdjpy", "forex", "mt5", "pip", "spread", "sone", "sona"]):
-            return INTENT_MARKET_DATA_MT5
-
-        # 4. News & Economic Calendar (ForexFactory / Fed / CPI / Rates / Catalysts)
-        if any(w in q for w in ["news", "calendar", "event", "fed", "cpi", "inflation", "rate", "fomc", "catalyst", "khabar", "samachar", "breaking"]):
+        # 2. News & Economic Calendar (ForexFactory / Fed / CPI / Catalysts)
+        if any(w in q for w in ["news", "calendar", "event", "events", "catalyst", "catalysts", "economic", "forexfactory", "fed", "cpi", "inflation", "rate", "rates", "fomc", "khabar", "samachar", "breaking"]):
             return INTENT_NEWS_CALENDAR
 
-        # 5. TradingView & Technical Indicators (Chart / RSI / SuperTrend / EMA / VWAP / Level / Support / Resistance)
-        if any(w in q for w in ["chart", "tradingview", "rsi", "supertrend", "ema", "vwap", "indicator", "support", "resistance", "breakout", "target", "technical"]):
-            return INTENT_TRADINGVIEW
+        # 3. Indian Markets (NSE / BSE / Equities / F&O / Options / PCR / Nifty / Sensex)
+        if any(w in q for w in ["nifty", "sensex", "banknifty", "nse", "bse", "pcr", "option", "options", "strike", "reliance", "hdfc", "icici", "sbin", "tcs", "infy", "vix", "india", "indian"]):
+            return INTENT_INDIAN_MARKETS
+
+        # 4. Market Data (MT5 / Forex / Commodities / Gold / Oil / EURUSD / GBPUSD)
+        if any(w in q for w in ["gold", "xau", "xauusd", "silver", "crude", "oil", "commodity", "eurusd", "gbpusd", "usdjpy", "usdinr", "forex", "mt5", "pip", "spread", "sone", "sona"]):
+            return INTENT_MARKET_DATA_MT5
+
+        # 5. Crypto APIs (Binance / CoinSwitch / Delta India / BTC / ETH / SOL / Altcoins / Memecoins)
+        if any(w in q for w in ["btc", "bitcoin", "eth", "ethereum", "sol", "solana", "xrp", "doge", "pepe", "wif", "bonk", "memecoin", "crypto", "coinswitch", "delta", "usdt", "position", "positions", "trade", "trades", "bot", "funding", "margin"]):
+            return INTENT_CRYPTO_APIS
 
         return INTENT_GENERAL
 
@@ -232,7 +232,13 @@ class JarvisVoiceCore:
             return self._generate_mt5_response(q, lang, speech_lang, data)
 
         elif intent == INTENT_TRADINGVIEW:
-            tech = TradingViewWebhookEngine.fetch_technicals("BTC")
+            sym = "BTC"
+            low_q = q.lower()
+            if "eth" in low_q: sym = "ETH"
+            elif "sol" in low_q: sym = "SOL"
+            elif "gold" in low_q or "xau" in low_q: sym = "GOLD"
+            elif "nifty" in low_q: sym = "NIFTY"
+            tech = TradingViewWebhookEngine.fetch_technicals(sym)
             return self._generate_tradingview_response(q, lang, speech_lang, tech)
 
         elif intent == INTENT_NEWS_CALENDAR:
