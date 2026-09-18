@@ -1766,6 +1766,34 @@ def panic_close_all_positions():
         log.error("Panic close all failed: %s", exc)
         return jsonify({"status": "error", "message": str(exc)}), 500
 
+@app.route("/api/server-ip", methods=["GET"])
+def get_server_ip():
+    """Returns the live outbound public IP of this server instance for exchange whitelisting."""
+    try:
+        import requests
+        ip = "Unknown"
+        for provider in ["https://api.ipify.org?format=json", "https://ifconfig.me/all.json", "https://icanhazip.com"]:
+            try:
+                res = requests.get(provider, timeout=5)
+                if res.status_code == 200:
+                    if "json" in provider:
+                        ip = res.json().get("ip") or res.json().get("ip_addr")
+                    else:
+                        ip = res.text.strip()
+                    if ip:
+                        break
+            except Exception:
+                continue
+        return jsonify({
+            "status": "success",
+            "outbound_ip": ip,
+            "region": "oregon (us-west-2)",
+            "hosting": "Render Cloud Infrastructure",
+            "recommendation": "For Delta Exchange India, set API Key IP restriction to Unrestricted / 0.0.0.0/0 because cloud containers route across dynamic availability zone pools."
+        }), 200
+    except Exception as exc:
+        return jsonify({"status": "error", "message": str(exc)}), 500
+
 @app.route("/api/agent-logs", methods=["GET"])
 @app.route("/api/logs", methods=["GET"])
 def get_agent_logs():
