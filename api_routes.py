@@ -633,9 +633,13 @@ def jarvis_chat():
             "voice_script": response.get("voice_script", ""),
             "lang": response.get("lang", "en-US"),
             "category": response.get("category", "general"),
+            "intent": response.get("intent", "INTENT_GENERAL"),
+            "data_source": response.get("data_source", "JARVIS Core"),
+            "chart_action": response.get("chart_action", {}),
             "timestamp": time.time()
         })
     except Exception as e:
+        log.error("JARVIS chat route error: %s", e)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 # ── 9. NEWS & FOREX TELEGRAM BROADCASTER ────────────────────────────────────

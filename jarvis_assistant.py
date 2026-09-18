@@ -151,7 +151,7 @@ class CryptoAPIsEngine:
 class IndianMarketsEngine:
     """Engine 5: NSE / BSE Equities & F&O Options Matrix."""
     @staticmethod
-    def fetch_indian_intel() -> Dict[str, Any]:
+    def fetch_intel() -> Dict[str, Any]:
         from indian_market_agent import indian_agent
         with indian_agent.lock:
             indices = dict(indian_agent.cached_indices)
@@ -162,6 +162,10 @@ class IndianMarketsEngine:
             "stocks": stocks[:6],
             "options": options
         }
+
+    @staticmethod
+    def fetch_indian_intel() -> Dict[str, Any]:
+        return IndianMarketsEngine.fetch_intel()
 
 
 # ── 4. JARVIS VOICE CORE & RESPONSE GENERATOR ─────────────────────────────
