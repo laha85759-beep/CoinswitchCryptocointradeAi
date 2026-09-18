@@ -1254,12 +1254,12 @@ async function fetchAdminSales(isManual = false) {
 
     tbody.innerHTML = txList.map(tx => `
       <tr>
-        <td class="font-mono cyan">${escapeHtml(tx.transaction_id)}</td>
-        <td><strong>${escapeHtml(tx.user_name || 'Trader')}</strong></td>
-        <td><span class="tsm-badge-pill gold font-mono">${escapeHtml(tx.plan)}</span></td>
-        <td class="font-mono green"><strong>$${Number(tx.amount_usd).toFixed(2)}</strong></td>
-        <td class="font-mono text-dim">${escapeHtml(tx.payment_method || 'STRIPE')}</td>
-        <td><span class="tsm-badge-pill admin font-mono">${escapeHtml(tx.status.toUpperCase())}</span></td>
+        <td class="font-mono cyan">${escapeHtml(tx.transaction_id || tx.id || 'TX-00001')}</td>
+        <td><strong>${escapeHtml(tx.user_name || tx.name || 'Trader')}</strong></td>
+        <td><span class="tsm-badge-pill gold font-mono">${escapeHtml(tx.plan || tx.plan_name || 'PRO')}</span></td>
+        <td class="font-mono green"><strong>$${Number(tx.amount_usd || tx.amount || 0).toFixed(2)}</strong></td>
+        <td class="font-mono text-dim">${escapeHtml(tx.payment_method || 'CRYPTO_USDT')}</td>
+        <td><span class="tsm-badge-pill admin font-mono">${escapeHtml((tx.status || 'COMPLETED').toUpperCase())}</span></td>
       </tr>
     `).join("");
 

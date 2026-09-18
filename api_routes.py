@@ -267,37 +267,52 @@ def get_user_terminal_data(user):
 @superadmin_required
 def admin_get_kpis(admin_user):
     kpis = get_superadmin_kpis()
-    return jsonify({
-        "status": "success",
-        "kpis": kpis
-    })
+    res = {"status": "success", "kpis": kpis}
+    res.update(kpis)
+    return jsonify(res)
 
 @api_bp.route("/api/admin/visitors", methods=["GET"])
 @superadmin_required
 def admin_get_visitors(admin_user):
     visitors = get_visitor_analytics()
-    return jsonify({
-        "status": "success",
-        "analytics": visitors
-    })
+    res = {"status": "success", "analytics": visitors}
+    res.update(visitors)
+    return jsonify(res)
 
 @api_bp.route("/api/admin/affiliates", methods=["GET"])
 @superadmin_required
 def admin_get_affiliates(admin_user):
     aff = get_affiliate_analytics()
-    return jsonify({
+    res = {
         "status": "success",
-        "affiliates": aff
-    })
+        "total_clicks": aff["total_clicks"],
+        "total_signups": aff["total_signups"],
+        "total_commission_usd": aff["total_commission_usd"],
+        "affiliates": aff["leaderboard"],
+        "leaderboard": aff["leaderboard"],
+        "recent_clicks": aff["recent_clicks"],
+        "raw": aff
+    }
+    return jsonify(res)
 
 @api_bp.route("/api/admin/sales", methods=["GET"])
 @superadmin_required
 def admin_get_sales(admin_user):
     sales = get_sales_analytics()
-    return jsonify({
+    res = {
         "status": "success",
+        "total_revenue_usd": sales["total_revenue_usd"],
+        "mrr": sales["mrr_usd"],
+        "mrr_usd": sales["mrr_usd"],
+        "arr": sales["arr_usd"],
+        "arr_usd": sales["arr_usd"],
+        "paying_users": sales["paying_users"],
+        "conversion_rate": sales["conversion_rate_pct"],
+        "conversion_rate_pct": sales["conversion_rate_pct"],
+        "transactions": sales["transactions"],
         "sales": sales
-    })
+    }
+    return jsonify(res)
 
 @api_bp.route("/api/admin/users", methods=["GET"])
 @superadmin_required

@@ -162,6 +162,20 @@ def init_db():
     ''')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_sales_created ON sales_transactions(created_at)')
     
+    # ── Auto-Migration for existing databases ───────────────────────────────
+    try:
+        cursor.execute("PRAGMA table_info(users)")
+        existing_cols = [r["name"] for r in cursor.fetchall()]
+        for col_def, col_name in [
+            ("referred_by_code TEXT DEFAULT ''", "referred_by_code"),
+            ("country TEXT DEFAULT 'US'", "country"),
+            ("plan_name TEXT DEFAULT 'free'", "plan_name"),
+        ]:
+            if col_name not in existing_cols:
+                cursor.execute(f"ALTER TABLE users ADD COLUMN {col_def}")
+    except Exception as _mig_err:
+        pass
+
     conn.commit()
 
     # Pre-seed verified affiliate partners
@@ -295,25 +309,33 @@ def get_visitor_analytics() -> dict:
         })
 
     # Hourly distribution for last 24 hours (for real chart)
+    from datetime import datetime, timezone
     hourly_counts = []
+    hourly_traffic = {}
     for i in range(23, -1, -1):
         h_start = now - (i * 3600)
         h_end = h_start + 3600
         cursor.execute("SELECT COUNT(*) FROM visitor_logs WHERE created_at >= ? AND created_at < ?", (h_start, h_end))
         cnt = cursor.fetchone()[0] or 0
+        h_str = datetime.fromtimestamp(h_start, tz=timezone.utc).strftime("%Y-%m-%d %H:00")
+        hourly_traffic[h_str] = cnt
         hourly_counts.append(cnt)
 
     conn.close()
 
     return {
         "total_visits": total_visits,
+        "total_all_time_visits": total_visits,
         "unique_today": unique_today,
+        "unique_visitors_today": unique_today,
         "active_now": max(1, active_now),
+        "active_visitors_now": max(1, active_now),
         "page_views_24h": page_views_24h,
         "top_countries": top_countries,
         "top_referrers": top_referrers,
         "recent_visitors": recent_visitors,
-        "hourly_counts": hourly_counts
+        "hourly_counts": hourly_counts,
+        "hourly_traffic": hourly_traffic
     }
 
 
@@ -407,12 +429,15 @@ def get_affiliate_analytics() -> dict:
 
         leaderboard.append({
             "code": code,
+            "promo_code": code,
             "name": p["name"],
+            "partner_name": p["name"],
             "category": p["category"],
             "commission_rate": p["commission_rate"],
             "target_url": p["target_url"],
             "clicks": clicks,
             "signups": signups,
+            "conversions": signups,
             "commission_earned": round(comm, 2),
             "status": "ACTIVE"
         })
@@ -494,10 +519,14 @@ def get_sales_analytics() -> dict:
 
     return {
         "total_revenue_usd": round(total_sales, 2),
+        "total_sales": round(total_sales, 2),
         "mrr_usd": round(mrr, 2),
+        "mrr": round(mrr, 2),
         "arr_usd": round(mrr * 12, 2),
+        "arr": round(mrr * 12, 2),
         "paying_users": paying_users,
         "conversion_rate_pct": conversion_rate,
+        "conversion_rate": conversion_rate,
         "transactions": transactions
     }
 
@@ -521,15 +550,29 @@ def get_superadmin_kpis() -> dict:
     cursor.execute("SELECT COUNT(*) FROM user_settings WHERE autotrade_enabled = 1")
     running_bots = cursor.fetchone()[0] or 0
 
-    # 3. Real Today Trading Volume (From user_trades closed today + open trades)
+    # 3. Real Today Trading Volume (From user_trades + open exchange trades)
     cursor.execute("SELECT COALESCE(SUM(entry_price * qty), 0.0) FROM user_trades WHERE opened_at >= ?", (today_start,))
     today_volume = cursor.fetchone()[0] or 0.0
+
+    # Include live open positions volume
+    try:
+        from dual_exchange import load_json, DELTA_TRADES_FILE, CS_TRADES_FILE
+        for p in load_json(DELTA_TRADES_FILE, []) + load_json(CS_TRADES_FILE, []):
+            today_volume += float(p.get("entry_price", 0.0) or 0.0) * float(p.get("qty", 0.0) or 0.0)
+    except Exception:
+        pass
 
     # 4. Real Revenue / MRR
     cursor.execute("SELECT COALESCE(SUM(amount_usd), 0.0) FROM sales_transactions WHERE status = 'completed'")
     total_rev = cursor.fetchone()[0] or 0.0
 
-    # 5. Real Unique Visitors Today & Active Now
+    cursor.execute("SELECT COALESCE(SUM(amount_usd), 0.0) FROM sales_transactions WHERE status = 'completed' AND created_at >= ?", (today_start - 2592000,))
+    mrr_rev = cursor.fetchone()[0] or 0.0
+
+    # 5. Real Unique Visitors Today, Active Now, and Total Visits
+    cursor.execute("SELECT COUNT(*) FROM visitor_logs")
+    total_visits = cursor.fetchone()[0] or 0
+
     cursor.execute("SELECT COUNT(DISTINCT ip_address) FROM visitor_logs WHERE created_at >= ?", (today_start,))
     unique_visitors_today = cursor.fetchone()[0] or 0
 
@@ -544,13 +587,22 @@ def get_superadmin_kpis() -> dict:
 
     return {
         "total_registered_users": total_users,
+        "users_total": total_users,
         "active_users": active_users,
+        "users_active": active_users,
         "running_bots": running_bots,
         "today_trading_volume_usd": round(today_volume, 2),
+        "volume_today_usd": round(today_volume, 2),
         "total_platform_revenue_usd": round(total_rev, 2),
+        "revenue_mrr_usd": round(mrr_rev if mrr_rev > 0 else total_rev, 2),
         "unique_visitors_today": unique_visitors_today,
+        "visitors_unique_today": unique_visitors_today,
         "active_visitors_now": max(1, active_visitors_now),
-        "total_affiliate_clicks": total_aff_clicks
+        "visitors_active_now": max(1, active_visitors_now),
+        "total_visits": total_visits,
+        "visitors_total_hits": total_visits,
+        "total_affiliate_clicks": total_aff_clicks,
+        "affiliate_clicks_total": total_aff_clicks
     }
 
 
