@@ -26,6 +26,7 @@ class CoinSwitchClient:
             bytes.fromhex(api_secret)
         )
         self.session = requests.Session()
+        self.session.trust_env = False
         self.rate_limit_delay = rate_limit_delay
         self._last_request_at = 0.0
         self._symbol_exchange_map = {}  # symbol -> exchange cache

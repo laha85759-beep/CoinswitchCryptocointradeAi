@@ -21,6 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initAgent3dCore();
   initCircuitBgCanvas();
   initNeuralBgCanvas();
+  initWorkflowCycle();
   initUserSession();
   initAffiliateClickListeners();
   fetchRealData();
@@ -1450,23 +1451,23 @@ async function fetchAgentLogs() {
     if (!res.ok) return;
     const data = await res.json();
 
-    const logConsole = document.getElementById("agentLogConsole");
+    const logConsole = document.getElementById("agent-logs-console") || document.getElementById("agentLogConsole");
     if (!logConsole || !data.logs || data.logs.length === 0) return;
 
-    logConsole.innerHTML = data.logs.slice(-25).map(item => {
-      let badgeClass = "daemon";
-      let agent = item.agent || "SYSTEM";
-      if (agent.includes("SCANNER")) badgeClass = "scanner";
-      else if (agent.includes("AI") || agent.includes("SUPER_BRAIN")) badgeClass = "ai";
-      else if (agent.includes("RISK")) badgeClass = "risk";
-      else if (agent.includes("TRADE") || agent.includes("EXEC")) badgeClass = "trade";
+    logConsole.innerHTML = data.logs.slice(-30).map(item => {
+      let badgeClass = "badge-daemon";
+      let agent = item.agent || "DAEMON";
+      if (agent.includes("SCANNER")) badgeClass = "badge-scanner";
+      else if (agent.includes("AI") || agent.includes("SUPER_BRAIN") || agent.includes("QUANT")) badgeClass = "badge-nvidia";
+      else if (agent.includes("RISK") || agent.includes("GUARD")) badgeClass = "badge-risk";
+      else if (agent.includes("TRADE") || agent.includes("EXEC")) badgeClass = "badge-trade";
 
-      const timeStr = item.time ? item.time.split("T")[1].split(".")[0] : "--:--:--";
+      const timeStr = item.time ? (item.time.includes("T") ? item.time.split("T")[1].split(".")[0] : item.time.slice(0, 8)) : "--:--:--";
       return `
-        <div class="nc-term-line">
-          <span class="nc-term-ts">${timeStr}</span>
-          <span class="nc-term-badge ${badgeClass}">[${agent}]</span>
-          <span class="nc-term-msg">${escapeHtml(item.message)}</span>
+        <div class="log-entry">
+          <span class="log-badge ${badgeClass}">${escapeHtml(agent)}</span>
+          <span style="color:rgba(255,255,255,0.4); font-size:10px; margin-right:4px;">${timeStr}</span>
+          <span>${escapeHtml(item.message)}</span>
         </div>
       `;
     }).join("");

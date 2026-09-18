@@ -49,6 +49,7 @@ class DeltaClient:
         self.api_key = api_key
         self.api_secret = api_secret
         self.session = requests.Session()
+        self.session.trust_env = False
         
         # Configure proxy settings specifically for Delta Exchange India
         from config import CONFIG
