@@ -279,9 +279,230 @@ function switchProChartSymbol(symbol, btnEl) {
     }
   });
 
+  const cleanSym = currentTvSymbol.includes(":") ? currentTvSymbol.split(":")[1].replace(/(USDT|USD|INR)$/, "") + "/USDT" : currentTvSymbol;
+  const symInput = document.getElementById("proOrderSymbol");
+  if (symInput) symInput.value = cleanSym;
+
   initTradingViewWidget("tradingview_widget_fullscreen", currentTvSymbol, currentTvTimeframe);
   initTradingViewWidget("tradingview_widget_container", currentTvSymbol, currentTvTimeframe);
   updateProChartPositionBanner();
+}
+
+// ── 4.1 Pro Chart Manual Order Ticket & Multi-Broker Router ────────────────
+let proOrderSide = "buy";
+let proOrderType = "market";
+let proOrderLeverage = 20;
+
+function setProOrderSide(side) {
+  proOrderSide = side;
+  const btnBuy = document.getElementById("btnSideBuy");
+  const btnSell = document.getElementById("btnSideSell");
+  const execBtn = document.getElementById("btnExecuteProOrder");
+  const execText = document.getElementById("btnExecuteProOrderText");
+
+  if (side === "buy") {
+    if (btnBuy) btnBuy.classList.add("active");
+    if (btnSell) btnSell.classList.remove("active");
+    if (execBtn) {
+      execBtn.className = "btn-execute-pro-order buy";
+    }
+    if (execText) execText.textContent = "EXECUTE BUY ORDER";
+  } else {
+    if (btnBuy) btnBuy.classList.remove("active");
+    if (btnSell) btnSell.classList.add("active");
+    if (execBtn) {
+      execBtn.className = "btn-execute-pro-order sell";
+    }
+    if (execText) execText.textContent = "EXECUTE SELL SHORT ORDER";
+  }
+}
+
+function setProOrderType(type) {
+  proOrderType = type;
+  const btnMkt = document.getElementById("btnTypeMarket");
+  const btnLmt = document.getElementById("btnTypeLimit");
+  const lmtGroup = document.getElementById("proLimitPriceGroup");
+
+  if (type === "market") {
+    if (btnMkt) btnMkt.classList.add("active");
+    if (btnLmt) btnLmt.classList.remove("active");
+    if (lmtGroup) lmtGroup.style.display = "none";
+  } else {
+    if (btnMkt) btnMkt.classList.remove("active");
+    if (btnLmt) btnLmt.classList.add("active");
+    if (lmtGroup) lmtGroup.style.display = "block";
+  }
+}
+
+function setProOrderAmount(val) {
+  const amtInput = document.getElementById("proOrderAmount");
+  if (!amtInput) return;
+
+  if (val === "max") {
+    amtInput.value = "25.0";
+  } else {
+    amtInput.value = Number(val).toFixed(1);
+  }
+
+  document.querySelectorAll(".btn-amt-preset").forEach(btn => {
+    if ((val === "max" && btn.textContent.includes("MAX")) || btn.textContent.trim() === `$${val}`) {
+      btn.classList.add("active");
+    } else {
+      btn.classList.remove("active");
+    }
+  });
+}
+
+function setProOrderLeverage(lev) {
+  proOrderLeverage = lev;
+  const badge = document.getElementById("proLeverageBadge");
+  if (badge) badge.textContent = `${lev}x`;
+
+  document.querySelectorAll(".btn-lev-chip").forEach(btn => {
+    if (btn.textContent.trim() === `${lev}x`) {
+      btn.classList.add("active");
+    } else {
+      btn.classList.remove("active");
+    }
+  });
+}
+
+function updateBrokerSelectionUI() {
+  const chkDelta = document.getElementById("chkBrokerDelta");
+  const chkCS = document.getElementById("chkBrokerCS");
+  const lblDelta = document.getElementById("lblBrokerDelta");
+  const lblCS = document.getElementById("lblBrokerCS");
+  const summary = document.getElementById("proOrderTargetSummary");
+
+  const hasDelta = chkDelta && chkDelta.checked;
+  const hasCS = chkCS && chkCS.checked;
+
+  if (lblDelta) {
+    if (hasDelta) lblDelta.classList.add("active");
+    else lblDelta.classList.remove("active");
+  }
+
+  if (lblCS) {
+    if (hasCS) lblCS.classList.add("active");
+    else lblCS.classList.remove("active");
+  }
+
+  if (summary) {
+    if (hasDelta && hasCS) {
+      summary.innerHTML = "Routing to: <strong>Delta India (Futures) + CoinSwitch Pro (Spot) Concurrent Broadcast</strong>";
+    } else if (hasDelta) {
+      summary.innerHTML = "Routing to: <strong>Delta India (Crypto Futures & Options)</strong>";
+    } else if (hasCS) {
+      summary.innerHTML = "Routing to: <strong>CoinSwitch Pro (Spot Engine)</strong>";
+    } else {
+      summary.innerHTML = "<span class='red-text'>⚠️ No broker selected. Check at least one broker.</span>";
+    }
+  }
+}
+
+function selectAllBrokers() {
+  const chkDelta = document.getElementById("chkBrokerDelta");
+  const chkCS = document.getElementById("chkBrokerCS");
+  if (chkDelta) chkDelta.checked = true;
+  if (chkCS) chkCS.checked = true;
+  updateBrokerSelectionUI();
+}
+
+async function handleProChartOrderSubmit(e) {
+  e.preventDefault();
+
+  if (!userToken) {
+    openAuthModal();
+    return;
+  }
+
+  const chkDelta = document.getElementById("chkBrokerDelta");
+  const chkCS = document.getElementById("chkBrokerCS");
+  const brokers = [];
+  if (chkDelta && chkDelta.checked) brokers.push("delta");
+  if (chkCS && chkCS.checked) brokers.push("coinswitch");
+
+  const msgBox = document.getElementById("proOrderFeedbackMsg");
+  const execBtn = document.getElementById("btnExecuteProOrder");
+  const execText = document.getElementById("btnExecuteProOrderText");
+
+  if (brokers.length === 0) {
+    if (msgBox) {
+      msgBox.className = "pro-order-feedback-msg error";
+      msgBox.innerHTML = "⚠️ Please select at least one broker (Delta India or CoinSwitch Pro) to place the order.";
+      msgBox.style.display = "block";
+    }
+    return;
+  }
+
+  const symbol = (document.getElementById("proOrderSymbol").value || "BTC/USDT").trim().toUpperCase();
+  const amountUsd = parseFloat(document.getElementById("proOrderAmount").value) || 5.0;
+  const limitPrice = proOrderType === "limit" ? parseFloat(document.getElementById("proOrderLimitPrice").value) : null;
+  const tpPct = parseFloat(document.getElementById("proOrderTpPct").value) || 15.0;
+  const slPct = parseFloat(document.getElementById("proOrderSlPct").value) || 2.0;
+
+  const payload = {
+    symbol: symbol,
+    side: proOrderSide,
+    order_type: proOrderType,
+    amount_usd: amountUsd,
+    price: limitPrice,
+    leverage: proOrderLeverage,
+    stop_loss_pct: slPct,
+    take_profit_pct: tpPct,
+    exchanges: brokers
+  };
+
+  if (execBtn) {
+    execBtn.disabled = true;
+    if (execText) execText.textContent = "ROUTING ORDER TO BROKERS...";
+  }
+
+  try {
+    const res = await fetch("/api/user/manual-trade", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${userToken}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.status === "success") {
+      if (msgBox) {
+        msgBox.className = "pro-order-feedback-msg success";
+        let detailStr = "";
+        if (data.results) {
+          detailStr = Object.entries(data.results).map(([k, v]) => `• <strong>${v.exchange || k}</strong>: ${v.status.toUpperCase()} (ID: ${v.order_id || 'OK'})`).join("<br>");
+        }
+        msgBox.innerHTML = `✅ <strong>${data.message || 'Order Placed Successfully!'}</strong><br>${detailStr}`;
+        msgBox.style.display = "block";
+      }
+      fetchRealData();
+      setTimeout(() => {
+        if (msgBox) msgBox.style.display = "none";
+      }, 7000);
+    } else {
+      if (msgBox) {
+        msgBox.className = "pro-order-feedback-msg error";
+        msgBox.innerHTML = `⚠️ <strong>Order Notice:</strong> ${data.message || 'Failed to execute order.'}`;
+        msgBox.style.display = "block";
+      }
+    }
+  } catch (err) {
+    if (msgBox) {
+      msgBox.className = "pro-order-feedback-msg error";
+      msgBox.innerHTML = `❌ Connection error while routing order: ${err.message || err}`;
+      msgBox.style.display = "block";
+    }
+  } finally {
+    if (execBtn) {
+      execBtn.disabled = false;
+      if (execText) execText.textContent = proOrderSide === "buy" ? "EXECUTE BUY ORDER" : "EXECUTE SELL SHORT ORDER";
+    }
+  }
 }
 
 function changeTvTimeframe(interval) {

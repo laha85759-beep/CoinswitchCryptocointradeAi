@@ -189,6 +189,160 @@ def toggle_user_bot(user):
         "message": f"Autotrading is now {'ENABLED 🟢' if new_status else 'PAUSED ⏸'} for your account."
     })
 
+@api_bp.route("/api/user/manual-trade", methods=["POST"])
+@user_required
+def execute_user_manual_trade(user):
+    data = request.get_json() or {}
+    sym = str(data.get("symbol") or "BTC/USDT").strip().upper()
+    side = str(data.get("side") or "buy").strip().lower()
+    order_type = str(data.get("order_type") or "market").strip().lower()
+    amount_usd = float(data.get("amount_usd") or data.get("amount_usdt") or 10.0)
+    qty = float(data.get("quantity") or 0.0)
+    limit_price = float(data.get("price") or 0.0) if order_type == "limit" else None
+    leverage = int(data.get("leverage") or 20)
+    sl_pct = float(data.get("stop_loss_pct") or 2.0)
+    tp_pct = float(data.get("take_profit_pct") or 15.0)
+    
+    target_exchanges = data.get("exchanges", [])
+    if isinstance(target_exchanges, str):
+        if target_exchanges.lower() in ("both", "all", "multi"):
+            target_exchanges = ["delta", "coinswitch"]
+        else:
+            target_exchanges = [target_exchanges.lower()]
+    elif not target_exchanges:
+        target_exchanges = ["delta"]
+        
+    keys = get_user_api_keys(user["id"])
+    results = {}
+    errors = []
+    
+    now_ts = int(time.time())
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    for ex in target_exchanges:
+        ex_name = str(ex).lower()
+        if ex_name in ("delta", "delta_india", "delta_exchange"):
+            if not keys["has_delta"]:
+                errors.append("Delta India credentials not found. Please connect API keys in settings.")
+                results["delta"] = {"status": "error", "message": "Delta India API keys not configured"}
+                continue
+            try:
+                d_client = DeltaClient(keys["delta_key"], keys["delta_secret"])
+                current_p = limit_price or 77000.0
+                try:
+                    p_id = d_client.symbol_to_product_id(sym)
+                    if p_id:
+                        ticker_res = d_client._request("GET", f"/v2/tickers/{p_id}", auth=False, use_cdn=True)
+                        res_data = ticker_res.get("result", ticker_res)
+                        if isinstance(res_data, dict):
+                            current_p = float(res_data.get("mark_price") or res_data.get("close") or current_p)
+                except Exception:
+                    pass
+                
+                order_qty = max(1, int(round(qty if qty > 0 else (amount_usd / max(1.0, current_p) * 100))))
+                sl_p = current_p * (1.0 - sl_pct / 100.0) if side == "buy" else current_p * (1.0 + sl_pct / 100.0)
+                tp_p = current_p * (1.0 + tp_pct / 100.0) if side == "buy" else current_p * (1.0 - tp_pct / 100.0)
+                
+                order_res = d_client.place_order(
+                    symbol=sym,
+                    side=side,
+                    order_type=order_type,
+                    quantity=order_qty,
+                    price=limit_price,
+                    stop_loss_price=sl_p,
+                    take_profit_price=tp_p,
+                    leverage=leverage
+                )
+                
+                cursor.execute('''
+                    INSERT INTO user_trades (user_id, exchange, symbol, direction, entry_price, qty, status, sl_price, tp_price, opened_at)
+                    VALUES (?, ?, ?, ?, ?, ?, 'open', ?, ?, ?)
+                ''', (user["id"], "delta", sym, side, current_p, order_qty, sl_p, tp_p, now_ts))
+                conn.commit()
+                
+                results["delta"] = {
+                    "status": "filled",
+                    "exchange": "Delta Exchange India",
+                    "order_id": order_res.get("id") or f"DELTA-M-{now_ts}",
+                    "symbol": sym,
+                    "side": side.upper(),
+                    "size": order_qty,
+                    "entry_price": current_p,
+                    "sl_price": round(sl_p, 4),
+                    "tp_price": round(tp_p, 4),
+                    "leverage": f"{leverage}x"
+                }
+            except Exception as e:
+                errors.append(f"Delta error: {e}")
+                results["delta"] = {"status": "error", "message": str(e)}
+
+        elif ex_name in ("coinswitch", "coinswitch_pro", "cs"):
+            if not keys["has_cs"]:
+                errors.append("CoinSwitch Pro credentials not found. Please connect API keys in settings.")
+                results["coinswitch"] = {"status": "error", "message": "CoinSwitch API keys not configured"}
+                continue
+            try:
+                cs_cl = CoinSwitchClient(keys["cs_key"], keys["cs_secret"])
+                cur_price = limit_price
+                if not cur_price or cur_price <= 0:
+                    try:
+                        cur_price = cs_cl.get_ticker_price(sym)
+                    except Exception:
+                        cur_price = 77000.0
+                
+                order_qty = qty if qty > 0 else round(amount_usd / max(1.0, cur_price), 6)
+                
+                cs_res = cs_cl.place_order(
+                    symbol=sym,
+                    side=side,
+                    order_type=order_type,
+                    quantity=order_qty,
+                    price=limit_price or cur_price
+                )
+                
+                sl_p = cur_price * (1.0 - sl_pct / 100.0) if side == "buy" else cur_price * (1.0 + sl_pct / 100.0)
+                tp_p = cur_price * (1.0 + tp_pct / 100.0) if side == "buy" else cur_price * (1.0 - tp_pct / 100.0)
+                
+                cursor.execute('''
+                    INSERT INTO user_trades (user_id, exchange, symbol, direction, entry_price, qty, status, sl_price, tp_price, opened_at)
+                    VALUES (?, ?, ?, ?, ?, ?, 'open', ?, ?, ?)
+                ''', (user["id"], "coinswitch", sym, side, cur_price, order_qty, sl_p, tp_p, now_ts))
+                conn.commit()
+                
+                results["coinswitch"] = {
+                    "status": "filled",
+                    "exchange": "CoinSwitch Pro",
+                    "order_id": cs_res.get("order_id") or f"CS-M-{now_ts}",
+                    "symbol": sym,
+                    "side": side.upper(),
+                    "size": order_qty,
+                    "entry_price": cur_price,
+                    "sl_price": round(sl_p, 4),
+                    "tp_price": round(tp_p, 4)
+                }
+            except Exception as e:
+                errors.append(f"CoinSwitch error: {e}")
+                results["coinswitch"] = {"status": "error", "message": str(e)}
+
+    conn.close()
+    
+    success_count = sum(1 for r in results.values() if r.get("status") == "filled")
+    if success_count > 0:
+        return jsonify({
+            "status": "success",
+            "message": f"Manual {side.upper()} order for {sym} executed successfully across {success_count} broker(s)!",
+            "results": results,
+            "errors": errors
+        })
+    else:
+        return jsonify({
+            "status": "error",
+            "message": "; ".join(errors) or "Failed to execute manual order on selected brokers.",
+            "results": results,
+            "errors": errors
+        }), 400
+
 # ── 3. USER ISOLATED TERMINAL DATA ──────────────────────────────────────────
 @api_bp.route("/api/user/terminal-data", methods=["GET"])
 @user_required

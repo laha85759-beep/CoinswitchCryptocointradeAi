@@ -61,7 +61,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=117.0">
+  <link rel="stylesheet" href="styles.css?v=118.0">
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -1076,6 +1076,111 @@
       <!-- TradingView Interactive Chart Display -->
       <div class="tsm-panel pro-chart-canvas-panel" style="height:650px; padding:0; overflow:hidden; position:relative;">
         <div id="tradingview_widget_fullscreen" style="height:100%; width:100%;"></div>
+      </div>
+
+      <!-- ══════════ PRO CHART MANUAL ORDER EXECUTION TERMINAL ══════════ -->
+      <div class="tsm-panel pro-chart-order-panel" id="proChartOrderTicketPanel">
+        <div class="pro-order-head">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="tsm-badge-pill magenta">⚡ INSTANT EXECUTION</span>
+            <h3 class="pro-order-title">Manual Order Terminal &amp; Multi-Broker Router</h3>
+          </div>
+          <div class="pro-order-broker-pills">
+            <span style="font-size:10px; font-family:var(--font-mono); color:var(--text-muted);">TARGET BROKERS:</span>
+            <label class="broker-checkbox-label active" id="lblBrokerDelta">
+              <input type="checkbox" id="chkBrokerDelta" checked onchange="updateBrokerSelectionUI()">
+              <span>🇮🇳 DELTA INDIA (F&amp;O)</span>
+            </label>
+            <label class="broker-checkbox-label active" id="lblBrokerCS">
+              <input type="checkbox" id="chkBrokerCS" checked onchange="updateBrokerSelectionUI()">
+              <span>🪙 COINSWITCH PRO (SPOT)</span>
+            </label>
+            <button type="button" class="btn-broker-all" onclick="selectAllBrokers()">⚡ BOTH BROKERS</button>
+          </div>
+        </div>
+
+        <form id="proChartOrderForm" onsubmit="handleProChartOrderSubmit(event)" class="pro-order-form">
+          <div class="pro-order-grid">
+            <!-- Col 1: Side & Order Type -->
+            <div class="pro-order-col">
+              <label class="pro-order-lbl">ORDER SIDE &amp; TYPE</label>
+              <div class="order-side-toggle-group">
+                <button type="button" class="btn-side-toggle buy active" id="btnSideBuy" onclick="setProOrderSide('buy')">🟢 BUY / LONG</button>
+                <button type="button" class="btn-side-toggle sell" id="btnSideSell" onclick="setProOrderSide('sell')">🔴 SELL / SHORT</button>
+              </div>
+              <div class="order-type-toggle-group">
+                <button type="button" class="btn-type-toggle active" id="btnTypeMarket" onclick="setProOrderType('market')">MARKET</button>
+                <button type="button" class="btn-type-toggle" id="btnTypeLimit" onclick="setProOrderType('limit')">LIMIT</button>
+              </div>
+            </div>
+
+            <!-- Col 2: Symbol & Price -->
+            <div class="pro-order-col">
+              <label class="pro-order-lbl">TRADING ASSET / PAIR</label>
+              <div class="pro-input-wrap">
+                <input type="text" id="proOrderSymbol" class="pro-order-input font-mono" value="BTC/USDT" required placeholder="e.g. BTC/USDT" />
+                <span class="pro-input-addon" id="proOrderMarkPriceAddon">$77,250</span>
+              </div>
+              <div id="proLimitPriceGroup" style="display:none; margin-top:6px;">
+                <label class="pro-order-lbl" style="font-size:9px;">LIMIT PRICE (USDT)</label>
+                <input type="number" step="any" id="proOrderLimitPrice" class="pro-order-input font-mono" placeholder="Enter limit price" />
+              </div>
+            </div>
+
+            <!-- Col 3: Size & Margin Amount -->
+            <div class="pro-order-col">
+              <label class="pro-order-lbl">ORDER CAPITAL (USDT)</label>
+              <div class="pro-input-wrap">
+                <input type="number" step="any" id="proOrderAmount" class="pro-order-input font-mono" value="5.0" min="0.5" required placeholder="Amount in USDT" />
+                <span class="pro-input-addon">USDT</span>
+              </div>
+              <div class="pro-amount-presets">
+                <button type="button" class="btn-amt-preset" onclick="setProOrderAmount(2.0)">$2</button>
+                <button type="button" class="btn-amt-preset active" onclick="setProOrderAmount(5.0)">$5</button>
+                <button type="button" class="btn-amt-preset" onclick="setProOrderAmount(10.0)">$10</button>
+                <button type="button" class="btn-amt-preset" onclick="setProOrderAmount(25.0)">$25</button>
+                <button type="button" class="btn-amt-preset gold" onclick="setProOrderAmount('max')">MAX (100%)</button>
+              </div>
+            </div>
+
+            <!-- Col 4: Leverage & Risk Controls (TP / SL) -->
+            <div class="pro-order-col">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <label class="pro-order-lbl">LEVERAGE (DELTA)</label>
+                <span class="pro-order-val-badge" id="proLeverageBadge">20x</span>
+              </div>
+              <div class="pro-leverage-bar">
+                <button type="button" class="btn-lev-chip" onclick="setProOrderLeverage(1)">1x</button>
+                <button type="button" class="btn-lev-chip" onclick="setProOrderLeverage(5)">5x</button>
+                <button type="button" class="btn-lev-chip" onclick="setProOrderLeverage(10)">10x</button>
+                <button type="button" class="btn-lev-chip active" onclick="setProOrderLeverage(20)">20x</button>
+                <button type="button" class="btn-lev-chip" onclick="setProOrderLeverage(50)">50x</button>
+              </div>
+              <div class="pro-risk-inputs-row">
+                <div>
+                  <span class="pro-risk-lbl green">TP (%):</span>
+                  <input type="number" step="0.1" id="proOrderTpPct" class="pro-risk-input" value="15.0" />
+                </div>
+                <div>
+                  <span class="pro-risk-lbl red">SL (%):</span>
+                  <input type="number" step="0.1" id="proOrderSlPct" class="pro-risk-input" value="2.0" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Col 5: Execution Action -->
+            <div class="pro-order-col pro-order-action-col">
+              <button type="submit" class="btn-execute-pro-order buy" id="btnExecuteProOrder">
+                <span class="exec-ico">⚡</span>
+                <span id="btnExecuteProOrderText">EXECUTE BUY ORDER</span>
+              </button>
+              <div class="pro-order-target-summary" id="proOrderTargetSummary">
+                Routing to: <strong>Delta India + CoinSwitch Pro</strong>
+              </div>
+            </div>
+          </div>
+          <div id="proOrderFeedbackMsg" class="pro-order-feedback-msg" style="display:none;"></div>
+        </form>
       </div>
 
       <!-- Dedicated "My Live Open Trades & Orders" Section -->
@@ -2473,6 +2578,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=117.0"></script>
+  <script src="app.js?v=118.0"></script>
 </body>
 </html>
