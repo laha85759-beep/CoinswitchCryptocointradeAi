@@ -61,7 +61,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=116.0">
+  <link rel="stylesheet" href="styles.css?v=117.0">
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -994,11 +994,137 @@
       </div>
     </div>
 
-    <!-- VIEW 4: PRO CHART -->
+    <!-- VIEW 4: PRO CHART & LIVE POSITIONS RADAR -->
     <div id="view-chart" class="nc-view-pane tsm-view-section">
-      <div class="tsm-panel" style="height:720px; padding:0; overflow:hidden;">
-        <div id="tradingview_widget_container" style="height:100%; width:100%;"></div>
+      <!-- Top Pro Chart Toolbar & Symbol Selector -->
+      <div class="tsm-panel pro-chart-top-panel">
+        <div class="pro-chart-header-row">
+          <div class="pro-chart-title-group">
+            <div class="tsm-badge-pill"><span class="nc-dot-pulse green"></span> LIVE CHART &amp; POSITIONS SYNC</div>
+            <h2 class="pro-chart-heading">Pro TradingView Terminal &amp; Active Trade Radar</h2>
+            <div class="pro-chart-sub">Real-time charting with direct execution markers, live user PnL, and one-click position synchronization.</div>
+          </div>
+          <div class="pro-chart-timeframes">
+            <span class="pro-chart-tf-label">TIMEFRAME:</span>
+            <button class="pro-chart-tf-btn" onclick="changeTvTimeframe('1')">1m</button>
+            <button class="pro-chart-tf-btn active" onclick="changeTvTimeframe('5')">5m</button>
+            <button class="pro-chart-tf-btn" onclick="changeTvTimeframe('15')">15m</button>
+            <button class="pro-chart-tf-btn" onclick="changeTvTimeframe('60')">1h</button>
+            <button class="pro-chart-tf-btn" onclick="changeTvTimeframe('240')">4h</button>
+            <button class="pro-chart-tf-btn" onclick="changeTvTimeframe('D')">1D</button>
+          </div>
+        </div>
+
+        <!-- Quick Coin / Market Selection Ribbons -->
+        <div class="pro-chart-symbols-row">
+          <div class="pro-chart-symbol-group">
+            <span class="pro-sym-category">🔥 CRYPTO:</span>
+            <button class="pro-coin-btn active" data-symbol="BINANCE:BTCUSDT" onclick="switchProChartSymbol('BINANCE:BTCUSDT', this)">
+              <span class="coin-ico">₿</span> BTC/USDT
+            </button>
+            <button class="pro-coin-btn" data-symbol="BINANCE:ETHUSDT" onclick="switchProChartSymbol('BINANCE:ETHUSDT', this)">
+              <span class="coin-ico">Ξ</span> ETH/USDT
+            </button>
+            <button class="pro-coin-btn" data-symbol="BINANCE:SOLUSDT" onclick="switchProChartSymbol('BINANCE:SOLUSDT', this)">
+              <span class="coin-ico">◎</span> SOL/USDT
+            </button>
+            <button class="pro-coin-btn" data-symbol="BINANCE:XRPUSDT" onclick="switchProChartSymbol('BINANCE:XRPUSDT', this)">
+              <span class="coin-ico">✕</span> XRP/USDT
+            </button>
+            <button class="pro-coin-btn" data-symbol="BINANCE:DOGEUSDT" onclick="switchProChartSymbol('BINANCE:DOGEUSDT', this)">
+              <span class="coin-ico">Ð</span> DOGE/USDT
+            </button>
+            <button class="pro-coin-btn" data-symbol="BINANCE:PEPEUSDT" onclick="switchProChartSymbol('BINANCE:PEPEUSDT', this)">
+              <span class="coin-ico">🐸</span> PEPE/USDT
+            </button>
+            <button class="pro-coin-btn" data-symbol="BINANCE:ONDOUSDT" onclick="switchProChartSymbol('BINANCE:ONDOUSDT', this)">
+              <span class="coin-ico">🏛</span> ONDO/USDT
+            </button>
+          </div>
+          <div class="pro-chart-symbol-group">
+            <span class="pro-sym-category gold">🇮🇳 INDIA &amp; MACRO:</span>
+            <button class="pro-coin-btn gold" data-symbol="NSE:NIFTY" onclick="switchProChartSymbol('NSE:NIFTY', this)">
+              <span class="coin-ico">🇮🇳</span> NIFTY 50
+            </button>
+            <button class="pro-coin-btn gold" data-symbol="NSE:BANKNIFTY" onclick="switchProChartSymbol('NSE:BANKNIFTY', this)">
+              <span class="coin-ico">🏦</span> BANKNIFTY
+            </button>
+            <button class="pro-coin-btn cyan" data-symbol="FOREXCOM:XAUUSD" onclick="switchProChartSymbol('FOREXCOM:XAUUSD', this)">
+              <span class="coin-ico">🥇</span> GOLD (XAU)
+            </button>
+            <button class="pro-coin-btn cyan" data-symbol="FX:EURUSD" onclick="switchProChartSymbol('FX:EURUSD', this)">
+              <span class="coin-ico">💱</span> EUR/USD
+            </button>
+          </div>
+        </div>
+
+        <!-- Dynamic Live Position Alert Strip on Top of Chart -->
+        <div id="proChartPositionBanner" class="pro-chart-pos-banner standby">
+          <div class="pos-banner-left">
+            <span class="pos-banner-status-badge" id="posBannerBadge">⚪ STANDBY SCANNER</span>
+            <div class="pos-banner-title" id="posBannerTitle">No active open position for <strong>BTC/USDT</strong></div>
+          </div>
+          <div class="pos-banner-details" id="posBannerDetails">
+            <span>Autonomous AI Orderflow Engine monitoring for 3.5:1 risk-reward breakout entries.</span>
+          </div>
+          <div class="pos-banner-action" id="posBannerAction">
+            <button class="tsm-btn-small" onclick="switchView('terminal')">⚡ VIEW ALL POSITIONS</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TradingView Interactive Chart Display -->
+      <div class="tsm-panel pro-chart-canvas-panel" style="height:650px; padding:0; overflow:hidden; position:relative;">
         <div id="tradingview_widget_fullscreen" style="height:100%; width:100%;"></div>
+      </div>
+
+      <!-- Dedicated "My Live Open Trades & Orders" Section -->
+      <div class="tsm-panel pro-chart-trades-panel" id="proChartLiveTradesSection">
+        <div class="tsm-panel-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div class="tsm-panel-title" style="display:flex; align-items:center; gap:8px;">
+            <span>💼</span>
+            <span>MY LIVE OPEN TRADES &amp; CHART SYNCHRONIZATION</span>
+            <span class="tsm-badge-pill" id="proChartTradesCountBadge">0 POSITIONS</span>
+          </div>
+          <div class="pro-chart-pnl-summary" style="display:flex; align-items:center; gap:12px;">
+            <div class="pro-pnl-pill">
+              <span class="pro-pnl-lbl">UNREALIZED PNL:</span>
+              <strong id="proChartTotalUnrealizedPnl" class="green-text">$0.00 USDT</strong>
+            </div>
+            <div class="pro-pnl-pill">
+              <span class="pro-pnl-lbl">USER ACCOUNT:</span>
+              <strong id="proChartUserBadge" style="color:var(--neon-cyan);">PUBLIC / BOT FLEET</strong>
+            </div>
+            <button class="tsm-btn-secondary" onclick="openExchangeKeysModal()" style="font-size:11px; padding:4px 10px;">🔑 CONNECT API KEYS</button>
+          </div>
+        </div>
+
+        <div class="tsm-table-wrap">
+          <table class="tsm-table pro-chart-trades-table">
+            <thead>
+              <tr>
+                <th>EXCHANGE</th>
+                <th>SYMBOL</th>
+                <th>SIDE</th>
+                <th>ENTRY PRICE</th>
+                <th>MARK PRICE</th>
+                <th>SIZE / MARGIN</th>
+                <th>UNREALIZED P&amp;L</th>
+                <th>TARGET TP</th>
+                <th>HARD SL</th>
+                <th>TRAILING STOP</th>
+                <th>CHART ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="proChartLiveTradesTbody">
+              <tr>
+                <td colspan="11" class="text-center empty-state">
+                  No active open positions. When the algorithmic engine executes a trade on CoinSwitch or Delta India, it will appear here with live tick-by-tick mark prices and one-click chart synchronization.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -2347,6 +2473,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=116.0"></script>
+  <script src="app.js?v=117.0"></script>
 </body>
 </html>

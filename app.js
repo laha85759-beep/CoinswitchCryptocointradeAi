@@ -3,6 +3,10 @@
 // ══════════════════════════════════════════════════════════════════════════
 
 let currentTvSymbol = "BINANCE:BTCUSDT";
+let currentTvTimeframe = "5";
+let lastCachedPositions = null;
+let lastCachedTickers = null;
+let lastCachedUserData = null;
 let currentView = "terminal";
 let adminToken = sessionStorage.getItem("tsm_admin_token") || "";
 let userToken = localStorage.getItem("tsm_user_token") || "";
@@ -221,7 +225,8 @@ function switchView(viewName, updateHash = true) {
   }
 
   if (viewName === "chart") {
-    initTradingViewWidget("tradingview_widget_fullscreen", currentTvSymbol);
+    initTradingViewWidget("tradingview_widget_fullscreen", currentTvSymbol, currentTvTimeframe);
+    updateProChartPositionBanner();
   } else if (viewName === "news") {
     fetchNewsData();
   } else if (viewName === "india") {
@@ -233,41 +238,260 @@ function toggleAdminView() {
   switchView("admin");
 }
 
-// ── 4. TradingView Pro Chart Integration ──────────────────────────────────
-function initTradingViewWidget(containerId, symbol) {
+// ── 4. TradingView Pro Chart & Live Position Integration ──────────────────
+function initTradingViewWidget(containerId, symbol, interval) {
   const container = document.getElementById(containerId);
   if (!container || typeof TradingView === "undefined") return;
 
+  const sym = symbol || currentTvSymbol || "BINANCE:BTCUSDT";
+  const tf = interval || currentTvTimeframe || "5";
+
   container.innerHTML = "";
-  new TradingView.widget({
-    "autosize": true,
-    "symbol": symbol,
-    "interval": "5",
-    "timezone": "Etc/UTC",
-    "theme": "dark",
-    "style": "1",
-    "locale": "en",
-    "toolbar_bg": "#0b111a",
-    "enable_publishing": false,
-    "allow_symbol_change": true,
-    "container_id": containerId,
-    "hide_side_toolbar": false,
-    "studies": ["RSI@tv-basicstudies", "MASimple@tv-basicstudies", "VWAP@tv-basicstudies"]
-  });
+  try {
+    new TradingView.widget({
+      "autosize": true,
+      "symbol": sym,
+      "interval": tf,
+      "timezone": "Etc/UTC",
+      "theme": "dark",
+      "style": "1",
+      "locale": "en",
+      "toolbar_bg": "#060e1c",
+      "enable_publishing": false,
+      "allow_symbol_change": true,
+      "container_id": containerId,
+      "hide_side_toolbar": false,
+      "studies": ["RSI@tv-basicstudies", "MASimple@tv-basicstudies", "VWAP@tv-basicstudies"]
+    });
+  } catch (e) {
+    console.debug("TradingView init notice:", e);
+  }
 }
 
-function loadTvSymbol(symbol) {
+function switchProChartSymbol(symbol, btnEl) {
   currentTvSymbol = symbol;
-  
-  document.querySelectorAll(".chart-coin-btn").forEach(btn => {
-    if (btn.textContent.trim() === symbol.split(":")[1].replace("USDT", "")) {
+
+  document.querySelectorAll(".pro-coin-btn").forEach(btn => {
+    if (btn === btnEl || btn.getAttribute("data-symbol") === symbol) {
       btn.classList.add("active");
     } else {
       btn.classList.remove("active");
     }
   });
 
-  initTradingViewWidget("tradingview_widget_container", currentTvSymbol);
+  initTradingViewWidget("tradingview_widget_fullscreen", currentTvSymbol, currentTvTimeframe);
+  initTradingViewWidget("tradingview_widget_container", currentTvSymbol, currentTvTimeframe);
+  updateProChartPositionBanner();
+}
+
+function changeTvTimeframe(interval) {
+  currentTvTimeframe = interval;
+
+  document.querySelectorAll(".pro-chart-tf-btn").forEach(btn => {
+    const text = btn.textContent.trim().toLowerCase();
+    const map = { "1": "1m", "5": "5m", "15": "15m", "60": "1h", "240": "4h", "D": "1d" };
+    if (text === (map[interval] || `${interval}m`)) {
+      btn.classList.add("active");
+    } else {
+      btn.classList.remove("active");
+    }
+  });
+
+  initTradingViewWidget("tradingview_widget_fullscreen", currentTvSymbol, currentTvTimeframe);
+  initTradingViewWidget("tradingview_widget_container", currentTvSymbol, currentTvTimeframe);
+}
+
+function normalizeSymbolForTv(rawSym) {
+  if (!rawSym) return "BINANCE:BTCUSDT";
+  const s = String(rawSym).toUpperCase().replace(/[\/_-]/g, "");
+  if (s.includes("NIFTY") && !s.includes("BANK")) return "NSE:NIFTY";
+  if (s.includes("BANKNIFTY")) return "NSE:BANKNIFTY";
+  if (s.includes("GOLD") || s.includes("XAU")) return "FOREXCOM:XAUUSD";
+  if (s.includes("EURUSD")) return "FX:EURUSD";
+  if (s.endsWith("USDT") || s.endsWith("USD") || s.endsWith("INR")) {
+    const base = s.replace(/(USDT|USD|INR)$/, "");
+    return `BINANCE:${base}USDT`;
+  }
+  return `BINANCE:${s}USDT`;
+}
+
+function jumpToProChartSymbol(tradeSymbol) {
+  const tvSym = normalizeSymbolForTv(tradeSymbol);
+  switchView('chart');
+  switchProChartSymbol(tvSym);
+  const chartSec = document.getElementById("view-chart");
+  if (chartSec) chartSec.scrollIntoView({ behavior: 'smooth' });
+}
+
+function loadTvSymbol(symbol) {
+  switchProChartSymbol(symbol);
+}
+
+function updateProChartPositionBanner() {
+  const banner = document.getElementById("proChartPositionBanner");
+  const badge = document.getElementById("posBannerBadge");
+  const title = document.getElementById("posBannerTitle");
+  const details = document.getElementById("posBannerDetails");
+  const action = document.getElementById("posBannerAction");
+  if (!banner || !badge || !title) return;
+
+  const currentCoinBase = currentTvSymbol.split(":")[1] ? currentTvSymbol.split(":")[1].replace(/(USDT|USD|INR)$/, "") : currentTvSymbol;
+
+  let matchingPos = null;
+  if (lastCachedPositions) {
+    const allPositions = [
+      ...(lastCachedPositions.coinswitch || []).map(p => ({...p, exchange: "CoinSwitch (Spot)"})),
+      ...(lastCachedPositions.delta || []).map(p => ({...p, exchange: "Delta (Futures)"}))
+    ];
+    matchingPos = allPositions.find(p => {
+      const pBase = String(p.symbol || "").toUpperCase().replace(/[\/_-]/g, "").replace(/(USDT|USD|INR)$/, "");
+      return pBase === currentCoinBase || (currentTvSymbol.includes("NIFTY") && String(p.symbol).includes("NIFTY")) || (currentTvSymbol.includes("XAU") && String(p.symbol).includes("XAU"));
+    });
+  }
+
+  if (matchingPos) {
+    banner.className = "pro-chart-pos-banner active-trade";
+    badge.innerHTML = "🟢 ACTIVE POSITION DETECTED";
+    badge.style.color = "var(--neon-green)";
+
+    const dir = String(matchingPos.direction || "long").toUpperCase();
+    const entryP = Number(matchingPos.entry_price || 0).toFixed(4);
+    const markP = Number(matchingPos.mark_price || matchingPos.entry_price || 0).toFixed(4);
+    const unPnl = Number(matchingPos.unrealized_pnl || 0);
+    const pnlSign = unPnl >= 0 ? "+" : "-";
+    const pnlColor = unPnl >= 0 ? "var(--neon-green)" : "var(--neon-red)";
+
+    title.innerHTML = `<span class="${dir === 'LONG' || dir === 'BUY' ? 'green-text' : 'red-text'} font-mono">[${dir}]</span> <strong>${matchingPos.symbol}</strong> on ${matchingPos.exchange}`;
+
+    if (details) {
+      details.innerHTML = `
+        <span>Entry: <strong>$${entryP}</strong></span>
+        <span>Mark: <strong>$${markP}</strong></span>
+        <span>PnL: <strong style="color:${pnlColor};">${pnlSign}$${Math.abs(unPnl).toFixed(2)}</strong></span>
+        <span>TP: <strong class="green-text">$${Number(matchingPos.take_profit || 0).toFixed(2)}</strong></span>
+        <span>SL: <strong class="red-text">$${Number(matchingPos.hard_sl || 0).toFixed(2)}</strong></span>
+      `;
+    }
+
+    if (action) {
+      action.innerHTML = `<button class="tsm-btn-small green" onclick="switchView('terminal')">⚡ LIVE SYNCED</button>`;
+    }
+  } else {
+    banner.className = "pro-chart-pos-banner standby";
+    badge.innerHTML = "⚪ STANDBY SCANNER";
+    badge.style.color = "var(--text-dim)";
+    title.innerHTML = `No active open position for <strong>${currentCoinBase}/USDT</strong>`;
+
+    const totalOpen = lastCachedPositions ? ((lastCachedPositions.coinswitch || []).length + (lastCachedPositions.delta || []).length) : 0;
+
+    if (details) {
+      details.innerHTML = `<span>Autonomous AI Orderflow Engine monitoring for high-conviction breakout entries. (${totalOpen} active positions across portfolio)</span>`;
+    }
+
+    if (action) {
+      action.innerHTML = `<button class="tsm-btn-small" onclick="switchView('terminal')">⚡ VIEW ALL POSITIONS</button>`;
+    }
+  }
+}
+
+function renderProChartLiveTrades(posData, tickers, userData) {
+  lastCachedPositions = posData;
+  lastCachedTickers = tickers;
+  lastCachedUserData = userData;
+
+  const tbody = document.getElementById("proChartLiveTradesTbody");
+  const countBadge = document.getElementById("proChartTradesCountBadge");
+  const pnlEl = document.getElementById("proChartTotalUnrealizedPnl");
+  const userBadge = document.getElementById("proChartUserBadge");
+
+  if (userBadge) {
+    if (userData && userData.user) {
+      userBadge.textContent = `👤 ${userData.user.name || userData.user.email.split('@')[0]} (PRIVATE)`;
+      userBadge.style.color = "var(--neon-green)";
+    } else {
+      userBadge.textContent = "🌐 PUBLIC / BOT FLEET ($8.26 CAPITAL)";
+      userBadge.style.color = "var(--neon-cyan)";
+    }
+  }
+
+  const allPositions = [
+    ...(posData.coinswitch || []).map(p => ({...p, exchange: "CoinSwitch (Spot)"})),
+    ...(posData.delta || []).map(p => ({...p, exchange: "Delta (Futures)"}))
+  ];
+
+  if (countBadge) {
+    countBadge.textContent = `${allPositions.length} POSITION${allPositions.length === 1 ? '' : 'S'}`;
+  }
+
+  let totalUnrealized = 0.0;
+
+  if (!tbody) {
+    updateProChartPositionBanner();
+    return;
+  }
+
+  if (allPositions.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="11" class="text-center empty-state" style="padding: 24px;">
+          No active open positions currently detected. When the algorithmic engine executes a trade on CoinSwitch or Delta India, it will immediately appear here with real-time mark prices, live PnL, and one-click chart synchronization.
+        </td>
+      </tr>
+    `;
+    if (pnlEl) {
+      pnlEl.textContent = "$0.00 USDT";
+      pnlEl.className = "green-text";
+    }
+    updateProChartPositionBanner();
+    return;
+  }
+
+  tbody.innerHTML = allPositions.map(pos => {
+    const sym = pos.symbol || "BTC/USDT";
+    const dir = String(pos.direction || "long").toUpperCase();
+    const entryP = Number(pos.entry_price || 0);
+    const markP = Number(pos.mark_price || pos.entry_price || entryP);
+    const qty = Number(pos.qty || pos.quantity || 1.0);
+    const margin = Number(pos.margin_used || (entryP * qty) || 0);
+
+    let pnl = Number(pos.unrealized_pnl !== undefined ? pos.unrealized_pnl : (dir === 'LONG' || dir === 'BUY' ? (markP - entryP) * qty : (entryP - markP) * qty));
+    totalUnrealized += pnl;
+
+    const pnlPct = entryP > 0 ? ((markP - entryP) / entryP * 100 * (dir === 'LONG' || dir === 'BUY' ? 1 : -1)) : 0;
+    const pnlClass = pnl >= 0 ? "green-text" : "red-text";
+    const pnlPrefix = pnl >= 0 ? "+$" : "-$";
+
+    const tpStr = Number(pos.take_profit || 0) > 0 ? `$${Number(pos.take_profit).toFixed(4)}` : "--";
+    const slStr = Number(pos.hard_sl || 0) > 0 ? `$${Number(pos.hard_sl).toFixed(4)}` : "--";
+    const trailStr = pos.trail_active ? `<span class="green-text">🟢 ACTIVE (+0.2%)</span>` : `<span style="color:var(--text-muted);">ARMED</span>`;
+
+    return `
+      <tr>
+        <td><span class="live-tag">${pos.exchange}</span></td>
+        <td><strong>${sym}</strong></td>
+        <td><span class="${dir === 'LONG' || dir === 'BUY' ? 'green-text' : 'red-text'} font-mono">${dir}</span></td>
+        <td>$${entryP.toFixed(4)}</td>
+        <td><strong>$${markP.toFixed(4)}</strong></td>
+        <td>$${margin.toFixed(2)} (${qty})</td>
+        <td><strong class="${pnlClass}">${pnlPrefix}${Math.abs(pnl).toFixed(2)} (${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%)</strong></td>
+        <td class="green-text">${tpStr}</td>
+        <td class="red-text">${slStr}</td>
+        <td>${trailStr}</td>
+        <td>
+          <button class="btn-chart-jump" onclick="jumpToProChartSymbol('${sym}')" title="Load ${sym} on TradingView Pro Chart">
+            <span>📈 VIEW</span>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+
+  if (pnlEl) {
+    pnlEl.textContent = `${totalUnrealized >= 0 ? '+$' : '-$'}${Math.abs(totalUnrealized).toFixed(2)} USDT`;
+    pnlEl.className = totalUnrealized >= 0 ? "green-text" : "red-text";
+  }
+
+  updateProChartPositionBanner();
 }
 
 // ── 5. User Multi-Tenant Authentication & Session Engine ───────────────────
@@ -753,6 +977,7 @@ async function fetchRealData() {
       if (deltaCountEl) deltaCountEl.textContent = deltaCount;
 
       renderPositionsTable(positions);
+      renderProChartLiveTrades(positions, data.tickers || {}, userData);
     }
 
     if (data.advanced && data.advanced.signals_feed) {
