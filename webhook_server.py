@@ -367,6 +367,44 @@ def get_terminal_data():
             if not p.get("take_profit") or float(p.get("take_profit", 0)) <= 0:
                 p["take_profit"] = round(entry_p * (1 + 0.15) if is_long else entry_p * (1 - 0.15), 4) if entry_p > 0 else 0
 
+        # Also populate non-dust CoinSwitch spot holdings with accurate USD price, real PnL, and SL/TP
+        if cs_client is not None and not open_cs:
+            try:
+                portfolio = cs_client.get_portfolio()
+                for item in portfolio:
+                    curr = str(item.get("currency", "")).upper()
+                    if curr not in ("USDT", "INR", ""):
+                        bal = float(item.get("main_balance", 0) or 0)
+                        val_inr = float(item.get("current_value", 0) or 0)
+                        val_usd = val_inr / 88.0 if val_inr > 0 else 0.0
+                        if bal > 0 and val_usd > 0.05:
+                            entry_p_usd = round(val_usd / bal, 6) if bal > 0 else 0
+                            mark_p_usd = round(get_price(curr, entry_p_usd), 6)
+                            if mark_p_usd <= 0:
+                                mark_p_usd = entry_p_usd
+                            
+                            pnl_usd = round((mark_p_usd - entry_p_usd) * bal, 4)
+                            sl_usd = round(entry_p_usd * 0.98, 6)
+                            tp_usd = round(entry_p_usd * 1.15, 6)
+
+                            open_cs.append({
+                                "symbol": f"{curr}/USDT",
+                                "direction": "long",
+                                "qty": bal,
+                                "quantity": bal,
+                                "entry_price": entry_p_usd,
+                                "mark_price": mark_p_usd,
+                                "hard_sl": sl_usd,
+                                "take_profit": tp_usd,
+                                "unrealized_pnl": pnl_usd,
+                                "margin_used": round(val_usd, 2),
+                                "exchange": "coinswitch",
+                                "trail_active": False,
+                                "paper": False
+                            })
+            except Exception as cs_spot_err:
+                log.warning("Failed to parse CoinSwitch spot portfolio: %s", cs_spot_err)
+
         # Fetch LIVE Active Open Orders from both exchanges
         open_orders = []
 
