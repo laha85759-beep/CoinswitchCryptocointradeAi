@@ -3266,6 +3266,16 @@ function handleJarvisChatSubmit(event) {
   sendJarvisMessage(query);
 }
 
+function openJarvisChart(symbol, interval = "5") {
+  if (symbol) {
+    currentTvSymbol = symbol;
+  }
+  switchView('chart');
+  setTimeout(() => {
+    initTradingViewWidget('tradingview_widget_fullscreen', symbol || currentTvSymbol);
+  }, 100);
+}
+
 function renderMarkdownText(md) {
   if (!md) return "";
   let html = escapeHtml(md);
@@ -3337,8 +3347,23 @@ async function sendJarvisMessage(query) {
       const formattedHtml = renderMarkdownText(data.reply);
       const safeVoice = (data.voice_script || "").replace(/'/g, "\\'");
 
+      let chartBtnHtml = "";
+      if (data.chart_action && data.chart_action.symbol) {
+        const sym = escapeHtml(data.chart_action.symbol);
+        const title = escapeHtml(data.chart_action.title || `View ${sym} Chart`);
+        const intv = escapeHtml(data.chart_action.interval || "5");
+        chartBtnHtml = `
+          <div style="margin-top:10px; padding-top:8px; border-top:1px dashed rgba(0,212,255,0.2);">
+            <button class="chat-chart-action-btn" onclick="openJarvisChart('${sym}', '${intv}')" style="background:linear-gradient(135deg, rgba(0,212,255,0.2), rgba(0,100,200,0.4)); border:1px solid var(--neon-cyan); color:#00f3ff; border-radius:6px; padding:6px 14px; font-size:11px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s ease; box-shadow:0 0 10px rgba(0,212,255,0.2);">
+              <span>📊</span><span>${title}</span>
+            </button>
+          </div>
+        `;
+      }
+
       jarvisBubble.innerHTML = `
         ${formattedHtml}
+        ${chartBtnHtml}
         <div class="chat-bubble-footer">
           <span class="green" style="font-weight:700;">● 100% VERIFIED LIVE DATA</span>
           <button class="chat-speak-btn" onclick="speakText('${safeVoice}', '${data.lang || 'en-US'}')">🔊 Listen</button>
