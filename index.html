@@ -61,7 +61,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=115.0">
+  <link rel="stylesheet" href="styles.css?v=116.0">
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -125,43 +125,6 @@
         </div>
       </a>
     </div>
-
-    <!-- CENTER NAVIGATION TABS (INSTITUTIONAL RESPONSIVE MENUBAR) -->
-    <nav class="nc-hdr-nav tsm-nav">
-      <button class="nc-nav-tab tsm-tab active" data-view="terminal" onclick="switchView('terminal')">
-        <span class="nc-tab-ico">⚡</span><span>TERMINAL</span>
-      </button>
-      <button class="nc-nav-tab tsm-tab gold" data-view="india" onclick="switchView('india')">
-        <span class="nc-tab-ico">🇮🇳</span><span>INDIA F&amp;O</span><span class="nc-nav-chip gold">NSE/BSE</span>
-      </button>
-      <button class="nc-nav-tab tsm-tab cyan" data-view="news" onclick="switchView('news')">
-        <span class="nc-tab-ico">📰</span><span>NEWS &amp; MACRO</span><span class="nc-nav-chip cyan">LIVE</span>
-      </button>
-      <button class="nc-nav-tab tsm-tab" data-view="chart" onclick="switchView('chart')">
-        <span class="nc-tab-ico">📈</span><span>PRO CHART</span>
-      </button>
-
-      <!-- MORE DROPDOWN MENU FOR REMAINING TABS (NO HORIZONTAL OVERFLOW) -->
-      <div class="tsm-nav-dropdown" id="navMoreDropdown">
-        <button class="nc-nav-tab tsm-tab tsm-nav-dropdown-btn" onclick="toggleNavDropdown(event)" title="More Views">
-          <span>MORE ▾</span>
-        </button>
-        <div class="tsm-dropdown-menu" id="navDropdownMenu">
-          <button class="tsm-dropdown-item" data-view="rwa" onclick="switchView('rwa'); closeNavMenus();">
-            <span class="nc-tab-ico">🏛</span><span>RWA MATRIX</span>
-          </button>
-          <button class="tsm-dropdown-item gold" data-view="partners" onclick="switchView('partners'); closeNavMenus();">
-            <span class="nc-tab-ico">💎</span><span>PROP FIRMS</span>
-          </button>
-          <button class="tsm-dropdown-item" data-view="trades" onclick="switchView('trades'); closeNavMenus();">
-            <span class="nc-tab-ico">💼</span><span>AUDIT LOG</span>
-          </button>
-          <button class="tsm-dropdown-item magenta" id="superAdminNavTab" data-view="admin" onclick="switchView('admin'); closeNavMenus();">
-            <span class="nc-tab-ico">⚙</span><span>SUPER ADMIN PORTAL</span>
-          </button>
-        </div>
-      </div>
-    </nav>
 
     <!-- RIGHT HUD CONTROLS (CLEAN: USER, KEYS, LOGOUT, CLOCK, JARVIS VOICE, MOBILE HAMBURGER) -->
     <div class="nc-hdr-right">
@@ -2384,6 +2347,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=115.0"></script>
+  <script src="app.js?v=116.0"></script>
 </body>
 </html>

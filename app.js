@@ -300,6 +300,7 @@ function updateUserUI(user, settings, exConnections) {
   const logoutBtn = document.getElementById("userLogoutBtn");
   const adminNavBtn = document.getElementById("adminNavBtn");
   const superAdminTab = document.getElementById("superAdminNavTab");
+  const dockAdminBtn = document.getElementById("dockAdminBtn");
 
   if (user) {
     if (logoutBtn) logoutBtn.style.display = "flex";
@@ -319,15 +320,18 @@ function updateUserUI(user, settings, exConnections) {
     if (user.role === "superadmin") {
       if (adminNavBtn) adminNavBtn.style.display = "flex";
       if (superAdminTab) superAdminTab.style.display = "flex";
+      if (dockAdminBtn) dockAdminBtn.style.display = "flex";
     } else {
       if (adminNavBtn) adminNavBtn.style.display = "none";
       if (superAdminTab) superAdminTab.style.display = "none";
+      if (dockAdminBtn) dockAdminBtn.style.display = "none";
     }
   } else {
     if (userTxt) userTxt.textContent = "SIGN IN / JOIN";
     if (keysBtn) keysBtn.style.display = "none";
     if (adminNavBtn) adminNavBtn.style.display = "none";
     if (superAdminTab) superAdminTab.style.display = "none";
+    if (dockAdminBtn) dockAdminBtn.style.display = "none";
     if (userPill) {
       userPill.title = "Login or Create Trader Account";
       userPill.onclick = () => openAuthModal();
