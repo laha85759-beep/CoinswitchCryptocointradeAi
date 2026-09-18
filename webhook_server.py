@@ -37,8 +37,18 @@ except ImportError as _atlas_err:
     ATLAS_AVAILABLE = False
     logging.getLogger(__name__).warning("ATLAS engine not available: %s", _atlas_err)
 
+import sys
 log = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler("daemon.log", mode="a", encoding="utf-8"),
+        logging.FileHandler("bot.log", mode="a", encoding="utf-8"),
+        logging.FileHandler("trading.log", mode="a", encoding="utf-8"),
+    ],
+)
 
 app = Flask(__name__)
 
@@ -1319,21 +1329,43 @@ def self_ping_heartbeat_loop():
         time.sleep(240) # Ping every 4 minutes to reset Render's 15m idle timer
 
 def autonomous_trading_loop():
+    """24/7 Fully Autonomous Trading Engine running directly on the cloud server.
+    Instantly syncs live exchange positions, ratchets trailing stops (+0.2%),
+    scans spot & futures pairs, evaluates AI consensus, and executes breakout trades."""
     import main
+    from datetime import datetime, timezone
+    
+    log.info("==================================================================")
+    log.info("   24/7 SERVER-SIDE CONTINUOUS AUTONOMOUS TRADING ENGINE ACTIVE   ")
+    log.info("==================================================================")
+    
+    time.sleep(10)  # Brief initial boot grace period
+    cycle_count = 0
+    
     while True:
         try:
-            log.info("Starting autonomous agent cycle...")
+            cycle_count += 1
+            now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+            log.info("─" * 60)
+            log.info(f"▶ [SERVER_DAEMON] Starting Autonomous Cycle #{cycle_count} at {now_str}")
+            log.info("─" * 60)
+            
+            # Execute full multi-agent trading & monitoring pipeline
             main.run()
-            log.info("Autonomous agent cycle complete. Sleeping for 15 minutes...")
+            
+            log.info(f"✔ [SERVER_DAEMON] Cycle #{cycle_count} completed. Next scan in 15 seconds...")
+            time.sleep(15)
         except Exception as e:
-            log.error(f"Error in autonomous loop: {e}")
+            log.error(f"❌ [SERVER_DAEMON] Cycle #{cycle_count} encountered error: {e}", exc_info=True)
             try:
                 if notifier:
-                    notifier.send_emergency_alert("Autonomous Trading Engine Loop Exception", str(e))
+                    notifier.send_emergency_alert(
+                        "Autonomous Server Trading Loop Exception",
+                        f"Cycle #{cycle_count} error: {e}"
+                    )
             except Exception as n_exc:
                 log.warning("Failed to send immediate Telegram error alert: %s", n_exc)
-            time.sleep(60) # Wait 1 minute on crash
-        time.sleep(900)
+            time.sleep(20)
 
 # 24/7 DEDICATED LIVE TERMINAL MAINTENANCE & STREAMING DAEMON AGENT
 class TerminalLiveMaintenanceAgent:
@@ -1346,20 +1378,19 @@ class TerminalLiveMaintenanceAgent:
             return
         cls._started = True
         
-        t = threading.Thread(target=cls._data_refresh_loop, daemon=True)
+        t = threading.Thread(target=cls._data_refresh_loop, daemon=True, name="Data_Refresh_Loop")
         t.start()
         
-        p = threading.Thread(target=self_ping_heartbeat_loop, daemon=True)
+        p = threading.Thread(target=self_ping_heartbeat_loop, daemon=True, name="Heartbeat_Ping_Loop")
         p.start()
         
-        # Only start autonomous trading loop on primary backend worker to prevent duplicate Telegram alerts
-        render_service = os.environ.get("RENDER_SERVICE_NAME", "").lower()
+        # Start 24/7 Autonomous Trading Engine on Cloud Server
         disable_trading = os.environ.get("DISABLE_TRADING_LOOP", "").lower() == "true"
-        
-        if render_service == "coinsai-terminal" or disable_trading:
-            log.info("🎯 Terminal UI service initialized — Autonomous trading loop delegated to primary backend worker.")
+        if disable_trading:
+            log.info("🎯 DISABLE_TRADING_LOOP set to True — autonomous trading loop paused.")
         else:
-            a = threading.Thread(target=autonomous_trading_loop, daemon=True)
+            log.info("🚀 Starting 24/7 Cloud Server Autonomous Trading Daemon Thread...")
+            a = threading.Thread(target=autonomous_trading_loop, daemon=True, name="247_Autonomous_Trading_Daemon")
             a.start()
         # Start Interactive Telegram Command Bot
         try:
