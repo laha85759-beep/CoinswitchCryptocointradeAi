@@ -113,7 +113,7 @@ class NewsCalendarEngine:
         with news_core.lock:
             news_items = list(news_core.cached_news[:6])
             events = list(news_core.cached_calendar[:6])
-            sentiment = news_core.get_market_sentiment_summary()
+        sentiment = news_core.get_market_sentiment_summary()
         return {
             "sentiment": sentiment,
             "events": events,

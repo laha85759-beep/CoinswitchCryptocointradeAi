@@ -46,7 +46,7 @@ class IndianMarketAgent:
         self.cached_stocks: List[Dict[str, Any]] = list(DEFAULT_STOCKS)
         self.cached_options: Dict[str, Any] = self.generate_options_intel(DEFAULT_INDICES)
         self.last_update_time = int(time.time())
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
         self._is_refreshing = False
         self.start_background_loop(interval_seconds=45)
 

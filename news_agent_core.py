@@ -40,7 +40,7 @@ class NewsAgentCore:
         self.seen_news_ids: set = set()
         self.last_scan_time = 0
         self.is_running = False
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
         self._load_initial_data()
 
     def _load_initial_data(self):
