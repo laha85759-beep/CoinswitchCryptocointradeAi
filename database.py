@@ -240,6 +240,8 @@ def init_db():
             ("reset_token TEXT DEFAULT ''", "reset_token"),
             ("reset_token_expires INTEGER DEFAULT 0", "reset_token_expires"),
             ("plan_name TEXT DEFAULT 'free'", "plan_name"),
+            ("firebase_uid TEXT DEFAULT ''", "firebase_uid"),
+            ("photo_url TEXT DEFAULT ''", "photo_url"),
         ]:
             if col_name not in existing_cols:
                 cursor.execute(f"ALTER TABLE users ADD COLUMN {col_def}")
@@ -859,6 +861,79 @@ def sync_supabase_user(supabase_id: str, email: str, name: str = "", referral_co
     except Exception as e:
         conn.close()
         return None, str(e)
+
+def sync_firebase_user(firebase_uid: str, email: str, name: str = "", photo_url: str = "", referral_code: str = "", role: str = "trader") -> tuple[dict | None, bool, str | None]:
+    email = email.strip().lower()
+    if not email or "@" not in email:
+        return None, False, "Invalid email address."
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    now = int(time.time())
+    
+    try:
+        # Check by firebase_uid first, then by email
+        cursor.execute("SELECT * FROM users WHERE firebase_uid = ? AND firebase_uid != ''", (firebase_uid,))
+        row = cursor.fetchone()
+        
+        if not row:
+            cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+            row = cursor.fetchone()
+            if row and firebase_uid:
+                cursor.execute("UPDATE users SET firebase_uid = ?, photo_url = ? WHERE id = ?", (firebase_uid, photo_url or "", row["id"]))
+                conn.commit()
+                
+        if row:
+            # User already exists
+            user = {
+                "id": row["id"],
+                "email": row["email"],
+                "name": row["name"] or name or email.split("@")[0],
+                "role": row["role"] or "trader",
+                "is_active": row["is_active"],
+                "plan_name": row["plan_name"] or "free",
+                "photo_url": row["photo_url"] if "photo_url" in row.keys() else photo_url,
+                "created_at": row["created_at"]
+            }
+            conn.close()
+            return user, False, None
+            
+        # Create new user for Firebase Google Auth trader
+        pass_hash = hash_password(f"firebase_oauth_{firebase_uid}_{now}")
+        cursor.execute(
+            "INSERT INTO users (email, password_hash, name, role, is_active, referred_by_code, firebase_uid, photo_url, plan_name, created_at) VALUES (?, ?, ?, ?, 1, ?, ?, ?, 'free', ?)",
+            (email, pass_hash, name or email.split("@")[0], role or "trader", referral_code or "", firebase_uid or "", photo_url or "", now)
+        )
+        user_id = cursor.lastrowid
+        
+        cursor.execute(
+            "INSERT INTO user_settings (user_id, hard_sl_pct, take_profit_pct, trail_pct, max_capital_pct, active_strategy, autotrade_enabled, updated_at) VALUES (?, 2.0, 15.0, 0.2, 40.0, 'ai_consensus', 1, ?)",
+            (user_id, now)
+        )
+
+        if referral_code:
+            cursor.execute('''
+            INSERT INTO affiliate_referrals (affiliate_code, user_id, status, commission_earned, created_at)
+            VALUES (?, ?, 'active', 0.0, ?)
+            ''', (referral_code, user_id, now))
+
+        conn.commit()
+        
+        user = {
+            "id": user_id,
+            "email": email,
+            "name": name or email.split("@")[0],
+            "role": role or "trader",
+            "is_active": 1,
+            "plan_name": "free",
+            "photo_url": photo_url,
+            "created_at": now
+        }
+        conn.close()
+        return user, True, None
+    except Exception as e:
+        conn.close()
+        return None, False, str(e)
 
 def authenticate_user(email: str, password: str) -> tuple[dict | None, str | None]:
     email = email.strip().lower()

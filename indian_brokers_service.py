@@ -16,7 +16,10 @@ and multi-broker order execution for NSE/BSE/NFO/MCX.
 
 import logging
 import requests
-import pyotp
+try:
+    import pyotp
+except ImportError:
+    pyotp = None
 from database import get_indian_broker_keys
 
 log = logging.getLogger(__name__)

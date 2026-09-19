@@ -8,7 +8,10 @@ Provides unified API access to 100+ cryptocurrency exchanges:
 """
 
 import logging
-import ccxt
+try:
+    import ccxt
+except ImportError:
+    ccxt = None
 from database import get_ccxt_exchange_keys
 
 log = logging.getLogger(__name__)
