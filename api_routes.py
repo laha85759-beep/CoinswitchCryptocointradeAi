@@ -711,29 +711,37 @@ def get_user_terminal_data(user):
     if keys["has_delta"]:
         try:
             d_client = DeltaClient(keys["delta_key"], keys["delta_secret"])
-            pos_res = d_client._request("GET", "/v2/positions/margined", auth=True)
-            pos_list = pos_res.get("result", []) if isinstance(pos_res, dict) else []
+            pos_list = d_client.get_open_positions()
             for p in pos_list:
                 size = float(p.get("size", 0.0) or 0.0)
                 if abs(size) > 0.000001:
-                    p_sym = p.get("product_symbol", "BTCUSD")
+                    raw_sym = str(p.get("product_symbol") or p.get("symbol") or "GRIFFAINUSD").upper()
+                    if raw_sym.endswith("USD"):
+                        p_sym = f"{raw_sym[:-3]}/USDT"
+                    elif raw_sym.endswith("USDT"):
+                        p_sym = f"{raw_sym[:-4]}/USDT"
+                    else:
+                        p_sym = raw_sym
+                        
                     entry_p = float(p.get("entry_price", 0.0) or 0.0)
                     mark_p = float(p.get("mark_price", entry_p) or entry_p)
                     u_pnl = float(p.get("unrealized_pnl", 0.0) or 0.0)
                     is_pos_long = size > 0
                     
-                    sl_calc = round(entry_p * (1.0 - sl_pct / 100.0) if is_pos_long else entry_p * (1.0 + sl_pct / 100.0), 4)
-                    tp_calc = round(entry_p * (1.0 + tp_pct / 100.0) if is_pos_long else entry_p * (1.0 - tp_pct / 100.0), 4)
+                    sl_calc = round(entry_p * (1.0 - sl_pct / 100.0) if is_pos_long else entry_p * (1.0 + sl_pct / 100.0), 6)
+                    tp_calc = round(entry_p * (1.0 + tp_pct / 100.0) if is_pos_long else entry_p * (1.0 - tp_pct / 100.0), 6)
                     
                     delta_live_positions.append({
-                        "id": f"DELTA-{p.get('product_id')}",
+                        "id": f"DELTA-{p.get('product_id', 'LIVE')}",
                         "exchange": "delta",
                         "symbol": p_sym,
+                        "product_symbol": raw_sym,
                         "direction": "LONG" if is_pos_long else "SHORT",
                         "entry_price": entry_p,
                         "mark_price": mark_p,
                         "qty": abs(size),
-                        "size": abs(size),
+                        "quantity": abs(size),
+                        "size": size,
                         "unrealized_pnl": u_pnl,
                         "realized_pnl": float(p.get("realized_pnl", 0.0) or 0.0),
                         "hard_sl": sl_calc,
@@ -750,16 +758,24 @@ def get_user_terminal_data(user):
         entry = float(r.get("entry_price", 0.0) or 0.0)
         is_long = str(r.get("direction", "long")).lower() in ("long", "buy")
         if "hard_sl" not in r or not r["hard_sl"] or float(r["hard_sl"]) <= 0:
-            r["hard_sl"] = round(entry * (1 - sl_pct/100) if is_long else entry * (1 + sl_pct/100), 4) if entry > 0 else 0
+            r["hard_sl"] = round(entry * (1 - sl_pct/100) if is_long else entry * (1 + sl_pct/100), 6) if entry > 0 else 0
         if "take_profit" not in r or not r["take_profit"] or float(r["take_profit"]) <= 0:
-            r["take_profit"] = round(entry * (1 + tp_pct/100) if is_long else entry * (1 - tp_pct/100), 4) if entry > 0 else 0
+            r["take_profit"] = round(entry * (1 + tp_pct/100) if is_long else entry * (1 - tp_pct/100), 6) if entry > 0 else 0
         open_rows.append(r)
         
-    # Append any live positions from exchange not yet in local DB
+    # Append any live positions from exchange
     existing_delta_syms = {str(r.get("symbol")).upper() for r in open_rows if r.get("exchange") == "delta"}
     for d_pos in delta_live_positions:
         if str(d_pos["symbol"]).upper() not in existing_delta_syms:
             open_rows.append(d_pos)
+            existing_delta_syms.add(str(d_pos["symbol"]).upper())
+
+    # Fallback to recorded delta trades file if no live positions found
+    if not any(r.get("exchange") == "delta" for r in open_rows):
+        for p in load_json_safe("open_trades_delta.json", []):
+            if p.get("symbol") and str(p.get("symbol")).upper() not in existing_delta_syms:
+                open_rows.append(p)
+                existing_delta_syms.add(str(p.get("symbol")).upper())
     
     cursor.execute("SELECT * FROM user_trades WHERE user_id = ? AND status = 'closed' ORDER BY closed_at DESC LIMIT 30", (user["id"],))
     closed_rows = [dict(r) for r in cursor.fetchall()]
