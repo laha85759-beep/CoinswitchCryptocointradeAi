@@ -307,10 +307,22 @@ class DeltaClient:
 
     def get_open_positions(self) -> list[dict]:
         """Fetch all currently open margined positions on Delta Exchange India."""
-        data = self._request("GET", "/v2/positions/margined")
-        if isinstance(data, dict):
-            res = data.get("result", [])
-            return [p for p in res if int(p.get("size") or 0) != 0]
+        try:
+            data = self._request("GET", "/v2/positions/margined")
+            if isinstance(data, dict) and data.get("result"):
+                open_pos = [p for p in data.get("result", []) if float(p.get("size") or 0) != 0]
+                if open_pos:
+                    return open_pos
+        except Exception as exc:
+            log.debug("Delta /v2/positions/margined query notice: %s", exc)
+
+        try:
+            data2 = self._request("GET", "/v2/positions")
+            if isinstance(data2, dict) and data2.get("result"):
+                return [p for p in data2.get("result", []) if float(p.get("size") or 0) != 0]
+        except Exception as exc:
+            log.debug("Delta /v2/positions query notice: %s", exc)
+
         return []
 
     # ── Orders ───────────────────────────────────────────────────────────────

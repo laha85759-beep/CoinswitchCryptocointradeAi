@@ -337,8 +337,7 @@ def get_terminal_data():
         # Fetch LIVE Real Positions directly from Delta Exchange India API
         if delta_client is not None:
             try:
-                res = delta_client._request("GET", "/v2/positions/margined")
-                pos_list = res.get("result", []) if isinstance(res, dict) else (res if isinstance(res, list) else [])
+                pos_list = delta_client.get_open_positions()
                 parsed_positions = []
                 for pos in pos_list:
                     sz = float(pos.get("size", 0) or 0)
@@ -383,10 +382,27 @@ def get_terminal_data():
                             "exchange": "delta",
                             "paper": False
                         })
-                # Trust the live positions list from Delta API
-                open_delta = parsed_positions
+                if parsed_positions:
+                    open_delta = parsed_positions
             except Exception as exc:
                 log.warning("Failed to fetch live Delta positions: %s", exc)
+
+        # For recorded open Delta trades, compute live mark prices and PnL
+        for p in open_delta:
+            sym_raw = p.get("symbol", "").replace("/USDT", "").replace("USDT", "")
+            entry_p = float(p.get("entry_price", 0) or 0)
+            is_long = str(p.get("direction", "long")).lower() in ("long", "buy")
+            mark_p = float(p.get("mark_price", 0) or 0)
+            if mark_p <= 0:
+                mark_p = get_price(sym_raw, entry_p)
+                p["mark_price"] = round(mark_p, 4)
+            if not p.get("hard_sl") or float(p.get("hard_sl", 0)) <= 0:
+                p["hard_sl"] = round(entry_p * (1 - 0.02) if is_long else entry_p * (1 + 0.02), 4) if entry_p > 0 else 0
+            if not p.get("take_profit") or float(p.get("take_profit", 0)) <= 0:
+                p["take_profit"] = round(entry_p * (1 + 0.15) if is_long else entry_p * (1 - 0.15), 4) if entry_p > 0 else 0
+            if "unrealized_pnl" not in p or float(p.get("unrealized_pnl", 0) or 0) == 0:
+                qty_val = float(p.get("qty", 1) or p.get("quantity", 1) or 1)
+                p["unrealized_pnl"] = round((mark_p - entry_p) * qty_val if is_long else (entry_p - mark_p) * qty_val, 4)
 
         # For real open CoinSwitch trades, compute proper SL & TP
         for p in open_cs:

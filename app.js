@@ -747,8 +747,8 @@ function renderProChartLiveTrades(posData, tickers, userData) {
     }
   }
 
-  const validCs = (posData.coinswitch || []).filter(p => p && p.symbol && Number(p.entry_price || p.price || 0) > 0);
-  const validDelta = (posData.delta || []).filter(p => p && p.symbol && Number(p.entry_price || p.price || 0) > 0);
+  const validCs = (posData.coinswitch || []).filter(p => p && p.symbol && Number(p.entry_price || p.price || p.avg_entry_price || p.mark_price || 0) > 0);
+  const validDelta = (posData.delta || []).filter(p => p && p.symbol && (Number(p.entry_price || p.price || p.avg_entry_price || p.mark_price || 0) > 0 || Number(p.qty || p.size || 0) > 0));
 
   const allPositions = [
     ...validCs.map(p => ({...p, exchange: "CoinSwitch (Spot)"})),
@@ -2296,7 +2296,11 @@ async function fetchRealData() {
       }
     }
 
-    const positions = userData && userData.open_positions ? userData.open_positions : data.open_positions;
+    const userHasPositions = userData && userData.open_positions && (
+      (Array.isArray(userData.open_positions.coinswitch) && userData.open_positions.coinswitch.length > 0) ||
+      (Array.isArray(userData.open_positions.delta) && userData.open_positions.delta.length > 0)
+    );
+    const positions = userHasPositions ? userData.open_positions : (data.open_positions || { coinswitch: [], delta: [], total_count: 0 });
     if (positions) {
       const csCount = (positions.coinswitch || []).length;
       const deltaCount = (positions.delta || []).length;
@@ -2344,8 +2348,8 @@ function renderPositionsTable(posData) {
   const badge = document.getElementById("pos-table-badge");
   if (!tbody) return;
 
-  const validCs = (posData.coinswitch || []).filter(p => p && p.symbol && Number(p.entry_price || p.price || 0) > 0);
-  const validDelta = (posData.delta || []).filter(p => p && p.symbol && Number(p.entry_price || p.price || 0) > 0);
+  const validCs = (posData.coinswitch || []).filter(p => p && p.symbol && Number(p.entry_price || p.price || p.avg_entry_price || p.mark_price || 0) > 0);
+  const validDelta = (posData.delta || []).filter(p => p && p.symbol && (Number(p.entry_price || p.price || p.avg_entry_price || p.mark_price || 0) > 0 || Number(p.qty || p.size || 0) > 0));
 
   const allPositions = [
     ...validCs.map(p => ({...p, exchange: "CoinSwitch (Spot)"})),
