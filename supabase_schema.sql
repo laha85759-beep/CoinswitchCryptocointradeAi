@@ -1,155 +1,131 @@
--- ==============================================================================
--- SUPABASE POSTGRESQL SCHEMA FOR TRADE.THESMARTMAG.COM SAAS PLATFORM
--- Multi-tier Subscription, Stripe Checkout (USD) & Rise Business USD Settlement
--- ==============================================================================
+-- ═══════════════════════════════════════════════════════════════════════════
+-- SUPABASE POSTGRESQL PRODUCTION SAAS SUBSCRIPTION & PERMISSION SCHEMA
+-- Platform: trade.thesmartmag.com
+-- Settlement: Rise Business USD Account
+-- ═══════════════════════════════════════════════════════════════════════════
 
--- 1. Enable UUID extension
+-- 1. Enable UUID Extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 2. Users Table (Synchronized with Supabase Auth or Standalone)
+-- 2. Users Table (Synchronized with Supabase Auth auth.users)
 CREATE TABLE IF NOT EXISTS public.users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id BIGSERIAL PRIMARY KEY,
+    supabase_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT UNIQUE NOT NULL,
-    password_hash TEXT,
-    name TEXT,
-    role TEXT DEFAULT 'trader', -- 'superadmin', 'admin', 'support', 'finance', 'moderator', 'trader'
-    is_active BOOLEAN DEFAULT true,
+    password_hash TEXT DEFAULT '',
+    name TEXT DEFAULT '',
+    role TEXT DEFAULT 'trader', -- 'superadmin', 'admin', 'trader', 'support', 'finance'
+    is_active BOOLEAN DEFAULT TRUE,
     referred_by_code TEXT DEFAULT '',
     phone TEXT DEFAULT '',
     country TEXT DEFAULT 'US',
     preferred_exchange TEXT DEFAULT 'both',
-    plan_name TEXT DEFAULT 'free', -- 'free', 'starter', 'pro', 'elite', 'enterprise'
+    plan_name TEXT DEFAULT 'starter', -- 'starter', 'pro', 'elite', 'enterprise', 'free'
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 3. Subscription Plans Table
+-- 3. SaaS Plans Table
 CREATE TABLE IF NOT EXISTS public.plans (
     id TEXT PRIMARY KEY, -- 'starter', 'pro', 'elite', 'enterprise'
     name TEXT NOT NULL,
-    monthly_price NUMERIC(10,2) NOT NULL,
-    yearly_price NUMERIC(10,2) NOT NULL,
+    monthly_price NUMERIC(10, 2) NOT NULL,
+    yearly_price NUMERIC(10, 2) NOT NULL,
+    description TEXT,
     features JSONB DEFAULT '[]'::jsonb,
-    is_active BOOLEAN DEFAULT true,
+    is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Seed Plans
-INSERT INTO public.plans (id, name, monthly_price, yearly_price, features)
-VALUES 
-    ('starter', 'Starter Trader', 19.00, 190.00, '["Market Dashboard", "BTC, ETH, Gold Market Overview", "Basic AI Assistant (50 prompts/day)", "Economic Calendar", "News Dashboard", "Watchlist (20 assets)", "Mobile Access"]'::jsonb),
-    ('pro', 'Pro Trader', 49.00, 490.00, '["Everything in Starter", "Unlimited AI Assistant", "Real-Time Trading Signals", "AI Market Analysis", "Jarvis Voice Assistant", "Institutional Trade Journal", "Risk Calculator", "100 Watchlist Assets", "Email & Push Alerts"]'::jsonb),
-    ('elite', 'Elite Trader', 99.00, 990.00, '["Everything in Pro", "Advanced AI Predictions & SMC", "Institutional Cockpit", "Order Flow & Imbalance Analysis", "Portfolio Analytics", "Institutional API Access", "Webhook Alerts", "Priority 24/7 Support"]'::jsonb),
-    ('enterprise', 'Enterprise Custom', 499.00, 4990.00, '["Unlimited Users & Sub-accounts", "Full White-Label Platform", "Dedicated Account Manager", "Custom Broker & Liquidity Integrations", "SLA Guarantee", "Full Source Code Access Option"]'::jsonb)
-ON CONFLICT (id) DO UPDATE SET 
-    name = EXCLUDED.name,
-    monthly_price = EXCLUDED.monthly_price,
-    yearly_price = EXCLUDED.yearly_price,
-    features = EXCLUDED.features;
-
 -- 4. User Subscriptions Table
 CREATE TABLE IF NOT EXISTS public.subscriptions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
-    plan_id TEXT REFERENCES public.plans(id) ON DELETE RESTRICT,
-    billing_cycle TEXT DEFAULT 'monthly', -- 'monthly' or 'yearly'
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT REFERENCES public.users(id) ON DELETE CASCADE,
+    plan_id TEXT REFERENCES public.plans(id),
     status TEXT DEFAULT 'active', -- 'active', 'trialing', 'past_due', 'canceled', 'expired', 'unpaid'
+    billing_interval TEXT DEFAULT 'monthly', -- 'monthly', 'yearly', 'lifetime'
     expires_at TIMESTAMPTZ NOT NULL,
-    stripe_subscription_id TEXT,
-    stripe_customer_id TEXT,
+    stripe_subscription_id TEXT DEFAULT '',
+    stripe_customer_id TEXT DEFAULT '',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON public.subscriptions(user_id);
-CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON public.subscriptions(status);
-CREATE INDEX IF NOT EXISTS idx_subscriptions_expiry ON public.subscriptions(expires_at);
-
--- 5. Granular User Permissions Table (Manual Admin Override & Add-ons)
+-- 5. Granular User Service Permissions & Admin Overrides Table
 CREATE TABLE IF NOT EXISTS public.permissions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
-    service_name TEXT NOT NULL, -- 'dashboard', 'ai_chat', 'signals', 'voice_jarvis', 'risk_calculator', 'portfolio_analytics', 'api_access', 'white_label', 'ai_signal_pack', 'gold_strategy_pack', 'prop_firm_toolkit', 'indicator_bundle', 'ai_voice_upgrade'
-    enabled BOOLEAN DEFAULT true,
-    granted_by TEXT DEFAULT 'plan_rule', -- 'plan_rule', 'admin_manual', 'addon_purchase'
-    created_at TIMESTAMPTZ DEFAULT NOW(),
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT REFERENCES public.users(id) ON DELETE CASCADE,
+    service_name TEXT NOT NULL, -- 'dashboard', 'ai_chat', 'signals', 'voice', 'risk', 'portfolio', 'api', 'white_label', etc.
+    enabled BOOLEAN DEFAULT TRUE,
+    is_override BOOLEAN DEFAULT FALSE, -- TRUE if manually assigned/revoked by Super Admin
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(user_id, service_name)
 );
 
-CREATE INDEX IF NOT EXISTS idx_permissions_user_service ON public.permissions(user_id, service_name);
-
--- 6. Payments & Revenue Table (Stripe USD -> Rise Business USD Settlement)
+-- 6. Payments & Billing Transactions Table (USD Currency)
 CREATE TABLE IF NOT EXISTS public.payments (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
-    amount NUMERIC(10,2) NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT REFERENCES public.users(id) ON DELETE CASCADE,
+    amount NUMERIC(10, 2) NOT NULL,
     currency TEXT DEFAULT 'USD',
-    stripe_payment_id TEXT,
-    stripe_invoice_id TEXT,
-    stripe_customer_id TEXT,
-    payment_type TEXT DEFAULT 'subscription', -- 'subscription', 'addon', 'custom'
-    plan_id TEXT,
+    stripe_payment_id TEXT DEFAULT '',
+    stripe_session_id TEXT DEFAULT '',
+    plan_or_addon_id TEXT DEFAULT '',
     status TEXT DEFAULT 'succeeded', -- 'succeeded', 'pending', 'failed', 'refunded'
-    settlement_account TEXT DEFAULT 'Rise Business USD',
+    payout_account TEXT DEFAULT 'Rise Business USD',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_payments_user ON public.payments(user_id);
-CREATE INDEX IF NOT EXISTS idx_payments_status ON public.payments(status);
-
--- 7. SaaS Activity & Security Audit Logs Table
+-- 7. Platform Activity & Audit Logs Table
 CREATE TABLE IF NOT EXISTS public.activity_logs (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT REFERENCES public.users(id) ON DELETE SET NULL,
     action TEXT NOT NULL,
-    details JSONB DEFAULT '{}'::jsonb,
-    ip_address TEXT,
+    metadata JSONB DEFAULT '{}'::jsonb,
     timestamp TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_activity_logs_user ON public.activity_logs(user_id);
-CREATE INDEX IF NOT EXISTS idx_activity_logs_time ON public.activity_logs(timestamp);
+-- ── INDEXES FOR HIGH-THROUGHPUT PERFORMANCE ─────────────────────────────
+CREATE INDEX IF NOT EXISTS idx_users_email ON public.users(email);
+CREATE INDEX IF NOT EXISTS idx_users_role ON public.users(role);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON public.subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON public.subscriptions(status);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_expires ON public.subscriptions(expires_at);
+CREATE INDEX IF NOT EXISTS idx_permissions_user_service ON public.permissions(user_id, service_name);
+CREATE INDEX IF NOT EXISTS idx_payments_user ON public.payments(user_id);
+CREATE INDEX IF NOT EXISTS idx_payments_created ON public.payments(created_at);
+CREATE INDEX IF NOT EXISTS idx_activity_timestamp ON public.activity_logs(timestamp);
 
--- ==============================================================================
--- ROW LEVEL SECURITY (RLS) POLICIES
--- ==============================================================================
+-- ── SEED INITIAL PLANS (USD PRICING) ────────────────────────────────────
+INSERT INTO public.plans (id, name, monthly_price, yearly_price, description, features)
+VALUES 
+    ('starter', 'Starter Trader', 19.00, 190.00, 'Best for beginners', '["Market dashboard", "BTC, ETH, Gold market overview", "Basic AI Assistant (50 prompts/day)", "Economic calendar", "News dashboard", "Watchlist (20 assets)", "Mobile access"]'::jsonb),
+    ('pro', 'Pro Trader', 49.00, 490.00, 'Most popular plan for active traders', '["Everything in Starter", "Unlimited AI Assistant", "Trading signals", "AI market analysis", "Jarvis Voice Assistant", "Trade journal", "Risk calculator", "100 watchlist assets", "Email alerts"]'::jsonb),
+    ('elite', 'Elite Trader', 99.00, 990.00, 'For professional traders & prop firm accounts', '["Everything in Pro", "Advanced AI predictions", "Institutional dashboard", "Order flow analysis", "Portfolio analytics", "API access", "Webhook alerts", "Priority support"]'::jsonb),
+    ('enterprise', 'Enterprise Custom', 0.00, 0.00, 'For institutions, funds & white-label brokers', '["Unlimited users", "White-label platform", "Dedicated manager", "Custom integrations", "SLA support", "Unlimited AI models", "Direct FIX/WebSocket routing"]'::jsonb)
+ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    monthly_price = EXCLUDED.monthly_price,
+    yearly_price = EXCLUDED.yearly_price,
+    description = EXCLUDED.description,
+    features = EXCLUDED.features;
+
+-- ── ROW LEVEL SECURITY (RLS) POLICIES ───────────────────────────────────
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.permissions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
 
--- Super Admin bypasses RLS
-CREATE POLICY "Superadmin full access users" ON public.users 
-    FOR ALL TO authenticated 
-    USING (auth.jwt() ->> 'role' = 'superadmin' OR email = 'admin@thesmartmag.com');
+-- Users can read their own profile; Super Admin has unrestricted access
+CREATE POLICY "Users can view own data" ON public.users 
+    FOR SELECT USING (auth.uid() = supabase_id OR EXISTS (SELECT 1 FROM public.users WHERE supabase_id = auth.uid() AND role = 'superadmin'));
 
-CREATE POLICY "Users read own profile" ON public.users 
-    FOR SELECT TO authenticated 
-    USING (id = auth.uid() OR email = auth.jwt() ->> 'email');
+CREATE POLICY "Users can view own subscriptions" ON public.subscriptions 
+    FOR SELECT USING (user_id IN (SELECT id FROM public.users WHERE supabase_id = auth.uid()) OR EXISTS (SELECT 1 FROM public.users WHERE supabase_id = auth.uid() AND role = 'superadmin'));
 
-CREATE POLICY "Users read own subscription" ON public.subscriptions 
-    FOR SELECT TO authenticated 
-    USING (user_id = auth.uid());
+CREATE POLICY "Users can view own permissions" ON public.permissions 
+    FOR SELECT USING (user_id IN (SELECT id FROM public.users WHERE supabase_id = auth.uid()) OR EXISTS (SELECT 1 FROM public.users WHERE supabase_id = auth.uid() AND role = 'superadmin'));
 
-CREATE POLICY "Users read own permissions" ON public.permissions 
-    FOR SELECT TO authenticated 
-    USING (user_id = auth.uid());
-
-CREATE POLICY "Users read own payments" ON public.payments 
-    FOR SELECT TO authenticated 
-    USING (user_id = auth.uid());
-
--- Triggers for automatic updated_at timestamp
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
-CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_subscriptions_updated_at BEFORE UPDATE ON public.subscriptions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_permissions_updated_at BEFORE UPDATE ON public.permissions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE POLICY "Users can view own payments" ON public.payments 
+    FOR SELECT USING (user_id IN (SELECT id FROM public.users WHERE supabase_id = auth.uid()) OR EXISTS (SELECT 1 FROM public.users WHERE supabase_id = auth.uid() AND role = 'superadmin'));

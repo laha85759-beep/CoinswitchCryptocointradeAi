@@ -1978,11 +1978,11 @@ body.neural-core-os {
   box-shadow: 0 0 14px rgba(0, 240, 144, 0.28);
 }
 .admin-sub-section {
-  display: none;
+  display: none !important;
   animation: fadeIn 0.25s ease;
 }
 .admin-sub-section.active {
-  display: block;
+  display: block !important;
 }
 
 /* ══════════ DEDICATED QUANT TRADER COCKPIT (USER DASHBOARD) ══════════ */
@@ -2024,10 +2024,10 @@ body.neural-core-os {
 }
 .trader-sub-section {
   display: none !important;
+  animation: fadeIn 0.25s ease;
 }
 .trader-sub-section.active {
   display: block !important;
-  animation: fadeIn 0.25s ease;
 }
 .trader-vault-card {
   background: rgba(6, 16, 32, 0.85);

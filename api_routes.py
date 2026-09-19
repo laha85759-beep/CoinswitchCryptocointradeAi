@@ -1576,115 +1576,85 @@ def get_live_signals_suggestions():
         "timestamp": int(time.time())
     })
 
-# ── 15. SAAS SUBSCRIPTION, STRIPE USD CHECKOUT & PERMISSION GATEWAYS ─────────
-from saas_service import SaasSubscriptionService
+# ── 15. SAAS SUBSCRIPTION, STRIPE (USD) & GRANULAR PERMISSION GATING ──────────
+from saas_service import SaaSService
 from database import (
-    get_all_saas_plans, get_user_subscription, set_user_subscription,
-    get_user_permissions, check_user_permission, set_user_permission,
-    get_saas_metrics, get_saas_users_admin, record_saas_payment, log_saas_activity
+    get_saas_plans, get_user_subscription, update_user_subscription,
+    get_user_effective_permissions, check_user_permission,
+    set_user_permission_override, get_saas_dashboard_metrics,
+    get_all_users_saas_management, ONE_TIME_ADDONS
 )
 
 @api_bp.route("/api/saas/plans", methods=["GET"])
-def saas_get_public_plans():
-    """Returns subscription plans, USD pricing, and one-time add-on packs."""
-    data = SaasSubscriptionService.get_public_plans()
-    return jsonify(data)
+def saas_get_plans():
+    return jsonify({
+        "status": "success",
+        "currency": "USD",
+        "payout_account": "Rise Business USD",
+        "plans": SaaSService.get_available_plans(),
+        "addons": SaaSService.get_available_addons()
+    })
 
 @api_bp.route("/api/saas/my-subscription", methods=["GET"])
 @user_required
-def saas_get_my_subscription(user):
-    """Returns active subscription, permissions, and expiration status for the current user."""
-    sub = get_user_subscription(user["id"])
-    perms = get_user_permissions(user["id"])
+def saas_get_my_subscription(current_user):
+    uid = current_user["id"]
+    sub = get_user_subscription(uid)
+    perms = get_user_effective_permissions(uid)
+    
     return jsonify({
         "status": "success",
-        "user_id": user["id"],
-        "email": user["email"],
-        "role": user["role"],
+        "user": {
+            "id": current_user["id"],
+            "email": current_user["email"],
+            "role": current_user["role"],
+            "name": current_user["name"]
+        },
         "subscription": sub,
-        "permissions": perms,
-        "is_superadmin": user["role"] == "superadmin"
+        "permissions": perms
     })
 
 @api_bp.route("/api/saas/create-checkout-session", methods=["POST"])
 @user_required
-def saas_create_checkout_session(user):
-    """Initiates a Stripe Checkout Session in USD settling into Rise Business USD account."""
-    data = request.get_json() or {}
-    plan_id = data.get("plan_id", "starter")
-    billing_cycle = data.get("billing_cycle", "monthly")
-    addon_key = data.get("addon_key", None)
+def saas_create_checkout(current_user):
+    data = request.get_json(silent=True) or {}
+    plan_or_addon_id = data.get("plan_id") or data.get("addon_id") or "pro"
+    interval = data.get("interval", "monthly")
     
-    res = SaasSubscriptionService.create_checkout_session(
-        user_id=user["id"],
-        user_email=user["email"],
-        plan_id=plan_id,
-        billing_cycle=billing_cycle,
-        addon_key=addon_key
+    result = SaaSService.create_stripe_checkout_session(
+        user_id=current_user["id"],
+        user_email=current_user["email"],
+        plan_or_addon_id=plan_or_addon_id,
+        billing_interval=interval
     )
-    return jsonify(res)
+    return jsonify(result)
 
-@api_bp.route("/api/saas/simulate-checkout", methods=["GET"])
-def saas_simulate_checkout():
-    """Simulates immediate activation and redirects to Trader Portal (for instant local or dev checkout)."""
-    user_id = int(request.args.get("user_id", 1))
-    plan_id = request.args.get("plan_id", "pro")
-    cycle = request.args.get("cycle", "monthly")
-    addon = request.args.get("addon", "")
-    session_id = request.args.get("session_id", f"sim_{int(time.time())}")
-
-    if addon:
-        from database import ONE_TIME_ADDONS
-        addon_info = ONE_TIME_ADDONS.get(addon, {})
-        target_srv = addon_info.get("service", addon)
-        set_user_permission(user_id, target_srv, True, granted_by="addon_purchase")
-        record_saas_payment(user_id, addon_info.get("price_usd", 25.0), "USD", session_id, "succeeded", "addon", addon, settlement_account="Rise Business USD")
-        log_saas_activity(user_id, f"Activated Addon: {addon}")
-    else:
-        days = 365 if cycle == "yearly" else 30
-        set_user_subscription(user_id, plan_id, billing_cycle=cycle, duration_days=days, stripe_sub_id=session_id, stripe_cust_id="cust_sim", status="active")
-        m_amt = 19.0 if plan_id == "starter" else (49.0 if plan_id == "pro" else (99.0 if plan_id == "elite" else 499.0))
-        amt = m_amt * 10 if cycle == "yearly" else m_amt
-        record_saas_payment(user_id, amt, "USD", session_id, "succeeded", "subscription", plan_id, settlement_account="Rise Business USD")
-        log_saas_activity(user_id, f"Subscribed to {plan_id} ({cycle})")
-
-    # Redirect to trader portal
-    return f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta http-equiv="refresh" content="2;url=/#trader?payment=success" />
-      <title>Payment Successful</title>
-      <style>
-        body {{ background: #070c14; color: #00f090; font-family: sans-serif; text-align: center; padding: 50px; }}
-        .card {{ background: #0d1624; border: 1px solid #00f090; border-radius: 12px; padding: 30px; display: inline-block; max-width: 450px; }}
-      </style>
-    </head>
-    <body>
-      <div class="card">
-        <h1>✅ PAYMENT SUCCESSFUL</h1>
-        <p>Your subscription to <strong>{plan_id.upper() if not addon else addon.upper()}</strong> has been activated.</p>
-        <p style="color:#00d4ff;">Settled to Rise Business USD Account.</p>
-        <p style="color:#8899aa; font-size:12px;">Redirecting back to your Trading Cockpit...</p>
-      </div>
-    </body>
-    </html>
-    """
+@api_bp.route("/api/saas/activate-subscription", methods=["POST"])
+@user_required
+def saas_activate_instant(current_user):
+    data = request.get_json(silent=True) or {}
+    plan_or_addon_id = data.get("plan_id") or "pro"
+    interval = data.get("interval", "monthly")
+    
+    result = SaaSService.process_successful_payment(
+        user_id=current_user["id"],
+        plan_or_addon_id=plan_or_addon_id,
+        billing_interval=interval,
+        stripe_payment_id=f"direct_act_{int(time.time())}"
+    )
+    return jsonify(result)
 
 @api_bp.route("/api/saas/stripe-webhook", methods=["POST"])
 def saas_stripe_webhook():
-    """Processes Stripe Webhook Events in real-time."""
-    payload = request.get_data()
+    payload = request.data
     sig_header = request.headers.get("Stripe-Signature", "")
-    res = SaasSubscriptionService.handle_stripe_webhook(payload, sig_header)
+    res = SaaSService.handle_stripe_webhook_event(payload, sig_header)
     return jsonify(res)
 
-# ── SUPER ADMIN SAAS & USER PERMISSION CONTROLS ──────────────────────────────
 @api_bp.route("/api/admin/saas/metrics", methods=["GET"])
 @superadmin_required
 def admin_saas_metrics(admin_user):
-    """Returns MRR, ARR, active subscribers, churn rate, and recent payments."""
-    metrics = get_saas_metrics()
+    metrics = get_saas_dashboard_metrics()
     return jsonify({
         "status": "success",
         "metrics": metrics
@@ -1692,66 +1662,50 @@ def admin_saas_metrics(admin_user):
 
 @api_bp.route("/api/admin/saas/users", methods=["GET"])
 @superadmin_required
-def admin_saas_users(admin_user):
-    """Returns complete list of users with plans, status, and individual permission switches."""
-    users = get_saas_users_admin()
+def admin_saas_users_list(admin_user):
+    users = get_all_users_saas_management()
     return jsonify({
         "status": "success",
-        "total_users": len(users),
-        "users": users
+        "users": users,
+        "total_count": len(users)
     })
 
 @api_bp.route("/api/admin/saas/toggle-permission", methods=["POST"])
 @superadmin_required
-def admin_saas_toggle_permission(admin_user):
-    """Manually grants or revokes an individual service for any user immediately."""
-    data = request.get_json() or {}
-    user_id = data.get("user_id")
+def admin_saas_toggle_perm(admin_user):
+    data = request.get_json(silent=True) or {}
+    target_user_id = data.get("user_id")
     service_name = data.get("service_name")
-    enabled = bool(data.get("enabled", False))
+    enabled = bool(data.get("enabled", True))
     
-    if not user_id or not service_name:
-        return jsonify({"status": "error", "message": "user_id and service_name are required"}), 400
+    if not target_user_id or not service_name:
+        return jsonify({"status": "error", "message": "user_id and service_name required"}), 400
         
-    set_user_permission(int(user_id), str(service_name), enabled, granted_by="admin_manual")
-    log_saas_activity(int(user_id), f"Super Admin toggled {service_name} -> {'ON' if enabled else 'OFF'}")
-    
+    set_user_permission_override(int(target_user_id), service_name, enabled)
     return jsonify({
         "status": "success",
-        "user_id": user_id,
-        "service_name": service_name,
-        "enabled": enabled,
-        "message": f"Service '{service_name}' set to {'ENABLED' if enabled else 'DISABLED'}."
+        "message": f"Successfully set {service_name} to {'ON' if enabled else 'OFF'} for User #{target_user_id}"
     })
 
-@api_bp.route("/api/admin/saas/update-plan", methods=["POST"])
+@api_bp.route("/api/admin/saas/update-user-plan", methods=["POST"])
 @superadmin_required
 def admin_saas_update_plan(admin_user):
-    """Super Admin manually overrides or extends a user's subscription plan without payment."""
-    data = request.get_json() or {}
-    user_id = data.get("user_id")
-    plan_id = data.get("plan_id", "pro")
-    duration_days = int(data.get("duration_days", 30))
+    data = request.get_json(silent=True) or {}
+    target_user_id = data.get("user_id")
+    plan_id = data.get("plan_id", "starter")
+    interval = data.get("interval", "monthly")
+    days_to_add = int(data.get("days", 30))
     
-    if not user_id:
-        return jsonify({"status": "error", "message": "user_id is required"}), 400
+    if not target_user_id:
+        return jsonify({"status": "error", "message": "user_id required"}), 400
         
-    res = set_user_subscription(
-        user_id=int(user_id),
-        plan_id=plan_id,
-        billing_cycle="monthly",
-        duration_days=duration_days,
-        stripe_sub_id="ADMIN-MANUAL-OVERRIDE",
-        status="active"
-    )
-    log_saas_activity(int(user_id), f"Super Admin granted {plan_id} for {duration_days} days")
+    now = int(time.time())
+    expires_at = now + (days_to_add * 86400)
+    update_user_subscription(int(target_user_id), plan_id, interval, expires_at, status="active")
     
     return jsonify({
         "status": "success",
-        "user_id": user_id,
-        "plan_id": plan_id,
-        "expires_at": res.get("expires_at"),
-        "message": f"User plan successfully updated to {plan_id.upper()} for {duration_days} days."
+        "message": f"User #{target_user_id} upgraded to {plan_id.upper()} for {days_to_add} days."
     })
 
-print("api_routes.py Multi-Market Trade Suggestions & SaaS Subscription Engine integration complete!")
+print("api_routes.py Multi-Market Trade Suggestions, SaaS Subscription & User Persistence integration complete!")
