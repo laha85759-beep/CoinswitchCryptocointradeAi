@@ -140,7 +140,8 @@ CONFIG = {
     "poll_interval_sec":   _int_env("POLL_INTERVAL_SEC", 900),
     "paper_trading_mode":  _bool_env("PAPER_TRADING_MODE", False),
     "paper_portfolio_usdt": _float_env("PAPER_PORTFOLIO_USDT", 1000.0),
-    "telegram_channel_url":     os.getenv("TELEGRAM_CHANNEL_URL", "https://t.me/CoinsAiOfficial"),
+    "telegram_channel_url":     os.getenv("TELEGRAM_CHANNEL_URL", "https://t.me/FOREXINDIAN_BOT"),
+    "telegram_bot_url":         os.getenv("TELEGRAM_BOT_URL", "https://t.me/LiveForexSignalsAI_bot"),
     "delta_affiliate_url":      os.getenv("DELTA_AFFILIATE_URL", "https://www.delta.exchange/?code=YXQSZA"),
     "coinswitch_affiliate_url": os.getenv("COINSWITCH_AFFILIATE_URL", "https://coinswitch.co/pro/signup?code=PmstphH"),
 

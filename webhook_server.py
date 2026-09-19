@@ -861,7 +861,8 @@ def get_terminal_data():
 
         payload = {
             "status": "success",
-            "telegram_channel_url": CONFIG.get("telegram_channel_url", "https://t.me/CoinsAiOfficial"),
+            "telegram_channel_url": CONFIG.get("telegram_channel_url", "https://t.me/FOREXINDIAN_BOT"),
+            "telegram_bot_url": CONFIG.get("telegram_bot_url", "https://t.me/LiveForexSignalsAI_bot"),
             "balances": {
                 "cs_usdt": round(cs_usdt, 4),
                 "cs_inr": round(cs_inr, 2),

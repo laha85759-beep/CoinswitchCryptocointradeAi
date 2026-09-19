@@ -431,7 +431,7 @@ def get_visitor_analytics() -> dict:
         top_referrers = [
             {"referrer": "Direct Navigation (trade.thesmartmag.com)", "count": max(18, total_visits), "source": "Direct Entry"},
             {"referrer": "https://google.com/search?q=thesmartmag+quant", "count": max(8, int(total_visits * 0.35)), "source": "Google Search"},
-            {"referrer": "https://t.me/CoinsAiOfficial", "count": max(6, int(total_visits * 0.25)), "source": "Telegram VIP Channel"},
+            {"referrer": "https://t.me/FOREXINDIAN_BOT", "count": max(6, int(total_visits * 0.25)), "source": "Telegram Signals (@FOREXINDIAN_BOT)"},
             {"referrer": "https://tradingview.com/chart", "count": max(4, int(total_visits * 0.15)), "source": "TradingView Integration"}
         ]
 

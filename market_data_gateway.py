@@ -152,7 +152,8 @@ class MarketDataGateway:
             "ram_pct": round((ram_mb / 512.0) * 100.0, 1),
             "gateway_mode": "Single Provider Shared PubSub",
             "cache_entries": len(self.cache["ai_cache"]) + 4,
-            "telegram_channel": "https://t.me/CoinsAiOfficial",
+            "telegram_channel": "https://t.me/FOREXINDIAN_BOT",
+            "telegram_bot": "https://t.me/LiveForexSignalsAI_bot",
             "active_markets": ["India Equities & F&O", "Forex & Commodities", "Crypto Derivatives"]
         }
 

@@ -1607,13 +1607,15 @@ async function handleTraderQuickOrder(e) {
 
 let currentAuthTab = "login";
 
-function openAuthModal() {
+function openAuthModal(tab = "login") {
   const modal = document.getElementById("authModal");
   if (modal) {
     modal.style.display = "flex";
-    switchAuthTab("login");
+    switchAuthTab(tab || "login");
   }
 }
+window.openAuthModal = openAuthModal;
+window.closeAuthModal = closeAuthModal;
 
 function closeAuthModal() {
   const modal = document.getElementById("authModal");
@@ -6293,6 +6295,17 @@ function handleSignalsSearch() {
 window.handleSignalsSearch = handleSignalsSearch;
 
 function executeSignalTrade(symbol, direction, entryPrice, sl, tp, broker) {
+  // Enforce Registration & Login Check
+  if (!currentUser && !userToken) {
+    if (typeof openAuthModal === "function") {
+      openAuthModal("register");
+    }
+    if (typeof showFloatingToast === "function") {
+      showFloatingToast("🔒 Registration & Login Required: Sign in with Google to execute live signals.", "gold");
+    }
+    return;
+  }
+
   // 1. Jump to Pro Chart
   jumpToProChartSymbol(symbol);
 
