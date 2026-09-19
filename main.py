@@ -595,7 +595,7 @@ def run() -> None:
     # Multi-Tenant User Autonomous Dispatch
     try:
         from multi_tenant_engine import dispatch_signals_to_all_users
-        mt_res = dispatch_signals_to_all_users(approved, cfg)
+        mt_res = dispatch_signals_to_all_users(approved, CONFIG)
         log.info("Multi-Tenant Engine: Processed %s active users, executed %s trades", mt_res.get("users_processed", 0), mt_res.get("trades_executed", 0))
     except Exception as mt_exc:
         log.warning("Multi-Tenant dispatch notice: %s", mt_exc)
