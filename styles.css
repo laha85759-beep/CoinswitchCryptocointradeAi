@@ -4689,6 +4689,289 @@ body.neural-core-os {
   line-height: 1.45;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   HIGH-CONTRAST SELECT DROPDOWN & FORM LEGIBILITY FIX (v125.0)
+   Resolves white-on-white text in native dropdowns across all browsers
+   ═══════════════════════════════════════════════════════════════════════════ */
+select, 
+select.tsm-input, 
+.tsm-select, 
+select.form-control,
+.modal-body select,
+.dock-card select,
+.trader-card select,
+#authRole,
+#regCountry,
+#traderDefaultBroker,
+#journalSetupTag,
+#journalEmotion,
+#ccxtExchangeSelect,
+#indianBrokerSelect {
+  background-color: #040e1c !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(0, 240, 144, 0.4) !important;
+  border-radius: 6px !important;
+  padding: 8px 12px !important;
+  font-family: var(--font-mono, monospace) !important;
+  font-size: 12px !important;
+  outline: none !important;
+  cursor: pointer !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2300f090%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.4-12.8z%22%2F%3E%3C%2Fsvg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 10px top 50% !important;
+  background-size: 10px auto !important;
+  padding-right: 30px !important;
+}
+
+select option, 
+optgroup,
+select.tsm-input option,
+.modal-body select option {
+  background-color: #040e1c !important;
+  color: #ffffff !important;
+  padding: 10px 14px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
+select option:checked,
+select option:hover,
+select option:focus {
+  background-color: #00f090 !important;
+  color: #020812 !important;
+  font-weight: 700 !important;
+}
+
+/* Universal Text Contrast Guarantee */
+input, textarea {
+  color: #ffffff !important;
+  background-color: rgba(4, 14, 28, 0.85) !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   JOURNALIT INSTITUTIONAL TRADING JOURNAL UI
+   ═══════════════════════════════════════════════════════════════════════════ */
+.journalit-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.journalit-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.journalit-stat-box {
+  background: rgba(10, 20, 38, 0.7);
+  border: 1px solid rgba(0, 240, 144, 0.2);
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+}
+
+.journalit-stat-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--text-dim, #94a3b8);
+  font-family: var(--font-mono, monospace);
+  letter-spacing: 0.5px;
+}
+
+.journalit-stat-val {
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--font-orb, sans-serif);
+  margin-top: 4px;
+  color: #00f090;
+}
+
+.journalit-stat-val.loss {
+  color: #ff3366;
+}
+
+/* Calendar Heatmap */
+.journalit-heatmap-wrapper {
+  background: rgba(6, 14, 26, 0.85);
+  border: 1px solid rgba(0, 212, 255, 0.25);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.journalit-heatmap-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.journalit-heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.journalit-day-cell {
+  aspect-ratio: 1;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-family: var(--font-mono, monospace);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 48px;
+}
+
+.journalit-day-cell:hover {
+  transform: scale(1.05);
+  border-color: #00f090;
+  z-index: 2;
+}
+
+.journalit-day-cell.profit-light {
+  background: rgba(0, 240, 144, 0.15);
+  border-color: rgba(0, 240, 144, 0.4);
+  color: #00ff88;
+}
+
+.journalit-day-cell.profit-heavy {
+  background: rgba(0, 240, 144, 0.35);
+  border-color: #00f090;
+  color: #00ff88;
+  font-weight: 700;
+}
+
+.journalit-day-cell.loss-light {
+  background: rgba(255, 51, 102, 0.15);
+  border-color: rgba(255, 51, 102, 0.4);
+  color: #ff3366;
+}
+
+.journalit-day-cell.loss-heavy {
+  background: rgba(255, 51, 102, 0.35);
+  border-color: #ff3366;
+  color: #ff3366;
+  font-weight: 700;
+}
+
+.journalit-day-pnl {
+  font-size: 9px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+/* Journal Entries List */
+.journalit-entry-card {
+  background: rgba(10, 20, 38, 0.85);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.journalit-entry-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.journalit-tag {
+  display: inline-block;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(0, 212, 255, 0.15);
+  border: 1px solid rgba(0, 212, 255, 0.35);
+  color: #00d4ff;
+  font-family: var(--font-mono, monospace);
+}
+
+.journalit-emotion {
+  display: inline-block;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  color: #c084fc;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FENIX INDIAN BROKER HUB & CCXT UNIVERSAL EXCHANGES UI
+   ═══════════════════════════════════════════════════════════════════════════ */
+.multi-broker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.broker-card {
+  background: rgba(10, 20, 38, 0.75);
+  border: 1px solid rgba(0, 240, 144, 0.2);
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.2s ease;
+}
+
+.broker-card:hover {
+  border-color: rgba(0, 240, 144, 0.5);
+  box-shadow: 0 4px 15px rgba(0, 240, 144, 0.1);
+}
+
+.broker-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.broker-card-title {
+  font-family: var(--font-orb, sans-serif);
+  font-size: 12px;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.broker-badge {
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-mono, monospace);
+}
+
+.broker-badge.connected {
+  background: rgba(0, 240, 144, 0.2);
+  color: #00ff88;
+  border: 1px solid rgba(0, 240, 144, 0.4);
+}
+
+.broker-badge.disconnected {
+  background: rgba(255, 51, 102, 0.15);
+  color: #ff3366;
+  border: 1px solid rgba(255, 51, 102, 0.3);
+}
+
 
 
 

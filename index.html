@@ -61,7 +61,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=124.0">
+  <link rel="stylesheet" href="styles.css?v=125.0">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -1298,9 +1298,11 @@
         <button class="trader-tab-btn active" onclick="switchTraderSubTab('overview', this)">📊 BALANCES &amp; PORTFOLIO</button>
         <button class="trader-tab-btn" onclick="switchTraderSubTab('aicommand', this)">🧠 AI COMMAND CENTER</button>
         <button class="trader-tab-btn" onclick="switchTraderSubTab('risk', this)">🛡️ RISK SAFEGUARDS</button>
-        <button class="trader-tab-btn" onclick="switchTraderSubTab('keys', this)">🔑 API CREDENTIALS</button>
+        <button class="trader-tab-btn" onclick="switchTraderSubTab('keys', this)">🔑 CRYPTO KEYS</button>
+        <button class="trader-tab-btn" onclick="switchTraderSubTab('indianbrokers', this)">🇮🇳 INDIAN BROKERS (FENIX)</button>
+        <button class="trader-tab-btn" onclick="switchTraderSubTab('ccxtexchanges', this)">🌐 GLOBAL EXCHANGES (CCXT)</button>
         <button class="trader-tab-btn" onclick="switchTraderSubTab('positions', this)">💼 ACTIVE POSITIONS</button>
-        <button class="trader-tab-btn" onclick="switchTraderSubTab('analytics', this)">📈 TRADING JOURNAL</button>
+        <button class="trader-tab-btn" onclick="switchTraderSubTab('journal', this)">📓 JOURNALIT TRADING JOURNAL</button>
         <button class="trader-tab-btn" onclick="switchTraderSubTab('heatmap', this)">🌐 MARKET HEATMAP</button>
         <button class="trader-tab-btn" onclick="switchTraderSubTab('profile', this)">👤 PROFILE &amp; REFERRALS</button>
       </div>
@@ -1311,7 +1313,7 @@
           <div class="admin-kpi-card" style="border-color:rgba(0,240,144,0.35);">
             <div class="admin-kpi-tag green">TOTAL NET CAPITAL</div>
             <div class="admin-kpi-num green-text" id="traderOverviewTotalCap">$0.00 <span style="font-size:12px; color:var(--text-dim);">USDT</span></div>
-            <div class="admin-kpi-sub">Combined CoinSwitch Spot &amp; Delta Vaults</div>
+            <div class="admin-kpi-sub">Combined CoinSwitch Spot, Delta &amp; Broker Vaults</div>
           </div>
           <div class="admin-kpi-card" style="border-color:rgba(0,212,255,0.35);">
             <div class="admin-kpi-tag cyan">COINSWITCH PRO VAULT</div>
@@ -1341,7 +1343,7 @@
             <div style="display:flex; flex-direction:column; gap:10px; font-size:11px; margin-top:8px;">
               <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:6px;">
                 <span style="color:var(--text-dim);">Execution Engine:</span>
-                <strong class="green-text">Autonomous Multi-Exchange</strong>
+                <strong class="green-text">Autonomous Universal Multi-Broker</strong>
               </div>
               <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:6px;">
                 <span style="color:var(--text-dim);">Stop Loss Target:</span>
@@ -1371,11 +1373,32 @@
             <form onsubmit="handleTraderQuickOrder(event)" style="display:flex; flex-direction:column; gap:8px; margin-top:6px;">
               <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
                 <div>
-                  <label style="font-size:9.5px; color:var(--text-dim); font-family:var(--font-mono);">EXCHANGE</label>
+                  <label style="font-size:9.5px; color:var(--text-dim); font-family:var(--font-mono);">EXCHANGE / BROKER</label>
                   <select id="traderOrderEx" class="tsm-input font-mono" style="width:100%; padding:6px 8px; margin-top:2px;">
-                    <option value="coinswitch">🏛 CoinSwitch Pro (Spot)</option>
-                    <option value="delta">⚡ Delta India (Derivatives)</option>
-                    <option value="both" selected>⚡ Both (Dual Engine)</option>
+                    <optgroup label="Native Dual-Exchange">
+                      <option value="both" selected>⚡ Both (CoinSwitch + Delta)</option>
+                      <option value="delta">⚡ Delta Exchange India (Derivatives)</option>
+                      <option value="coinswitch">🏛 CoinSwitch Pro (Spot)</option>
+                    </optgroup>
+                    <optgroup label="Global CCXT Exchanges">
+                      <option value="binance">🌐 Binance Global</option>
+                      <option value="bybit">⚡ Bybit Perps</option>
+                      <option value="okx">🔹 OKX Global</option>
+                      <option value="bitget">💎 Bitget</option>
+                      <option value="kucoin">🟢 KuCoin</option>
+                      <option value="gateio">🚪 Gate.io</option>
+                      <option value="mexc">🚀 MEXC Global</option>
+                      <option value="kraken">🐙 Kraken</option>
+                    </optgroup>
+                    <optgroup label="Indian Brokers (Fenix)">
+                      <option value="zerodha">🇮🇳 Zerodha Kite</option>
+                      <option value="angelone">🇮🇳 Angel One SmartAPI</option>
+                      <option value="dhan">🇮🇳 Dhan (DhanHQ)</option>
+                      <option value="upstox">🇮🇳 Upstox Pro</option>
+                      <option value="fyers">🇮🇳 Fyers</option>
+                      <option value="shoonya">🇮🇳 Shoonya (Finvasia)</option>
+                      <option value="kotakneo">🇮🇳 Kotak Neo</option>
+                    </optgroup>
                   </select>
                 </div>
                 <div>
@@ -1384,21 +1407,24 @@
                     <option value="BTC/USDT">BTC/USDT</option>
                     <option value="ETH/USDT">ETH/USDT</option>
                     <option value="SOL/USDT">SOL/USDT</option>
+                    <option value="ONDO/USDT">ONDO/USDT</option>
                     <option value="XRP/USDT">XRP/USDT</option>
                     <option value="DOGE/USDT">DOGE/USDT</option>
+                    <option value="NIFTY26MAR24000CE">NIFTY 24000 CE (F&amp;O)</option>
+                    <option value="BANKNIFTY26MAR51000CE">BANKNIFTY 51000 CE</option>
                   </select>
                 </div>
               </div>
               <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
                 <div>
-                  <label style="font-size:9.5px; color:var(--text-dim); font-family:var(--font-mono);">SIDE</label>
+                  <label style="font-size:9.5px; color:var(--text-dim); font-family:var(--font-mono);">SIDE / DIRECTION</label>
                   <select id="traderOrderSide" class="tsm-input font-mono" style="width:100%; padding:6px 8px; margin-top:2px;">
                     <option value="buy" class="green-text">BUY / LONG 🟢</option>
                     <option value="sell" class="red-text">SELL / SHORT 🔴</option>
                   </select>
                 </div>
                 <div>
-                  <label style="font-size:9.5px; color:var(--text-dim); font-family:var(--font-mono);">ALLOCATION (USDT)</label>
+                  <label style="font-size:9.5px; color:var(--text-dim); font-family:var(--font-mono);">ALLOCATION (USDT / INR)</label>
                   <input type="number" id="traderOrderAmt" class="tsm-input font-mono" value="10" min="1" step="1" style="width:100%; padding:6px 8px; margin-top:2px;">
                 </div>
               </div>
@@ -1491,11 +1517,11 @@
         </div>
       </div>
 
-      <!-- ── TAB 4: API CREDENTIALS ────────────────────────────────── -->
+      <!-- ── TAB 4: CRYPTO KEYS (COINSWITCH + DELTA) ────────────────── -->
       <div id="trader-sec-keys" class="trader-sub-section">
         <div class="tsm-panel">
           <div class="tsm-panel-header">
-            <div class="tsm-panel-title">🔑 MULTI-BROKER EXCHANGE API CREDENTIALS</div>
+            <div class="tsm-panel-title">🔑 NATIVE DUAL-EXCHANGE API CREDENTIALS</div>
             <span class="tsm-badge-pill cyan">AES-256 ENCRYPTED</span>
           </div>
           <p class="tsm-panel-desc">
@@ -1546,6 +1572,182 @@
         </div>
       </div>
 
+      <!-- ── TAB: INDIAN MARKET BROKERS (FENIX INTEGRATION) ────────── -->
+      <div id="trader-sec-indianbrokers" class="trader-sub-section">
+        <div class="tsm-panel">
+          <div class="tsm-panel-header">
+            <div class="tsm-panel-title">🇮🇳 FENIX INDIAN BROKER HUB • NSE &amp; BSE INTEGRATION</div>
+            <span class="tsm-badge-pill gold">MULTI-BROKER F&amp;O READY</span>
+          </div>
+          <p class="tsm-panel-desc">
+            Connect your Indian stockbroker accounts for automated and manual options &amp; equities trading. Supports automated TOTP auth for Zerodha, Angel One SmartAPI, Dhan, Upstox, Fyers, Shoonya, and Kotak Neo.
+          </p>
+
+          <div class="multi-broker-grid" style="margin-top:14px;">
+            <!-- Zerodha Card -->
+            <div class="broker-card">
+              <div class="broker-card-header">
+                <span class="broker-card-title">🪁 Zerodha Kite</span>
+                <span id="badge_broker_zerodha" class="broker-badge disconnected">DISCONNECTED</span>
+              </div>
+              <form onsubmit="handleSaveIndianBroker(event, 'zerodha')" style="display:flex; flex-direction:column; gap:6px;">
+                <input type="text" id="ib_zerodha_client" class="tsm-input" placeholder="Client ID (e.g. ZER123)" required>
+                <input type="password" id="ib_zerodha_key" class="tsm-input" placeholder="API Key" required>
+                <input type="password" id="ib_zerodha_secret" class="tsm-input" placeholder="API Secret" required>
+                <input type="password" id="ib_zerodha_totp" class="tsm-input" placeholder="TOTP Secret Key (Optional)">
+                <button type="submit" class="tsm-btn-cta green" style="padding:6px; font-size:10px; margin-top:4px;">CONNECT ZERODHA</button>
+              </form>
+            </div>
+
+            <!-- Angel One Card -->
+            <div class="broker-card">
+              <div class="broker-card-header">
+                <span class="broker-card-title">👼 Angel One SmartAPI</span>
+                <span id="badge_broker_angelone" class="broker-badge disconnected">DISCONNECTED</span>
+              </div>
+              <form onsubmit="handleSaveIndianBroker(event, 'angelone')" style="display:flex; flex-direction:column; gap:6px;">
+                <input type="text" id="ib_angelone_client" class="tsm-input" placeholder="Client Code (e.g. A12345)" required>
+                <input type="password" id="ib_angelone_key" class="tsm-input" placeholder="SmartAPI Key" required>
+                <input type="password" id="ib_angelone_pin" class="tsm-input" placeholder="PIN" required>
+                <input type="password" id="ib_angelone_totp" class="tsm-input" placeholder="TOTP Secret Key" required>
+                <button type="submit" class="tsm-btn-cta green" style="padding:6px; font-size:10px; margin-top:4px;">CONNECT ANGEL ONE</button>
+              </form>
+            </div>
+
+            <!-- Dhan Card -->
+            <div class="broker-card">
+              <div class="broker-card-header">
+                <span class="broker-card-title">⚡ Dhan (DhanHQ)</span>
+                <span id="badge_broker_dhan" class="broker-badge disconnected">DISCONNECTED</span>
+              </div>
+              <form onsubmit="handleSaveIndianBroker(event, 'dhan')" style="display:flex; flex-direction:column; gap:6px;">
+                <input type="text" id="ib_dhan_client" class="tsm-input" placeholder="Dhan Client ID" required>
+                <input type="password" id="ib_dhan_key" class="tsm-input" placeholder="Dhan Access Token" required>
+                <button type="submit" class="tsm-btn-cta green" style="padding:6px; font-size:10px; margin-top:4px;">CONNECT DHAN</button>
+              </form>
+            </div>
+
+            <!-- Upstox Card -->
+            <div class="broker-card">
+              <div class="broker-card-header">
+                <span class="broker-card-title">📈 Upstox Pro</span>
+                <span id="badge_broker_upstox" class="broker-badge disconnected">DISCONNECTED</span>
+              </div>
+              <form onsubmit="handleSaveIndianBroker(event, 'upstox')" style="display:flex; flex-direction:column; gap:6px;">
+                <input type="text" id="ib_upstox_client" class="tsm-input" placeholder="API Key" required>
+                <input type="password" id="ib_upstox_secret" class="tsm-input" placeholder="API Secret" required>
+                <button type="submit" class="tsm-btn-cta green" style="padding:6px; font-size:10px; margin-top:4px;">CONNECT UPSTOX</button>
+              </form>
+            </div>
+
+            <!-- Fyers Card -->
+            <div class="broker-card">
+              <div class="broker-card-header">
+                <span class="broker-card-title">🔥 Fyers API v3</span>
+                <span id="badge_broker_fyers" class="broker-badge disconnected">DISCONNECTED</span>
+              </div>
+              <form onsubmit="handleSaveIndianBroker(event, 'fyers')" style="display:flex; flex-direction:column; gap:6px;">
+                <input type="text" id="ib_fyers_client" class="tsm-input" placeholder="Fyers App ID" required>
+                <input type="password" id="ib_fyers_secret" class="tsm-input" placeholder="Access Token" required>
+                <button type="submit" class="tsm-btn-cta green" style="padding:6px; font-size:10px; margin-top:4px;">CONNECT FYERS</button>
+              </form>
+            </div>
+
+            <!-- Shoonya Finvasia Card -->
+            <div class="broker-card">
+              <div class="broker-card-header">
+                <span class="broker-card-title">🎯 Shoonya (Finvasia)</span>
+                <span id="badge_broker_shoonya" class="broker-badge disconnected">DISCONNECTED</span>
+              </div>
+              <form onsubmit="handleSaveIndianBroker(event, 'shoonya')" style="display:flex; flex-direction:column; gap:6px;">
+                <input type="text" id="ib_shoonya_client" class="tsm-input" placeholder="User ID" required>
+                <input type="password" id="ib_shoonya_key" class="tsm-input" placeholder="API Key" required>
+                <input type="password" id="ib_shoonya_totp" class="tsm-input" placeholder="TOTP Secret" required>
+                <button type="submit" class="tsm-btn-cta green" style="padding:6px; font-size:10px; margin-top:4px;">CONNECT SHOONYA</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB: GLOBAL EXCHANGES (CCXT INTEGRATION) ─────────────── -->
+      <div id="trader-sec-ccxtexchanges" class="trader-sub-section">
+        <div class="tsm-panel">
+          <div class="tsm-panel-header">
+            <div class="tsm-panel-title">🌐 UNIVERSAL CRYPTO EXCHANGES (CCXT INTEGRATION)</div>
+            <span class="tsm-badge-pill cyan">100+ EXCHANGES SUPPORTED</span>
+          </div>
+          <p class="tsm-panel-desc">
+            Connect your global exchange API keys to route automated and manual trades across Binance, Bybit, OKX, Bitget, KuCoin, Gate.io, MEXC, and Kraken.
+          </p>
+
+          <div class="multi-broker-grid" style="margin-top:14px;">
+            <!-- Binance Global -->
+            <div class="broker-card">
+              <div class="broker-card-header"><span class="broker-card-title">🌐 Binance Global</span><span id="badge_ccxt_binance" class="broker-badge disconnected">DISCONNECTED</span></div>
+              <form onsubmit="handleSaveCcxtExchange(event, 'binance')" style="display:flex; flex-direction:column; gap:6px;">
+                <input type="password" id="ccxt_binance_key" class="tsm-input" placeholder="Binance API Key" required>
+                <input type="password" id="ccxt_binance_secret" class="tsm-input" placeholder="Binance API Secret" required>
+                <button type="submit" class="tsm-btn-cta green" style="padding:6px; font-size:10px; margin-top:4px;">CONNECT BINANCE</button>
+              </form>
+            </div>
+
+            <!-- Bybit -->
+            <div class="broker-card">
+              <div class="broker-card-header"><span class="broker-card-title">⚡ Bybit Derivatives</span><span id="badge_ccxt_bybit" class="broker-badge disconnected">DISCONNECTED</span></div>
+              <form onsubmit="handleSaveCcxtExchange(event, 'bybit')" style="display:flex; flex-direction:column; gap:6px;">
+                <input type="password" id="ccxt_bybit_key" class="tsm-input" placeholder="Bybit API Key" required>
+                <input type="password" id="ccxt_bybit_secret" class="tsm-input" placeholder="Bybit API Secret" required>
+                <button type="submit" class="tsm-btn-cta green" style="padding:6px; font-size:10px; margin-top:4px;">CONNECT BYBIT</button>
+              </form>
+            </div>
+
+            <!-- OKX -->
+            <div class="broker-card">
+              <div class="broker-card-header"><span class="broker-card-title">🔹 OKX Global</span><span id="badge_ccxt_okx" class="broker-badge disconnected">DISCONNECTED</span></div>
+              <form onsubmit="handleSaveCcxtExchange(event, 'okx')" style="display:flex; flex-direction:column; gap:6px;">
+                <input type="password" id="ccxt_okx_key" class="tsm-input" placeholder="OKX API Key" required>
+                <input type="password" id="ccxt_okx_secret" class="tsm-input" placeholder="OKX API Secret" required>
+                <input type="password" id="ccxt_okx_pass" class="tsm-input" placeholder="Passphrase" required>
+                <button type="submit" class="tsm-btn-cta green" style="padding:6px; font-size:10px; margin-top:4px;">CONNECT OKX</button>
+              </form>
+            </div>
+
+            <!-- Bitget -->
+            <div class="broker-card">
+              <div class="broker-card-header"><span class="broker-card-title">💎 Bitget</span><span id="badge_ccxt_bitget" class="broker-badge disconnected">DISCONNECTED</span></div>
+              <form onsubmit="handleSaveCcxtExchange(event, 'bitget')" style="display:flex; flex-direction:column; gap:6px;">
+                <input type="password" id="ccxt_bitget_key" class="tsm-input" placeholder="Bitget API Key" required>
+                <input type="password" id="ccxt_bitget_secret" class="tsm-input" placeholder="Bitget API Secret" required>
+                <input type="password" id="ccxt_bitget_pass" class="tsm-input" placeholder="Passphrase" required>
+                <button type="submit" class="tsm-btn-cta green" style="padding:6px; font-size:10px; margin-top:4px;">CONNECT BITGET</button>
+              </form>
+            </div>
+
+            <!-- KuCoin -->
+            <div class="broker-card">
+              <div class="broker-card-header"><span class="broker-card-title">🟢 KuCoin</span><span id="badge_ccxt_kucoin" class="broker-badge disconnected">DISCONNECTED</span></div>
+              <form onsubmit="handleSaveCcxtExchange(event, 'kucoin')" style="display:flex; flex-direction:column; gap:6px;">
+                <input type="password" id="ccxt_kucoin_key" class="tsm-input" placeholder="KuCoin API Key" required>
+                <input type="password" id="ccxt_kucoin_secret" class="tsm-input" placeholder="KuCoin API Secret" required>
+                <input type="password" id="ccxt_kucoin_pass" class="tsm-input" placeholder="Passphrase" required>
+                <button type="submit" class="tsm-btn-cta green" style="padding:6px; font-size:10px; margin-top:4px;">CONNECT KUCOIN</button>
+              </form>
+            </div>
+
+            <!-- Gate.io -->
+            <div class="broker-card">
+              <div class="broker-card-header"><span class="broker-card-title">🚪 Gate.io</span><span id="badge_ccxt_gateio" class="broker-badge disconnected">DISCONNECTED</span></div>
+              <form onsubmit="handleSaveCcxtExchange(event, 'gateio')" style="display:flex; flex-direction:column; gap:6px;">
+                <input type="password" id="ccxt_gateio_key" class="tsm-input" placeholder="Gate.io API Key" required>
+                <input type="password" id="ccxt_gateio_secret" class="tsm-input" placeholder="Gate.io API Secret" required>
+                <button type="submit" class="tsm-btn-cta green" style="padding:6px; font-size:10px; margin-top:4px;">CONNECT GATE.IO</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ── TAB 5: ACTIVE POSITIONS ───────────────────────────────── -->
       <div id="trader-sec-positions" class="trader-sub-section">
         <div class="tsm-panel">
@@ -1568,22 +1770,65 @@
         </div>
       </div>
 
-      <!-- ── TAB 6: TRADING JOURNAL & ANALYTICS ────────────────────── -->
-      <div id="trader-sec-analytics" class="trader-sub-section">
+      <!-- ── TAB 6: JOURNALIT INSTITUTIONAL TRADING JOURNAL ────────── -->
+      <div id="trader-sec-journal" class="trader-sub-section">
         <div class="tsm-panel">
           <div class="tsm-panel-header">
-            <div class="tsm-panel-title">📈 PERSONAL TRADING JOURNAL &amp; CLOSED TRADES</div>
-            <span class="tsm-badge-green" id="traderJournalSummaryBadge">REALIZED P&amp;L: $0.00</span>
+            <div class="tsm-panel-title">📓 JOURNALIT INSTITUTIONAL TRADING JOURNAL</div>
+            <div style="display:flex; gap:8px;">
+              <button class="tsm-btn-cta green" style="margin:0; padding:6px 14px; font-size:10px;" onclick="openAddJournalModal()">+ NEW JOURNAL ENTRY</button>
+              <span class="tsm-badge-green" id="traderJournalSummaryBadge">REALIZED P&amp;L: $0.00</span>
+            </div>
           </div>
-          <div class="tsm-table-wrap">
+
+          <!-- JournalIt Performance Stats Grid -->
+          <div class="journalit-stats-grid" style="margin-top:14px;">
+            <div class="journalit-stat-box">
+              <div class="journalit-stat-label">WIN RATE</div>
+              <div class="journalit-stat-val" id="journalWinRate">0.0%</div>
+            </div>
+            <div class="journalit-stat-box">
+              <div class="journalit-stat-label">TOTAL P&amp;L</div>
+              <div class="journalit-stat-val" id="journalTotalPnl">$0.00</div>
+            </div>
+            <div class="journalit-stat-box">
+              <div class="journalit-stat-label">PROFIT FACTOR</div>
+              <div class="journalit-stat-val" id="journalProfitFactor">0.00</div>
+            </div>
+            <div class="journalit-stat-box">
+              <div class="journalit-stat-label">AVG R-MULTIPLE</div>
+              <div class="journalit-stat-val" id="journalAvgR">0.00 R</div>
+            </div>
+            <div class="journalit-stat-box">
+              <div class="journalit-stat-label">TOTAL TRADES</div>
+              <div class="journalit-stat-val" id="journalTotalTrades">0</div>
+            </div>
+          </div>
+
+          <!-- Calendar Heatmap -->
+          <div class="journalit-heatmap-wrapper" style="margin-top:16px;">
+            <div class="journalit-heatmap-header">
+              <span style="font-family:var(--font-orb); font-size:12px; color:var(--neon-green);">📅 MONTHLY TRADING P&amp;L HEATMAP</span>
+              <span style="font-size:10px; color:var(--text-dim);">Green = Profit • Red = Loss</span>
+            </div>
+            <div class="journalit-heatmap-grid" id="journalHeatmapGrid">
+              <!-- Rendered dynamically by JS -->
+            </div>
+          </div>
+
+          <!-- Journal Entries Table -->
+          <div class="tsm-panel-header" style="margin-top:20px;">
+            <div class="tsm-panel-title">📋 DETAILED TRADE LOG &amp; PSYCHOLOGICAL REVIEW</div>
+          </div>
+          <div class="tsm-table-wrap" style="margin-top:8px;">
             <table class="tsm-table">
               <thead>
                 <tr>
-                  <th>CLOSED AT</th><th>EXCHANGE</th><th>SYMBOL</th><th>DIRECTION</th><th>ENTRY</th><th>EXIT PRICE</th><th>QTY</th><th>REALIZED P&amp;L</th><th>STATUS</th>
+                  <th>DATE</th><th>SYMBOL</th><th>SIDE</th><th>ENTRY</th><th>EXIT</th><th>P&amp;L (USDT)</th><th>R-MULT</th><th>SETUP TAG</th><th>EMOTION</th><th>NOTES</th>
                 </tr>
               </thead>
-              <tbody id="traderClosedTradesTbody">
-                <tr><td colspan="9" class="text-center empty-state" style="padding:20px;">No closed trades logged yet for this account.</td></tr>
+              <tbody id="traderJournalTbody">
+                <tr><td colspan="10" class="text-center empty-state" style="padding:20px;">No journal entries logged yet. Click "+ NEW JOURNAL ENTRY" or let closed trades automatically log here.</td></tr>
               </tbody>
             </table>
           </div>
@@ -2971,6 +3216,87 @@
     </div>
   </div>
 
-  <script src="app.js?v=124.0"></script>
+  <!-- ══════════ JOURNAL ENTRY MODAL (JOURNALIT SUITE) ══════════ -->
+  <div id="journalEntryModal" class="palette-overlay" style="display:none;" onclick="handleJournalBackdropClick(event)">
+    <div class="tsm-auth-modal-card" style="max-width:520px;">
+      <div class="tsm-auth-header-bar">
+        <div class="tsm-auth-title">📓 NEW TRADE JOURNAL ENTRY (JOURNALIT)</div>
+        <button type="button" class="tsm-auth-close-btn" onclick="closeAddJournalModal()">✕</button>
+      </div>
+      <form onsubmit="handleSaveJournalEntrySubmit(event)" style="display:flex; flex-direction:column; gap:10px; margin-top:8px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <div>
+            <label class="tsm-label">SYMBOL</label>
+            <input type="text" id="j_symbol" class="tsm-input" placeholder="BTC/USDT" required value="BTC/USDT">
+          </div>
+          <div>
+            <label class="tsm-label">DIRECTION</label>
+            <select id="j_direction" class="tsm-input">
+              <option value="LONG">LONG 🟢</option>
+              <option value="SHORT">SHORT 🔴</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
+          <div>
+            <label class="tsm-label">ENTRY PRICE</label>
+            <input type="number" step="any" id="j_entry_price" class="tsm-input font-mono" placeholder="77000.0" required>
+          </div>
+          <div>
+            <label class="tsm-label">EXIT PRICE</label>
+            <input type="number" step="any" id="j_exit_price" class="tsm-input font-mono" placeholder="78500.0" required>
+          </div>
+          <div>
+            <label class="tsm-label">REALIZED P&amp;L ($)</label>
+            <input type="number" step="any" id="j_pnl" class="tsm-input font-mono" placeholder="150.00" required>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <div>
+            <label class="tsm-label">SETUP TAG</label>
+            <select id="j_setup_tag" class="tsm-input">
+              <option value="Breakout" selected>Breakout</option>
+              <option value="Pullback">Pullback</option>
+              <option value="Mean Reversion">Mean Reversion</option>
+              <option value="Liquidity Gap">Liquidity Gap</option>
+              <option value="Ghost SuperTrend">Ghost SuperTrend</option>
+              <option value="Options Straddle">Options Straddle</option>
+              <option value="AI Consensus">AI Consensus</option>
+            </select>
+          </div>
+          <div>
+            <label class="tsm-label">PSYCHOLOGY / EMOTION</label>
+            <select id="j_emotion" class="tsm-input">
+              <option value="Disciplined" selected>Disciplined 🧘</option>
+              <option value="Confident">Confident ⚡</option>
+              <option value="Hesitant">Hesitant ❓</option>
+              <option value="FOMO">FOMO 🚀</option>
+              <option value="Revenge">Revenge ⚔️</option>
+              <option value="Calm">Calm 🌊</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="tsm-label">R-MULTIPLE (ESTIMATED)</label>
+          <input type="number" step="0.1" id="j_r_mult" class="tsm-input font-mono" placeholder="2.5" value="1.5">
+        </div>
+
+        <div>
+          <label class="tsm-label">TRADE REVIEW &amp; LEARNING NOTES</label>
+          <textarea id="j_notes" class="tsm-input font-mono" rows="3" placeholder="What went well? Did I follow risk rules? Confluence signals?"></textarea>
+        </div>
+
+        <div id="journalSubmitMsg" style="font-size:11px; min-height:14px;"></div>
+        <button type="submit" class="tsm-btn-cta green" style="width:100%; justify-content:center; padding:10px; font-weight:800;">
+          💾 SAVE TO JOURNALIT
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js?v=125.0"></script>
 </body>
 </html>

@@ -5622,3 +5622,325 @@ window.handleCoinModalSimulateTrade = function() {
   alert(`⚡ AI Quant Trade Simulation triggered for ${currentModalCoin} with 1% Risk Allocation and Trailing Ratchet.`);
 };
 
+// ═══════════════════════════════════════════════════════════════════════════
+// TRADER & ADMIN SUBTAB SWITCHING
+// ═══════════════════════════════════════════════════════════════════════════
+window.switchTraderSubTab = function(tabName, btn) {
+  document.querySelectorAll(".trader-tab-btn").forEach(b => b.classList.remove("active"));
+  if (btn) btn.classList.add("active");
+  
+  document.querySelectorAll(".trader-sub-section").forEach(sec => sec.classList.remove("active"));
+  const target = document.getElementById(`trader-sec-${tabName}`);
+  if (target) target.classList.add("active");
+
+  if (tabName === "journal") {
+    fetchJournalData();
+  } else if (tabName === "indianbrokers") {
+    fetchIndianBrokersStatus();
+  }
+};
+
+window.switchAdminSubTab = function(tabName, btn) {
+  document.querySelectorAll(".admin-tab-btn").forEach(b => b.classList.remove("active"));
+  if (btn) btn.classList.add("active");
+
+  document.querySelectorAll(".admin-sub-section").forEach(sec => sec.classList.remove("active"));
+  const target = document.getElementById(`admin-sec-${tabName}`);
+  if (target) target.classList.add("active");
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// JOURNALIT TRADING JOURNAL INTEGRATION
+// ═══════════════════════════════════════════════════════════════════════════
+async function fetchJournalData() {
+  const token = localStorage.getItem("tsm_jwt_token") || getCookie("auth_token");
+  if (!token) return;
+
+  try {
+    const res = await fetch("/api/journal/overview", {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (data.status === "ok") {
+      renderJournalItSuite(data);
+    }
+  } catch (e) {
+    console.warn("fetchJournalData error:", e);
+  }
+}
+
+function renderJournalItSuite(data) {
+  const summary = data.summary || {};
+  const elWin = document.getElementById("journalWinRate");
+  if (elWin) elWin.textContent = `${summary.win_rate || 0}%`;
+
+  const elPnl = document.getElementById("journalTotalPnl");
+  if (elPnl) {
+    const pnl = summary.total_pnl || 0;
+    elPnl.textContent = `${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`;
+    elPnl.className = `journalit-stat-val ${pnl >= 0 ? '' : 'loss'}`;
+  }
+
+  const elPf = document.getElementById("journalProfitFactor");
+  if (elPf) elPf.textContent = (summary.profit_factor || 0).toFixed(2);
+
+  const elAvgR = document.getElementById("journalAvgR");
+  if (elAvgR) elAvgR.textContent = `${(summary.avg_r_multiple || 0).toFixed(2)} R`;
+
+  const elTotal = document.getElementById("journalTotalTrades");
+  if (elTotal) elTotal.textContent = summary.total_trades || 0;
+
+  // Render Heatmap
+  renderJournalCalendarHeatmap(data.calendar || {});
+
+  // Render Table
+  renderJournalEntriesTable(data.recent_entries || []);
+}
+
+function renderJournalCalendarHeatmap(calendarData) {
+  const grid = document.getElementById("journalHeatmapGrid");
+  if (!grid) return;
+
+  grid.innerHTML = "";
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const dayData = calendarData[dateStr];
+
+    const cell = document.createElement("div");
+    cell.className = "journalit-day-cell";
+
+    let pnlText = "";
+    if (dayData && dayData.daily_pnl !== 0) {
+      const pnl = dayData.daily_pnl;
+      pnlText = `<span class="journalit-day-pnl">${pnl > 0 ? '+' : ''}$${pnl.toFixed(0)}</span>`;
+      if (pnl > 100) cell.classList.add("profit-heavy");
+      else if (pnl > 0) cell.classList.add("profit-light");
+      else if (pnl < -100) cell.classList.add("loss-heavy");
+      else cell.classList.add("loss-light");
+    }
+
+    cell.innerHTML = `<span>${d}</span>${pnlText}`;
+    cell.title = dayData ? `${dateStr}: P&L $${dayData.daily_pnl} (${dayData.trade_count} trades, Avg R: ${dayData.avg_r})` : `${dateStr}: No trades`;
+    grid.appendChild(cell);
+  }
+}
+
+function renderJournalEntriesTable(entries) {
+  const tbody = document.getElementById("traderJournalTbody");
+  if (!tbody) return;
+
+  if (!entries || entries.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="10" class="text-center empty-state" style="padding:20px;">No journal entries logged yet. Click "+ NEW JOURNAL ENTRY" or let closed trades automatically log here.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = entries.map(e => {
+    const pnl = Number(e.pnl || 0);
+    const pnlColor = pnl >= 0 ? "green" : "red-text";
+    return `
+      <tr>
+        <td class="font-mono text-dim">${e.trade_date || '--'}</td>
+        <td><strong>${e.symbol}</strong></td>
+        <td><span class="${e.direction === 'LONG' ? 'green' : 'red-text'} font-bold">${e.direction}</span></td>
+        <td class="font-mono">$${Number(e.entry_price || 0).toFixed(2)}</td>
+        <td class="font-mono">$${Number(e.exit_price || 0).toFixed(2)}</td>
+        <td class="font-mono ${pnlColor} font-bold">${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}</td>
+        <td class="font-mono cyan-text">${Number(e.r_multiple || 0).toFixed(1)} R</td>
+        <td><span class="journalit-tag">${e.setup_tag || 'Breakout'}</span></td>
+        <td><span class="journalit-emotion">${e.emotion || 'Disciplined'}</span></td>
+        <td style="font-size:11px; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${e.notes || ''}">${e.notes || '--'}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
+window.openAddJournalModal = function() {
+  const m = document.getElementById("journalEntryModal");
+  if (m) m.style.display = "flex";
+};
+
+window.closeAddJournalModal = function() {
+  const m = document.getElementById("journalEntryModal");
+  if (m) m.style.display = "none";
+};
+
+window.handleJournalBackdropClick = function(e) {
+  if (e.target.id === "journalEntryModal") closeAddJournalModal();
+};
+
+window.handleSaveJournalEntrySubmit = async function(e) {
+  e.preventDefault();
+  const token = localStorage.getItem("tsm_jwt_token") || getCookie("auth_token");
+  if (!token) return;
+
+  const msg = document.getElementById("journalSubmitMsg");
+  if (msg) msg.innerHTML = `<span class="cyan">Saving to journal...</span>`;
+
+  const payload = {
+    symbol: document.getElementById("j_symbol").value,
+    direction: document.getElementById("j_direction").value,
+    entry_price: parseFloat(document.getElementById("j_entry_price").value) || 0,
+    exit_price: parseFloat(document.getElementById("j_exit_price").value) || 0,
+    pnl: parseFloat(document.getElementById("j_pnl").value) || 0,
+    setup_tag: document.getElementById("j_setup_tag").value,
+    emotion: document.getElementById("j_emotion").value,
+    r_multiple: parseFloat(document.getElementById("j_r_mult").value) || 0,
+    notes: document.getElementById("j_notes").value
+  };
+
+  try {
+    const res = await fetch("/api/journal/entry", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.status === "ok") {
+      if (msg) msg.innerHTML = `<span class="green">✓ Entry saved to JournalIt!</span>`;
+      setTimeout(() => {
+        closeAddJournalModal();
+        fetchJournalData();
+      }, 1000);
+    } else {
+      if (msg) msg.innerHTML = `<span class="red-text">Error: ${data.error || 'Failed to save'}</span>`;
+    }
+  } catch (err) {
+    if (msg) msg.innerHTML = `<span class="red-text">Network error: ${err.message}</span>`;
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INDIAN BROKERS & CCXT EXCHANGES HANDLERS
+// ═══════════════════════════════════════════════════════════════════════════
+async function fetchIndianBrokersStatus() {
+  const token = localStorage.getItem("tsm_jwt_token") || getCookie("auth_token");
+  if (!token) return;
+
+  try {
+    const res = await fetch("/api/brokers/indian/status", {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (data.status === "success" && data.configured_brokers) {
+      Object.keys(data.configured_brokers).forEach(broker => {
+        const badge = document.getElementById(`badge_broker_${broker}`);
+        if (badge) {
+          const isConn = data.configured_brokers[broker];
+          badge.className = `broker-badge ${isConn ? 'connected' : 'disconnected'}`;
+          badge.textContent = isConn ? "CONNECTED 🟢" : "DISCONNECTED";
+        }
+      });
+    }
+  } catch (e) {
+    console.warn("fetchIndianBrokersStatus error:", e);
+  }
+}
+
+window.handleSaveIndianBroker = async function(e, brokerName) {
+  e.preventDefault();
+  const token = localStorage.getItem("tsm_jwt_token") || getCookie("auth_token");
+  if (!token) return;
+
+  let clientId = "", apiKey = "", apiSecret = "", totp = "", pin = "";
+  if (brokerName === "zerodha") {
+    clientId = document.getElementById("ib_zerodha_client")?.value || "";
+    apiKey = document.getElementById("ib_zerodha_key")?.value || "";
+    apiSecret = document.getElementById("ib_zerodha_secret")?.value || "";
+    totp = document.getElementById("ib_zerodha_totp")?.value || "";
+  } else if (brokerName === "angelone") {
+    clientId = document.getElementById("ib_angelone_client")?.value || "";
+    apiKey = document.getElementById("ib_angelone_key")?.value || "";
+    pin = document.getElementById("ib_angelone_pin")?.value || "";
+    totp = document.getElementById("ib_angelone_totp")?.value || "";
+  } else if (brokerName === "dhan") {
+    clientId = document.getElementById("ib_dhan_client")?.value || "";
+    apiKey = document.getElementById("ib_dhan_key")?.value || "";
+  } else if (brokerName === "upstox") {
+    clientId = document.getElementById("ib_upstox_client")?.value || "";
+    apiSecret = document.getElementById("ib_upstox_secret")?.value || "";
+    apiKey = clientId;
+  } else if (brokerName === "fyers") {
+    clientId = document.getElementById("ib_fyers_client")?.value || "";
+    apiSecret = document.getElementById("ib_fyers_secret")?.value || "";
+    apiKey = clientId;
+  } else if (brokerName === "shoonya") {
+    clientId = document.getElementById("ib_shoonya_client")?.value || "";
+    apiKey = document.getElementById("ib_shoonya_key")?.value || "";
+    totp = document.getElementById("ib_shoonya_totp")?.value || "";
+  }
+
+  const payload = {
+    broker_name: brokerName,
+    client_id: clientId,
+    api_key: apiKey,
+    api_secret: apiSecret,
+    totp_key: totp,
+    pin: pin
+  };
+
+  try {
+    const res = await fetch("/api/brokers/indian/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.status === "success") {
+      const badge = document.getElementById(`badge_broker_${brokerName}`);
+      if (badge) {
+        badge.className = "broker-badge connected";
+        badge.textContent = "CONNECTED 🟢";
+      }
+      alert(`✓ ${brokerName.toUpperCase()} credentials saved and encrypted securely.`);
+    } else {
+      alert(`Error saving ${brokerName}: ${data.message || 'Validation failed'}`);
+    }
+  } catch (err) {
+    alert(`Network error saving broker: ${err.message}`);
+  }
+};
+
+window.handleSaveCcxtExchange = async function(e, exchangeId) {
+  e.preventDefault();
+  const token = localStorage.getItem("tsm_jwt_token") || getCookie("auth_token");
+  if (!token) return;
+
+  const key = document.getElementById(`ccxt_${exchangeId}_key`)?.value || "";
+  const secret = document.getElementById(`ccxt_${exchangeId}_secret`)?.value || "";
+  const pass = document.getElementById(`ccxt_${exchangeId}_pass`)?.value || "";
+
+  const payload = {
+    exchange_id: exchangeId,
+    api_key: key,
+    api_secret: secret,
+    password: pass
+  };
+
+  try {
+    const res = await fetch("/api/brokers/ccxt/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.status === "success") {
+      const badge = document.getElementById(`badge_ccxt_${exchangeId}`);
+      if (badge) {
+        badge.className = "broker-badge connected";
+        badge.textContent = "CONNECTED 🟢";
+      }
+      alert(`✓ ${exchangeId.toUpperCase()} API credentials connected and verified via CCXT.`);
+    } else {
+      alert(`Error saving exchange: ${data.message || 'Validation failed'}`);
+    }
+  } catch (err) {
+    alert(`Network error: ${err.message}`);
+  }
+};
+
+

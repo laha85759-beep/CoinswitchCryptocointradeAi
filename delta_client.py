@@ -300,10 +300,6 @@ class DeltaClient:
         """Return raw wallet balances dictionary."""
         return self._request("GET", "/v2/wallet/balances")
 
-    def get_wallet_balances(self) -> list[dict]:
-        """Alias for get_balances returning list of asset balance dicts."""
-        return self.get_balances()
-
     def get_assets(self) -> list[dict]:
         """Fetch all supported assets from Delta Exchange India."""
         data = self._request("GET", "/v2/assets", auth=False, use_cdn=True)

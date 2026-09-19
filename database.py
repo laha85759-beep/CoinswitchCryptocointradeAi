@@ -166,6 +166,66 @@ def init_db():
     )
     ''')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_sales_created ON sales_transactions(created_at)')
+
+    # 11. JournalIt Institutional Trading Journal table
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS trade_journal_entries (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        trade_id INTEGER,
+        symbol TEXT NOT NULL,
+        direction TEXT NOT NULL,
+        entry_price REAL,
+        exit_price REAL,
+        pnl REAL DEFAULT 0.0,
+        r_multiple REAL DEFAULT 0.0,
+        setup_tag TEXT DEFAULT "Breakout",
+        emotion TEXT DEFAULT "Disciplined",
+        notes TEXT,
+        screenshot_url TEXT DEFAULT "",
+        trade_date TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+    ''')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_journal_user ON trade_journal_entries(user_id)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_journal_date ON trade_journal_entries(trade_date)')
+
+    # 12. Fenix Indian Broker Credentials table (encrypted)
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS indian_broker_keys (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        broker_name TEXT NOT NULL,
+        client_id_enc TEXT,
+        api_key_enc TEXT,
+        api_secret_enc TEXT,
+        totp_key_enc TEXT,
+        pin_enc TEXT,
+        access_token TEXT DEFAULT "",
+        is_active INTEGER DEFAULT 1,
+        updated_at INTEGER,
+        UNIQUE(user_id, broker_name),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+    ''')
+
+    # 13. CCXT Universal Crypto Exchange Credentials table (encrypted)
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS ccxt_exchange_keys (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        exchange_id TEXT NOT NULL,
+        api_key_enc TEXT,
+        api_secret_enc TEXT,
+        password_enc TEXT DEFAULT "",
+        is_sandbox INTEGER DEFAULT 0,
+        is_active INTEGER DEFAULT 1,
+        updated_at INTEGER,
+        UNIQUE(user_id, exchange_id),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+    ''')
     
     # ── Auto-Migration for existing databases ───────────────────────────────
     try:
@@ -1037,6 +1097,190 @@ def get_user_crm_profile(user_id: int) -> dict | None:
         },
         "trades": trades
     }
+
+# ── JOURNALIT DATABASE HELPERS ───────────────────────────────────────────────
+def get_user_journal_entries(user_id: int, limit: int = 50) -> list[dict]:
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+    SELECT * FROM trade_journal_entries
+    WHERE user_id = ?
+    ORDER BY created_at DESC
+    LIMIT ?
+    ''', (user_id, limit))
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def add_or_update_journal_entry(user_id: int, entry_data: dict) -> int:
+    conn = get_db()
+    cursor = conn.cursor()
+    now = int(time.time())
+    trade_date = entry_data.get("trade_date") or time.strftime("%Y-%m-%d")
+    
+    entry_id = entry_data.get("id")
+    if entry_id:
+        cursor.execute('''
+        UPDATE trade_journal_entries
+        SET symbol = ?, direction = ?, entry_price = ?, exit_price = ?, pnl = ?, r_multiple = ?,
+            setup_tag = ?, emotion = ?, notes = ?, screenshot_url = ?, trade_date = ?
+        WHERE id = ? AND user_id = ?
+        ''', (
+            entry_data.get("symbol", "BTC/USDT"),
+            entry_data.get("direction", "LONG"),
+            float(entry_data.get("entry_price") or 0.0),
+            float(entry_data.get("exit_price") or 0.0),
+            float(entry_data.get("pnl") or 0.0),
+            float(entry_data.get("r_multiple") or 0.0),
+            entry_data.get("setup_tag", "Breakout"),
+            entry_data.get("emotion", "Disciplined"),
+            entry_data.get("notes", ""),
+            entry_data.get("screenshot_url", ""),
+            trade_date,
+            entry_id,
+            user_id
+        ))
+    else:
+        cursor.execute('''
+        INSERT INTO trade_journal_entries 
+        (user_id, trade_id, symbol, direction, entry_price, exit_price, pnl, r_multiple, setup_tag, emotion, notes, screenshot_url, trade_date, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            user_id,
+            entry_data.get("trade_id"),
+            entry_data.get("symbol", "BTC/USDT"),
+            entry_data.get("direction", "LONG"),
+            float(entry_data.get("entry_price") or 0.0),
+            float(entry_data.get("exit_price") or 0.0),
+            float(entry_data.get("pnl") or 0.0),
+            float(entry_data.get("r_multiple") or 0.0),
+            entry_data.get("setup_tag", "Breakout"),
+            entry_data.get("emotion", "Disciplined"),
+            entry_data.get("notes", ""),
+            entry_data.get("screenshot_url", ""),
+            trade_date,
+            now
+        ))
+        entry_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return entry_id
+
+def get_journal_calendar_stats(user_id: int) -> dict:
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+    SELECT trade_date, SUM(pnl) as daily_pnl, COUNT(*) as trade_count, AVG(r_multiple) as avg_r
+    FROM trade_journal_entries
+    WHERE user_id = ?
+    GROUP BY trade_date
+    ORDER BY trade_date ASC
+    ''', (user_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    
+    calendar = {}
+    for r in rows:
+        calendar[r["trade_date"]] = {
+            "daily_pnl": round(r["daily_pnl"], 2),
+            "trade_count": r["trade_count"],
+            "avg_r": round(r["avg_r"] or 0.0, 2)
+        }
+    return calendar
+
+# ── FENIX INDIAN BROKER HELPERS ─────────────────────────────────────────────
+def save_indian_broker_keys(user_id: int, broker_name: str, client_id: str, api_key: str, api_secret: str, totp_key: str = "", pin: str = ""):
+    conn = get_db()
+    cursor = conn.cursor()
+    now = int(time.time())
+    c_enc = xor_encrypt(client_id) if client_id else ""
+    k_enc = xor_encrypt(api_key) if api_key else ""
+    s_enc = xor_encrypt(api_secret) if api_secret else ""
+    t_enc = xor_encrypt(totp_key) if totp_key else ""
+    p_enc = xor_encrypt(pin) if pin else ""
+    
+    cursor.execute('''
+    INSERT INTO indian_broker_keys (user_id, broker_name, client_id_enc, api_key_enc, api_secret_enc, totp_key_enc, pin_enc, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(user_id, broker_name) DO UPDATE SET
+        client_id_enc = excluded.client_id_enc,
+        api_key_enc = excluded.api_key_enc,
+        api_secret_enc = excluded.api_secret_enc,
+        totp_key_enc = excluded.totp_key_enc,
+        pin_enc = excluded.pin_enc,
+        updated_at = excluded.updated_at
+    ''', (user_id, broker_name, c_enc, k_enc, s_enc, t_enc, p_enc, now))
+    conn.commit()
+    conn.close()
+
+def get_indian_broker_keys(user_id: int, broker_name: str = None) -> list[dict]:
+    conn = get_db()
+    cursor = conn.cursor()
+    if broker_name:
+        cursor.execute("SELECT * FROM indian_broker_keys WHERE user_id = ? AND broker_name = ?", (user_id, broker_name))
+    else:
+        cursor.execute("SELECT * FROM indian_broker_keys WHERE user_id = ?", (user_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    
+    res = []
+    for r in rows:
+        res.append({
+            "broker_name": r["broker_name"],
+            "client_id": xor_decrypt(r["client_id_enc"]) if r["client_id_enc"] else "",
+            "api_key": xor_decrypt(r["api_key_enc"]) if r["api_key_enc"] else "",
+            "api_secret": xor_decrypt(r["api_secret_enc"]) if r["api_secret_enc"] else "",
+            "totp_key": xor_decrypt(r["totp_key_enc"]) if r["totp_key_enc"] else "",
+            "pin": xor_decrypt(r["pin_enc"]) if r["pin_enc"] else "",
+            "is_active": bool(r["is_active"]),
+            "updated_at": r["updated_at"]
+        })
+    return res
+
+# ── CCXT UNIVERSAL CRYPTO EXCHANGE HELPERS ──────────────────────────────────
+def save_ccxt_exchange_keys(user_id: int, exchange_id: str, api_key: str, api_secret: str, password: str = "", is_sandbox: bool = False):
+    conn = get_db()
+    cursor = conn.cursor()
+    now = int(time.time())
+    k_enc = xor_encrypt(api_key) if api_key else ""
+    s_enc = xor_encrypt(api_secret) if api_secret else ""
+    p_enc = xor_encrypt(password) if password else ""
+    
+    cursor.execute('''
+    INSERT INTO ccxt_exchange_keys (user_id, exchange_id, api_key_enc, api_secret_enc, password_enc, is_sandbox, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(user_id, exchange_id) DO UPDATE SET
+        api_key_enc = excluded.api_key_enc,
+        api_secret_enc = excluded.api_secret_enc,
+        password_enc = excluded.password_enc,
+        is_sandbox = excluded.is_sandbox,
+        updated_at = excluded.updated_at
+    ''', (user_id, exchange_id, k_enc, s_enc, p_enc, 1 if is_sandbox else 0, now))
+    conn.commit()
+    conn.close()
+
+def get_ccxt_exchange_keys(user_id: int, exchange_id: str = None) -> list[dict]:
+    conn = get_db()
+    cursor = conn.cursor()
+    if exchange_id:
+        cursor.execute("SELECT * FROM ccxt_exchange_keys WHERE user_id = ? AND exchange_id = ?", (user_id, exchange_id))
+    else:
+        cursor.execute("SELECT * FROM ccxt_exchange_keys WHERE user_id = ?", (user_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    
+    res = []
+    for r in rows:
+        res.append({
+            "exchange_id": r["exchange_id"],
+            "api_key": xor_decrypt(r["api_key_enc"]) if r["api_key_enc"] else "",
+            "api_secret": xor_decrypt(r["api_secret_enc"]) if r["api_secret_enc"] else "",
+            "password": xor_decrypt(r["password_enc"]) if r["password_enc"] else "",
+            "is_sandbox": bool(r["is_sandbox"]),
+            "is_active": bool(r["is_active"]),
+            "updated_at": r["updated_at"]
+        })
+    return res
 
 # Initialize on import
 init_db()

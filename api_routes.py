@@ -637,17 +637,11 @@ def get_user_terminal_data(user):
         except Exception:
             pass
             
-    delta_live_positions = []
     if keys["has_delta"]:
         try:
             client = DeltaClient(keys["delta_key"], keys["delta_secret"])
-            delta_usdt = float(client.get_usdt_balance())
-            try:
-                raw_d_pos = client.get_open_positions()
-                if isinstance(raw_d_pos, list):
-                    delta_live_positions = raw_d_pos
-            except Exception:
-                pass
+            bal = client.get_wallet_balances()
+            delta_usdt = float(bal.get("USDT", 0.0))
         except Exception:
             pass
             
@@ -656,12 +650,53 @@ def get_user_terminal_data(user):
     
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM user_trades WHERE user_id = ? AND status = 'open' ORDER BY created_at DESC", (user["id"],))
+    cursor.execute("SELECT * FROM user_trades WHERE user_id = ? AND status = 'open' ORDER BY opened_at DESC", (user["id"],))
     raw_open_rows = [dict(r) for r in cursor.fetchall()]
     
     sl_pct = float(settings.get("hard_sl_pct", 2.0))
     tp_pct = float(settings.get("take_profit_pct", 15.0))
     open_rows = []
+    
+    # Delta India Live Positions Polling
+    delta_live_positions = []
+    if keys["has_delta"]:
+        try:
+            d_client = DeltaClient(keys["delta_key"], keys["delta_secret"])
+            pos_res = d_client._request("GET", "/v2/positions/margined", auth=True)
+            pos_list = pos_res.get("result", []) if isinstance(pos_res, dict) else []
+            for p in pos_list:
+                size = float(p.get("size", 0.0) or 0.0)
+                if abs(size) > 0.000001:
+                    p_sym = p.get("product_symbol", "BTCUSD")
+                    entry_p = float(p.get("entry_price", 0.0) or 0.0)
+                    mark_p = float(p.get("mark_price", entry_p) or entry_p)
+                    u_pnl = float(p.get("unrealized_pnl", 0.0) or 0.0)
+                    is_pos_long = size > 0
+                    
+                    sl_calc = round(entry_p * (1.0 - sl_pct / 100.0) if is_pos_long else entry_p * (1.0 + sl_pct / 100.0), 4)
+                    tp_calc = round(entry_p * (1.0 + tp_pct / 100.0) if is_pos_long else entry_p * (1.0 - tp_pct / 100.0), 4)
+                    
+                    delta_live_positions.append({
+                        "id": f"DELTA-{p.get('product_id')}",
+                        "exchange": "delta",
+                        "symbol": p_sym,
+                        "direction": "LONG" if is_pos_long else "SHORT",
+                        "entry_price": entry_p,
+                        "mark_price": mark_p,
+                        "qty": abs(size),
+                        "size": abs(size),
+                        "unrealized_pnl": u_pnl,
+                        "realized_pnl": float(p.get("realized_pnl", 0.0) or 0.0),
+                        "hard_sl": sl_calc,
+                        "take_profit": tp_calc,
+                        "leverage": f"{p.get('leverage', '20')}x",
+                        "status": "open",
+                        "opened_at": int(time.time())
+                    })
+        except Exception as _e_delta_pos:
+            pass
+
+    # Merge database open trades with live Delta positions
     for r in raw_open_rows:
         entry = float(r.get("entry_price", 0.0) or 0.0)
         is_long = str(r.get("direction", "long")).lower() in ("long", "buy")
@@ -671,36 +706,11 @@ def get_user_terminal_data(user):
             r["take_profit"] = round(entry * (1 + tp_pct/100) if is_long else entry * (1 - tp_pct/100), 4) if entry > 0 else 0
         open_rows.append(r)
         
-    # Merge live Delta Exchange positions not already tracked in DB
-    for dp in delta_live_positions:
-        size = float(dp.get("size") or dp.get("open_qty") or 0.0)
-        if abs(size) > 0:
-            prod_sym = str(dp.get("product_symbol") or dp.get("symbol") or "BTCUSD").upper()
-            std_sym = f"{prod_sym[:-3]}/USDT" if prod_sym.endswith("USD") else (f"{prod_sym[:-4]}/USDT" if prod_sym.endswith("USDT") else prod_sym)
-            already_tracked = any(r.get("symbol") in (prod_sym, std_sym) for r in open_rows)
-            if not already_tracked:
-                entry_p = float(dp.get("entry_price") or 0.0)
-                mark_p = float(dp.get("mark_price") or entry_p)
-                pnl = float(dp.get("unrealized_pnl") or 0.0)
-                margin = float(dp.get("margin") or 0.0)
-                direction = "long" if size > 0 else "short"
-                open_rows.append({
-                    "id": f"delta-{dp.get('product_id', int(time.time()))}",
-                    "user_id": user["id"],
-                    "exchange": "delta",
-                    "symbol": std_sym,
-                    "direction": direction,
-                    "entry_price": entry_p,
-                    "mark_price": mark_p,
-                    "qty": abs(size),
-                    "quantity": abs(size),
-                    "unrealized_pnl": pnl,
-                    "margin_used": margin,
-                    "hard_sl": round(entry_p * (1 - sl_pct/100) if direction == "long" else entry_p * (1 + sl_pct/100), 4) if entry_p > 0 else 0,
-                    "take_profit": round(entry_p * (1 + tp_pct/100) if direction == "long" else entry_p * (1 - tp_pct/100), 4) if entry_p > 0 else 0,
-                    "created_at": int(time.time()),
-                    "paper": False
-                })
+    # Append any live positions from exchange not yet in local DB
+    existing_delta_syms = {str(r.get("symbol")).upper() for r in open_rows if r.get("exchange") == "delta"}
+    for d_pos in delta_live_positions:
+        if str(d_pos["symbol"]).upper() not in existing_delta_syms:
+            open_rows.append(d_pos)
     
     cursor.execute("SELECT * FROM user_trades WHERE user_id = ? AND status = 'closed' ORDER BY closed_at DESC LIMIT 30", (user["id"],))
     closed_rows = [dict(r) for r in cursor.fetchall()]
@@ -1166,4 +1176,149 @@ def get_news_status():
         "last_scan_time": news_core.last_scan_time
     })
 
-print("api_routes.py Blueprint updated with Real Visitors, Affiliates, Sales, User CRM & News Broadcaster successfully!")
+# ── 10. JOURNALIT INSTITUTIONAL TRADING JOURNAL ─────────────────────────────
+from journal_service import JournalService
+
+@api_bp.route("/api/journal/overview", methods=["GET"])
+@user_required
+def get_journal_overview(user):
+    overview = JournalService.get_journal_overview(user["id"])
+    overview["setup_tags"] = JournalService.get_setup_tags()
+    overview["emotion_tags"] = JournalService.get_emotion_tags()
+    return jsonify(overview)
+
+@api_bp.route("/api/journal/entry", methods=["POST"])
+@user_required
+def save_journal_entry(user):
+    data = request.get_json() or {}
+    res = JournalService.save_entry(user["id"], data)
+    return jsonify(res)
+
+# ── 11. FENIX INDIAN MARKET BROKER HUB ──────────────────────────────────────
+from indian_brokers_service import IndianBrokersService
+from database import save_indian_broker_keys, get_indian_broker_keys
+
+@api_bp.route("/api/brokers/indian/supported", methods=["GET"])
+def get_supported_indian_brokers():
+    return jsonify({
+        "status": "success",
+        "brokers": IndianBrokersService.get_supported_brokers()
+    })
+
+@api_bp.route("/api/brokers/indian/status", methods=["GET"])
+@user_required
+def get_indian_brokers_status(user):
+    keys = get_indian_broker_keys(user["id"])
+    configured = {k["broker_name"]: bool(k["api_key"] and k["client_id"]) for k in keys}
+    return jsonify({
+        "status": "success",
+        "configured_brokers": configured,
+        "brokers": IndianBrokersService.get_supported_brokers()
+    })
+
+@api_bp.route("/api/brokers/indian/save", methods=["POST"])
+@user_required
+def save_indian_broker(user):
+    data = request.get_json() or {}
+    broker = str(data.get("broker_name", "")).strip().lower()
+    client_id = str(data.get("client_id", "")).strip()
+    api_key = str(data.get("api_key", "")).strip()
+    api_secret = str(data.get("api_secret", "")).strip()
+    totp_key = str(data.get("totp_key", "")).strip()
+    pin = str(data.get("pin", "")).strip()
+    
+    if not broker or not api_key:
+        return jsonify({"status": "error", "message": "Broker name and API key required"}), 400
+        
+    save_indian_broker_keys(user["id"], broker, client_id, api_key, api_secret, totp_key, pin)
+    test_res = IndianBrokersService.test_broker_connection(user["id"], broker)
+    return jsonify({
+        "status": "success",
+        "message": f"{broker.upper()} credentials saved and encrypted.",
+        "test": test_res
+    })
+
+@api_bp.route("/api/brokers/indian/test", methods=["POST"])
+@user_required
+def test_indian_broker(user):
+    data = request.get_json() or {}
+    broker = str(data.get("broker_name", "")).strip().lower()
+    res = IndianBrokersService.test_broker_connection(user["id"], broker)
+    return jsonify(res)
+
+@api_bp.route("/api/brokers/indian/order", methods=["POST"])
+@user_required
+def execute_indian_broker_order(user):
+    data = request.get_json() or {}
+    broker = str(data.get("broker_name", "zerodha")).strip().lower()
+    symbol = str(data.get("symbol", "NIFTY26MAR24000CE")).strip().upper()
+    side = str(data.get("transaction_type", "BUY")).strip().upper()
+    qty = int(data.get("quantity", 50))
+    order_type = str(data.get("order_type", "MARKET")).strip().upper()
+    price = float(data.get("price", 0.0))
+    
+    res = IndianBrokersService.execute_order(user["id"], broker, symbol, side, qty, order_type, price)
+    return jsonify(res)
+
+# ── 12. CCXT UNIVERSAL CRYPTO EXCHANGES ─────────────────────────────────────
+from universal_exchange_engine import UniversalExchangeEngine
+from database import save_ccxt_exchange_keys, get_ccxt_exchange_keys
+
+@api_bp.route("/api/brokers/ccxt/supported", methods=["GET"])
+def get_supported_ccxt_exchanges():
+    return jsonify({
+        "status": "success",
+        "exchanges": UniversalExchangeEngine.get_supported_exchanges()
+    })
+
+@api_bp.route("/api/brokers/ccxt/save", methods=["POST"])
+@user_required
+def save_ccxt_exchange(user):
+    data = request.get_json() or {}
+    exchange_id = str(data.get("exchange_id", "")).strip().lower()
+    api_key = str(data.get("api_key", "")).strip()
+    api_secret = str(data.get("api_secret", "")).strip()
+    password = str(data.get("password", "")).strip()
+    is_sandbox = bool(data.get("is_sandbox", False))
+    
+    if not exchange_id or not api_key:
+        return jsonify({"status": "error", "message": "Exchange ID and API key required"}), 400
+        
+    save_ccxt_exchange_keys(user["id"], exchange_id, api_key, api_secret, password, is_sandbox)
+    bal_res = UniversalExchangeEngine.fetch_balance(user["id"], exchange_id)
+    return jsonify({
+        "status": "success",
+        "message": f"{exchange_id.upper()} credentials encrypted and saved.",
+        "balance_check": bal_res
+    })
+
+@api_bp.route("/api/brokers/ccxt/balance", methods=["POST"])
+@user_required
+def get_ccxt_balance(user):
+    data = request.get_json() or {}
+    exchange_id = str(data.get("exchange_id", "binance")).strip().lower()
+    res = UniversalExchangeEngine.fetch_balance(user["id"], exchange_id)
+    return jsonify(res)
+
+@api_bp.route("/api/brokers/ccxt/ticker", methods=["GET"])
+def get_ccxt_ticker():
+    exchange_id = request.args.get("exchange", "binance").strip().lower()
+    symbol = request.args.get("symbol", "BTC/USDT").strip().upper()
+    res = UniversalExchangeEngine.fetch_ticker(exchange_id, symbol)
+    return jsonify(res)
+
+@api_bp.route("/api/brokers/ccxt/order", methods=["POST"])
+@user_required
+def execute_ccxt_order(user):
+    data = request.get_json() or {}
+    exchange_id = str(data.get("exchange_id", "binance")).strip().lower()
+    symbol = str(data.get("symbol", "BTC/USDT")).strip().upper()
+    side = str(data.get("side", "buy")).strip().lower()
+    order_type = str(data.get("order_type", "market")).strip().lower()
+    amount = float(data.get("amount", 0.001))
+    price = float(data.get("price", 0.0)) if order_type == "limit" else None
+    
+    res = UniversalExchangeEngine.create_order(user["id"], exchange_id, symbol, side, order_type, amount, price)
+    return jsonify(res)
+
+print("api_routes.py Universal Multi-Broker & JournalIt integration complete!")
