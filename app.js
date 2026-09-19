@@ -6061,28 +6061,76 @@ window.handleCoinModalSimulateTrade = function() {
 // ═══════════════════════════════════════════════════════════════════════════
 // TRADER & ADMIN SUBTAB SWITCHING
 // ═══════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════
+// TRADER & ADMIN SUBTAB SWITCHING (ROBUST UNIVERSAL ROUTER)
+// ═══════════════════════════════════════════════════════════════════════════
 window.switchTraderSubTab = function(tabName, btn) {
-  document.querySelectorAll(".trader-tab-btn").forEach(b => b.classList.remove("active"));
+  // 1. Highlight active button
+  document.querySelectorAll(".trader-tab-btn").forEach(b => {
+    b.classList.remove("active");
+    if (!btn && b.getAttribute("onclick") && b.getAttribute("onclick").includes(`'${tabName}'`)) {
+      b.classList.add("active");
+    }
+  });
   if (btn) btn.classList.add("active");
   
-  document.querySelectorAll(".trader-sub-section").forEach(sec => sec.classList.remove("active"));
+  // 2. Hide all sub-sections & show target
+  document.querySelectorAll(".trader-sub-section").forEach(sec => {
+    sec.classList.remove("active");
+    sec.style.setProperty("display", "none", "important");
+  });
+  
   const target = document.getElementById(`trader-sec-${tabName}`);
-  if (target) target.classList.add("active");
+  if (target) {
+    target.classList.add("active");
+    target.style.setProperty("display", "block", "important");
+  }
 
+  // 3. Dispatch specific data loaders
   if (tabName === "journal") {
-    fetchJournalData();
+    if (typeof fetchJournalData === "function") fetchJournalData();
   } else if (tabName === "indianbrokers") {
-    fetchIndianBrokersStatus();
+    if (typeof fetchIndianBrokersStatus === "function") fetchIndianBrokersStatus();
+  } else if (tabName === "ccxtexchanges") {
+    if (typeof fetchCcxtExchangesStatus === "function") fetchCcxtExchangesStatus();
+  } else if (tabName === "positions") {
+    if (typeof lastCachedPositions !== "undefined" && lastCachedPositions && typeof renderPositionsTable === "function") {
+      renderPositionsTable(lastCachedPositions);
+    }
+  } else if (tabName === "billing") {
+    if (typeof fetchMySubscription === "function") fetchMySubscription();
   }
 };
 
 window.switchAdminSubTab = function(tabName, btn) {
-  document.querySelectorAll(".admin-tab-btn").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".admin-tab-btn").forEach(b => {
+    b.classList.remove("active");
+    if (!btn && b.getAttribute("onclick") && b.getAttribute("onclick").includes(`'${tabName}'`)) {
+      b.classList.add("active");
+    }
+  });
   if (btn) btn.classList.add("active");
 
-  document.querySelectorAll(".admin-sub-section").forEach(sec => sec.classList.remove("active"));
+  document.querySelectorAll(".admin-sub-section").forEach(sec => {
+    sec.classList.remove("active");
+    sec.style.setProperty("display", "none", "important");
+  });
+  
   const target = document.getElementById(`admin-sec-${tabName}`);
-  if (target) target.classList.add("active");
+  if (target) {
+    target.classList.add("active");
+    target.style.setProperty("display", "block", "important");
+  }
+
+  // Trigger subtab data fetchers
+  if (tabName === "revenue" || tabName === "saas_subscriptions") {
+    if (typeof fetchAdminSaasOverview === "function") fetchAdminSaasOverview();
+    if (typeof fetchAdminAffiliates === "function") fetchAdminAffiliates(true);
+  } else if (tabName === "users") {
+    if (typeof fetchAdminUsers === "function") fetchAdminUsers();
+  } else if (tabName === "visitors") {
+    if (typeof fetchAdminVisitors === "function") fetchAdminVisitors();
+  }
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -6642,10 +6690,378 @@ window.verifyAllAuditHashes = verifyAllAuditHashes;
 function exportAuditTradesCSV() { alert("Trade signals exported successfully."); }
 window.exportAuditTradesCSV = exportAuditTradesCSV;
 
+// ═══════════════════════════════════════════════════════════════════════════
+// PRODUCTION SAAS SUBSCRIPTION & PERMISSION CLIENT CONTROLLER
+// ═══════════════════════════════════════════════════════════════════════════
+let currentUserSubscription = null;
+let currentUserPermissions = {};
+let currentSelectedModalCycle = "monthly";
+
+// 1. Fetch active subscription & permissions for logged-in user
+async function fetchMySubscription() {
+  const token = localStorage.getItem("tsm_jwt_token") || getCookie("auth_token");
+  if (!token) return;
+  try {
+    const res = await fetch("/api/saas/my-subscription", {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (data.status === "success") {
+      currentUserSubscription = data.subscription;
+      currentUserPermissions = data.permissions || {};
+      renderTraderBillingInfo(data);
+    }
+  } catch (e) {
+    console.warn("fetchMySubscription error:", e);
+  }
+}
+window.fetchMySubscription = fetchMySubscription;
+
+function renderTraderBillingInfo(data) {
+  const sub = data.subscription || {};
+  const perms = data.permissions || {};
+  
+  const elPlanName = document.getElementById("billingCurrentPlanName");
+  if (elPlanName) elPlanName.textContent = (sub.plan_name || "PRO TRADER").toUpperCase();
+
+  const elSubStatus = document.getElementById("billingSubStatusText");
+  if (elSubStatus) {
+    elSubStatus.textContent = sub.is_active ? "ACTIVE 🟢" : "INACTIVE / EXPIRED 🔴";
+    elSubStatus.className = `admin-kpi-num ${sub.is_active ? 'green-text' : 'loss'}`;
+  }
+
+  const elDays = document.getElementById("billingExpiryDays");
+  if (elDays) {
+    elDays.textContent = sub.is_active ? `${sub.days_remaining || 0} days remaining (Auto-renews via Stripe)` : "Subscription expired. Choose a plan to unlock tools.";
+  }
+
+  const elBadge = document.getElementById("traderBillingStatusBadge");
+  if (elBadge) {
+    elBadge.textContent = sub.is_active ? `🟢 ${sub.plan_name || 'ACTIVE'}` : "🔴 UNPAID / EXPIRED";
+    elBadge.className = `tsm-badge-pill ${sub.is_active ? 'green' : 'red'}`;
+  }
+}
+
+// 2. Permission Check Middleware
+function hasAccess(serviceName) {
+  // Super Admin bypasses all restrictions
+  if (window.isAdminLoggedIn || (currentUser && currentUser.role === "superadmin")) {
+    return true;
+  }
+  if (!currentUserSubscription || !currentUserSubscription.is_active) {
+    return false;
+  }
+  return Boolean(currentUserPermissions[serviceName]);
+}
+window.hasAccess = hasAccess;
+
+// 3. Pricing Modal Controls
+function openPricingModal() {
+  const modal = document.getElementById("saasPricingModal");
+  if (modal) modal.style.display = "flex";
+}
+window.openPricingModal = openPricingModal;
+
+function closePricingModal() {
+  const modal = document.getElementById("saasPricingModal");
+  if (modal) modal.style.display = "none";
+}
+window.closePricingModal = closePricingModal;
+
+function handlePricingBackdropClick(e) {
+  if (e.target.id === "saasPricingModal") closePricingModal();
+}
+window.handlePricingBackdropClick = handlePricingBackdropClick;
+
+function toggleModalBillingCycle(el) {
+  currentSelectedModalCycle = el.checked ? "yearly" : "monthly";
+  const monthlyLabel = document.getElementById("modalCycleMonthlyLabel");
+  const yearlyLabel = document.getElementById("modalCycleYearlyLabel");
+  
+  if (monthlyLabel && yearlyLabel) {
+    if (el.checked) {
+      monthlyLabel.className = "";
+      yearlyLabel.className = "green-text font-bold";
+    } else {
+      monthlyLabel.className = "green-text font-bold";
+      yearlyLabel.className = "";
+    }
+  }
+
+  // Update modal prices
+  const sPrice = document.getElementById("modalStarterPrice");
+  const pPrice = document.getElementById("modalProPrice");
+  const ePrice = document.getElementById("modalElitePrice");
+  if (sPrice) sPrice.textContent = el.checked ? "$190" : "$19";
+  if (pPrice) pPrice.textContent = el.checked ? "$490" : "$49";
+  if (ePrice) ePrice.textContent = el.checked ? "$990" : "$99";
+}
+window.toggleModalBillingCycle = toggleModalBillingCycle;
+
+function getModalBillingCycle() {
+  return currentSelectedModalCycle || "monthly";
+}
+window.getModalBillingCycle = getModalBillingCycle;
+
+function toggleBillingCycle(el) {
+  const isYearly = el.checked;
+  const sPrice = document.getElementById("starterPriceDisplay");
+  const pPrice = document.getElementById("proPriceDisplay");
+  const ePrice = document.getElementById("elitePriceDisplay");
+  if (sPrice) sPrice.textContent = isYearly ? "$190" : "$19";
+  if (pPrice) pPrice.textContent = isYearly ? "$490" : "$49";
+  if (ePrice) ePrice.textContent = isYearly ? "$990" : "$99";
+}
+window.toggleBillingCycle = toggleBillingCycle;
+
+// 4. Initiate Stripe USD Checkout (Settles into Rise Business USD arnab.laha@gmail.com)
+async function startStripeCheckout(planId, cycle = "monthly", addonKey = null) {
+  const token = localStorage.getItem("tsm_jwt_token") || getCookie("auth_token");
+  if (!token) {
+    if (typeof openAuthModal === "function") openAuthModal("register");
+    if (typeof showFloatingToast === "function") {
+      showFloatingToast("🔒 Please log in or register before subscribing.", "gold");
+    }
+    return;
+  }
+
+  showModernToast("⚡ Preparing Stripe USD Checkout Session...", "info");
+
+  try {
+    const res = await fetch("/api/saas/create-checkout-session", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        plan_id: planId,
+        billing_cycle: cycle,
+        addon_key: addonKey
+      })
+    });
+    const data = await res.json();
+    if (data.status === "ok" && data.checkout_url) {
+      window.location.href = data.checkout_url;
+    } else {
+      showModernToast(data.message || "Unable to initiate Stripe checkout.", "error");
+    }
+  } catch (e) {
+    console.error("startStripeCheckout error:", e);
+    showModernToast("Failed to connect to checkout gateway.", "error");
+  }
+}
+window.startStripeCheckout = startStripeCheckout;
+
+// 5. Super Admin SaaS Controls & User Permission Management
+async function fetchAdminSaasOverview() {
+  const token = localStorage.getItem("tsm_admin_token") || localStorage.getItem("tsm_jwt_token");
+  if (!token) return;
+
+  try {
+    // 1. Fetch SaaS Metrics
+    const mRes = await fetch("/api/admin/saas/metrics", {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    const mData = await mRes.json();
+    if (mData.status === "success" && mData.metrics) {
+      const m = mData.metrics;
+      const elMrr = document.getElementById("admin-rev-mrr");
+      if (elMrr) elMrr.textContent = `$${(m.mrr_usd || 0).toLocaleString()}`;
+      
+      const elArr = document.getElementById("admin-rev-arr");
+      if (elArr) elArr.textContent = `$${(m.arr_usd || 0).toLocaleString()}`;
+
+      const elTotal = document.getElementById("admin-rev-total");
+      if (elTotal) elTotal.textContent = `$${(m.total_revenue_usd || 0).toLocaleString()}`;
+
+      const elSubs = document.getElementById("admin-rev-subs-churn");
+      if (elSubs) elSubs.innerHTML = `${m.active_subscriptions || 0} <span style="font-size:12px; color:var(--text-dim);">(${m.churn_rate_pct || 0}% Churn)</span>`;
+      
+      // Render transactions ledger
+      renderAdminSalesLedger(m.recent_payments || []);
+    }
+
+    // 2. Fetch Users & Granular Permission Switches
+    const uRes = await fetch("/api/admin/saas/users", {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    const uData = await uRes.json();
+    if (uData.status === "success") {
+      renderAdminSaasUsersTable(uData.users || []);
+    }
+  } catch (e) {
+    console.warn("fetchAdminSaasOverview error:", e);
+  }
+}
+window.fetchAdminSaasOverview = fetchAdminSaasOverview;
+
+function renderAdminSalesLedger(payments) {
+  const tbody = document.getElementById("admin-sales-tbody");
+  if (!tbody) return;
+  if (!payments || payments.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center empty-state">No paid transactions recorded yet. Real Stripe payments appear here dynamically.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = payments.map(p => `
+    <tr>
+      <td class="cyan font-mono" style="font-size:10.5px;">${p.stripe_payment_id || ('TX-' + p.id)}</td>
+      <td><strong>${p.email || ('User #' + p.user_id)}</strong></td>
+      <td><span class="tsm-badge-pill gold">${(p.plan_id || p.payment_type || 'PRO').toUpperCase()}</span></td>
+      <td class="green-text font-bold font-mono">$${(p.amount || 0).toFixed(2)} USD</td>
+      <td style="font-size:10px; color:var(--text-dim);">Rise USD (arnab.laha@gmail.com)</td>
+      <td><span class="tsm-badge-pill green">${(p.status || 'SUCCEEDED').toUpperCase()}</span></td>
+    </tr>
+  `).join("");
+}
+
+function renderAdminSaasUsersTable(users) {
+  const tbody = document.getElementById("admin-saas-users-tbody");
+  if (!tbody) return;
+  if (!users || users.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="12" class="text-center empty-state">No user records found.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = users.map(u => {
+    const p = u.permissions || {};
+    const isSuper = u.role === "superadmin";
+    return `
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+        <td>
+          <div style="font-weight:700; color:#fff;">${u.email}</div>
+          <div style="font-size:10px; color:var(--text-dim);">${u.name || ''} • ID: ${u.id}</div>
+        </td>
+        <td>
+          <span class="tsm-badge-pill ${u.plan_id === 'enterprise' ? 'purple' : (u.plan_id === 'elite' ? 'gold' : (u.plan_id === 'pro' ? 'green' : 'cyan'))}">
+            ${(u.plan_name || 'FREE').toUpperCase()}
+          </span>
+        </td>
+        <td>
+          <span class="font-bold ${u.status.includes('ACTIVE') ? 'green-text' : 'text-dim'}">
+            ${u.status}
+          </span>
+        </td>
+        <td style="font-size:10px;">${u.days_remaining > 0 ? (u.days_remaining + 'd left') : 'Expired'}</td>
+        <td class="gold-text font-bold">$${(u.total_spent_usd || 0).toFixed(2)}</td>
+        
+        <!-- Interactive Service Toggles -->
+        <td class="text-center">
+          <input type="checkbox" ${isSuper || p.ai_chat ? 'checked' : ''} ${isSuper ? 'disabled' : ''} onchange="adminToggleUserPermission(${u.id}, 'ai_chat', this.checked)" style="accent-color:var(--neon-green); cursor:pointer;">
+        </td>
+        <td class="text-center">
+          <input type="checkbox" ${isSuper || p.signals ? 'checked' : ''} ${isSuper ? 'disabled' : ''} onchange="adminToggleUserPermission(${u.id}, 'signals', this.checked)" style="accent-color:var(--neon-green); cursor:pointer;">
+        </td>
+        <td class="text-center">
+          <input type="checkbox" ${isSuper || p.voice_jarvis ? 'checked' : ''} ${isSuper ? 'disabled' : ''} onchange="adminToggleUserPermission(${u.id}, 'voice_jarvis', this.checked)" style="accent-color:var(--neon-green); cursor:pointer;">
+        </td>
+        <td class="text-center">
+          <input type="checkbox" ${isSuper || p.risk_calculator ? 'checked' : ''} ${isSuper ? 'disabled' : ''} onchange="adminToggleUserPermission(${u.id}, 'risk_calculator', this.checked)" style="accent-color:var(--neon-green); cursor:pointer;">
+        </td>
+        <td class="text-center">
+          <input type="checkbox" ${isSuper || p.portfolio_analytics ? 'checked' : ''} ${isSuper ? 'disabled' : ''} onchange="adminToggleUserPermission(${u.id}, 'portfolio_analytics', this.checked)" style="accent-color:var(--neon-green); cursor:pointer;">
+        </td>
+        <td class="text-center">
+          <input type="checkbox" ${isSuper || p.api_access ? 'checked' : ''} ${isSuper ? 'disabled' : ''} onchange="adminToggleUserPermission(${u.id}, 'api_access', this.checked)" style="accent-color:var(--neon-green); cursor:pointer;">
+        </td>
+
+        <td>
+          <div style="display:flex; gap:4px;">
+            <button class="tsm-btn-small green" onclick="adminGrantPlanModal(${u.id}, '${u.email}')" title="Override Plan">⚡ PLAN</button>
+            <button class="tsm-btn-small gold" onclick="adminExtendUserPlan(${u.id}, 30)" title="Add 30 Days">+30D</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+async function adminToggleUserPermission(userId, serviceName, isEnabled) {
+  const token = localStorage.getItem("tsm_admin_token") || localStorage.getItem("tsm_jwt_token");
+  if (!token) return;
+
+  try {
+    const res = await fetch("/api/admin/saas/toggle-permission", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        service_name: serviceName,
+        enabled: isEnabled
+      })
+    });
+    const data = await res.json();
+    if (data.status === "success") {
+      showModernToast(`✓ Service '${serviceName}' updated to ${isEnabled ? 'ON' : 'OFF'} for User #${userId}`, "info");
+    }
+  } catch (e) {
+    console.error("adminToggleUserPermission error:", e);
+  }
+}
+window.adminToggleUserPermission = adminToggleUserPermission;
+
+async function adminExtendUserPlan(userId, days = 30) {
+  const token = localStorage.getItem("tsm_admin_token") || localStorage.getItem("tsm_jwt_token");
+  if (!token) return;
+
+  try {
+    const res = await fetch("/api/admin/saas/update-plan", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        plan_id: "pro",
+        duration_days: days
+      })
+    });
+    const data = await res.json();
+    if (data.status === "success") {
+      showModernToast(`✓ Granted 30 Days Pro access to User #${userId}`, "info");
+      fetchAdminSaasOverview();
+    }
+  } catch (e) {
+    console.error("adminExtendUserPlan error:", e);
+  }
+}
+window.adminExtendUserPlan = adminExtendUserPlan;
+
+function adminGrantPlanModal(userId, email) {
+  const plan = prompt(`Grant subscription plan for ${email}:\nEnter: starter, pro, elite, or enterprise`, "pro");
+  if (!plan) return;
+  const days = parseInt(prompt(`Enter duration in days:`, "30") || "30");
+  
+  const token = localStorage.getItem("tsm_admin_token") || localStorage.getItem("tsm_jwt_token");
+  fetch("/api/admin/saas/update-plan", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      user_id: userId,
+      plan_id: plan.toLowerCase(),
+      duration_days: days
+    })
+  }).then(r => r.json()).then(data => {
+    if (data.status === "success") {
+      showModernToast(`✓ Plan updated to ${plan.toUpperCase()} for ${email}!`, "info");
+      fetchAdminSaasOverview();
+    }
+  });
+}
+window.adminGrantPlanModal = adminGrantPlanModal;
+
 // Ensure initial fetch on startup
 document.addEventListener("DOMContentLoaded", () => {
   setTimeout(() => {
     fetchMultiMarketSignals();
+    fetchMySubscription();
   }, 1200);
 });
 

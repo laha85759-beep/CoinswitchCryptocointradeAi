@@ -226,6 +226,89 @@ def init_db():
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
     ''')
+
+    # 14. SaaS Subscription Plans Table
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS plans (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        monthly_price REAL NOT NULL,
+        yearly_price REAL NOT NULL,
+        features TEXT DEFAULT "[]",
+        is_active INTEGER DEFAULT 1,
+        created_at INTEGER
+    )
+    ''')
+
+    # 15. User Subscriptions Table
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS subscriptions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        plan_id TEXT NOT NULL,
+        billing_cycle TEXT DEFAULT "monthly",
+        status TEXT DEFAULT "active",
+        expires_at INTEGER NOT NULL,
+        stripe_subscription_id TEXT DEFAULT "",
+        stripe_customer_id TEXT DEFAULT "",
+        created_at INTEGER,
+        updated_at INTEGER,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (plan_id) REFERENCES plans(id)
+    )
+    ''')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_sub_user ON subscriptions(user_id)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_sub_status ON subscriptions(status)')
+
+    # 16. Granular User Permissions Table
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS permissions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        service_name TEXT NOT NULL,
+        enabled INTEGER DEFAULT 1,
+        granted_by TEXT DEFAULT "plan_rule",
+        created_at INTEGER,
+        updated_at INTEGER,
+        UNIQUE(user_id, service_name),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+    ''')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_perm_user ON permissions(user_id)')
+
+    # 17. Payments & Revenue Table (Stripe USD -> Rise Business USD)
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS payments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        amount REAL NOT NULL,
+        currency TEXT DEFAULT "USD",
+        stripe_payment_id TEXT DEFAULT "",
+        stripe_invoice_id TEXT DEFAULT "",
+        stripe_customer_id TEXT DEFAULT "",
+        payment_type TEXT DEFAULT "subscription",
+        plan_id TEXT DEFAULT "",
+        status TEXT DEFAULT "succeeded",
+        settlement_account TEXT DEFAULT "Rise Business USD",
+        created_at INTEGER,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    )
+    ''')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id)')
+
+    # 18. SaaS Activity & Security Audit Logs Table
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS activity_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        action TEXT NOT NULL,
+        details TEXT DEFAULT "{}",
+        ip_address TEXT DEFAULT "",
+        timestamp INTEGER,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+    ''')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_act_logs_user ON activity_logs(user_id)')
     
     # ── Auto-Migration for existing databases ───────────────────────────────
     try:
@@ -269,6 +352,39 @@ def init_db():
         INSERT OR IGNORE INTO affiliate_partners (code, name, category, commission_rate, target_url, created_at)
         VALUES (?, ?, ?, ?, ?, ?)
         ''', (code, name, cat, comm, url, now))
+    conn.commit()
+
+    # Pre-seed SaaS Subscription Plans
+    saas_plans = [
+        ("starter", "Starter Trader", 19.00, 190.00, json.dumps([
+            "Market Dashboard", "BTC, ETH, Gold Market Overview", "Basic AI Assistant (50 prompts/day)",
+            "Economic Calendar", "News Dashboard", "Watchlist (20 assets)", "Mobile Access"
+        ])),
+        ("pro", "Pro Trader", 49.00, 490.00, json.dumps([
+            "Everything in Starter", "Unlimited AI Assistant", "Trading Signals",
+            "AI Market Analysis", "Jarvis Voice Assistant", "Trade Journal", "Risk Calculator",
+            "100 Watchlist Assets", "Email Alerts"
+        ])),
+        ("elite", "Elite Trader", 99.00, 990.00, json.dumps([
+            "Everything in Pro", "Advanced AI Predictions", "Institutional Dashboard",
+            "Order Flow Analysis", "Portfolio Analytics", "API Access", "Webhook Alerts",
+            "Priority Support"
+        ])),
+        ("enterprise", "Enterprise Custom", 499.00, 4990.00, json.dumps([
+            "Unlimited Users", "White-Label Platform", "Dedicated Manager",
+            "Custom Integrations", "SLA Support"
+        ]))
+    ]
+    for pid, pname, mprice, yprice, feats in saas_plans:
+        cursor.execute('''
+        INSERT INTO plans (id, name, monthly_price, yearly_price, features, is_active, created_at)
+        VALUES (?, ?, ?, ?, ?, 1, ?)
+        ON CONFLICT(id) DO UPDATE SET
+            name = excluded.name,
+            monthly_price = excluded.monthly_price,
+            yearly_price = excluded.yearly_price,
+            features = excluded.features
+        ''', (pid, pname, mprice, yprice, feats, now))
     conn.commit()
     
     # Check default super admin
@@ -1438,6 +1554,412 @@ def get_ccxt_exchange_keys(user_id: int, exchange_id: str = None) -> list[dict]:
             "updated_at": r["updated_at"]
         })
     return res
+
+# ── PRODUCTION-READY SAAS SUBSCRIPTION & PERMISSION HELPERS ───────────────────
+
+# Default permissions matrix per plan
+PLAN_PERMISSIONS_MATRIX = {
+    "free": {
+        "dashboard": False,
+        "ai_chat": False,
+        "signals": False,
+        "voice_jarvis": False,
+        "risk_calculator": False,
+        "portfolio_analytics": False,
+        "api_access": False,
+        "white_label": False
+    },
+    "starter": {
+        "dashboard": True,
+        "ai_chat": True, # Limited
+        "signals": False,
+        "voice_jarvis": False,
+        "risk_calculator": False,
+        "portfolio_analytics": False,
+        "api_access": False,
+        "white_label": False
+    },
+    "pro": {
+        "dashboard": True,
+        "ai_chat": True, # Unlimited
+        "signals": True,
+        "voice_jarvis": True,
+        "risk_calculator": True,
+        "portfolio_analytics": False,
+        "api_access": False,
+        "white_label": False
+    },
+    "elite": {
+        "dashboard": True,
+        "ai_chat": True,
+        "signals": True,
+        "voice_jarvis": True,
+        "risk_calculator": True,
+        "portfolio_analytics": True,
+        "api_access": True,
+        "white_label": False
+    },
+    "enterprise": {
+        "dashboard": True,
+        "ai_chat": True,
+        "signals": True,
+        "voice_jarvis": True,
+        "risk_calculator": True,
+        "portfolio_analytics": True,
+        "api_access": True,
+        "white_label": True
+    }
+}
+
+ONE_TIME_ADDONS = {
+    "ai_signal_pack": {"name": "AI Signal Pack", "price_usd": 15.00, "service": "signals"},
+    "gold_strategy_pack": {"name": "Gold Strategy Pack", "price_usd": 25.00, "service": "gold_strategy"},
+    "prop_firm_toolkit": {"name": "Prop Firm Toolkit", "price_usd": 30.00, "service": "prop_toolkit"},
+    "indicator_bundle": {"name": "Premium Indicator Bundle", "price_usd": 49.00, "service": "indicators"},
+    "ai_voice_upgrade": {"name": "AI Voice Upgrade", "price_usd": 20.00, "service": "voice_jarvis"}
+}
+
+def get_all_saas_plans() -> list[dict]:
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM plans WHERE is_active = 1 ORDER BY monthly_price ASC")
+    rows = cursor.fetchall()
+    conn.close()
+    res = []
+    for r in rows:
+        feats = []
+        try:
+            feats = json.loads(r["features"]) if r["features"] else []
+        except Exception:
+            pass
+        res.append({
+            "id": r["id"],
+            "name": r["name"],
+            "monthly_price": r["monthly_price"],
+            "yearly_price": r["yearly_price"],
+            "features": feats
+        })
+    return res
+
+def get_user_subscription(user_id: int) -> dict:
+    conn = get_db()
+    cursor = conn.cursor()
+    now = int(time.time())
+    
+    # Check user role first
+    cursor.execute("SELECT role, plan_name FROM users WHERE id = ?", (user_id,))
+    u = cursor.fetchone()
+    if not u:
+        conn.close()
+        return {"plan_id": "free", "status": "none", "is_active": False, "expires_at": 0}
+    
+    # Super Admin bypasses all subscription locks
+    if u["role"] == "superadmin":
+        conn.close()
+        return {
+            "plan_id": "enterprise",
+            "plan_name": "Enterprise (Super Admin)",
+            "billing_cycle": "unlimited",
+            "status": "active",
+            "is_active": True,
+            "expires_at": now + 315360000, # 10 years
+            "stripe_subscription_id": "SUPERADMIN-BYPASS",
+            "days_remaining": 3650
+        }
+    
+    cursor.execute('''
+    SELECT s.*, p.name as plan_title, p.monthly_price, p.yearly_price
+    FROM subscriptions s
+    LEFT JOIN plans p ON s.plan_id = p.id
+    WHERE s.user_id = ?
+    ORDER BY s.expires_at DESC LIMIT 1
+    ''', (user_id,))
+    sub = cursor.fetchone()
+    conn.close()
+    
+    if not sub:
+        # Check if user has legacy plan_name
+        plan_name = u["plan_name"] or "free"
+        if plan_name in ("starter", "pro", "elite", "enterprise"):
+            return {
+                "plan_id": plan_name,
+                "plan_name": plan_name.capitalize() + " Trader",
+                "billing_cycle": "monthly",
+                "status": "active",
+                "is_active": True,
+                "expires_at": now + (30 * 86400),
+                "stripe_subscription_id": "",
+                "days_remaining": 30
+            }
+        return {"plan_id": "free", "plan_name": "Free / Inactive", "status": "expired", "is_active": False, "expires_at": 0, "days_remaining": 0}
+    
+    is_active = (sub["status"] == "active") and (sub["expires_at"] > now)
+    days_rem = max(0, int((sub["expires_at"] - now) / 86400))
+    
+    return {
+        "id": sub["id"],
+        "plan_id": sub["plan_id"],
+        "plan_name": sub["plan_title"] or sub["plan_id"].capitalize(),
+        "billing_cycle": sub["billing_cycle"],
+        "status": "active" if is_active else ("expired" if sub["expires_at"] <= now else sub["status"]),
+        "is_active": is_active,
+        "expires_at": sub["expires_at"],
+        "stripe_subscription_id": sub["stripe_subscription_id"],
+        "stripe_customer_id": sub["stripe_customer_id"],
+        "days_remaining": days_rem
+    }
+
+def set_user_subscription(user_id: int, plan_id: str, billing_cycle: str = "monthly", duration_days: int = 30, stripe_sub_id: str = "", stripe_cust_id: str = "", status: str = "active") -> dict:
+    conn = get_db()
+    cursor = conn.cursor()
+    now = int(time.time())
+    expires_at = now + (duration_days * 86400)
+    
+    cursor.execute('''
+    INSERT INTO subscriptions (user_id, plan_id, billing_cycle, status, expires_at, stripe_subscription_id, stripe_customer_id, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (user_id, plan_id, billing_cycle, status, expires_at, stripe_sub_id, stripe_cust_id, now, now))
+    sub_id = cursor.lastrowid
+    
+    # Also update users table plan_name
+    cursor.execute("UPDATE users SET plan_name = ? WHERE id = ?", (plan_id, user_id))
+    
+    # Automatically grant standard plan permissions
+    default_perms = PLAN_PERMISSIONS_MATRIX.get(plan_id, PLAN_PERMISSIONS_MATRIX["free"])
+    for s_name, enabled in default_perms.items():
+        cursor.execute('''
+        INSERT INTO permissions (user_id, service_name, enabled, granted_by, created_at, updated_at)
+        VALUES (?, ?, ?, 'plan_rule', ?, ?)
+        ON CONFLICT(user_id, service_name) DO UPDATE SET
+            enabled = excluded.enabled,
+            granted_by = 'plan_rule',
+            updated_at = excluded.updated_at
+        ''', (user_id, s_name, 1 if enabled else 0, now, now))
+    
+    conn.commit()
+    conn.close()
+    return {"status": "ok", "subscription_id": sub_id, "expires_at": expires_at}
+
+def get_user_permissions(user_id: int) -> dict:
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT role, plan_name FROM users WHERE id = ?", (user_id,))
+    u = cursor.fetchone()
+    if not u:
+        conn.close()
+        return PLAN_PERMISSIONS_MATRIX["free"]
+    
+    # Super Admin has ALL permissions permanently
+    if u["role"] == "superadmin":
+        conn.close()
+        all_services = ["dashboard", "ai_chat", "signals", "voice_jarvis", "risk_calculator", "portfolio_analytics", "api_access", "white_label", "ai_signal_pack", "gold_strategy_pack", "prop_firm_toolkit", "indicator_bundle", "ai_voice_upgrade"]
+        return {s: True for s in all_services}
+    
+    sub = get_user_subscription(user_id)
+    plan_id = sub["plan_id"] if sub["is_active"] else "free"
+    base_perms = dict(PLAN_PERMISSIONS_MATRIX.get(plan_id, PLAN_PERMISSIONS_MATRIX["free"]))
+    
+    # Load custom manual overrides or addon permissions from permissions table
+    cursor.execute("SELECT service_name, enabled, granted_by FROM permissions WHERE user_id = ?", (user_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    
+    for r in rows:
+        # Admin manual overrides or add-ons override plan rules
+        if r["granted_by"] in ("admin_manual", "addon_purchase"):
+            base_perms[r["service_name"]] = bool(r["enabled"])
+        elif sub["is_active"]:
+            base_perms[r["service_name"]] = bool(r["enabled"])
+    
+    return base_perms
+
+def check_user_permission(user_id: int, service_name: str) -> bool:
+    perms = get_user_permissions(user_id)
+    return bool(perms.get(service_name, False))
+
+def set_user_permission(user_id: int, service_name: str, enabled: bool, granted_by: str = "admin_manual") -> bool:
+    conn = get_db()
+    cursor = conn.cursor()
+    now = int(time.time())
+    cursor.execute('''
+    INSERT INTO permissions (user_id, service_name, enabled, granted_by, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(user_id, service_name) DO UPDATE SET
+        enabled = excluded.enabled,
+        granted_by = excluded.granted_by,
+        updated_at = excluded.updated_at
+    ''', (user_id, service_name, 1 if enabled else 0, granted_by, now, now))
+    conn.commit()
+    conn.close()
+    return True
+
+def record_saas_payment(user_id: int, amount: float, currency: str = "USD", stripe_payment_id: str = "", status: str = "succeeded", payment_type: str = "subscription", plan_id: str = "", invoice_id: str = "", customer_id: str = "", settlement_account: str = "Rise Business USD") -> int:
+    conn = get_db()
+    cursor = conn.cursor()
+    now = int(time.time())
+    cursor.execute('''
+    INSERT INTO payments (user_id, amount, currency, stripe_payment_id, stripe_invoice_id, stripe_customer_id, payment_type, plan_id, status, settlement_account, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (user_id, amount, currency, stripe_payment_id, invoice_id, customer_id, payment_type, plan_id, status, settlement_account, now))
+    pid = cursor.lastrowid
+    
+    # Also log in sales_transactions for unified reporting
+    cursor.execute('''
+    INSERT INTO sales_transactions (user_id, amount_usd, plan_name, payment_method, status, tx_hash, created_at)
+    VALUES (?, ?, ?, 'stripe_usd', ?, ?, ?)
+    ''', (user_id, amount, plan_id or payment_type, status, stripe_payment_id, now))
+    
+    conn.commit()
+    conn.close()
+    return pid
+
+def get_saas_metrics() -> dict:
+    conn = get_db()
+    cursor = conn.cursor()
+    now = int(time.time())
+    
+    # Total revenue from successful payments
+    cursor.execute("SELECT SUM(amount) FROM payments WHERE status = 'succeeded'")
+    total_rev = cursor.fetchone()[0] or 0.0
+    
+    # Total Active Subscriptions & MRR calculation
+    cursor.execute('''
+    SELECT s.plan_id, s.billing_cycle, COUNT(*) as cnt, p.monthly_price, p.yearly_price
+    FROM subscriptions s
+    LEFT JOIN plans p ON s.plan_id = p.id
+    WHERE s.status = 'active' AND s.expires_at > ?
+    GROUP BY s.plan_id, s.billing_cycle
+    ''', (now,))
+    sub_rows = cursor.fetchall()
+    
+    active_subs = 0
+    mrr = 0.0
+    for r in sub_rows:
+        cnt = r["cnt"]
+        active_subs += cnt
+        m_price = r["monthly_price"] or 0.0
+        y_price = r["yearly_price"] or 0.0
+        if r["billing_cycle"] == "yearly":
+            mrr += (y_price / 12.0) * cnt
+        else:
+            mrr += m_price * cnt
+            
+    arr = mrr * 12.0
+    
+    # Total users
+    cursor.execute("SELECT COUNT(*) FROM users")
+    total_users = cursor.fetchone()[0] or 0
+    
+    # Failed payments
+    cursor.execute("SELECT COUNT(*), SUM(amount) FROM payments WHERE status = 'failed'")
+    failed_row = cursor.fetchone()
+    failed_count = failed_row[0] or 0
+    failed_amount = failed_row[1] or 0.0
+    
+    # Churn calculation (expired / canceled in last 30 days)
+    thirty_days_ago = now - (30 * 86400)
+    cursor.execute("SELECT COUNT(*) FROM subscriptions WHERE (status = 'canceled' OR expires_at <= ?) AND created_at >= ?", (now, thirty_days_ago))
+    churned_subs = cursor.fetchone()[0] or 0
+    churn_rate = round((churned_subs / max(1, active_subs + churned_subs)) * 100, 1)
+    
+    # Recent payments
+    cursor.execute('''
+    SELECT p.*, u.email, u.name 
+    FROM payments p
+    LEFT JOIN users u ON p.user_id = u.id
+    ORDER BY p.created_at DESC LIMIT 15
+    ''')
+    recent_payments = [dict(r) for r in cursor.fetchall()]
+    
+    conn.close()
+    return {
+        "total_revenue_usd": round(total_rev, 2),
+        "mrr_usd": round(mrr, 2),
+        "arr_usd": round(arr, 2),
+        "active_subscriptions": active_subs,
+        "total_users": total_users,
+        "churn_rate_pct": churn_rate,
+        "failed_payments_count": failed_count,
+        "failed_payments_amount": round(failed_amount, 2),
+        "settlement_account": "Rise Business USD Account",
+        "recent_payments": recent_payments
+    }
+
+def get_saas_users_admin() -> list[dict]:
+    conn = get_db()
+    cursor = conn.cursor()
+    now = int(time.time())
+    
+    cursor.execute('''
+    SELECT u.id, u.email, u.name, u.role, u.is_active, u.created_at, u.country, u.plan_name,
+           s.id as sub_id, s.plan_id as active_plan_id, s.status as sub_status, s.expires_at, s.billing_cycle,
+           p.name as plan_title
+    FROM users u
+    LEFT JOIN subscriptions s ON u.id = s.user_id AND s.id = (
+        SELECT id FROM subscriptions WHERE user_id = u.id ORDER BY expires_at DESC LIMIT 1
+    )
+    LEFT JOIN plans p ON s.plan_id = p.id
+    ORDER BY u.created_at DESC
+    ''')
+    users = cursor.fetchall()
+    
+    res = []
+    for u in users:
+        uid = u["id"]
+        # Fetch total spent
+        cursor.execute("SELECT SUM(amount) FROM payments WHERE user_id = ? AND status = 'succeeded'", (uid,))
+        tot_spent = cursor.fetchone()[0] or 0.0
+        
+        # Fetch individual permissions
+        cursor.execute("SELECT service_name, enabled, granted_by FROM permissions WHERE user_id = ?", (uid,))
+        perms_rows = cursor.fetchall()
+        perms_dict = {r["service_name"]: bool(r["enabled"]) for r in perms_rows}
+        
+        # Calculate status & plan
+        is_sub_active = bool(u["sub_status"] == "active" and u["expires_at"] and u["expires_at"] > now)
+        if u["role"] == "superadmin":
+            plan_label = "Enterprise (Super Admin)"
+            status_label = "ACTIVE (UNRESTRICTED)"
+        elif is_sub_active:
+            plan_label = u["plan_title"] or (u["active_plan_id"].capitalize() + " Trader")
+            status_label = "ACTIVE"
+        else:
+            plan_label = "No Active Plan"
+            status_label = "EXPIRED / INACTIVE"
+            
+        res.append({
+            "id": uid,
+            "email": u["email"],
+            "name": u["name"] or u["email"].split("@")[0],
+            "role": u["role"],
+            "is_active": bool(u["is_active"]),
+            "plan_id": u["active_plan_id"] if is_sub_active else "free",
+            "plan_name": plan_label,
+            "status": status_label,
+            "expires_at": u["expires_at"] or 0,
+            "days_remaining": max(0, int(((u["expires_at"] or 0) - now) / 86400)) if is_sub_active else 0,
+            "total_spent_usd": round(tot_spent, 2),
+            "created_at": u["created_at"],
+            "permissions": perms_dict
+        })
+        
+    conn.close()
+    return res
+
+def log_saas_activity(user_id: int, action: str, details: dict = None, ip_address: str = ""):
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        now = int(time.time())
+        cursor.execute('''
+        INSERT INTO activity_logs (user_id, action, details, ip_address, timestamp)
+        VALUES (?, ?, ?, ?, ?)
+        ''', (user_id, action, json.dumps(details or {}), ip_address, now))
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
 
 # Initialize on import
 init_db()

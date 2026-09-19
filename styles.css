@@ -2022,15 +2022,12 @@ body.neural-core-os {
   color: var(--neon-green);
   box-shadow: 0 0 16px rgba(0, 240, 144, 0.32);
 }
-  color: var(--neon-green);
-  box-shadow: 0 0 15px rgba(0, 240, 144, 0.3);
-}
 .trader-sub-section {
-  display: none;
-  animation: fadeIn 0.25s ease;
+  display: none !important;
 }
 .trader-sub-section.active {
-  display: block;
+  display: block !important;
+  animation: fadeIn 0.25s ease;
 }
 .trader-vault-card {
   background: rgba(6, 16, 32, 0.85);
