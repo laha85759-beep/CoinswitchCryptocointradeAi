@@ -67,7 +67,7 @@ async function fetchLiveTickerTape() {
         const colorClass = isUp ? "green" : "red-text";
         const sign = isUp ? "+" : "";
         return `
-          <span class="ticker-item" onclick="jumpToProChartSymbol('${t.symbol}')" style="cursor:pointer;" title="Click to view chart">
+          <span class="ticker-item" onclick="openCoinDetailsModal('${t.symbol}')" style="cursor:pointer;" title="Inspect 3D Model &amp; Quant Intel for ${t.symbol}">
             <span class="sym-ico">${ico}</span>
             <strong>${t.symbol}</strong>
             ${t.price_formatted}
@@ -1403,8 +1403,11 @@ function renderTraderHeatmap(coins) {
     const isBull = sig.includes("bull") || sig.includes("catalyst") || sig.includes("cluster");
     const fmt = p >= 1000 ? `$${p.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}` : (p >= 1 ? `$${p.toFixed(4)}` : `$${p.toFixed(6)}`);
     return `
-      <div class="tsm-rwa-card" style="cursor:pointer;" onclick="jumpToProChartSymbol('${sym}')" title="Click to view ${sym} on Pro Chart">
-        <div class="tsm-rwa-ticker">${sym}</div>
+      <div class="tsm-rwa-card" style="cursor:pointer;" onclick="openCoinDetailsModal('${sym}')" title="Inspect ${sym} 3D Model &amp; Quant Intel">
+        <div class="tsm-rwa-ticker" style="display:flex; justify-content:space-between; align-items:center;">
+          <span>${sym}</span>
+          <span style="font-size:10px; color:var(--neon-cyan);">🔮 3D</span>
+        </div>
         <div class="tsm-rwa-name font-mono">${fmt}</div>
         <div class="tsm-rwa-sector" style="font-size:9.5px;">Signal: ${sig.toUpperCase()}</div>
         <div class="tsm-rwa-status ${isBull ? 'green' : 'gold'}">${isBull ? 'ARMED BREAKOUT' : 'MONITORING'}</div>
@@ -5673,91 +5676,363 @@ window.handleFloatingNodeClick = function(symbol) {
   speakAssetIntel(symbol);
 };
 
+let currentModalIcon = "🪙";
+let coin3DScene = null;
+let coin3DCamera = null;
+let coin3DRenderer = null;
+let coin3DMeshGroup = null;
+let coin3DCylinder = null;
+let coin3DOrbitRings = [];
+let coin3DParticles = null;
+let coin3DAnimId = null;
+let coin3DIsSpinning = true;
+let coin3DTheme = "gold";
+let coin3DPointerDown = false;
+let coin3DPrevPointer = { x: 0, y: 0 };
+
+const COIN_3D_THEMES = {
+  gold: { rim: 0xffd700, bg: "#ffd700", text: "#060e1c", light: 0xffd700, metal: 0.9, rough: 0.18 },
+  cyan: { rim: 0x00d4ff, bg: "#00d4ff", text: "#060e1c", light: 0x00d4ff, metal: 0.85, rough: 0.2 },
+  green: { rim: 0x00f090, bg: "#00f090", text: "#060e1c", light: 0x00f090, metal: 0.85, rough: 0.2 },
+  purple: { rim: 0xbf5af2, bg: "#bf5af2", text: "#ffffff", light: 0xbf5af2, metal: 0.85, rough: 0.2 }
+};
+
+function createCoinTexture(symbol, icon, themeKey) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext("2d");
+  const th = COIN_3D_THEMES[themeKey] || COIN_3D_THEMES.gold;
+
+  // Background circle
+  ctx.fillStyle = "#0a1828";
+  ctx.fillRect(0, 0, 512, 512);
+
+  const grad = ctx.createRadialGradient(256, 256, 50, 256, 256, 250);
+  grad.addColorStop(0, th.bg);
+  grad.addColorStop(0.7, "#081424");
+  grad.addColorStop(1, "#020812");
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(256, 256, 240, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Outer Tech Rings
+  ctx.strokeStyle = th.bg;
+  ctx.lineWidth = 10;
+  ctx.beginPath();
+  ctx.arc(256, 256, 230, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.lineWidth = 3;
+  ctx.setLineDash([12, 8, 4, 8]);
+  ctx.beginPath();
+  ctx.arc(256, 256, 205, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Micro circuit ticks
+  for (let i = 0; i < 36; i++) {
+    const angle = (i * 10 * Math.PI) / 180;
+    const r1 = i % 3 === 0 ? 185 : 195;
+    const r2 = 205;
+    ctx.beginPath();
+    ctx.moveTo(256 + Math.cos(angle) * r1, 256 + Math.sin(angle) * r1);
+    ctx.lineTo(256 + Math.cos(angle) * r2, 256 + Math.sin(angle) * r2);
+    ctx.strokeStyle = "rgba(255,255,255,0.4)";
+    ctx.lineWidth = i % 3 === 0 ? 3 : 1.5;
+    ctx.stroke();
+  }
+
+  // Center Glow Shield
+  ctx.fillStyle = "rgba(0,0,0,0.6)";
+  ctx.beginPath();
+  ctx.arc(256, 256, 160, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = th.bg;
+  ctx.lineWidth = 4;
+  ctx.stroke();
+
+  // Central Icon / Emoji / Logo
+  ctx.font = "bold 92px sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#ffffff";
+  ctx.shadowColor = th.bg;
+  ctx.shadowBlur = 18;
+  ctx.fillText(icon || "🪙", 256, 215);
+
+  // Symbol Text
+  ctx.font = "900 46px Orbitron, sans-serif";
+  ctx.fillStyle = th.bg;
+  ctx.shadowBlur = 12;
+  const cleanSym = (symbol || "ASSET").split("/")[0].replace(/[\(\)]/g, "");
+  ctx.fillText(cleanSym, 256, 320);
+
+  // Bottom subtitle
+  ctx.font = "700 20px 'Roboto Mono', monospace";
+  ctx.fillStyle = "rgba(255,255,255,0.7)";
+  ctx.shadowBlur = 0;
+  ctx.fillText("QUANT AI 3D", 256, 365);
+
+  return new THREE.CanvasTexture(canvas);
+}
+
+function initCoin3DScene(symbol, icon) {
+  const canvas = document.getElementById("coin3DCanvas");
+  if (!canvas || typeof THREE === "undefined") return;
+
+  const width = canvas.parentElement ? canvas.parentElement.clientWidth : 300;
+  const height = canvas.parentElement ? canvas.parentElement.clientHeight : 260;
+
+  if (coin3DAnimId) {
+    cancelAnimationFrame(coin3DAnimId);
+    coin3DAnimId = null;
+  }
+
+  if (!coin3DRenderer) {
+    coin3DScene = new THREE.Scene();
+    coin3DCamera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
+    coin3DCamera.position.set(0, 0, 14);
+
+    coin3DRenderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+    coin3DRenderer.setSize(width, height);
+    coin3DRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+    // Lights
+    const ambLight = new THREE.AmbientLight(0xffffff, 0.9);
+    coin3DScene.add(ambLight);
+
+    const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.2);
+    dirLight1.position.set(5, 8, 10);
+    coin3DScene.add(dirLight1);
+
+    const dirLight2 = new THREE.DirectionalLight(0x00d4ff, 0.8);
+    dirLight2.position.set(-8, -6, 5);
+    coin3DScene.add(dirLight2);
+
+    // Mesh Group
+    coin3DMeshGroup = new THREE.Group();
+    coin3DScene.add(coin3DMeshGroup);
+
+    // Pointer Drag Listeners
+    canvas.addEventListener("pointerdown", (e) => {
+      coin3DPointerDown = true;
+      coin3DPrevPointer = { x: e.clientX, y: e.clientY };
+    });
+    window.addEventListener("pointerup", () => { coin3DPointerDown = false; });
+    window.addEventListener("pointermove", (e) => {
+      if (!coin3DPointerDown || !coin3DMeshGroup) return;
+      const dx = e.clientX - coin3DPrevPointer.x;
+      const dy = e.clientY - coin3DPrevPointer.y;
+      coin3DMeshGroup.rotation.y += dx * 0.012;
+      coin3DMeshGroup.rotation.x += dy * 0.012;
+      coin3DPrevPointer = { x: e.clientX, y: e.clientY };
+    });
+  } else {
+    coin3DRenderer.setSize(width, height);
+    if (coin3DCamera) {
+      coin3DCamera.aspect = width / height;
+      coin3DCamera.updateProjectionMatrix();
+    }
+  }
+
+  // Clear previous mesh objects
+  while (coin3DMeshGroup.children.length > 0) {
+    const obj = coin3DMeshGroup.children[0];
+    coin3DMeshGroup.remove(obj);
+    if (obj.geometry) obj.geometry.dispose();
+  }
+
+  const th = COIN_3D_THEMES[coin3DTheme] || COIN_3D_THEMES.gold;
+  const coinTex = createCoinTexture(symbol, icon, coin3DTheme);
+
+  // Materials: [Side, Top, Bottom]
+  const rimMat = new THREE.MeshStandardMaterial({
+    color: th.rim,
+    metalness: th.metal,
+    roughness: th.rough,
+    wireframe: false
+  });
+  const faceMat = new THREE.MeshStandardMaterial({
+    map: coinTex,
+    metalness: 0.25,
+    roughness: 0.35
+  });
+
+  // 3D Cylinder Coin
+  const cylGeo = new THREE.CylinderGeometry(3.6, 3.6, 0.48, 48, 2);
+  coin3DCylinder = new THREE.Mesh(cylGeo, [rimMat, faceMat, faceMat]);
+  coin3DCylinder.rotation.x = Math.PI / 2.3;
+  coin3DMeshGroup.add(coin3DCylinder);
+
+  // Outer Hologram Techno Rings
+  const ringMat1 = new THREE.MeshBasicMaterial({ color: th.rim, wireframe: true, transparent: true, opacity: 0.5 });
+  const ring1 = new THREE.Mesh(new THREE.TorusGeometry(4.8, 0.035, 16, 64), ringMat1);
+  coin3DMeshGroup.add(ring1);
+
+  const ringMat2 = new THREE.MeshBasicMaterial({ color: 0x00d4ff, wireframe: true, transparent: true, opacity: 0.35 });
+  const ring2 = new THREE.Mesh(new THREE.TorusGeometry(5.4, 0.025, 16, 72), ringMat2);
+  ring2.rotation.x = Math.PI / 3;
+  coin3DMeshGroup.add(ring2);
+
+  coin3DOrbitRings = [ring1, ring2];
+
+  // Quantum Particle Cloud
+  const partCount = 45;
+  const partGeo = new THREE.BufferGeometry();
+  const partPos = new Float32Array(partCount * 3);
+  for (let i = 0; i < partCount * 3; i += 3) {
+    const r = 4.2 + Math.random() * 2.5;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = (Math.random() - 0.5) * Math.PI;
+    partPos[i] = r * Math.cos(phi) * Math.cos(theta);
+    partPos[i + 1] = r * Math.sin(phi);
+    partPos[i + 2] = r * Math.cos(phi) * Math.sin(theta);
+  }
+  partGeo.setAttribute("position", new THREE.BufferAttribute(partPos, 3));
+  const partMat = new THREE.PointsMaterial({ color: th.rim, size: 0.12, transparent: true, opacity: 0.8 });
+  coin3DParticles = new THREE.Points(partGeo, partMat);
+  coin3DMeshGroup.add(coin3DParticles);
+
+  // Animation Loop
+  let clock = new THREE.Clock();
+  function animate() {
+    coin3DAnimId = requestAnimationFrame(animate);
+    const dt = clock.getDelta();
+
+    if (coin3DMeshGroup && coin3DIsSpinning && !coin3DPointerDown) {
+      coin3DMeshGroup.rotation.y += 0.85 * dt;
+      coin3DMeshGroup.rotation.x = Math.sin(clock.getElapsedTime() * 0.8) * 0.18 + 0.1;
+    }
+    if (ring1) ring1.rotation.z += 0.6 * dt;
+    if (ring2) ring2.rotation.y -= 0.5 * dt;
+    if (coin3DParticles) coin3DParticles.rotation.y += 0.3 * dt;
+
+    coin3DRenderer.render(coin3DScene, coin3DCamera);
+  }
+  animate();
+}
+
+function switchCoin3DTheme(themeKey) {
+  coin3DTheme = themeKey;
+  document.querySelectorAll(".c3d-theme-btn").forEach(b => {
+    if (b.classList.contains(themeKey)) b.classList.add("active");
+    else b.classList.remove("active");
+  });
+  if (currentModalCoin) {
+    const sym = currentModalCoin.split(" ")[0].replace(/[\(\)]/g, "");
+    initCoin3DScene(sym, currentModalIcon || "🪙");
+  }
+}
+window.switchCoin3DTheme = switchCoin3DTheme;
+
+function toggleCoin3DSpin() {
+  coin3DIsSpinning = !coin3DIsSpinning;
+  const btn = document.getElementById("btnToggleCoin3DSpin");
+  if (btn) {
+    btn.textContent = coin3DIsSpinning ? "🔄 Auto-Spin" : "⏸️ Paused";
+    btn.style.color = coin3DIsSpinning ? "var(--neon-green)" : "var(--text-dim)";
+  }
+}
+window.toggleCoin3DSpin = toggleCoin3DSpin;
+
 window.openCoinDetailsModal = function(symbol) {
   const modal = document.getElementById("coinDetailsModal");
   if (!modal) return;
-  currentModalCoin = symbol || "BTC/USDT";
+  const cleanSym = (symbol || "BTC").toUpperCase().replace(/[\(\)]/g, "").trim();
+  currentModalCoin = cleanSym;
 
-  const isBtc = symbol.includes("BTC");
-  const isEth = symbol.includes("ETH");
-  const isSol = symbol.includes("SOL");
-  const isXrp = symbol.includes("XRP");
-  const isNifty = symbol.includes("NIFTY");
+  // Metadata Mapping for ANY coin/asset
+  const ASSET_META = {
+    "BTC": { name: "Bitcoin", icon: "₿", cat: "CRYPTO BENCHMARK • DUAL-EXCHANGE LIVE", price: 78635.70, chg: "+1.85%", rsi: 64.2, st: "STRONG BULL 🟢", conf: "94%" },
+    "ETH": { name: "Ethereum", icon: "Ξ", cat: "LAYER-1 SMART CONTRACTS • DUAL-EXCHANGE LIVE", price: 2474.90, chg: "+2.45%", rsi: 66.8, st: "BULLISH 🟢", conf: "92%" },
+    "SOL": { name: "Solana", icon: "◎", cat: "HIGH-THROUGHPUT L1 • DUAL-EXCHANGE LIVE", price: 103.11, chg: "+4.12%", rsi: 68.4, st: "STRONG BULL 🟢", conf: "95%" },
+    "XRP": { name: "Ripple", icon: "✕", cat: "CROSS-BORDER LIQUIDITY • DUAL-EXCHANGE LIVE", price: 1.39, chg: "+1.40%", rsi: 58.2, st: "BULLISH 🟢", conf: "88%" },
+    "DOGE": { name: "Dogecoin", icon: "Ð", cat: "MEME ASSET • HIGH MOMENTUM SPIKE", price: 0.0898, chg: "+5.12%", rsi: 72.1, st: "CATALYST ACCELERATION 🟢", conf: "90%" },
+    "ADA": { name: "Cardano", icon: "₳", cat: "PROOF-OF-STAKE L1 • LIQUIDITY CLUSTER", price: 0.218, chg: "+0.85%", rsi: 52.4, st: "MEDIAN RANGE 🟡", conf: "86%" },
+    "DOT": { name: "Polkadot", icon: "●", cat: "INTEROPERABILITY NETWORK • DUAL-EXCHANGE LIVE", price: 1.068, chg: "+1.10%", rsi: 54.0, st: "MEDIAN RANGE 🟡", conf: "85%" },
+    "SHIB": { name: "Shiba Inu", icon: "🐕", cat: "MEME DERIVATIVE • ACCUMULATION", price: 0.0000165, chg: "+2.15%", rsi: 60.5, st: "BULLISH 🟢", conf: "87%" },
+    "AVAX": { name: "Avalanche", icon: "🔺", cat: "SUBNET CONSENSUS L1 • DUAL-EXCHANGE LIVE", price: 8.06, chg: "+1.65%", rsi: 58.6, st: "BULLISH 🟢", conf: "89%" },
+    "NEAR": { name: "NEAR Protocol", icon: "Ⓝ", cat: "SHARDED AI COMPUTING • DUAL-EXCHANGE LIVE", price: 2.287, chg: "+3.45%", rsi: 65.2, st: "STRONG BULL 🟢", conf: "91%" },
+    "LINK": { name: "Chainlink", icon: "⬡", cat: "DECENTRALIZED ORACLE NETWORK", price: 12.689, chg: "+1.95%", rsi: 59.8, st: "BULLISH 🟢", conf: "90%" },
+    "SUI": { name: "Sui Network", icon: "💧", cat: "MOVE-BASED L1 • BREAKOUT CLUSTER", price: 0.819, chg: "+4.80%", rsi: 71.3, st: "BREAKOUT MOMENTUM 🟢", conf: "93%" },
+    "APT": { name: "Aptos", icon: "▲", cat: "MOVE ECOSYSTEM • HIGH VOLUME", price: 0.631, chg: "+3.20%", rsi: 63.4, st: "BULLISH 🟢", conf: "89%" },
+    "PEPE": { name: "Pepe", icon: "🐸", cat: "VOLATILITY CATALYST • MEME DERIVATIVE", price: 0.0000088, chg: "+6.40%", rsi: 74.5, st: "SUPER BREAKOUT 🟢", conf: "94%" },
+    "FLOKI": { name: "Floki", icon: "⚔️", cat: "GAMING & MEME ECOSYSTEM", price: 0.000145, chg: "+2.85%", rsi: 61.2, st: "BULLISH 🟢", conf: "88%" },
+    "WIF": { name: "dogwifhat", icon: "🎩", cat: "SOLANA MEME DERIVATIVE", price: 0.216, chg: "+5.70%", rsi: 69.8, st: "HIGH VOLATILITY 🟢", conf: "91%" },
+    "BONK": { name: "Bonk", icon: "🐶", cat: "COMMUNITY LIQUIDITY POOL", price: 0.000021, chg: "+3.90%", rsi: 62.4, st: "BULLISH 🟢", conf: "88%" },
+    "AIOZ": { name: "AIOZ Network", icon: "⚡", cat: "DEPIN AI STREAMING • PRE-PUMP ACCUMULATION", price: 6.252, chg: "+8.45%", rsi: 76.2, st: "EARLY BREAKOUT CONFIRMED 🟢", conf: "96%" },
+    "MOODENG": { name: "Moo Deng", icon: "🦛", cat: "VIRAL MEME DERIVATIVE • DUAL-EXCHANGE LIVE", price: 0.0443, chg: "+7.20%", rsi: 73.5, st: "HIGH VOLATILITY 🟢", conf: "92%" },
+    "POPCAT": { name: "Popcat", icon: "🐱", cat: "SOLANA MEME DERIVATIVE", price: 0.0520, chg: "+4.15%", rsi: 67.0, st: "BULLISH 🟢", conf: "90%" },
+    "XAUT": { name: "Tether Gold", icon: "🟡", cat: "RWA COMMODITY • PHYSICAL GOLD BACKED", price: 4422.48, chg: "+0.95%", rsi: 63.8, st: "SAFE HAVEN BULL 🟢", conf: "95%" },
+    "GOLD": { name: "Spot Gold (XAU/USD)", icon: "🟡", cat: "MACRO COMMODITY • GLOBAL SAFE HAVEN", price: 2942.50, chg: "+0.82%", rsi: 62.4, st: "INSTITUTIONAL ACCUMULATION 🟢", conf: "94%" },
+    "SILVER": { name: "Spot Silver (XAG/USD)", icon: "⚪", cat: "INDUSTRIAL PRECIOUS METAL", price: 33.15, chg: "+1.65%", rsi: 65.1, st: "BULLISH BREAKOUT 🟢", conf: "91%" },
+    "CRUDE": { name: "Crude Oil (WTI)", icon: "🛢️", cat: "ENERGY COMMODITY • GLOBAL MACRO", price: 69.85, chg: "+1.42%", rsi: 58.7, st: "MACRO REBOUND 🟢", conf: "89%" },
+    "NIFTY": { name: "NIFTY 50 Index", icon: "🏛", cat: "INDIAN BENCHMARK • NSE DERIVATIVES LIVE", price: 23347.25, chg: "+0.56%", rsi: 61.5, st: "CALL BUILDUP BULLISH 🟢", conf: "93%" },
+    "BANKNIFTY": { name: "BANK NIFTY Index", icon: "🏦", cat: "INDIAN BANKING BENCHMARK • NSE F&O", price: 49820.50, chg: "+0.78%", rsi: 64.0, st: "STRONG BANKING ACCUMULATION 🟢", conf: "94%" },
+    "RELIANCE": { name: "Reliance Industries", icon: "🏢", cat: "INDIAN LARGE CAP • ENERGY & TELECOM", price: 1245.80, chg: "+1.15%", rsi: 60.2, st: "BULLISH 🟢", conf: "91%" },
+    "HDFCBANK": { name: "HDFC Bank", icon: "💳", cat: "INDIAN BANKING LEADER • HIGH WEIGHTAGE", price: 1680.40, chg: "+0.92%", rsi: 59.4, st: "BULLISH 🟢", conf: "90%" }
+  };
 
-  let icon = "🪙";
-  let title = `${symbol} QUANT INTELLIGENCE`;
-  let cat = "CRYPTO ASSET • DUAL-EXCHANGE LIVE";
-  let spot = "$77,264.28";
-  let fut = "$77,236.90";
-  let basis = "Δ -$27.38 (-0.035%)";
-  let chg = "+1.37% 🟢";
-  let supertrend = "BULLISH 🟢";
-  let rsi = "62.4 (STRONG BUY)";
-  let conf = "94% CONVICTION";
-  let setupText = "Target long scalp entry on pullback with dynamic trailing ratchet stop. High institutional order book support.";
-  let entry = "$77,100";
-  let target = "$78,200";
-  let sl = "$76,400";
+  // Find meta
+  const baseKey = Object.keys(ASSET_META).find(k => cleanSym.includes(k)) || "BTC";
+  const meta = ASSET_META[baseKey] || {
+    name: cleanSym,
+    icon: "🪙",
+    cat: "MULTI-MARKET ASSET • QUANT MODEL LIVE",
+    price: 100.0,
+    chg: "+1.50%",
+    rsi: 60.0,
+    st: "BULLISH 🟢",
+    conf: "90%"
+  };
 
-  if (isBtc) {
-    icon = "₿";
-    title = "BITCOIN (BTC/USDT)";
-    entry = "$77,100"; target = "$78,500"; sl = "$76,400";
-  } else if (isEth) {
-    icon = "Ξ";
-    title = "ETHEREUM (ETH/USDT)";
-    spot = "$2,485.50"; fut = "$2,483.20"; basis = "Δ -$2.30 (-0.09%)"; chg = "+2.45% 🟢";
-    supertrend = "BULLISH 🟢"; rsi = "65.8 (BUY)"; conf = "92% CONVICTION";
-    entry = "$2,460"; target = "$2,580"; sl = "$2,410";
-    setupText = "Momentum breakout above key 4-hour resistance. Trailing risk ratchet enabled.";
-  } else if (isSol) {
-    icon = "◎";
-    title = "SOLANA (SOL/USDT)";
-    spot = "$184.20"; fut = "$184.05"; basis = "Δ -$0.15 (-0.08%)"; chg = "+4.12% 🟢";
-    supertrend = "STRONG BULL 🟢"; rsi = "68.2 (BUY)"; conf = "95% CONVICTION";
-    entry = "$182.00"; target = "$194.50"; sl = "$177.00";
-    setupText = "Aggressive order book absorption at VWAP. Target Fibonacci extension level.";
-  } else if (isXrp) {
-    icon = "✕";
-    title = "RIPPLE (XRP/USDT)";
-    spot = "$0.5820"; fut = "$0.5815"; basis = "Δ -$0.0005"; chg = "+1.85% 🟢";
-    supertrend = "BULLISH 🟢"; rsi = "58.0 (BUY)"; conf = "88% CONVICTION";
-    entry = "$0.5750"; target = "$0.6200"; sl = "$0.5580";
-    setupText = "Accumulation phase near institutional liquidity pool. Trailing stop 1.2%.";
-  } else if (isNifty) {
-    icon = "🏛";
-    title = "NIFTY 50 INDEX";
-    cat = "INDIAN BENCHMARK • NSE DERIVATIVES";
-    spot = "₹23,347.25"; fut = "₹23,380.00"; basis = "Δ +32.75 (+0.14%)"; chg = "+0.56% 🟢";
-    supertrend = "BULLISH 🟢"; rsi = "61.5 (BULLISH)"; conf = "93% CONVICTION";
-    entry = "₹23,300"; target = "₹23,550"; sl = "₹23,180";
-    setupText = "Nifty 50 Call buildup with strong Put writing support at 23,300. Bullish bias.";
-  }
+  currentModalIcon = meta.icon;
 
-  const elIcon = document.getElementById("cmodal-icon"); if (elIcon) elIcon.textContent = icon;
-  const elTitle = document.getElementById("cmodal-title"); if (elTitle) elTitle.textContent = title;
-  const elCat = document.getElementById("cmodal-cat"); if (elCat) elCat.textContent = cat;
-  const elSpot = document.getElementById("cmodal-spot"); if (elSpot) elSpot.textContent = spot;
-  const elFut = document.getElementById("cmodal-fut"); if (elFut) elFut.textContent = fut;
-  const elBasis = document.getElementById("cmodal-basis"); if (elBasis) elBasis.textContent = basis;
-  const elChg = document.getElementById("cmodal-chg"); if (elChg) elChg.textContent = chg;
-  const elSt = document.getElementById("cmodal-supertrend"); if (elSt) elSt.textContent = supertrend;
-  const elRsi = document.getElementById("cmodal-rsi"); if (elRsi) elRsi.textContent = rsi;
-  const elConf = document.getElementById("cmodal-confidence"); if (elConf) elConf.textContent = conf;
-  const elSetup = document.getElementById("cmodal-setup-text"); if (elSetup) elSetup.textContent = setupText;
-  const elEntry = document.getElementById("cmodal-entry"); if (elEntry) elEntry.textContent = entry;
-  const elTarget = document.getElementById("cmodal-target"); if (elTarget) elTarget.textContent = target;
-  const elSl = document.getElementById("cmodal-sl"); if (elSl) elSl.textContent = sl;
+  const spotFormatted = typeof meta.price === "number" ? (meta.price > 100 ? "$" + meta.price.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2}) : "$" + meta.price) : meta.price;
+  const futPrice = typeof meta.price === "number" ? (meta.price * 0.9996) : meta.price;
+  const futFormatted = typeof futPrice === "number" ? (futPrice > 100 ? "$" + futPrice.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2}) : "$" + futPrice.toFixed(4)) : futPrice;
+  const entryVal = typeof meta.price === "number" ? "$" + (meta.price * 0.995).toFixed(meta.price > 50 ? 2 : 4) : "$99.50";
+  const targetVal = typeof meta.price === "number" ? "$" + (meta.price * 1.035).toFixed(meta.price > 50 ? 2 : 4) : "$103.50";
+  const slVal = typeof meta.price === "number" ? "$" + (meta.price * 0.985).toFixed(meta.price > 50 ? 2 : 4) : "$98.50";
+
+  const elIcon = document.getElementById("cmodal-icon"); if (elIcon) elIcon.textContent = meta.icon;
+  const elTitle = document.getElementById("cmodal-title"); if (elTitle) elTitle.textContent = `${meta.name.toUpperCase()} (${cleanSym})`;
+  const elCat = document.getElementById("cmodal-cat"); if (elCat) elCat.textContent = meta.cat;
+  const elSpot = document.getElementById("cmodal-spot"); if (elSpot) elSpot.textContent = spotFormatted;
+  const elFut = document.getElementById("cmodal-fut"); if (elFut) elFut.textContent = futFormatted;
+  const elBasis = document.getElementById("cmodal-basis"); if (elBasis) elBasis.textContent = "Δ -0.04% (EQUILIBRIUM)";
+  const elChg = document.getElementById("cmodal-chg"); if (elChg) elChg.textContent = `${meta.chg} 🟢`;
+  const elSt = document.getElementById("cmodal-supertrend"); if (elSt) elSt.textContent = meta.st;
+  const elRsi = document.getElementById("cmodal-rsi"); if (elRsi) elRsi.textContent = `${meta.rsi} (AI CONFIRMED)`;
+  const elConf = document.getElementById("cmodal-confidence"); if (elConf) elConf.textContent = `${meta.conf} CONVICTION`;
+  const elSetup = document.getElementById("cmodal-setup-text"); if (elSetup) elSetup.textContent = `High-conviction ${meta.name} setup based on order flow delta imbalance, multi-agent sentiment, and volume breakout trajectory.`;
+  const elEntry = document.getElementById("cmodal-entry"); if (elEntry) elEntry.textContent = entryVal;
+  const elTarget = document.getElementById("cmodal-target"); if (elTarget) elTarget.textContent = targetVal;
+  const elSl = document.getElementById("cmodal-sl"); if (elSl) elSl.textContent = slVal;
+  const el3DTag = document.getElementById("cmodal-3d-tag"); if (el3DTag) el3DTag.textContent = cleanSym;
 
   modal.style.display = "flex";
+
+  // Initialize/Render 3D Scene
+  setTimeout(() => {
+    initCoin3DScene(cleanSym, meta.icon);
+  }, 50);
 };
 
 window.closeCoinDetailsModal = function() {
   const modal = document.getElementById("coinDetailsModal");
   if (modal) modal.style.display = "none";
+  if (coin3DAnimId) {
+    cancelAnimationFrame(coin3DAnimId);
+    coin3DAnimId = null;
+  }
 };
 
 window.handleCoinDetailsBackdropClick = function(e) {
+  if (e.target.id === "coinDetailsModal") closeCoinDetailsModal();
+};
   if (e.target.id === "coinDetailsModal") closeCoinDetailsModal();
 };
 
@@ -6186,9 +6461,9 @@ function renderMultiMarketSignals() {
         return `
           <div class="signal-card ${mktClass}">
             <div class="signal-card-head">
-              <div class="signal-card-sym-box">
+              <div class="signal-card-sym-box" onclick="openCoinDetailsModal('${s.symbol}')" style="cursor:pointer;" title="Inspect 3D Coin Model">
                 <span class="signal-card-market-tag">${s.market_icon || '🌐'} ${s.market_label || 'ASSET'}</span>
-                <span class="signal-card-symbol">${s.symbol}</span>
+                <span class="signal-card-symbol">${s.symbol} <span style="font-size:10px; color:var(--neon-cyan);">🔮 3D</span></span>
               </div>
               <div class="signal-card-badges">
                 <span class="signal-confidence-pill">🧠 ${conf}% AI CONFIDENCE</span>
@@ -6225,6 +6500,9 @@ function renderMultiMarketSignals() {
                 <span>🏛 ${escapeHtml(s.broker || 'Delta / CoinSwitch / NSE')}</span>
               </div>
               <div class="signal-actions-group">
+                <button class="tsm-btn-cta cyan" onclick="openCoinDetailsModal('${s.symbol}')" style="padding:5px 8px; font-size:10px; margin:0;" title="Inspect 3D Model">
+                  🔮 3D
+                </button>
                 <button class="btn-signal-chart" onclick="jumpToProChartSymbol('${s.symbol}')" title="View Chart">
                   📈 CHART
                 </button>
@@ -6251,7 +6529,9 @@ function renderMultiMarketSignals() {
         return `
           <tr>
             <td><span class="font-mono text-dim" style="font-size:11px;">${s.market_icon || '🌐'} ${s.market_label || 'ASSET'}</span></td>
-            <td><strong>${s.symbol}</strong></td>
+            <td onclick="openCoinDetailsModal('${s.symbol}')" style="cursor:pointer;" title="Inspect 3D Model">
+              <strong>${s.symbol}</strong> <span style="font-size:10px; color:var(--neon-cyan);">🔮</span>
+            </td>
             <td>${dirBadge}</td>
             <td class="text-right font-mono cyan font-bold">${s.entry_range || '$' + s.current_price}</td>
             <td class="text-right font-mono green font-bold">$${s.target_1}</td>

@@ -3288,52 +3288,92 @@
     </div>
   </div>
 
-  <!-- ══════════ 3. 3D COIN INTELLIGENCE & TELEMETRY POPUP MODAL ══════════ -->
+  <!-- ══════════ 3. 3D COIN & ASSET HOLOGRAPHIC MODEL UI POPUP MODAL ══════════ -->
   <div id="coinDetailsModal" class="palette-overlay" style="display:none;" onclick="handleCoinDetailsBackdropClick(event)">
-    <div class="tsm-coin-modal-card">
+    <div class="tsm-coin-modal-card tsm-3d-coin-card">
+      <!-- Modal Top Header -->
       <div class="tsm-coin-modal-header">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <div class="tsm-coin-modal-icon" id="cmodal-icon">₿</div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div class="tsm-coin-modal-icon-3d" id="cmodal-icon">₿</div>
           <div>
             <div class="tsm-coin-modal-title" id="cmodal-title">BITCOIN (BTC/USDT)</div>
-            <div class="tsm-coin-modal-cat" id="cmodal-cat">CRYPTO ASSET • DUAL-EXCHANGE LIVE</div>
+            <div class="tsm-coin-modal-cat" id="cmodal-cat">CRYPTO ASSET • DUAL-EXCHANGE LIVE • 3D QUANT MODEL</div>
           </div>
         </div>
-        <button class="tsm-auth-close-btn" onclick="closeCoinDetailsModal()">✕</button>
-      </div>
-
-      <div class="tsm-coin-modal-grid">
-        <div class="tsm-cstat-card"><span class="lbl">SPOT PRICE</span><span class="val green" id="cmodal-spot">$77,264.28</span></div>
-        <div class="tsm-cstat-card"><span class="lbl">FUTURES PRICE</span><span class="val cyan" id="cmodal-fut">$77,236.90</span></div>
-        <div class="tsm-cstat-card"><span class="lbl">BASIS SPREAD</span><span class="val gold" id="cmodal-basis">Δ -$27.38 (-0.035%)</span></div>
-        <div class="tsm-cstat-card"><span class="lbl">24H CHANGE</span><span class="val green" id="cmodal-chg">+1.37% 🟢</span></div>
-        <div class="tsm-cstat-card"><span class="lbl">SUPERTREND (15M)</span><span class="val green" id="cmodal-supertrend">BULLISH 🟢</span></div>
-        <div class="tsm-cstat-card"><span class="lbl">RSI (14) MOMENTUM</span><span class="val cyan" id="cmodal-rsi">62.4 (STRONG BUY)</span></div>
-      </div>
-
-      <!-- AI Trade Setup Recommendation -->
-      <div class="tsm-coin-setup-box">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-          <strong style="color:var(--neon-green); font-size:11px;">⚡ AI QUANT CONVICTION SETUP:</strong>
-          <span class="tsm-badge-pill admin" id="cmodal-confidence">94% CONVICTION</span>
-        </div>
-        <div style="font-size:11px; color:var(--text-sec); line-height:1.5;" id="cmodal-setup-text">
-          Target long scalp entry on pullback with dynamic trailing ratchet stop. High institutional order book support above $76,500.
-        </div>
-        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-top:8px; font-family:var(--font-mono); font-size:10px;">
-          <div style="background:rgba(0,0,0,0.3); padding:5px 8px; border-radius:4px;">ENTRY: <strong class="cyan" id="cmodal-entry">$77,100</strong></div>
-          <div style="background:rgba(0,0,0,0.3); padding:5px 8px; border-radius:4px;">TARGET 1: <strong class="green" id="cmodal-target">$78,200</strong></div>
-          <div style="background:rgba(0,0,0,0.3); padding:5px 8px; border-radius:4px;">STOP LOSS: <strong class="red-text" id="cmodal-sl">$76,400</strong></div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="tsm-badge-pill green" id="cmodal-3d-status">⚡ 3D WEBGL LIVE</span>
+          <button class="tsm-auth-close-btn" onclick="closeCoinDetailsModal()" title="Close 3D View">✕</button>
         </div>
       </div>
 
-      <div style="display:flex; gap:10px; margin-top:14px;">
-        <button class="tsm-btn-cta cyan" id="cmodal-chart-btn" style="flex:1; justify-content:center; padding:9px; font-size:11px;" onclick="handleCoinModalOpenChart()">
-          <span>📊</span><span>VIEW PRO CHART</span>
-        </button>
-        <button class="tsm-btn-cta green" id="cmodal-trade-btn" style="flex:1; justify-content:center; padding:9px; font-size:11px;" onclick="handleCoinModalSimulateTrade()">
-          <span>⚡</span><span>SIMULATE TRADE</span>
-        </button>
+      <!-- Main Split Layout: 3D Model Viewport (Left) + Quant Telemetry (Right) -->
+      <div class="tsm-3d-coin-body">
+        <!-- LEFT: 3D Holographic WebGL Viewport -->
+        <div class="coin-3d-viewport-panel">
+          <div class="coin-3d-canvas-wrap" id="coin3DCanvasContainer">
+            <canvas id="coin3DCanvas" class="coin-3d-canvas" width="340" height="320"></canvas>
+            <div class="coin-3d-scanline"></div>
+            <div class="coin-3d-overlay-badge">
+              <span class="coin-3d-sym-tag" id="cmodal-3d-tag">BTC</span>
+              <span class="coin-3d-rot-hint">🖱️ Drag to Rotate 3D Coin</span>
+            </div>
+          </div>
+
+          <!-- 3D Theme & Rotation Controls -->
+          <div class="coin-3d-controls-bar">
+            <div class="coin-3d-theme-pills">
+              <button type="button" class="c3d-theme-btn active gold" onclick="switchCoin3DTheme('gold')" title="Gold Metal">🟡 Gold</button>
+              <button type="button" class="c3d-theme-btn cyan" onclick="switchCoin3DTheme('cyan')" title="Cyber Cyan">🔷 Cyan</button>
+              <button type="button" class="c3d-theme-btn green" onclick="switchCoin3DTheme('green')" title="Emerald">🟢 Green</button>
+              <button type="button" class="c3d-theme-btn purple" onclick="switchCoin3DTheme('purple')" title="Amethyst">🟣 Purple</button>
+            </div>
+            <button type="button" class="c3d-toggle-spin-btn" id="btnToggleCoin3DSpin" onclick="toggleCoin3DSpin()" title="Toggle Auto-Rotation">
+              🔄 Auto-Spin
+            </button>
+          </div>
+        </div>
+
+        <!-- RIGHT: Telemetry, AI Rating & Trade Actions -->
+        <div class="coin-3d-telemetry-panel">
+          <!-- Price & Metrics Grid -->
+          <div class="tsm-coin-modal-grid">
+            <div class="tsm-cstat-card"><span class="lbl">SPOT PRICE</span><span class="val green font-mono" id="cmodal-spot">$77,264.28</span></div>
+            <div class="tsm-cstat-card"><span class="lbl">FUTURES PRICE</span><span class="val cyan font-mono" id="cmodal-fut">$77,236.90</span></div>
+            <div class="tsm-cstat-card"><span class="lbl">BASIS SPREAD</span><span class="val gold font-mono" id="cmodal-basis">Δ -$27.38 (-0.035%)</span></div>
+            <div class="tsm-cstat-card"><span class="lbl">24H CHANGE</span><span class="val green font-mono" id="cmodal-chg">+1.37% 🟢</span></div>
+            <div class="tsm-cstat-card"><span class="lbl">SUPERTREND (15M)</span><span class="val green" id="cmodal-supertrend">BULLISH 🟢</span></div>
+            <div class="tsm-cstat-card"><span class="lbl">RSI (14) MOMENTUM</span><span class="val cyan font-mono" id="cmodal-rsi">62.4 (STRONG BUY)</span></div>
+          </div>
+
+          <!-- AI SuperBrain Trade Recommendation Box -->
+          <div class="tsm-coin-setup-box">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <strong style="color:var(--neon-green); font-size:11px;">⚡ AI QUANT CONVICTION SETUP:</strong>
+              <span class="tsm-badge-pill admin" id="cmodal-confidence">94% CONVICTION</span>
+            </div>
+            <div style="font-size:11px; color:var(--text-sec); line-height:1.5;" id="cmodal-setup-text">
+              Target long scalp entry on pullback with dynamic trailing ratchet stop. High institutional order book support above $76,500.
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-top:8px; font-family:var(--font-mono); font-size:10px;">
+              <div style="background:rgba(0,0,0,0.3); padding:5px 7px; border-radius:4px; border:1px solid rgba(0,212,255,0.15);">ENTRY: <strong class="cyan" id="cmodal-entry">$77,100</strong></div>
+              <div style="background:rgba(0,0,0,0.3); padding:5px 7px; border-radius:4px; border:1px solid rgba(0,240,144,0.15);">TARGET 1: <strong class="green" id="cmodal-target">$78,200</strong></div>
+              <div style="background:rgba(0,0,0,0.3); padding:5px 7px; border-radius:4px; border:1px solid rgba(255,51,102,0.15);">STOP LOSS: <strong class="red-text" id="cmodal-sl">$76,400</strong></div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
+            <button class="tsm-btn-cta cyan" id="cmodal-chart-btn" style="flex:1; min-width:130px; justify-content:center; padding:9px; font-size:11px;" onclick="handleCoinModalOpenChart()">
+              <span>📊</span><span>PRO CHART</span>
+            </button>
+            <button class="tsm-btn-cta green" id="cmodal-trade-btn" style="flex:1; min-width:130px; justify-content:center; padding:9px; font-size:11px;" onclick="handleCoinModalSimulateTrade()">
+              <span>⚡</span><span>EXECUTE TRADE</span>
+            </button>
+            <a href="https://t.me/FOREXINDIAN_BOT" target="_blank" class="tsm-btn-secondary" style="display:inline-flex; align-items:center; gap:6px; padding:9px 12px; font-size:11px; text-decoration:none;" title="View on Telegram">
+              <span>🤖</span><span>TELEGRAM BOT</span>
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   </div>
