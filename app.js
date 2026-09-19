@@ -34,6 +34,8 @@ document.addEventListener("DOMContentLoaded", () => {
   setInterval(fetchNewsData, 10000);
   fetchIndianMarketData();
   setInterval(fetchIndianMarketData, 8000);
+  fetchLiveTickerTape();
+  setInterval(fetchLiveTickerTape, 6000);
   checkAdminAuth();
   setInterval(() => {
     if (adminToken && currentView === "admin") {
@@ -45,6 +47,40 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   window.addEventListener("hashchange", handleHashRouting);
 });
+
+// ── Live Macro Ticker Tape Engine (Render High Performance) ────────────────
+async function fetchLiveTickerTape() {
+  const track = document.getElementById("macroTickerTrack");
+  if (!track) return;
+  try {
+    const res = await fetch("/api/market/ticker-bar");
+    const data = await res.json();
+    if (data.status === "success" && Array.isArray(data.tickers)) {
+      const iconMap = {
+        nifty: "🇮🇳", banknifty: "🏦", sensex: "🏛", gold: "🥇",
+        silver: "🥈", crude: "🛢️", eurusd: "💱", gbpusd: "💱",
+        usdjpy: "💱", btc: "₿", eth: "Ξ", sol: "◎", xrp: "✕", sui: "💧"
+      };
+      track.innerHTML = data.tickers.map(t => {
+        const ico = iconMap[t.id] || "🌐";
+        const isUp = Number(t.change_pct || 0) >= 0;
+        const colorClass = isUp ? "green" : "red-text";
+        const sign = isUp ? "+" : "";
+        return `
+          <span class="ticker-item" onclick="jumpToProChartSymbol('${t.symbol}')" style="cursor:pointer;" title="Click to view chart">
+            <span class="sym-ico">${ico}</span>
+            <strong>${t.symbol}</strong>
+            ${t.price_formatted}
+            <span class="${colorClass} font-mono">${t.arrow} ${sign}${t.change_pct}%</span>
+          </span>
+        `;
+      }).join("");
+    }
+  } catch (e) {
+    console.debug("Ticker bar fetch notice:", e);
+  }
+}
+window.fetchLiveTickerTape = fetchLiveTickerTape;
 
 // ── 1.1 Theme Switcher (Dark / Light) ──────────────────────────────────────
 function initTheme() {

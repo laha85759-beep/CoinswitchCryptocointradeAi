@@ -39,6 +39,10 @@ except ImportError as _atlas_err:
     logging.getLogger(__name__).warning("ATLAS engine not available: %s", _atlas_err)
 
 import sys
+import gc
+# Tune Garbage Collection to maintain ultra-low memory footprint on 512MB RAM
+gc.set_threshold(700, 10, 5)
+
 log = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO,
@@ -52,6 +56,31 @@ logging.basicConfig(
 )
 
 app = Flask(__name__)
+
+# Security and Cache Headers Middleware
+@app.after_request
+def add_security_and_compression_headers(response):
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    # Keep-Alive & Cache optimization for high concurrency
+    if request.path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-transform, public, max-age=2"
+    return response
+
+from market_data_gateway import market_gateway
+
+@app.route("/healthz", methods=["GET"])
+@app.route("/api/health", methods=["GET"])
+def healthz_check():
+    health = market_gateway.get_system_health()
+    return jsonify(health)
+
+@app.route("/api/market/ticker-bar", methods=["GET"])
+def get_live_ticker_bar():
+    items = market_gateway.get_ticker_bar_items()
+    return jsonify({"status": "success", "tickers": items, "timestamp": int(time.time())})
 
 from api_routes import api_bp
 app.register_blueprint(api_bp)
