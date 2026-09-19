@@ -6475,38 +6475,55 @@ function renderMultiMarketSignals() {
                 <span class="signal-target-val cyan font-mono">${s.entry_range || '$' + s.current_price}</span>
               </div>
               <div class="signal-target-item">
-                <span class="signal-target-label">RISK : REWARD</span>
-                <span class="signal-target-val gold font-mono">⚡ ${s.risk_reward || '1:3.2'}</span>
-              </div>
-              <div class="signal-target-item">
-                <span class="signal-target-label">TARGET 1 / 2</span>
-                <span class="signal-target-val green font-mono">$${s.target_1} &bull; $${s.target_2}</span>
-              </div>
-              <div class="signal-target-item">
                 <span class="signal-target-label">HARD STOP LOSS</span>
                 <span class="signal-target-val red-text font-mono">⛔ $${s.stop_loss}</span>
               </div>
+              <div class="signal-target-item">
+                <span class="signal-target-label">TARGET 1</span>
+                <span class="signal-target-val green font-mono">🎯 $${s.target_1}</span>
+              </div>
+              <div class="signal-target-item">
+                <span class="signal-target-label">TARGET 2 (MAX ALPHA)</span>
+                <span class="signal-target-val green font-mono">🚀 $${s.target_2}</span>
+              </div>
             </div>
 
-            <div class="signal-catalyst-box">
-              <div class="signal-catalyst-headline">📰 ${escapeHtml(s.catalyst_headline || '')}</div>
-              <div class="signal-technical-note">📊 ${escapeHtml(s.technical_reason || '')}</div>
+            <div class="signal-catalyst-line">
+              ⚡ <strong>Macro Catalyst:</strong> ${escapeHtml(s.catalyst_headline || 'Real-time multi-model alpha trigger.')}
+            </div>
+
+            <div class="signal-boxes-container">
+              <div class="signal-card-box beginner">
+                <div class="signal-box-title">🔰 BEGINNER GUIDE</div>
+                <div class="signal-box-desc">${escapeHtml(s.beginner_guide || 'Follow disciplined position sizing and adhere to the protective stop-loss.')}</div>
+              </div>
+              <div class="signal-card-box technical">
+                <div class="signal-box-title">📊 TECHNICAL REASONING</div>
+                <div class="signal-box-desc">${escapeHtml(s.technical_reason || 'Algorithmic volume delta alignment and trend continuation structure.')}</div>
+              </div>
+              <div class="signal-card-box alpha">
+                <div class="signal-box-title">🔮 INSTITUTIONAL ALPHA</div>
+                <div class="signal-box-desc">${escapeHtml(s.institutional_alpha || 'Cross-asset liquidity flows and institutional order book depth imbalances.')}</div>
+              </div>
             </div>
 
             <div class="signal-card-footer">
               <div class="signal-broker-note">
-                <span>🏛 ${escapeHtml(s.broker || 'Delta / CoinSwitch / NSE')}</span>
+                <span>🏛 ${escapeHtml(s.broker || 'Delta / CoinSwitch / NSE')} &bull; <span class="font-mono text-neon-gold">R:R ${s.risk_reward || '1:3.2'}</span></span>
               </div>
               <div class="signal-actions-group">
                 <button class="tsm-btn-cta cyan" onclick="openCoinDetailsModal('${s.symbol}')" style="padding:5px 8px; font-size:10px; margin:0;" title="Inspect 3D Model">
-                  🔮 3D
+                  🔮 3D MODEL
                 </button>
                 <button class="btn-signal-chart" onclick="jumpToProChartSymbol('${s.symbol}')" title="View Chart">
-                  📈 CHART
+                  📈 PRO CHART
                 </button>
                 <button class="btn-signal-exec" onclick="executeSignalTrade('${s.symbol}', '${s.direction}', '${s.current_price}', '${s.stop_loss}', '${s.target_1}', '${s.broker}')" title="Execute Trade">
                   ⚡ EXECUTE
                 </button>
+                <a href="https://t.me/FOREXINDIAN_BOT" target="_blank" class="btn-signal-telegram" title="Join Telegram Channel" style="text-decoration:none;">
+                  🤖 TELEGRAM
+                </a>
               </div>
             </div>
           </div>
