@@ -5533,6 +5533,89 @@ input::placeholder, textarea::placeholder {
   font-size: 10px;
 }
 
+/* ══════════ SAAS SUBSCRIPTION PAYWALL & FEATURE LOCKS ══════════ */
+.signal-card.locked-card {
+  position: relative;
+  overflow: hidden;
+}
+.signal-card.locked-card .signal-targets-grid,
+.signal-card.locked-card .signal-boxes-container,
+.signal-card.locked-card .signal-card-footer {
+  filter: blur(5px);
+  user-select: none;
+  pointer-events: none;
+  opacity: 0.45;
+}
+.signal-lock-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 85%;
+  background: rgba(4, 14, 28, 0.92);
+  border: 1px solid rgba(255, 215, 0, 0.5);
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.8), 0 0 15px rgba(255, 215, 0, 0.25);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  z-index: 10;
+  backdrop-filter: blur(8px);
+}
+.signal-lock-icon {
+  font-size: 24px;
+  margin-bottom: 6px;
+}
+.signal-lock-title {
+  font-family: var(--font-orb);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--neon-gold);
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+.signal-lock-desc {
+  font-size: 10.5px;
+  color: var(--text-sec);
+  line-height: 1.4;
+  margin-bottom: 12px;
+}
+
+.feature-paywall-wrap {
+  position: relative;
+  overflow: hidden;
+}
+.feature-paywall-blurred {
+  filter: blur(6px);
+  user-select: none;
+  pointer-events: none;
+  opacity: 0.4;
+}
+.feature-paywall-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: rgba(3, 11, 20, 0.85);
+  backdrop-filter: blur(6px);
+  z-index: 20;
+  padding: 24px;
+  text-align: center;
+}
+.feature-paywall-card {
+  max-width: 480px;
+  background: rgba(6, 18, 36, 0.95);
+  border: 1px solid rgba(0, 240, 144, 0.4);
+  box-shadow: 0 0 35px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0, 240, 144, 0.2);
+  border-radius: 10px;
+  padding: 24px 20px;
+}
+
+
 
 
 

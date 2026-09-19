@@ -747,8 +747,8 @@ function renderProChartLiveTrades(posData, tickers, userData) {
     }
   }
 
-  const validCs = (posData.coinswitch || []).filter(p => p && p.symbol && Number(p.entry_price || p.price || p.avg_entry_price || p.mark_price || 0) > 0);
-  const validDelta = (posData.delta || []).filter(p => p && p.symbol && (Number(p.entry_price || p.price || p.avg_entry_price || p.mark_price || 0) > 0 || Number(p.qty || p.size || 0) > 0));
+  const validCs = (posData.coinswitch || []).filter(p => p && p.symbol && (Number(p.entry_price || p.price || p.avg_entry_price || p.mark_price || 0) > 0 || Math.abs(Number(p.qty || p.size || 0)) > 0));
+  const validDelta = (posData.delta || []).filter(p => p && p.symbol && (Number(p.entry_price || p.price || p.avg_entry_price || p.mark_price || 0) > 0 || Math.abs(Number(p.qty || p.size || 0)) > 0));
 
   const allPositions = [
     ...validCs.map(p => ({...p, exchange: "CoinSwitch (Spot)"})),
@@ -1039,6 +1039,7 @@ async function initUserSession() {
       const data = await res.json();
       currentUser = data.user;
       updateUserUI(data.user, data.settings, data.exchange_connections);
+      await fetchUserSubscriptionData();
     } else {
       handleUserLogout();
     }
@@ -1281,8 +1282,11 @@ function renderTraderDashboard(userData, fullData) {
     deltaBadge.className = conn.delta ? "tsm-badge-pill green" : "tsm-badge-pill";
   }
 
-  // 7. Active positions table
-  renderTraderActivePositions(openPos);
+  // 7. Active positions table (combine user positions and cluster positions)
+  const effectiveOpenPos = (openPos && ((openPos.coinswitch && openPos.coinswitch.length > 0) || (openPos.delta && openPos.delta.length > 0)))
+    ? openPos
+    : (fullData && fullData.open_positions ? fullData.open_positions : openPos);
+  renderTraderActivePositions(effectiveOpenPos);
 
   // 8. Closed trades journal table
   renderTraderClosedTrades(closedTrades);
@@ -2293,11 +2297,19 @@ async function fetchRealData() {
       }
     }
 
-    const userHasPositions = userData && userData.open_positions && (
-      (Array.isArray(userData.open_positions.coinswitch) && userData.open_positions.coinswitch.length > 0) ||
-      (Array.isArray(userData.open_positions.delta) && userData.open_positions.delta.length > 0)
-    );
-    const positions = userHasPositions ? userData.open_positions : (data.open_positions || { coinswitch: [], delta: [], total_count: 0 });
+    const csTrades = (userData && userData.open_positions && Array.isArray(userData.open_positions.coinswitch) && userData.open_positions.coinswitch.length > 0)
+      ? userData.open_positions.coinswitch
+      : (data.open_positions && Array.isArray(data.open_positions.coinswitch) ? data.open_positions.coinswitch : []);
+
+    const deltaTrades = (userData && userData.open_positions && Array.isArray(userData.open_positions.delta) && userData.open_positions.delta.length > 0)
+      ? userData.open_positions.delta
+      : (data.open_positions && Array.isArray(data.open_positions.delta) ? data.open_positions.delta : []);
+
+    const positions = {
+      coinswitch: csTrades,
+      delta: deltaTrades,
+      total_count: csTrades.length + deltaTrades.length
+    };
     if (positions) {
       const csCount = (positions.coinswitch || []).length;
       const deltaCount = (positions.delta || []).length;
@@ -2345,8 +2357,8 @@ function renderPositionsTable(posData) {
   const badge = document.getElementById("pos-table-badge");
   if (!tbody) return;
 
-  const validCs = (posData.coinswitch || []).filter(p => p && p.symbol && Number(p.entry_price || p.price || p.avg_entry_price || p.mark_price || 0) > 0);
-  const validDelta = (posData.delta || []).filter(p => p && p.symbol && (Number(p.entry_price || p.price || p.avg_entry_price || p.mark_price || 0) > 0 || Number(p.qty || p.size || 0) > 0));
+  const validCs = (posData.coinswitch || []).filter(p => p && p.symbol && (Number(p.entry_price || p.price || p.avg_entry_price || p.mark_price || 0) > 0 || Math.abs(Number(p.qty || p.size || 0)) > 0));
+  const validDelta = (posData.delta || []).filter(p => p && p.symbol && (Number(p.entry_price || p.price || p.avg_entry_price || p.mark_price || 0) > 0 || Math.abs(Number(p.qty || p.size || 0)) > 0));
 
   const allPositions = [
     ...validCs.map(p => ({...p, exchange: "CoinSwitch (Spot)"})),
@@ -4312,28 +4324,56 @@ function renderMacroSignals(signals) {
   const container = document.getElementById("macro-signals-container");
   if (!container || !signals || signals.length === 0) return;
 
-  container.innerHTML = signals.map(s => {
+  const hasSignalAccess = typeof window.hasAccess === "function" ? window.hasAccess("signals") : false;
+
+  container.innerHTML = signals.map((s, idx) => {
     const isBuy = (s.direction || 'BUY').toUpperCase() === 'BUY';
     const levels = s.levels || {};
+    const isLocked = !hasSignalAccess && idx > 0;
+
+    if (isLocked) {
+      return `
+        <div class="macro-sig-card" style="position:relative; overflow:hidden; border:1px solid rgba(255,215,0,0.3);">
+          <div style="filter:blur(5px); opacity:0.4; pointer-events:none; user-select:none;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <strong style="font-family:var(--font-orb); font-size:13px; color:var(--text-main);">${escapeHtml(s.symbol)}</strong>
+              <span class="tsm-badge-pill gold">PRO SIGNAL</span>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-family:var(--font-mono); font-size:11px; background:rgba(0,0,0,0.3); padding:8px 10px; margin-top:8px; border-radius:6px;">
+              <div>Entry: <strong>••••••</strong></div>
+              <div>Stop Loss: <strong>••••••</strong></div>
+            </div>
+          </div>
+          <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(4,14,28,0.85); backdrop-filter:blur(4px); padding:16px; text-align:center;">
+            <div style="font-size:18px; margin-bottom:4px;">🔒</div>
+            <strong style="font-family:var(--font-orb); font-size:11px; color:var(--neon-gold); margin-bottom:4px;">PREMIUM MACRO SIGNAL</strong>
+            <p style="font-size:10px; color:var(--text-dim); margin-bottom:8px;">Live multi-asset macro triggers require an active subscription.</p>
+            <button class="tsm-btn-cta gold" onclick="openSaasUpgradeModal('Macro AI Signals', 'Starter ($19/mo)')" style="padding:5px 12px; font-size:10px;">⭐ UNLOCK ($19/mo)</button>
+          </div>
+        </div>
+      `;
+    }
+
+    const previewTag = (!hasSignalAccess && idx === 0) ? `<span class="tsm-badge-pill green font-mono" style="font-size:9px; margin-left:4px;">🆓 FREE PREVIEW</span>` : '';
 
     return `
       <div class="macro-sig-card">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-          <strong style="font-family:var(--font-orb); font-size:13px; color:var(--text-main);">${escapeHtml(s.symbol)}</strong>
+          <strong style="font-family:var(--font-orb); font-size:13px; color:var(--text-main);">${escapeHtml(s.symbol)} ${previewTag}</strong>
           <span class="tsm-badge-pill ${isBuy ? 'admin' : 'gold'}">${s.direction.toUpperCase()} • ${(s.confidence * 100).toFixed(0)}% CONF</span>
         </div>
         
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-family:var(--font-mono); font-size:11px; background:rgba(0,0,0,0.3); padding:8px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.05);">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-family:var(--font-mono); font-size:11px; background:rgba(0,0,0,0.3); padding:8px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.05); margin-top:6px;">
           <div>Entry: <strong class="cyan">${escapeHtml(s.entry)}</strong></div>
           <div>Stop Loss: <strong class="red-text">${escapeHtml(s.sl)}</strong></div>
           <div>Target 1: <strong class="green">${escapeHtml(s.tp1)}</strong></div>
           <div>Target 2: <strong class="green">${escapeHtml(s.tp2)}</strong></div>
         </div>
 
-        <p style="font-size:11px; color:var(--text-dim); line-height:1.4;">⚡ <i>${escapeHtml(s.reason)}</i></p>
+        <p style="font-size:11px; color:var(--text-dim); line-height:1.4; margin-top:6px;">⚡ <i>${escapeHtml(s.reason)}</i></p>
 
         <!-- Multi-Level Explanations -->
-        <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="display:flex; flex-direction:column; gap:6px; margin-top:6px;">
           ${levels.beginner ? `<div class="macro-level-box"><div class="macro-level-title green">🔰 BEGINNER GUIDE</div>${escapeHtml(levels.beginner)}</div>` : ''}
           ${levels.intermediate ? `<div class="macro-level-box"><div class="macro-level-title cyan">📊 TECHNICAL REASONING</div>${escapeHtml(levels.intermediate)}</div>` : ''}
           ${levels.experienced ? `<div class="macro-level-box"><div class="macro-level-title purple">🏛 INSTITUTIONAL ALPHA</div>${escapeHtml(levels.experienced)}</div>` : ''}
@@ -4707,7 +4747,9 @@ function renderOptionTradeSuggestions(optData) {
     ];
   }
 
-  container.innerHTML = suggestions.map(s => {
+  const hasSignalAccess = typeof window.hasAccess === "function" ? window.hasAccess("signals") : false;
+
+  container.innerHTML = suggestions.map((s, idx) => {
     const isCall = (s.type || s.contract || '').toUpperCase().includes('CE') || (s.action || '').toUpperCase().includes('CALL');
     const typeBadge = isCall 
       ? `<span class="tsm-badge-pill admin font-mono">CALL (CE)</span>` 
@@ -4720,12 +4762,37 @@ function renderOptionTradeSuggestions(optData) {
     const sl = s.stop_loss || s.sl || 'N/A';
     const rr = s.risk_reward || s.rr_ratio || '1 : 2.5';
     const confluence = s.confluence || s.pcr_confluence || 'Institutional order flow and Open Interest delta alignment.';
+    const isLocked = !hasSignalAccess && idx > 0;
+
+    if (isLocked) {
+      return `
+        <div class="opt-suggestion-card" style="position:relative; overflow:hidden; border:1px solid rgba(255,215,0,0.3);">
+          <div style="filter:blur(5px); opacity:0.4; pointer-events:none; user-select:none;">
+            <div class="opt-sug-header">
+              <div><span class="opt-sug-symbol">${escapeHtml(contractName)}</span></div>
+            </div>
+            <div class="opt-sug-grid">
+              <div class="opt-sug-cell"><span class="lbl">ENTRY RANGE</span><span class="val cyan">••••••</span></div>
+              <div class="opt-sug-cell"><span class="lbl">TARGET 1</span><span class="val green">••••••</span></div>
+            </div>
+          </div>
+          <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(4,14,28,0.88); backdrop-filter:blur(4px); padding:16px; text-align:center;">
+            <div style="font-size:18px; margin-bottom:4px;">🔒</div>
+            <strong style="font-family:var(--font-orb); font-size:11px; color:var(--neon-gold); margin-bottom:4px;">PREMIUM F&O SETUP (${escapeHtml(s.index || 'INDEX')})</strong>
+            <p style="font-size:10px; color:var(--text-dim); margin-bottom:8px;">Live strike setups &amp; PCR delta flow require an active subscription.</p>
+            <button class="tsm-btn-cta gold" onclick="openSaasUpgradeModal('Indian Options Intelligence', 'Starter ($19/mo)')" style="padding:5px 12px; font-size:10px;">⭐ UNLOCK ($19/mo)</button>
+          </div>
+        </div>
+      `;
+    }
+
+    const previewTag = (!hasSignalAccess && idx === 0) ? `<span class="tsm-badge-pill green font-mono" style="font-size:8.5px; margin-left:4px;">🆓 FREE PREVIEW</span>` : '';
 
     return `
       <div class="opt-suggestion-card">
         <div class="opt-sug-header">
           <div>
-            <span class="opt-sug-symbol">${escapeHtml(contractName)}</span>
+            <span class="opt-sug-symbol">${escapeHtml(contractName)} ${previewTag}</span>
             <div class="opt-sug-sub">${escapeHtml(s.expiry || 'CURRENT WEEKLY')} • ${escapeHtml(lotSize)}</div>
           </div>
           <div style="display:flex; gap:6px; align-items:center;">
@@ -6160,8 +6227,12 @@ window.switchAdminSubTab = function(tabName, btn) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 async function fetchUserSubscriptionData() {
-  const token = localStorage.getItem("tsm_jwt_token") || getCookie("auth_token");
-  if (!token) return null;
+  const token = localStorage.getItem("tsm_user_token") || localStorage.getItem("tsm_jwt_token") || userToken || adminToken;
+  if (!token) {
+    window.cachedUserSubscription = null;
+    window.cachedUserPermissions = null;
+    return null;
+  }
 
   try {
     const res = await fetch("/api/saas/my-subscription", {
@@ -6187,19 +6258,24 @@ function updateSubscriptionUI(data) {
 
   const tierEl = document.getElementById("traderHeaderTier");
   if (tierEl) {
-    const isSuper = perms.is_superadmin || u.role === "superadmin";
-    tierEl.textContent = isSuper ? "SUPER ADMIN (UNRESTRICTED)" : `${sub.plan_name.toUpperCase()} (${sub.status.toUpperCase()})`;
+    const isSuper = perms.is_superadmin || u.role === "superadmin" || (currentUser && currentUser.role === "superadmin");
+    tierEl.textContent = isSuper ? "SUPER ADMIN (UNRESTRICTED)" : `${(sub.plan_name || 'FREE').toUpperCase()} (${(sub.status || 'ACTIVE').toUpperCase()})`;
     tierEl.style.color = isSuper ? "var(--neon-gold)" : (sub.is_active ? "var(--neon-green)" : "var(--neon-red)");
   }
 }
 
 window.hasAccess = function(serviceName) {
-  if (!window.cachedUserPermissions) return true; // Default permissive until loaded
-  if (window.cachedUserPermissions.is_superadmin) return true;
-  
-  const val = window.cachedUserPermissions[serviceName];
-  if (val === undefined) return true;
-  return Boolean(val);
+  if (adminToken || (currentUser && currentUser.role === "superadmin")) return true;
+  if (window.cachedUserPermissions && window.cachedUserPermissions.is_superadmin) return true;
+  const currentTok = userToken || localStorage.getItem("tsm_user_token") || localStorage.getItem("tsm_jwt_token");
+  if (!currentTok) return false;
+  if (window.cachedUserPermissions && window.cachedUserPermissions[serviceName] !== undefined) {
+    return Boolean(window.cachedUserPermissions[serviceName]);
+  }
+  if (window.cachedUserSubscription && window.cachedUserSubscription.is_active) {
+    return true;
+  }
+  return false;
 };
 
 window.openSaasUpgradeModal = function(featureName, requiredPlan) {
@@ -6868,6 +6944,8 @@ function renderMultiMarketSignals() {
     return true;
   });
 
+  const hasSignalAccess = typeof window.hasAccess === "function" ? window.hasAccess("signals") : false;
+
   // 1. Render Cards Grid
   if (grid) {
     if (filtered.length === 0) {
@@ -6877,19 +6955,99 @@ function renderMultiMarketSignals() {
         </div>
       `;
     } else {
-      grid.innerHTML = filtered.map(s => {
+      grid.innerHTML = filtered.map((s, idx) => {
         const isLong = String(s.direction || "").toUpperCase() === "LONG" || String(s.action || "").toUpperCase().includes("BUY");
         const dirBadgeClass = isLong ? "long" : "short";
         const dirIco = isLong ? "🟢" : "🔴";
         const mktClass = (s.market || "crypto").toLowerCase();
         const conf = Number(s.confidence || 90);
+        const isCardLocked = !hasSignalAccess && idx > 0;
+
+        if (isCardLocked) {
+          return `
+            <div class="signal-card ${mktClass} locked-card">
+              <div class="signal-card-head">
+                <div class="signal-card-sym-box" onclick="openCoinDetailsModal('${s.symbol}')" style="cursor:pointer;" title="Inspect 3D Coin Model">
+                  <span class="signal-card-market-tag">${s.market_icon || '🌐'} ${s.market_label || 'ASSET'}</span>
+                  <span class="signal-card-symbol">${s.symbol} <span style="font-size:10px; color:var(--neon-cyan);">🔮 3D</span></span>
+                </div>
+                <div class="signal-card-badges">
+                  <span class="signal-confidence-pill">🧠 ${conf}% AI CONFIDENCE</span>
+                  <span class="signal-direction-badge ${dirBadgeClass}">${dirIco} ${s.action || s.direction}</span>
+                </div>
+              </div>
+
+              <div class="signal-lock-overlay">
+                <div class="signal-lock-icon">🔒</div>
+                <div class="signal-lock-title">PREMIUM QUANT SIGNAL</div>
+                <div class="signal-lock-desc">Real-time dynamic entry ranges, institutional stop-losses, multi-tier profit targets, and order flow telemetry require an active subscription.</div>
+                <button class="tsm-btn-cta gold" onclick="openSaasUpgradeModal('AI Multi-Market Signals', 'Pro ($49/mo)')" style="padding:7px 16px; font-size:11px; font-weight:800; box-shadow:0 0 15px rgba(255,215,0,0.3);">
+                  ⭐ UPGRADE TO PRO ($49/mo)
+                </button>
+              </div>
+
+              <div class="signal-targets-grid">
+                <div class="signal-target-item">
+                  <span class="signal-target-label">ENTRY ZONE</span>
+                  <span class="signal-target-val cyan font-mono">••••••••</span>
+                </div>
+                <div class="signal-target-item">
+                  <span class="signal-target-label">HARD STOP LOSS</span>
+                  <span class="signal-target-val red-text font-mono">••••••••</span>
+                </div>
+                <div class="signal-target-item">
+                  <span class="signal-target-label">TARGET 1</span>
+                  <span class="signal-target-val green font-mono">••••••••</span>
+                </div>
+                <div class="signal-target-item">
+                  <span class="signal-target-label">TARGET 2</span>
+                  <span class="signal-target-val green font-mono">••••••••</span>
+                </div>
+              </div>
+
+              <div class="signal-catalyst-line">
+                ⚡ <strong>Macro Catalyst:</strong> Institutional volatility expansion trigger.
+              </div>
+
+              <div class="signal-boxes-container">
+                <div class="signal-card-box beginner">
+                  <div class="signal-box-title">🔰 BEGINNER GUIDE</div>
+                  <div class="signal-box-desc">Upgrade to reveal protective execution rules and automated risk-sizing.</div>
+                </div>
+                <div class="signal-card-box technical">
+                  <div class="signal-box-title">📊 TECHNICAL REASONING</div>
+                  <div class="signal-box-desc">Algorithmic volume delta alignment and liquidity imbalance block.</div>
+                </div>
+                <div class="signal-card-box alpha">
+                  <div class="signal-box-title">🔮 INSTITUTIONAL ALPHA</div>
+                  <div class="signal-box-desc">Cross-exchange order book depth analysis.</div>
+                </div>
+              </div>
+
+              <div class="signal-card-footer">
+                <div class="signal-broker-note">
+                  <span>🏛 ${escapeHtml(s.broker || 'Delta / CoinSwitch / NSE')} &bull; <span class="font-mono text-neon-gold">R:R ${s.risk_reward || '1:3.2'}</span></span>
+                </div>
+                <div class="signal-actions-group">
+                  <button class="tsm-btn-cta gold" onclick="openSaasUpgradeModal('AI Signals', 'Pro')" style="padding:5px 12px; font-size:10px;">
+                    ⭐ UNLOCK
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        const previewBadge = (!hasSignalAccess && idx === 0)
+          ? `<span class="tsm-badge-pill green font-mono" style="font-size:9px; margin-left:6px;">🆓 FREE PREVIEW</span>`
+          : '';
 
         return `
           <div class="signal-card ${mktClass}">
             <div class="signal-card-head">
               <div class="signal-card-sym-box" onclick="openCoinDetailsModal('${s.symbol}')" style="cursor:pointer;" title="Inspect 3D Coin Model">
                 <span class="signal-card-market-tag">${s.market_icon || '🌐'} ${s.market_label || 'ASSET'}</span>
-                <span class="signal-card-symbol">${s.symbol} <span style="font-size:10px; color:var(--neon-cyan);">🔮 3D</span></span>
+                <span class="signal-card-symbol">${s.symbol} <span style="font-size:10px; color:var(--neon-cyan);">🔮 3D</span>${previewBadge}</span>
               </div>
               <div class="signal-card-badges">
                 <span class="signal-confidence-pill">🧠 ${conf}% AI CONFIDENCE</span>
@@ -6965,10 +7123,34 @@ function renderMultiMarketSignals() {
     if (filtered.length === 0) {
       tbody.innerHTML = `<tr><td colspan="12" class="text-center" style="padding:28px; color:var(--text-dim);">No trade suggestions match filter criteria.</td></tr>`;
     } else {
-      tbody.innerHTML = filtered.map(s => {
+      tbody.innerHTML = filtered.map((s, idx) => {
         const isLong = String(s.direction || "").toUpperCase() === "LONG" || String(s.action || "").toUpperCase().includes("BUY");
         const dirBadge = isLong ? '<span class="tsm-badge-pill green">BUY / LONG</span>' : '<span class="tsm-badge-pill pink">SELL / SHORT</span>';
+        const isRowLocked = !hasSignalAccess && idx > 0;
         
+        if (isRowLocked) {
+          return `
+            <tr>
+              <td><span class="font-mono text-dim" style="font-size:11px;">${s.market_icon || '🌐'} ${s.market_label || 'ASSET'}</span></td>
+              <td><strong>${s.symbol}</strong></td>
+              <td>${dirBadge}</td>
+              <td class="text-right font-mono text-dim">🔒 LOCKED</td>
+              <td class="text-right font-mono text-dim">🔒 LOCKED</td>
+              <td class="text-right font-mono text-dim">🔒 LOCKED</td>
+              <td class="text-right font-mono text-dim">🔒 LOCKED</td>
+              <td class="font-mono text-dim">🔒 LOCKED</td>
+              <td><span class="tsm-badge-pill gold" style="font-size:10px;">${s.confidence}% CONF</span></td>
+              <td style="font-size:10.5px; color:var(--text-dim);"><em>Upgrade to unlock live trade levels</em></td>
+              <td class="font-mono text-dim">${escapeHtml(s.broker || '--')}</td>
+              <td class="text-center">
+                <button class="tsm-btn-cta gold" onclick="openSaasUpgradeModal('AI Signals', 'Starter ($19/mo)')" style="padding:4px 10px; font-size:10px;">
+                  ⭐ UNLOCK ($19)
+                </button>
+              </td>
+            </tr>
+          `;
+        }
+
         return `
           <tr>
             <td><span class="font-mono text-dim" style="font-size:11px;">${s.market_icon || '🌐'} ${s.market_label || 'ASSET'}</span></td>
@@ -7018,13 +7200,23 @@ function handleSignalsSearch() {
 window.handleSignalsSearch = handleSignalsSearch;
 
 function executeSignalTrade(symbol, direction, entryPrice, sl, tp, broker) {
-  // Enforce Registration & Login Check
-  if (!currentUser && !userToken) {
+  // 1. Enforce Registration & Login Check
+  const currentTok = userToken || localStorage.getItem("tsm_user_token") || localStorage.getItem("tsm_jwt_token");
+  if (!currentUser && !currentTok) {
     if (typeof openAuthModal === "function") {
-      openAuthModal("register");
+      openAuthModal("login");
     }
-    if (typeof showFloatingToast === "function") {
-      showFloatingToast("🔒 Registration & Login Required: Sign in with Google to execute live signals.", "gold");
+    if (typeof showToast === "function") {
+      showToast("🔒 Registration & Login Required: Sign in to execute live signals.", "warning");
+    }
+    return;
+  }
+
+  // 2. Enforce Active Paid Subscription Check
+  const hasSignalAccess = typeof window.hasAccess === "function" ? window.hasAccess("signals") : false;
+  if (!hasSignalAccess) {
+    if (typeof openSaasUpgradeModal === "function") {
+      openSaasUpgradeModal("Algorithmic Trade Execution", "Starter ($19/mo)");
     }
     return;
   }
