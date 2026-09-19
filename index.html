@@ -189,8 +189,8 @@
         <button class="tsm-drawer-item gold" data-view="partners" onclick="switchView('partners'); toggleMobileNavDrawer();">
           <span class="nc-tab-ico">💎</span><span>PROP FIRMS</span>
         </button>
-        <button class="tsm-drawer-item" data-view="trades" onclick="switchView('trades'); toggleMobileNavDrawer();">
-          <span class="nc-tab-ico">💼</span><span>AUDIT LOG</span>
+        <button class="tsm-drawer-item green" data-view="trades" onclick="switchView('trades'); toggleMobileNavDrawer();">
+          <span class="nc-tab-ico">🎯</span><span>AI TRADE SIGNALS</span>
         </button>
         <button class="tsm-drawer-item green" id="drawerTraderTab" data-view="trader" onclick="switchView('trader'); toggleMobileNavDrawer();" style="display:none;">
           <span class="nc-tab-ico">👤</span><span>TRADER COCKPIT</span>
@@ -255,11 +255,11 @@
           </div>
         </button>
 
-        <button class="tsm-dock-item" data-view="trades" onclick="switchView('trades')" title="Closed Trades &amp; Blockchain Audit Trail">
-          <span class="tsm-dock-icon">💼</span>
+        <button class="tsm-dock-item green" data-view="trades" onclick="switchView('trades')" title="Live Multi-Market AI Trade Suggestions (Forex, Commodities, Crypto, Indian Markets)">
+          <span class="tsm-dock-icon">🎯</span>
           <div class="tsm-dock-info">
-            <span class="tsm-dock-title">AUDIT LOG</span>
-            <span class="tsm-dock-chip green">PROVEN TRADES</span>
+            <span class="tsm-dock-title">AI SIGNALS</span>
+            <span class="tsm-dock-chip green">NEWS TRADES</span>
           </div>
         </button>
 
@@ -1270,105 +1270,109 @@
       </div>
     </div>
 
-    <!-- ══════════ VIEW 5: CRYPTOGRAPHIC TRADE AUDIT & EXECUTION PROOF LEDGER ══════════ -->
+    <!-- ══════════ VIEW 5: MULTI-MARKET AI TRADE SUGGESTIONS & NEWS CATALYST ENGINE ══════════ -->
     <div id="view-trades" class="nc-view-pane tsm-view-section">
-      <!-- Top Audit Header Bar -->
-      <div class="tsm-panel" style="border-color:var(--neon-green); box-shadow:0 0 25px rgba(0,240,144,0.12); margin-bottom:14px;">
+      <!-- Top Multi-Market Signals Header Bar -->
+      <div class="tsm-panel" style="border-color:var(--neon-green); box-shadow:0 0 25px rgba(0,240,144,0.14); margin-bottom:14px;">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
           <div>
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-              <span class="tsm-badge-pill green">🛡️ CRYPTOGRAPHIC AUDIT TRAIL</span>
-              <span class="tsm-badge-pill cyan" id="auditLedgerStatusBadge">⚡ SHA-256 INTEGRITY VERIFIED (100%)</span>
-              <span class="tsm-badge-pill gold">🏛️ MULTI-BROKER CLEARING</span>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; flex-wrap:wrap;">
+              <span class="tsm-badge-pill green">🎯 QUANT AI CONSENSUS SIGNALS</span>
+              <span class="tsm-badge-pill cyan" id="signalsEngineStatusBadge">⚡ MULTI-MARKET ENGINE: 4 SECTORS LIVE</span>
+              <span class="tsm-badge-pill gold">📰 MACRO NEWS CATALYSTS SYNCED</span>
             </div>
             <h2 style="font-size:18px; font-weight:800; color:#ffffff; margin:2px 0; letter-spacing:0.5px;">
-              Settled Trades &amp; Algorithmic Execution Audit Ledger
+              Multi-Market AI Trade Suggestions &amp; Real-Time News Signals
             </h2>
             <div style="font-size:11.5px; color:var(--text-dim);">
-              Immutable proof-of-execution logs across CoinSwitch Pro, Delta Exchange India, NSE/BSE Indian Equities, and Universal CCXT Brokers.
+              Actionable algorithmic trade setups with precise entry zones, TP1/TP2 targets, hard stop-losses, risk-reward ratios, and breaking macro news catalysts across Commodities, Forex, Crypto, and Indian Markets.
             </div>
           </div>
           <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-            <button class="tsm-btn-secondary" onclick="fetchAuditLogTrades()" title="Refresh Ledger">
-              🔄 REFRESH LEDGER
+            <button class="tsm-btn-secondary" onclick="fetchMultiMarketSignals()" title="Refresh Live Signals">
+              🔄 REFRESH SIGNALS
             </button>
-            <button class="tsm-btn-secondary" onclick="exportAuditTradesCSV()" title="Export CSV">
-              📥 EXPORT CSV
-            </button>
-            <button class="tsm-btn-cta green" onclick="verifyAllAuditHashes()" style="padding:8px 16px; font-size:11px;">
-              ✨ VERIFY ALL HASHES
+            <button class="tsm-btn-cta green" onclick="filterSignalsByMarket('high_conviction', this)" style="padding:8px 16px; font-size:11px;">
+              🔥 HIGH CONVICTION (>90%)
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Audit KPI Summary Cards -->
+      <!-- Signals KPI Summary Cards -->
       <div class="tsm-kpi-grid" style="grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); margin-bottom:14px;">
         <div class="tsm-card" style="border-left:3px solid var(--neon-cyan);">
-          <div class="tsm-card-title">TOTAL SETTLED TRADES</div>
-          <div class="tsm-card-val font-mono" id="auditTotalTradesCount">0</div>
-          <div class="tsm-card-sub text-neon-cyan">Across all connected brokers</div>
+          <div class="tsm-card-title">ACTIVE TRADE SUGGESTIONS</div>
+          <div class="tsm-card-val font-mono" id="signalsTotalCount">14</div>
+          <div class="tsm-card-sub text-neon-cyan">Across 4 global market sectors</div>
         </div>
         <div class="tsm-card" style="border-left:3px solid var(--neon-green);">
-          <div class="tsm-card-title">CUMULATIVE REALIZED P&amp;L</div>
-          <div class="tsm-card-val font-mono text-neon-green" id="auditTotalRealizedPnl">$0.00</div>
-          <div class="tsm-card-sub" id="auditTotalRealizedInr">≈ ₹0.00 INR</div>
+          <div class="tsm-card-title">HIGH-CONVICTION SETUPS</div>
+          <div class="tsm-card-val font-mono text-neon-green" id="signalsHighConvictionCount">8</div>
+          <div class="tsm-card-sub">&ge; 90% AI Consensus Score</div>
         </div>
         <div class="tsm-card" style="border-left:3px solid var(--neon-gold);">
-          <div class="tsm-card-title">OVERALL WIN RATE</div>
-          <div class="tsm-card-val font-mono text-neon-gold" id="auditOverallWinRate">100.0%</div>
-          <div class="tsm-card-sub">Algorithmic + Discretionary</div>
+          <div class="tsm-card-title">AVG RISK : REWARD RATIO</div>
+          <div class="tsm-card-val font-mono text-neon-gold" id="signalsAvgRr">1 : 3.4</div>
+          <div class="tsm-card-sub">Calculated at Entry Trigger</div>
         </div>
         <div class="tsm-card" style="border-left:3px solid var(--neon-purple, #bf5af2);">
-          <div class="tsm-card-title">LEDGER INTEGRITY</div>
-          <div class="tsm-card-val font-mono text-neon-cyan" id="auditLedgerIntegrity">100% SECURE</div>
-          <div class="tsm-card-sub">SHA-256 Proof of Execution</div>
+          <div class="tsm-card-title">COVERED ASSET CLASSES</div>
+          <div class="tsm-card-val font-mono text-neon-cyan">4 MARKETS</div>
+          <div class="tsm-card-sub">Forex • Commodity • Crypto • India</div>
         </div>
       </div>
 
-      <!-- Audit Filter Bar & Search -->
+      <!-- Market Category Filter Ribbons -->
       <div class="tsm-panel" style="margin-bottom:14px; padding:12px 16px;">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-          <!-- Filter Buttons -->
-          <div style="display:flex; gap:6px; flex-wrap:wrap;" id="auditExchangeFilters">
-            <button class="tsm-btn-small green active" onclick="filterAuditTrades('all', this)">ALL MARKETS</button>
-            <button class="tsm-btn-small" onclick="filterAuditTrades('coinswitch', this)">COINSWITCH PRO</button>
-            <button class="tsm-btn-small cyan" onclick="filterAuditTrades('delta', this)">DELTA INDIA</button>
-            <button class="tsm-btn-small gold" onclick="filterAuditTrades('indian', this)">INDIAN BROKERS</button>
-            <button class="tsm-btn-small purple" onclick="filterAuditTrades('ccxt', this)">CCXT GLOBAL</button>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;" id="signalsMarketFilterRibbon">
+            <button class="tsm-btn-small green active" onclick="filterSignalsByMarket('all', this)">🌐 ALL MARKETS</button>
+            <button class="tsm-btn-small gold" onclick="filterSignalsByMarket('commodity', this)">🛢️ COMMODITIES &amp; METALS</button>
+            <button class="tsm-btn-small cyan" onclick="filterSignalsByMarket('forex', this)">💱 FOREX PAIRS</button>
+            <button class="tsm-btn-small purple" onclick="filterSignalsByMarket('crypto', this)">🪙 CRYPTO DERIVATIVES</button>
+            <button class="tsm-btn-small gold" onclick="filterSignalsByMarket('indian', this)">🇮🇳 INDIAN EQUITIES &amp; F&amp;O</button>
           </div>
-          <!-- Quick Search -->
           <div style="display:flex; gap:8px; align-items:center;">
-            <input type="text" id="auditSearchInput" class="tsm-input font-mono" placeholder="🔍 Search symbol, hash, order ID..." style="width:240px; padding:6px 12px; font-size:11px;" oninput="handleAuditSearch()">
+            <input type="text" id="signalsSearchInput" class="tsm-input font-mono" placeholder="🔍 Search asset, catalyst, broker..." style="width:240px; padding:6px 12px; font-size:11px;" oninput="handleSignalsSearch()">
           </div>
         </div>
       </div>
 
-      <!-- Main Cryptographic Audit Table -->
+      <!-- Dynamic Trade Suggestion Cards Grid -->
+      <div id="multiMarketSignalsGrid" class="multi-market-signals-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:14px; margin-bottom:16px;">
+        <!-- Dynamically rendered signal cards injected here -->
+      </div>
+
+      <!-- Tabular Signals Overview Container -->
       <div class="tsm-panel" style="padding:0; overflow:hidden;">
+        <div class="tsm-panel-header" style="padding:12px 16px; border-bottom:1px solid rgba(255,255,255,0.08); display:flex; justify-content:space-between; align-items:center;">
+          <div class="tsm-panel-title">📋 FULL MULTI-MARKET SIGNALS &amp; CATALYST REGISTER</div>
+          <span class="tsm-badge-pill green">REAL-TIME CONSENSUS</span>
+        </div>
         <div class="tsm-table-responsive">
           <table class="tsm-table">
             <thead>
               <tr>
-                <th style="width:140px;">TIMESTAMP (UTC)</th>
-                <th>ORDER ID &amp; PROOF HASH</th>
-                <th>EXCHANGE / BROKER</th>
-                <th>ASSET / PAIR</th>
-                <th>SIDE</th>
-                <th class="text-right">ENTRY PRICE</th>
-                <th class="text-right">EXIT PRICE</th>
-                <th class="text-right">SIZE / QTY</th>
-                <th class="text-right">REALIZED P&amp;L</th>
-                <th class="text-right">RETURN %</th>
-                <th>STRATEGY ENGINE</th>
-                <th class="text-center">CRYPTOGRAPHIC VERIFICATION</th>
+                <th>MARKET</th>
+                <th>ASSET / SYMBOL</th>
+                <th>ACTION</th>
+                <th class="text-right">ENTRY ZONE</th>
+                <th class="text-right">TARGET 1</th>
+                <th class="text-right">TARGET 2</th>
+                <th class="text-right">STOP LOSS</th>
+                <th>RISK/REWARD</th>
+                <th>AI CONFIDENCE</th>
+                <th>NEWS CATALYST / REASONING</th>
+                <th>SUPPORTED BROKERS</th>
+                <th class="text-center">ACTION</th>
               </tr>
             </thead>
-            <tbody id="auditTradesTbody">
+            <tbody id="multiMarketSignalsTbody">
               <tr>
                 <td colspan="12" class="text-center" style="padding:28px; color:var(--text-dim);">
                   <div class="nc-spinner-mini" style="margin:0 auto 10px auto;"></div>
-                  Loading cryptographic trade audit trail...
+                  Loading real-time multi-market AI trade suggestions...
                 </td>
               </tr>
             </tbody>
@@ -2029,8 +2033,8 @@
         <div class="tsm-panel tsm-admin-head-panel">
           <div>
             <span class="tsm-badge-pill admin">👑 SUPER ADMIN ENTERPRISE ACTIVE</span>
-            <h2 class="tsm-admin-title">TheSmartMag Quant AI Command &amp; Operations Center</h2>
-            <div class="tsm-admin-sub">Connected Cluster: <strong>trade.thesmartmag.com</strong> • Cluster Health: <span class="green">99.98% OPTIMAL</span></div>
+            <h2 class="tsm-admin-title">Master Administration &amp; Control Portal</h2>
+            <div class="tsm-admin-sub">Central Management Console &bull; Full Platform Authority</div>
           </div>
           <div class="tsm-admin-actions">
             <button class="tsm-btn-secondary" onclick="openCommandPalette()" title="Press Ctrl+K">⌨️ COMMAND PALETTE (Ctrl+K)</button>

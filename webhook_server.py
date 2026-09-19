@@ -24,6 +24,7 @@ from dual_exchange import DualExecutionAgent
 from agents import AuditLogger, RiskManagerAgent
 from notifier import TelegramNotifier
 from nemotron_agent import NemotronAnalysisAgent
+from multi_market_signals_service import get_multi_market_signals
 
 # ── ATLAS Self-Improving AI Engine ────────────────────────────────────────────
 try:
@@ -878,8 +879,10 @@ def get_terminal_data():
                 "volume_profile": volume_profile,
                 "pair_value": pair_value,
                 "robustness": robustness,
-                "flow_engineering": flow_engineering
-            }
+                "flow_engineering": flow_engineering,
+                "signals_feed": get_multi_market_signals("all") if 'get_multi_market_signals' in globals() else []
+            },
+            "signals_feed": get_multi_market_signals("all") if 'get_multi_market_signals' in globals() else []
         }
         with API_CACHE_LOCK:
             LAST_API_CACHE_DATA = payload

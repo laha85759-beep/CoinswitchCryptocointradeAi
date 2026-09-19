@@ -1536,4 +1536,28 @@ def get_crypto_trade_audit():
         }
     })
 
-print("api_routes.py Universal Multi-Broker, JournalIt & Audit Trail integration complete!")
+# ── 14. MULTI-MARKET AI TRADE SUGGESTIONS (CRYPTO • FOREX • COMMODITIES • INDIA) ──
+from multi_market_signals_service import get_multi_market_signals
+
+@api_bp.route("/api/signals/suggestions", methods=["GET"])
+@api_bp.route("/api/signals/live", methods=["GET"])
+def get_live_signals_suggestions():
+    market = request.args.get("market", "all").strip().lower()
+    min_conf = int(request.args.get("min_confidence", 75))
+    signals = get_multi_market_signals(market_filter=market, min_confidence=min_conf)
+    
+    # Calculate market-wide statistics
+    high_conviction_count = len([s for s in signals if s.get("confidence", 0) >= 95])
+    avg_conf = round(sum(s.get("confidence", 0) for s in signals) / max(1, len(signals)), 1)
+    
+    return jsonify({
+        "status": "success",
+        "signals": signals,
+        "total_signals": len(signals),
+        "high_conviction_count": high_conviction_count,
+        "avg_confidence": avg_conf,
+        "markets": ["Crypto", "Forex", "Commodities", "Indian Equities & F&O"],
+        "timestamp": int(time.time())
+    })
+
+print("api_routes.py Multi-Market Trade Suggestions & User Persistence integration complete!")
