@@ -6033,8 +6033,6 @@ window.closeCoinDetailsModal = function() {
 window.handleCoinDetailsBackdropClick = function(e) {
   if (e.target.id === "coinDetailsModal") closeCoinDetailsModal();
 };
-  if (e.target.id === "coinDetailsModal") closeCoinDetailsModal();
-};
 
 window.handleCoinModalOpenChart = function() {
   closeCoinDetailsModal();
