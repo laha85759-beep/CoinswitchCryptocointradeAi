@@ -15,6 +15,7 @@ Compatible with PineScript alertcondition() & Zing Trade webhook format:
 
 import logging
 import time
+import threading
 from flask import Flask, request, jsonify
 
 from coinswitch_client import CoinSwitchClient
