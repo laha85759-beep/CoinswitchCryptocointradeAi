@@ -30,7 +30,8 @@ def base_config():
         "max_trades_per_hour": 2,
         "daily_max_drawdown_pct": 5.0,
         "min_order_usdt": 10.0,
-        "stop_loss_pct": 3.0,
+        "min_rr_ratio": 3.0,
+        "stop_loss_pct": 1.5,
         "take_profit_pct": 6.0,
         "risk_order_type": "limit",
         "slippage_tolerance_pct": 1.0,
@@ -100,6 +101,15 @@ class AgentSafetyTests(unittest.TestCase):
 
     def test_production_default_is_live_trading(self):
         self.assertFalse(CONFIG["paper_trading_mode"])
+
+    def test_capital_survival_rejects_rr_below_3(self):
+        risk = RiskManagerAgent(base_config(), FakeClient(), AuditLogger())
+        low_rr_signal = signal()
+        low_rr_signal["hard_sl_pct"] = 2.0
+        low_rr_signal["take_profit_pct"] = 3.0  # R:R = 1.5 < 3.0
+        result = risk.evaluate([low_rr_signal])[0]
+        self.assertFalse(result["approved"])
+        self.assertIn("capital_survival_rr_ratio", result["reason"])
 
 
 if __name__ == "__main__":
