@@ -13,13 +13,25 @@ from database import (
     get_all_users_for_admin, get_user_crm_profile,
     get_superadmin_kpis, get_visitor_analytics,
     get_affiliate_analytics, get_sales_analytics,
-    track_affiliate_click, record_sale, get_db
+    track_affiliate_click, record_sale, get_db,
+    is_ip_banned, ban_ip, unban_ip, get_all_banned_ips
 )
 from email_service import send_welcome_email, send_password_reset_email, send_inquiry_confirmation, send_login_alert_email
 from coinswitch_client import CoinSwitchClient
 from delta_client import DeltaClient
 
 api_bp = Blueprint("multi_tenant_api", __name__)
+
+def load_json_safe(filepath, default=None):
+    if default is None:
+        default = []
+    try:
+        if os.path.exists(filepath):
+            with open(filepath, "r", encoding="utf-8") as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return default
 
 def get_bearer_user():
     auth_header = request.headers.get("Authorization", "")
@@ -1687,25 +1699,43 @@ def admin_saas_toggle_perm(admin_user):
         "message": f"Successfully set {service_name} to {'ON' if enabled else 'OFF'} for User #{target_user_id}"
     })
 
-@api_bp.route("/api/admin/saas/update-user-plan", methods=["POST"])
+@api_bp.route("/api/admin/security/banned-ips", methods=["GET"])
 @superadmin_required
-def admin_saas_update_plan(admin_user):
-    data = request.get_json(silent=True) or {}
-    target_user_id = data.get("user_id")
-    plan_id = data.get("plan_id", "starter")
-    interval = data.get("interval", "monthly")
-    days_to_add = int(data.get("days", 30))
-    
-    if not target_user_id:
-        return jsonify({"status": "error", "message": "user_id required"}), 400
-        
-    now = int(time.time())
-    expires_at = now + (days_to_add * 86400)
-    update_user_subscription(int(target_user_id), plan_id, interval, expires_at, status="active")
-    
+def admin_get_banned_ips(admin_user):
+    banned_list = get_all_banned_ips()
     return jsonify({
         "status": "success",
-        "message": f"User #{target_user_id} upgraded to {plan_id.upper()} for {days_to_add} days."
+        "banned_ips": banned_list,
+        "count": len(banned_list)
     })
+
+@api_bp.route("/api/admin/security/ban-ip", methods=["POST"])
+@superadmin_required
+def admin_manual_ban_ip(admin_user):
+    data = request.get_json(silent=True) or {}
+    target_ip = data.get("ip", "").strip()
+    reason = data.get("reason", "Manually banned by Super Admin").strip()
+    if not target_ip:
+        return jsonify({"status": "error", "message": "Valid IP address is required"}), 400
+    ban_ip(target_ip, reason, "Manual Admin Action")
+    return jsonify({
+        "status": "success",
+        "message": f"IP {target_ip} has been permanently blacklisted."
+    })
+
+@api_bp.route("/api/admin/security/unban-ip", methods=["POST"])
+@superadmin_required
+def admin_unban_ip(admin_user):
+    data = request.get_json(silent=True) or {}
+    target_ip = data.get("ip", "").strip()
+    if not target_ip:
+        return jsonify({"status": "error", "message": "Valid IP address is required"}), 400
+    success = unban_ip(target_ip)
+    if success:
+        return jsonify({
+            "status": "success",
+            "message": f"IP {target_ip} has been removed from the blacklist."
+        })
+    return jsonify({"status": "error", "message": "Failed to unban IP"}), 400
 
 print("api_routes.py Multi-Market Trade Suggestions, SaaS Subscription & User Persistence integration complete!")

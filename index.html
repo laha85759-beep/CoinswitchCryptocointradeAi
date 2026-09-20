@@ -2865,8 +2865,11 @@
 
         <!-- ══════════ TAB 13: SECURITY & SESSIONS ══════════ -->
         <div id="admin-sec-security" class="admin-sub-section">
-          <div class="tsm-panel">
-            <div class="tsm-panel-header"><div class="tsm-panel-title">🔐 ENTERPRISE SECURITY &amp; ACTIVE SESSION GOVERNANCE</div><span class="tsm-badge-pill admin">AES-256 ENCRYPTED</span></div>
+          <div class="tsm-panel" style="margin-bottom:14px;">
+            <div class="tsm-panel-header">
+              <div class="tsm-panel-title">🔐 ENTERPRISE SECURITY &amp; EDGE FIREWALL GOVERNANCE</div>
+              <span class="tsm-badge-pill admin">WAF ACTIVE • AES-256 ENCRYPTED</span>
+            </div>
             <div class="tsm-split-row">
               <div class="tsm-panel">
                 <div class="tsm-panel-header"><div class="tsm-panel-title">🛡 ACTIVE ADMIN SESSIONS</div></div>
@@ -2874,15 +2877,58 @@
                 <hr class="tsm-divider">
                 <div class="tsm-ctrl-row"><div><strong>Two-Factor Authentication (2FA)</strong><div class="tsm-ctrl-sub">TOTP &amp; Hardware Security Key</div></div><span class="green font-mono">ENFORCED ✓</span></div>
                 <hr class="tsm-divider">
-                <button class="tsm-btn-danger" style="width:100%; margin-top:10px;">REVOKE ALL OTHER SESSIONS</button>
+                <div class="tsm-ctrl-row"><div><strong>Automated Exploit &amp; Probe Blocker</strong><div class="tsm-ctrl-sub">Scans for .env, .git, SQLi, XSS, and bot scanners</div></div><span class="green font-mono">AUTOMATIC BAN ✓</span></div>
               </div>
 
               <div class="tsm-panel">
-                <div class="tsm-panel-header"><div class="tsm-panel-title">🚫 IP FIREWALL &amp; BRUTE-FORCE SHIELD</div></div>
-                <div class="tsm-ctrl-row"><div><strong>Cloudflare WAF Rate Limiting</strong><div class="tsm-ctrl-sub">Max 100 req/min per IP</div></div><span class="green font-mono">ACTIVE ✓</span></div>
-                <hr class="tsm-divider">
-                <div class="tsm-ctrl-row"><div><strong>Failed Login Attempts (24h)</strong><div class="tsm-ctrl-sub">Zero unauthorized breaches</div></div><span class="green font-mono">0 BLOCKED</span></div>
+                <div class="tsm-panel-header">
+                  <div class="tsm-panel-title">🚫 MANUAL IP BLACKLIST COMMAND</div>
+                </div>
+                <p style="font-size:11px; color:var(--text-sec); margin-bottom:10px;">
+                  Permanently ban any abusive visitor or attacker by IP address. Once blacklisted, they are completely blocked at the server level, even after clearing cookies, cache, or using private browsing.
+                </p>
+                <form id="adminManualBanForm" onsubmit="handleAdminManualBanIp(event)" style="display:flex; flex-direction:column; gap:8px;">
+                  <div style="display:grid; grid-template-columns:1fr 1.5fr; gap:8px;">
+                    <input type="text" id="adminBanIpInput" class="tsm-input font-mono" placeholder="IP Address (e.g. 192.168.1.5)" required style="padding:7px 10px; font-size:11.5px;">
+                    <input type="text" id="adminBanReasonInput" class="tsm-input" placeholder="Ban Reason (e.g. Unauthorized scraper/probe)" required style="padding:7px 10px; font-size:11.5px;">
+                  </div>
+                  <button type="submit" class="tsm-btn-danger" style="padding:7px 14px; font-size:11.5px; font-weight:700;">
+                    🚫 BAN &amp; BLACKLIST IP PERMANENTLY
+                  </button>
+                </form>
               </div>
+            </div>
+          </div>
+
+          <!-- Banned IPs Active Registry Table -->
+          <div class="tsm-panel">
+            <div class="tsm-panel-header">
+              <div class="tsm-panel-title">🚫 PERMANENTLY BLACKLISTED IP ADDRESSES</div>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <span class="tsm-badge-pill gold font-mono" id="adminBannedIpsCountBadge">0 BLOCKED</span>
+                <button class="tsm-btn-small green" onclick="fetchAdminBannedIps(true)">🔄 REFRESH FIREWALL</button>
+              </div>
+            </div>
+            <div style="overflow-x:auto;">
+              <table class="tsm-table">
+                <thead>
+                  <tr>
+                    <th>IP ADDRESS</th>
+                    <th>REASON / TRIGGER</th>
+                    <th>VIOLATION STRIKES</th>
+                    <th>USER AGENT / SIGNATURE</th>
+                    <th>BANNED AT</th>
+                    <th>ACTION</th>
+                  </tr>
+                </thead>
+                <tbody id="adminBannedIpsTbody">
+                  <tr>
+                    <td colspan="6" class="text-center" style="padding:22px; color:var(--text-dim);">
+                      Loading active IP firewall blacklist...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

@@ -3630,8 +3630,146 @@ function switchAdminSubTab(sectionId, btn) {
     fetchAdminSales(true);
   } else if (sectionId === 'analytics') {
     renderAdminAnalyticsCurve();
+  } else if (sectionId === 'security') {
+    fetchAdminBannedIps(true);
   }
 }
+
+// ── 12d. Admin Security Firewall & Banned IPs Management ───────────────────
+async function fetchAdminBannedIps(showToastNotice = false) {
+  const tbody = document.getElementById("adminBannedIpsTbody");
+  const countBadge = document.getElementById("adminBannedIpsCountBadge");
+  const token = sessionStorage.getItem("tsm_admin_token") || localStorage.getItem("tsm_user_token") || userToken;
+  if (!token) return;
+
+  try {
+    const res = await fetch("/api/admin/security/banned-ips", {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (data.status === "success") {
+      const list = data.banned_ips || [];
+      if (countBadge) countBadge.textContent = `${list.length} BLOCKED`;
+
+      if (!tbody) return;
+      if (list.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="text-center" style="padding:24px; color:var(--text-dim);">
+              No active IP blocks. Real-time firewall is actively guarding all endpoints against automated probes, SQLi, and scrapers.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = list.map(item => {
+        const banDate = item.banned_at ? new Date(item.banned_at * 1000).toLocaleString() : '--';
+        return `
+          <tr>
+            <td class="font-mono" style="color:var(--neon-pink); font-weight:700;">
+              🚫 ${escapeHtml(item.ip)}
+            </td>
+            <td style="max-width:260px; font-size:11px; color:#cbd5e1;">
+              ${escapeHtml(item.reason || 'Security policy violation')}
+            </td>
+            <td class="font-mono text-center">
+              <span class="tsm-badge-pill gold" style="font-size:10px;">${item.strikes || 1} STRIKE${item.strikes === 1 ? '' : 'S'}</span>
+            </td>
+            <td style="max-width:220px; font-size:10px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(item.user_agent || '')}">
+              ${escapeHtml(item.user_agent || 'Unknown UA')}
+            </td>
+            <td class="font-mono text-dim" style="font-size:10.5px;">
+              ${banDate}
+            </td>
+            <td>
+              <button class="tsm-btn-small green" onclick="handleAdminUnbanIp('${escapeHtml(item.ip)}')" title="Unban IP">
+                ✓ PARDON / UNBAN
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+      if (showToastNotice && typeof showToast === "function") {
+        showToast(`Refreshed IP Firewall: ${list.length} addresses currently blocked.`, "info");
+      }
+    }
+  } catch (err) {
+    console.debug("fetchAdminBannedIps notice:", err);
+  }
+}
+window.fetchAdminBannedIps = fetchAdminBannedIps;
+
+async function handleAdminManualBanIp(e) {
+  if (e) e.preventDefault();
+  const ipInput = document.getElementById("adminBanIpInput");
+  const reasonInput = document.getElementById("adminBanReasonInput");
+  const token = sessionStorage.getItem("tsm_admin_token") || localStorage.getItem("tsm_user_token") || userToken;
+
+  const targetIp = (ipInput?.value || "").trim();
+  const reason = (reasonInput?.value || "").trim() || "Manual Super Admin Blacklist";
+
+  if (!targetIp) {
+    alert("Please enter a valid IP address.");
+    return;
+  }
+
+  if (!confirm(`Are you sure you want to permanently blacklist IP: ${targetIp}?\n\nThis visitor will be immediately blocked from accessing trade.thesmartmag.com regardless of cookies or incognito mode.`)) {
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/admin/security/ban-ip", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ ip: targetIp, reason })
+    });
+    const data = await res.json();
+    if (res.ok && data.status === "success") {
+      alert(`✅ Success: ${data.message}`);
+      if (ipInput) ipInput.value = "";
+      if (reasonInput) reasonInput.value = "";
+      fetchAdminBannedIps();
+    } else {
+      alert(`Error: ${data.message || 'Failed to ban IP'}`);
+    }
+  } catch (err) {
+    alert(`Network error: ${err.message}`);
+  }
+}
+window.handleAdminManualBanIp = handleAdminManualBanIp;
+
+async function handleAdminUnbanIp(ip) {
+  const token = sessionStorage.getItem("tsm_admin_token") || localStorage.getItem("tsm_user_token") || userToken;
+  if (!confirm(`Remove IP ${ip} from the blacklist and restore access?`)) {
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/admin/security/unban-ip", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ ip })
+    });
+    const data = await res.json();
+    if (res.ok && data.status === "success") {
+      alert(`✅ Success: ${data.message}`);
+      fetchAdminBannedIps();
+    } else {
+      alert(`Error: ${data.message || 'Failed to unban IP'}`);
+    }
+  } catch (err) {
+    alert(`Network error: ${err.message}`);
+  }
+}
+window.handleAdminUnbanIp = handleAdminUnbanIp;
 
 function renderAdminAnalyticsCurve() {
   const canvas = document.getElementById("adminEquityCurveCanvas");

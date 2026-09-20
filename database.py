@@ -306,7 +306,18 @@ def init_db():
     ''')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_activity_time ON activity_logs(timestamp)')
     
-    # ── Auto-Migration for existing databases ───────────────────────────────
+    # 19. Banned IPs Table (Permanent Firewall, Anti-Hacking & Anti-DDoS)
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS banned_ips (
+        ip TEXT PRIMARY KEY,
+        reason TEXT NOT NULL,
+        banned_at INTEGER NOT NULL,
+        strikes INTEGER DEFAULT 1,
+        user_agent TEXT DEFAULT "",
+        last_attempt_at INTEGER NOT NULL
+    )
+    ''')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_banned_ips_banned_at ON banned_ips(banned_at)')
     try:
         cursor.execute("PRAGMA table_info(users)")
         existing_cols = [r["name"] for r in cursor.fetchall()]
@@ -2036,5 +2047,95 @@ def log_platform_activity(user_id: int, action: str, metadata: dict = None):
     except Exception as e:
         print(f"Error logging activity: {e}")
 
+# ═══════════════════════════════════════════════════════════════════════════
+# PERMANENT IP BANNING, ANTI-HACKING & FIREWALL ENGINE
+# ═══════════════════════════════════════════════════════════════════════════
+
+import threading
+_BANNED_IPS_CACHE = set()
+_BANNED_IPS_LOADED = False
+_BANNED_LOCK = threading.Lock()
+
+def load_banned_ips_cache():
+    global _BANNED_IPS_CACHE, _BANNED_IPS_LOADED
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT ip FROM banned_ips")
+        rows = cursor.fetchall()
+        with _BANNED_LOCK:
+            _BANNED_IPS_CACHE = {str(r["ip"]).strip() for r in rows if r["ip"]}
+            _BANNED_IPS_LOADED = True
+        conn.close()
+    except Exception:
+        pass
+
+def is_ip_banned(ip: str) -> bool:
+    global _BANNED_IPS_CACHE, _BANNED_IPS_LOADED
+    if not ip:
+        return False
+    ip = str(ip).strip()
+    if not _BANNED_IPS_LOADED:
+        load_banned_ips_cache()
+    with _BANNED_LOCK:
+        return ip in _BANNED_IPS_CACHE
+
+def ban_ip(ip: str, reason: str, user_agent: str = ""):
+    global _BANNED_IPS_CACHE
+    if not ip:
+        return
+    ip = str(ip).strip()
+    # Never ban local loopback
+    if ip in ("127.0.0.1", "::1", "localhost", "0.0.0.0"):
+        return
+    now = int(time.time())
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO banned_ips (ip, reason, banned_at, strikes, user_agent, last_attempt_at)
+            VALUES (?, ?, ?, 1, ?, ?)
+            ON CONFLICT(ip) DO UPDATE SET
+                reason = excluded.reason,
+                strikes = strikes + 1,
+                user_agent = excluded.user_agent,
+                last_attempt_at = excluded.last_attempt_at
+        ''', (ip, str(reason)[:200], now, str(user_agent)[:250], now))
+        conn.commit()
+        conn.close()
+        with _BANNED_LOCK:
+            _BANNED_IPS_CACHE.add(ip)
+    except Exception as e:
+        print(f"Error banning IP {ip}: {e}")
+
+def unban_ip(ip: str) -> bool:
+    global _BANNED_IPS_CACHE
+    if not ip:
+        return False
+    ip = str(ip).strip()
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM banned_ips WHERE ip = ?", (ip,))
+        conn.commit()
+        conn.close()
+        with _BANNED_LOCK:
+            _BANNED_IPS_CACHE.discard(ip)
+        return True
+    except Exception:
+        return False
+
+def get_all_banned_ips():
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT ip, reason, banned_at, strikes, user_agent, last_attempt_at FROM banned_ips ORDER BY last_attempt_at DESC LIMIT 200")
+        rows = [dict(r) for r in cursor.fetchall()]
+        conn.close()
+        return rows
+    except Exception:
+        return []
+
 # Initialize on import
-init_db()
+init_db()
+load_banned_ips_cache()

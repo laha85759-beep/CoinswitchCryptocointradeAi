@@ -85,27 +85,104 @@ def get_live_ticker_bar():
 from api_routes import api_bp
 app.register_blueprint(api_bp)
 
-from database import log_visitor, track_affiliate_click
+from database import log_visitor, track_affiliate_click, is_ip_banned, ban_ip, get_all_banned_ips, unban_ip
+
+# ═══════════════════════════════════════════════════════════════════════════
+# HIGH-SECURITY WAF (WEB APPLICATION FIREWALL) & AUTOMATED IP BLACKLIST
+# ═══════════════════════════════════════════════════════════════════════════
+SUSPICIOUS_PATHS = (
+    "/.env", "/.git", "/wp-admin", "/wp-login", "/phpmyadmin", "/.aws", "/admin.php",
+    "/xmlrpc.php", "/actuator", "/config.json", "/server-status", "../", "/etc/passwd",
+    "/telescope", "/.ds_store", "/web.config", "/cgi-bin", "/swagger-ui", "/eval-stdin",
+    "/phpinfo", "/composer.json", "/package.json", "/id_rsa", "/.ssh", "/boaform"
+)
+
+SUSPICIOUS_PATTERNS = (
+    "union select", "order by", "information_schema", ";drop table", "exec xp_",
+    "<script", "javascript:", "onload=", "onerror=", "..\\", "etc/shadow",
+    "btoa(", "base64_decode"
+)
+
+_IP_REQ_WINDOW = {}
+_IP_REQ_LOCK = threading.Lock()
+MAX_REQS_PER_MINUTE = 180
 
 @app.before_request
-def record_real_visitor():
+def security_firewall_and_visitor_logging():
     try:
-        path = request.path
-        # Skip static assets
-        if path.startswith("/static") or path.endswith((".css", ".js", ".png", ".jpg", ".jpeg", ".svg", ".ico", ".woff", ".woff2", ".map", ".jsonl")):
-            return
-        
-        # Real client IP detection
+        # Real client IP detection (resolves through Cloudflare, reverse proxies & load balancers)
         ip = (
             request.headers.get("CF-Connecting-IP") or
             request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or
             request.headers.get("X-Real-IP") or
             request.remote_addr or
             "127.0.0.1"
-        )
+        ).strip()
+
+        path = request.path
+        path_lower = path.lower()
+        ua = request.headers.get("User-Agent", "")
+
+        # 1. IMMEDIATE CHECK: Is this IP permanently blacklisted?
+        if is_ip_banned(ip):
+            log.warning(f"🚫 [FIREWALL BLOCKED] Connection rejected from permanently banned IP: {ip} -> {path}")
+            return jsonify({
+                "status": "error",
+                "error": "ACCESS_DENIED_PERMANENT_IP_BAN",
+                "message": f"Security Alert: Your IP address [{ip}] has been permanently blacklisted due to automated security violation detection. This restriction cannot be bypassed by clearing cookies, cache, or switching browsers.",
+                "support": "support@thesmartmag.com"
+            }), 403
+
+        # 2. AUTOMATED EXPLOIT SCANNER & PROBE DETECTION
+        for s_path in SUSPICIOUS_PATHS:
+            if s_path in path_lower:
+                reason = f"Automated vulnerability scanning / probe attempt: {path}"
+                log.error(f"🚨 [INSTANT IP BAN] Hacker probe detected from {ip}: {reason}")
+                ban_ip(ip, reason, ua)
+                return jsonify({
+                    "status": "error",
+                    "error": "IP_PERMANENTLY_BANNED",
+                    "message": "Security Violation Detected. Your IP has been permanently blacklisted."
+                }), 403
+
+        # 3. SQL INJECTION / XSS / PAYLOAD DETECTION in Query Strings
+        query_str = request.query_string.decode("utf-8", errors="ignore").lower()
+        for s_pat in SUSPICIOUS_PATTERNS:
+            if s_pat in query_str or s_pat in path_lower:
+                reason = f"Malicious injection attack payload detected: {s_pat}"
+                log.error(f"🚨 [INSTANT IP BAN] Injection attack from {ip}: {reason}")
+                ban_ip(ip, reason, ua)
+                return jsonify({
+                    "status": "error",
+                    "error": "IP_PERMANENTLY_BANNED",
+                    "message": "Malicious payload detected. Your IP has been permanently blacklisted."
+                }), 403
+
+        # 4. RATE LIMITING & ANTI-DDOS / SCRAPER FLOOD PROTECTION
+        if not path.startswith("/static") and not path.endswith((".css", ".js", ".png", ".jpg", ".svg", ".ico", ".woff", ".woff2")):
+            now = time.time()
+            with _IP_REQ_LOCK:
+                timestamps = _IP_REQ_WINDOW.get(ip, [])
+                timestamps = [t for t in timestamps if now - t < 60.0]
+                timestamps.append(now)
+                _IP_REQ_WINDOW[ip] = timestamps
+                
+                if len(timestamps) > MAX_REQS_PER_MINUTE:
+                    reason = f"DDoS / Scraper flood detected: {len(timestamps)} requests within 60s"
+                    log.error(f"🚨 [INSTANT IP BAN] Rate limit flood from {ip}: {reason}")
+                    ban_ip(ip, reason, ua)
+                    return jsonify({
+                        "status": "error",
+                        "error": "RATE_LIMIT_EXCEEDED_BANNED",
+                        "message": "Aggressive request flooding detected. Your IP has been permanently blacklisted."
+                    }), 403
+
+        # Skip static assets for analytics
+        if path.startswith("/static") or path.endswith((".css", ".js", ".png", ".jpg", ".jpeg", ".svg", ".ico", ".woff", ".woff2", ".map", ".jsonl")):
+            return
+
         country = request.headers.get("CF-IPCountry", "US")
         referrer = request.referrer or ""
-        ua = request.headers.get("User-Agent", "")
 
         # Log genuine visitor to SQLite database
         log_visitor(ip, path, referrer, ua, country)
