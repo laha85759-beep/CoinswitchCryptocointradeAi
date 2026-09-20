@@ -22,9 +22,14 @@ EXCHANGE_USDT = "c2c1"
 class CoinSwitchClient:
     def __init__(self, api_key: str, api_secret: str, rate_limit_delay: float = 1.0):
         self.api_key = api_key
-        self.secret = ed25519.Ed25519PrivateKey.from_private_bytes(
-            bytes.fromhex(api_secret)
-        )
+        try:
+            raw_bytes = bytes.fromhex(api_secret or "")
+            if len(raw_bytes) == 32:
+                self.secret = ed25519.Ed25519PrivateKey.from_private_bytes(raw_bytes)
+            else:
+                self.secret = None
+        except Exception:
+            self.secret = None
         self.session = requests.Session()
         self.session.trust_env = False
         self.rate_limit_delay = rate_limit_delay
@@ -40,7 +45,7 @@ class CoinSwitchClient:
         decoded = urllib.parse.unquote_plus(path)
         epoch = str(int(time.time() * 1000))
         message = method + decoded + epoch
-        signature = self.secret.sign(message.encode("utf-8")).hex()
+        signature = self.secret.sign(message.encode("utf-8")).hex() if self.secret else "simulated_signature"
         headers = {
             "Content-Type": "application/json",
             "X-AUTH-APIKEY": self.api_key,
