@@ -2056,15 +2056,34 @@ _BANNED_IPS_CACHE = set()
 _BANNED_IPS_LOADED = False
 _BANNED_LOCK = threading.Lock()
 
+# Permanent Whitelist: Platform Owner / Super Admin IPs and Localhost
+ADMIN_WHITELISTED_IPS = {
+    "45.251.233.191",
+    "127.0.0.1",
+    "::1",
+    "localhost",
+    "0.0.0.0"
+}
+_env_whitelist = os.environ.get("ADMIN_WHITELIST_IPS", "")
+if _env_whitelist:
+    for _wip in _env_whitelist.split(","):
+        if _wip.strip():
+            ADMIN_WHITELISTED_IPS.add(_wip.strip())
+
 def load_banned_ips_cache():
     global _BANNED_IPS_CACHE, _BANNED_IPS_LOADED
     try:
         conn = get_db()
         cursor = conn.cursor()
+        # Automatically unban and purge any whitelisted IPs from database
+        for w_ip in ADMIN_WHITELISTED_IPS:
+            cursor.execute("DELETE FROM banned_ips WHERE ip = ?", (w_ip,))
+        conn.commit()
+
         cursor.execute("SELECT ip FROM banned_ips")
         rows = cursor.fetchall()
         with _BANNED_LOCK:
-            _BANNED_IPS_CACHE = {str(r["ip"]).strip() for r in rows if r["ip"]}
+            _BANNED_IPS_CACHE = {str(r["ip"]).strip() for r in rows if r["ip"] and str(r["ip"]).strip() not in ADMIN_WHITELISTED_IPS}
             _BANNED_IPS_LOADED = True
         conn.close()
     except Exception:
@@ -2075,6 +2094,9 @@ def is_ip_banned(ip: str) -> bool:
     if not ip:
         return False
     ip = str(ip).strip()
+    # Admin / Owner whitelist bypass - Never block
+    if ip in ADMIN_WHITELISTED_IPS:
+        return False
     if not _BANNED_IPS_LOADED:
         load_banned_ips_cache()
     with _BANNED_LOCK:
@@ -2085,8 +2107,8 @@ def ban_ip(ip: str, reason: str, user_agent: str = ""):
     if not ip:
         return
     ip = str(ip).strip()
-    # Never ban local loopback
-    if ip in ("127.0.0.1", "::1", "localhost", "0.0.0.0"):
+    # Never ban admin or local loopback
+    if ip in ADMIN_WHITELISTED_IPS:
         return
     now = int(time.time())
     try:

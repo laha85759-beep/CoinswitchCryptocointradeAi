@@ -228,31 +228,28 @@ class DualExecutionAgent:
                     "reason": f"delta_balance_{delta_balance:.2f}_too_low",
                     "symbol": symbol,
                 }
-            # Smart Dynamic Volatility-Based Adaptive Leverage Engine (5x - 20x)
-            # Scales leverage dynamically based on signal confidence & volume surge:
-            # - High Conviction (>=90% Conf / >=3x Vol): MAX 20x Leverage for HUGE EXPLOSIVE PROFITS
-            # - Strong Trend (>=82% Conf / >=2x Vol): 12x Leverage
-            # - Volatile / Noisy Market: 8x Leverage to prevent stop-outs
+            # Smart Dynamic Volatility-Based Adaptive Leverage Engine (4x - 10x)
+            # Conservative leverage & strict margin budgeting to protect account capital
             confidence = float(approval.get("confidence", 0.80) or 0.80)
             vol_ratio = float(signal.get("supporting_data", {}).get("volume_ratio", 2.0) or 2.0)
             
-            if confidence >= 0.90 or vol_ratio >= 3.0:
-                leverage = 20  # MAX 20x Leverage on high-conviction explosive pumps for massive profits!
-            elif confidence >= 0.82 or vol_ratio >= 2.0:
-                leverage = 12  # Optimal 12x Leverage on strong trend setups
+            if confidence >= 0.92 and vol_ratio >= 2.5:
+                leverage = 10  # Max 10x Leverage on ultra-high conviction
+            elif confidence >= 0.88 or vol_ratio >= 1.8:
+                leverage = 7   # 7x Leverage on strong trend setups
             else:
-                leverage = 8   # Safe 8x Leverage on volatile altcoin setups
+                leverage = 4   # Safe 4x Leverage on volatile altcoin setups
 
-            # Force max margin to not exceed 85% of available balance to guarantee order fill success
-            max_pos_margin = delta_balance * 0.85
+            # Strict risk safeguard: Never risk more than 25% of account balance on a single position
+            max_pos_margin = delta_balance * 0.25
             position_usd = min(position_usd, max_pos_margin * leverage)
         else:
-            leverage = 20
+            leverage = 5
 
         # Dynamic risk-based lot size (contracts) considering contract_value & leverage
         contract_notional = current_price * contract_val
         if contract_notional > 0:
-            max_contracts_for_balance = int((delta_balance * 0.85 * leverage) / contract_notional) if delta_balance > 0 else 0
+            max_contracts_for_balance = int((max_pos_margin * leverage) / contract_notional) if delta_balance > 0 else 0
             if max_contracts_for_balance < 1 and (contract_notional / leverage) > delta_balance:
                 log.warning("Delta order skipped for %s: 1 contract requires $%.4f margin, available is $%.4f",
                             symbol, (contract_notional / leverage), delta_balance)

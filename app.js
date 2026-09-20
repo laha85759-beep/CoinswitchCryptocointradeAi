@@ -11,6 +11,20 @@ let currentView = "terminal";
 let adminToken = sessionStorage.getItem("tsm_admin_token") || "";
 let userToken = localStorage.getItem("tsm_user_token") || "";
 let currentUser = null;
+
+function getAdminAuthToken() {
+  if (adminToken) return adminToken;
+  const sTok = sessionStorage.getItem("tsm_admin_token");
+  if (sTok) { adminToken = sTok; return adminToken; }
+  const uTok = localStorage.getItem("tsm_user_token") || userToken || localStorage.getItem("tsm_jwt_token");
+  if (uTok && currentUser && currentUser.role === "superadmin") {
+    adminToken = uTok;
+    sessionStorage.setItem("tsm_admin_token", adminToken);
+    return adminToken;
+  }
+  return uTok || "";
+}
+
 let isBotPaused = false;
 let currentTheme = "dark";
 localStorage.setItem("tsm_theme", "dark");
@@ -273,6 +287,8 @@ function switchView(viewName, updateHash = true) {
     fetchRealData();
   } else if (viewName === "trader") {
     if (typeof fetchTraderTerminalData === "function") fetchTraderTerminalData();
+  } else if (viewName === "admin") {
+    checkAdminAuth();
   }
 }
 
@@ -1038,8 +1054,15 @@ async function initUserSession() {
     if (res.ok) {
       const data = await res.json();
       currentUser = data.user;
+      if (currentUser && currentUser.role === "superadmin") {
+        adminToken = userToken;
+        sessionStorage.setItem("tsm_admin_token", adminToken);
+      }
       updateUserUI(data.user, data.settings, data.exchange_connections);
       await fetchUserSubscriptionData();
+      if (currentView === "admin") {
+        checkAdminAuth();
+      }
     } else {
       handleUserLogout();
     }
@@ -1140,10 +1163,43 @@ function updateUserUI(user, settings, exConnections) {
 
 // ── 7.5. Dedicated Quant Trader Dashboard Engine ──────────────────────────────
 function switchTraderSubTab(tabName, btnElement) {
-  if (typeof window.switchTraderSubTab === "function") {
-    window.switchTraderSubTab(tabName, btnElement);
+  window.currentTraderSubTab = tabName;
+
+  document.querySelectorAll(".trader-tab-btn").forEach(b => {
+    b.classList.remove("active");
+  });
+  if (btnElement) {
+    btnElement.classList.add("active");
+  } else {
+    document.querySelectorAll(".trader-tab-btn").forEach(b => {
+      const oc = b.getAttribute("onclick") || "";
+      if (oc.includes(`'${tabName}'`) || oc.includes(`"${tabName}"`)) {
+        b.classList.add("active");
+      }
+    });
+  }
+
+  document.querySelectorAll(".trader-sub-section").forEach(sec => {
+    sec.classList.remove("active");
+  });
+
+  const target = document.getElementById(`trader-sec-${tabName}`);
+  if (target) {
+    target.classList.add("active");
+  }
+
+  if (tabName === "journal") {
+    if (typeof fetchJournalData === "function") fetchJournalData();
+  } else if (tabName === "indianbrokers") {
+    if (typeof fetchIndianBrokersStatus === "function") fetchIndianBrokersStatus();
+  } else if (tabName === "overview" || tabName === "positions") {
+    if (typeof fetchTraderTerminalData === "function") fetchTraderTerminalData();
+    fetchRealData();
+  } else if (tabName === "profile") {
+    if (typeof fetchUserSubscriptionData === "function") fetchUserSubscriptionData();
   }
 }
+window.switchTraderSubTab = switchTraderSubTab;
 
 function renderTraderDashboard(userData, fullData) {
   if (!userData) return;
@@ -2484,8 +2540,10 @@ function checkAdminAuth() {
   const loginBox = document.getElementById("admin-login-box");
   const dashPanel = document.getElementById("admin-dashboard-panel");
   const adminNavBtnText = document.getElementById("adminNavBtnText");
+  const token = getAdminAuthToken();
 
-  if (adminToken) {
+  if (token) {
+    adminToken = token;
     if (loginBox) loginBox.style.display = "none";
     if (dashPanel) dashPanel.style.display = "block";
     if (adminNavBtnText) adminNavBtnText.textContent = "ADMIN (LOGGED IN)";
@@ -2495,6 +2553,9 @@ function checkAdminAuth() {
     fetchAdminUsersList();
     fetchAdminAffiliates();
     fetchAdminSales();
+    if (typeof fetchAdminSaasMetrics === "function") fetchAdminSaasMetrics();
+    if (typeof fetchAdminSaasUsersList === "function") fetchAdminSaasUsersList();
+    if (typeof fetchAdminBannedIps === "function") fetchAdminBannedIps();
   } else {
     if (loginBox) loginBox.style.display = "block";
     if (dashPanel) dashPanel.style.display = "none";
@@ -3608,11 +3669,21 @@ function initJarvis3dCore() {
 
 // ── 12c. Enterprise Admin Sub-Navigation Router ─────────────────────────────
 function switchAdminSubTab(sectionId, btn) {
+  window.currentAdminSubTab = sectionId;
   const bar = btn?.parentElement;
   if (bar) {
     bar.querySelectorAll(".admin-tab-btn").forEach(b => b.classList.remove("active"));
   }
-  if (btn) btn.classList.add("active");
+  if (btn) {
+    btn.classList.add("active");
+  } else {
+    document.querySelectorAll(".admin-tab-btn").forEach(b => {
+      const oc = b.getAttribute("onclick") || "";
+      if (oc.includes(`'${sectionId}'`) || oc.includes(`"${sectionId}"`)) {
+        b.classList.add("active");
+      }
+    });
+  }
 
   document.querySelectorAll(".admin-sub-section").forEach(sec => sec.classList.remove("active"));
   const target = document.getElementById(`admin-sec-${sectionId}`);
@@ -3621,19 +3692,29 @@ function switchAdminSubTab(sectionId, btn) {
   if (sectionId === 'overview') {
     fetchAdminOverviewKPIs();
     fetchAdminVisitors();
+    if (typeof fetchAdminSaasMetrics === "function") fetchAdminSaasMetrics();
   } else if (sectionId === 'visitors') {
     fetchAdminVisitors(true);
   } else if (sectionId === 'users') {
     fetchAdminUsersList();
+    if (typeof fetchAdminSaasUsersList === "function") fetchAdminSaasUsersList();
   } else if (sectionId === 'revenue') {
     fetchAdminAffiliates(true);
     fetchAdminSales(true);
+    if (typeof fetchAdminSaasMetrics === "function") fetchAdminSaasMetrics();
   } else if (sectionId === 'analytics') {
     renderAdminAnalyticsCurve();
   } else if (sectionId === 'security') {
     fetchAdminBannedIps(true);
+  } else if (sectionId === 'botfleet') {
+    fetchAdminStatus();
+  } else if (sectionId === 'exchanges') {
+    if (typeof fetchTraderTerminalData === "function") fetchTraderTerminalData();
+  } else if (sectionId === 'heatmap') {
+    fetchRealData();
   }
 }
+window.switchAdminSubTab = switchAdminSubTab;
 
 // ── 12d. Admin Security Firewall & Banned IPs Management ───────────────────
 async function fetchAdminBannedIps(showToastNotice = false) {
@@ -6271,95 +6352,6 @@ window.currentSaasBillingInterval = "monthly";
 window.cachedUserSubscription = null;
 window.cachedUserPermissions = null;
 
-window.switchTraderSubTab = function(tabName, btn) {
-  window.currentTraderSubTab = tabName;
-  
-  // Highlight active button
-  document.querySelectorAll(".trader-tab-btn").forEach(b => {
-    b.classList.remove("active");
-  });
-  if (btn) {
-    btn.classList.add("active");
-  } else {
-    // Find button with matching onclick
-    document.querySelectorAll(".trader-tab-btn").forEach(b => {
-      const oc = b.getAttribute("onclick") || "";
-      if (oc.includes(`'${tabName}'`) || oc.includes(`"${tabName}"`)) {
-        b.classList.add("active");
-      }
-    });
-  }
-  
-  // Hide all sections, display target
-  document.querySelectorAll(".trader-sub-section").forEach(sec => {
-    sec.classList.remove("active");
-    sec.style.display = "none";
-  });
-  
-  const target = document.getElementById(`trader-sec-${tabName}`);
-  if (target) {
-    target.classList.add("active");
-    target.style.display = "block";
-  }
-
-  // Permission Gate for locked features
-  const premiumFeatures = {
-    "positions": "dashboard",
-    "journal": "dashboard",
-    "aicommand": "ai_chat",
-    "risk": "risk",
-    "keys": "api",
-    "indianbrokers": "dashboard",
-    "ccxtexchanges": "api"
-  };
-
-  // Trigger dedicated loaders
-  if (tabName === "journal") {
-    fetchJournalData();
-  } else if (tabName === "indianbrokers") {
-    fetchIndianBrokersStatus();
-  } else if (tabName === "overview" || tabName === "positions") {
-    if (typeof fetchTraderTerminalData === "function") fetchTraderTerminalData();
-  } else if (tabName === "profile") {
-    fetchUserSubscriptionData();
-  }
-};
-
-window.switchAdminSubTab = function(tabName, btn) {
-  window.currentAdminSubTab = tabName;
-  
-  document.querySelectorAll(".admin-tab-btn").forEach(b => {
-    b.classList.remove("active");
-  });
-  if (btn) {
-    btn.classList.add("active");
-  } else {
-    document.querySelectorAll(".admin-tab-btn").forEach(b => {
-      const oc = b.getAttribute("onclick") || "";
-      if (oc.includes(`'${tabName}'`) || oc.includes(`"${tabName}"`)) {
-        b.classList.add("active");
-      }
-    });
-  }
-
-  document.querySelectorAll(".admin-sub-section").forEach(sec => {
-    sec.classList.remove("active");
-    sec.style.display = "none";
-  });
-  
-  const target = document.getElementById(`admin-sec-${tabName}`);
-  if (target) {
-    target.classList.add("active");
-    target.style.display = "block";
-  }
-
-  if (tabName === "users") {
-    fetchAdminSaasUsersList();
-  } else if (tabName === "revenue") {
-    fetchAdminSaasMetrics();
-  }
-};
-
 // ═══════════════════════════════════════════════════════════════════════════
 // SAAS SUBSCRIPTION, PERMISSION GATING & STRIPE USD CHECKOUT
 // ═══════════════════════════════════════════════════════════════════════════
@@ -6548,7 +6540,7 @@ window.handleContactEnterprise = function() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 async function fetchAdminSaasMetrics() {
-  const token = localStorage.getItem("tsm_jwt_token") || getCookie("auth_token");
+  const token = getAdminAuthToken();
   if (!token) return;
 
   try {
@@ -6588,7 +6580,7 @@ async function fetchAdminSaasMetrics() {
 }
 
 async function fetchAdminSaasUsersList() {
-  const token = localStorage.getItem("tsm_jwt_token") || getCookie("auth_token");
+  const token = getAdminAuthToken();
   if (!token) return;
 
   const tbody = document.getElementById("admin-saas-users-tbody");
@@ -6673,7 +6665,7 @@ function renderAdminSaasUsersTable(users) {
 }
 
 window.adminToggleUserPermission = async function(userId, serviceName, currentVal) {
-  const token = localStorage.getItem("tsm_jwt_token") || getCookie("auth_token");
+  const token = getAdminAuthToken();
   if (!token) return;
 
   const newVal = !currentVal;
@@ -6701,7 +6693,7 @@ window.adminPromptUserUpgrade = async function(userId, userEmail, currentPlan) {
   const daysStr = prompt("Enter duration in days (e.g. 30, 90, 365, 3650):", "30");
   if (!daysStr) return;
 
-  const token = localStorage.getItem("tsm_jwt_token") || getCookie("auth_token");
+  const token = getAdminAuthToken();
   if (!token) return;
 
   try {

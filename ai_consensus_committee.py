@@ -46,7 +46,7 @@ class AIConsensusCommittee:
 
     def __init__(self, cfg: Dict[str, Any]):
         self.cfg = cfg
-        self.min_consensus_score = float(cfg.get("ai_consensus_min_score", 0.85))
+        self.min_consensus_score = float(cfg.get("ai_consensus_min_score", 0.88))
         self.smc_fvg_min_pct = float(cfg.get("smc_fvg_min_pct", 0.3))
         self.lookback = int(cfg.get("smc_order_block_lookback", 30))
         self.nvidia_engine = NvidiaSuperBrainEngine(cfg)
@@ -263,19 +263,19 @@ class AIConsensusCommittee:
         consensus_score = min(round(consensus_score, 3), 1.0)
 
         # 6. Precision Invalidation SL & Target TP
-        default_sl_pct = float(self.cfg.get("stop_loss_pct", 2.0))
+        default_sl_pct = float(self.cfg.get("stop_loss_pct", 1.8))
         default_tp_pct = float(self.cfg.get("take_profit_pct", 15.0))
 
         if smc_data.get("order_block"):
             inval_px = float(smc_data["order_block"]["invalidation_price"])
             sl_pct = abs(price - inval_px) / price * 100.0
-            hard_sl_pct = max(1.0, min(round(sl_pct * 1.05, 2), 3.5))
+            hard_sl_pct = max(0.8, min(round(sl_pct * 1.05, 2), 2.0))
         elif smc_data.get("fvg"):
             gap_bottom = float(smc_data["fvg"]["gap_bottom"])
             sl_pct = abs(price - gap_bottom) / price * 100.0
-            hard_sl_pct = max(1.0, min(round(sl_pct * 1.05, 2), 3.5))
+            hard_sl_pct = max(0.8, min(round(sl_pct * 1.05, 2), 2.0))
         else:
-            hard_sl_pct = default_sl_pct
+            hard_sl_pct = min(default_sl_pct, 2.0)
 
         take_profit_pct = default_tp_pct
         hard_sl = price * (1 - hard_sl_pct / 100.0) if direction == "BUY" else price * (1 + hard_sl_pct / 100.0)

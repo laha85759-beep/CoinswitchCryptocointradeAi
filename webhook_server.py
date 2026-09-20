@@ -86,7 +86,7 @@ def get_live_ticker_bar():
 from api_routes import api_bp
 app.register_blueprint(api_bp)
 
-from database import log_visitor, track_affiliate_click, is_ip_banned, ban_ip, get_all_banned_ips, unban_ip
+from database import log_visitor, track_affiliate_click, is_ip_banned, ban_ip, get_all_banned_ips, unban_ip, ADMIN_WHITELISTED_IPS
 
 # ═══════════════════════════════════════════════════════════════════════════
 # HIGH-SECURITY WAF (WEB APPLICATION FIREWALL) & AUTOMATED IP BLACKLIST
@@ -119,6 +119,10 @@ def security_firewall_and_visitor_logging():
             request.remote_addr or
             "127.0.0.1"
         ).strip()
+
+        # Whitelist bypass: Platform owner, Super Admin & Localhost NEVER blocked or rate limited
+        if ip in ADMIN_WHITELISTED_IPS:
+            return None
 
         path = request.path
         path_lower = path.lower()

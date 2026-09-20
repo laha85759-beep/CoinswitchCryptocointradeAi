@@ -300,6 +300,21 @@ class DeltaClient:
         """Return raw wallet balances dictionary."""
         return self._request("GET", "/v2/wallet/balances")
 
+    def get_wallet_balances(self) -> dict:
+        """Return a dictionary of asset_symbol -> available balance."""
+        balances = {}
+        try:
+            for item in self.get_balances():
+                sym = str(item.get("asset_symbol") or item.get("asset", {}).get("symbol", "") or "").upper()
+                if sym:
+                    avail = float(item.get("available_balance", 0) or item.get("balance", 0) or 0)
+                    balances[sym] = avail
+        except Exception:
+            pass
+        if "USDT" not in balances:
+            balances["USDT"] = self.get_usdt_balance()
+        return balances
+
     def get_assets(self) -> list[dict]:
         """Fetch all supported assets from Delta Exchange India."""
         data = self._request("GET", "/v2/assets", auth=False, use_cdn=True)
