@@ -5,11 +5,13 @@ Runs independently for the Live News, Economic Calendar & Forex Signals Channel.
 Isolated from CoinSwitch / Delta crypto trade execution bot.
 """
 
+from __future__ import annotations
+
 import os
 import logging
 import requests
 import time
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 log = logging.getLogger("news_telegram")
 
