@@ -1,9 +1,14 @@
 .env
 open_trades.json
 bot.log
+*.log
 agent_audit.jsonl
 circuit_breaker.json
 daily_pnl.json
 processed_signals.json
+platform.db
+last_*report.txt
+last_*diag.txt
 __pycache__/
 *.pyc
+

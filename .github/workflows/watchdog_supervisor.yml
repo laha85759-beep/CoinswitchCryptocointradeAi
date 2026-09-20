@@ -27,7 +27,7 @@ jobs:
     - name: Install Core Dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install requests urllib3 pandas numpy cryptography flask pyjwt
+        pip install -r requirements.txt
 
     - name: Execute Watchdog Health & Auto-Healing Check
       env:
@@ -49,5 +49,6 @@ jobs:
         git config --global user.name 'CoinsAI Watchdog Daemon'
         git config --global user.email 'watchdog@coinsai.internal'
         git add watchdog_status.json open_trades_cs.json open_trades_delta.json earned_yield.json daily_pnl.json 2>/dev/null || true
-        git diff-index --quiet HEAD || git commit -m "auto: 24/7 Watchdog Supervisor state sync"
-        git push || true
+        git commit -m "auto: 24/7 Watchdog Supervisor state sync" || echo "No state changes to commit"
+        git pull --rebase origin main || true
+        git push origin main || true
