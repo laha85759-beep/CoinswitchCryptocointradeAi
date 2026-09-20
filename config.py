@@ -162,29 +162,29 @@ CONFIG = {
     # watch_condition_count=2: flag for monitoring when 2/4 conditions met
     "watch_condition_count":       _int_env("WATCH_CONDITION_COUNT",       2),
 
-    # ── Risk manager limits ───────────────────────────────────────────────────
-    "max_position_pct":         _float_env("MAX_POSITION_PCT",          30.0),  # 30% per trade (allocates capital across 3 concurrent multi-coin trades)
-    "max_open_trades":          _int_env("MAX_OPEN_TRADES",                3),  # Up to 3 concurrent multi-coin trades (never blocked by a single coin!)
-    "max_total_exposure_pct":   _float_env("MAX_TOTAL_EXPOSURE_PCT",    90.0),
-    "max_trades_per_hour":      _int_env("MAX_TRADES_PER_HOUR",         10),
-    # min_confidence=0.75: Ultra-high conviction filter for small account preservation
-    "min_confidence":           _float_env("MIN_CONFIDENCE",             0.75),
-    "stop_loss_pct":            _float_env("STOP_LOSS_PCT",              2.0),  # -2.0% Precision Invalidation Stop Loss
-    "take_profit_pct":          _float_env("TAKE_PROFIT_PCT",           15.0),  # +15.0% TP Target (+150% ROE on 10x leverage!)
-    "trail_activation_pct":     _float_env("TRAIL_ACTIVATION_PCT",        0.3),  # INSTANT breakeven trailing stop activation at +0.3% profit!
-    "small_account_leverage":   _int_env("SMALL_ACCOUNT_LEVERAGE",       10),   # 10x leverage for small capital (< $10 USDT) to maximize safety and margin efficiency
-    "scalp_lot_multiplier":     _float_env("SCALP_LOT_MULTIPLIER",       2.5),  # QuickScalpAgent uses 2.5x larger lot size
-    # daily_max_drawdown=4%: on $100 that's $4 max daily loss before halt
-    "daily_max_drawdown_pct":   _float_env("DAILY_MAX_DRAWDOWN_PCT",     4.0),
-    "min_liquidity_usd":        _float_env("MIN_LIQUIDITY_USD",      10_000.0),
+    # ── Risk manager limits & Capital Survival Protocol ───────────────────────
+    "capital_survival_mode":    _bool_env("CAPITAL_SURVIVAL_MODE",      True),  # Last Money Protocol: Capital preservation above all else
+    "risk_per_trade_pct":       _float_env("RISK_PER_TRADE_PCT",         0.5),  # 0.25% - 0.5% max risk per trade
+    "max_position_pct":         _float_env("MAX_POSITION_PCT",          15.0),  # Max 15% capital per trade
+    "max_open_trades":          _int_env("MAX_OPEN_TRADES",                2),  # Max 2 concurrent positions
+    "max_total_exposure_pct":   _float_env("MAX_TOTAL_EXPOSURE_PCT",    25.0),  # Max 25% total margin exposed
+    "max_trades_per_hour":      _int_env("MAX_TRADES_PER_HOUR",          4),
+    "min_confidence":           _float_env("MIN_CONFIDENCE",             0.88), # High conviction filter
+    "min_rr_ratio":             _float_env("MIN_RR_RATIO",               3.0),  # Minimum 1:3 Reward-to-Risk ratio (prefer 1:4+)
+    "stop_loss_pct":            _float_env("STOP_LOSS_PCT",              1.5),  # Max 1.5% Precision Invalidation Stop Loss
+    "take_profit_pct":          _float_env("TAKE_PROFIT_PCT",            6.0),  # Minimum 1:4 R:R target (6.0% TP vs 1.5% SL)
+    "trail_activation_pct":     _float_env("TRAIL_ACTIVATION_PCT",       0.3),  # INSTANT breakeven trailing stop activation at +0.3% profit
+    "small_account_leverage":   _int_env("SMALL_ACCOUNT_LEVERAGE",        5),   # Max 5x leverage in Capital Survival Mode
+    "scalp_lot_multiplier":     _float_env("SCALP_LOT_MULTIPLIER",       1.0),
+    "daily_max_drawdown_pct":   _float_env("DAILY_MAX_DRAWDOWN_PCT",     1.5),  # Strict 1.5% max daily drawdown ceiling
+    "weekly_max_drawdown_pct":  _float_env("WEEKLY_MAX_DRAWDOWN_PCT",    3.0),  # Strict 3.0% weekly drawdown limit
+    "min_liquidity_usd":        _float_env("MIN_LIQUIDITY_USD",      50_000.0), # Only liquid, established pairs
     "min_order_usdt":           _float_env("MIN_ORDER_USDT",             0.05),
     "risk_order_type":          os.getenv("RISK_ORDER_TYPE",           "market"),
 
     # ── Execution settings ────────────────────────────────────────────────────
-    # slippage_tolerance=3.5%: allow up to 3.5% price movement between signal
-    # and execution — 15min GitHub Actions cycle means price can move
-    "slippage_tolerance_pct":       _float_env("SLIPPAGE_TOLERANCE_PCT",    3.5),
-    "limit_slippage_offset_pct":    _float_env("LIMIT_SLIPPAGE_OFFSET_PCT", 0.3),
+    "slippage_tolerance_pct":       _float_env("SLIPPAGE_TOLERANCE_PCT",    1.5),  # Tight 1.5% slippage ceiling
+    "limit_slippage_offset_pct":    _float_env("LIMIT_SLIPPAGE_OFFSET_PCT", 0.2),
     "max_retries":                  _int_env("MAX_RETRIES",                   3),
     "circuit_breaker_error_limit":  _int_env("CIRCUIT_BREAKER_ERROR_LIMIT",   5),
 
@@ -193,6 +193,8 @@ CONFIG = {
     "short_exchanges": ["delta"],
 
     # ── NVIDIA Multi-Model AI Super Brain Layer ─────────────────────────────────
+    "nvidia_key_glm_5_3":        os.getenv("NVIDIA_KEY_GLM_5_3",        "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"),
+    "nvidia_model_glm_5_3":      os.getenv("NVIDIA_MODEL_GLM_5_3",      "z-ai/glm-5.3"),
     "nvidia_key_lightning_30b":  os.getenv("NVIDIA_KEY_LIGHTNING_30B",  "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"),
     "nvidia_key_kumo_relational": os.getenv("NVIDIA_KEY_KUMO_RELATIONAL", "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"),
     "nvidia_key_embed_1b":       os.getenv("NVIDIA_KEY_EMBED_1B",       "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"),
@@ -204,7 +206,7 @@ CONFIG = {
 
     # ── AI Consensus Committee & SMC Structural Engine ───────────────────────────
     "ai_consensus_enabled":          _bool_env("AI_CONSENSUS_ENABLED", True),
-    "ai_consensus_min_score":        _float_env("AI_CONSENSUS_MIN_SCORE", 0.85),  # Strict 85% multi-agent agreement required
+    "ai_consensus_min_score":        _float_env("AI_CONSENSUS_MIN_SCORE", 0.88),  # Strict 88% multi-agent agreement required
     "smc_fvg_min_pct":               _float_env("SMC_FVG_MIN_PCT", 0.3),          # Min 0.3% Fair Value Gap
     "smc_order_block_lookback":      _int_env("SMC_ORDER_BLOCK_LOOKBACK", 30),    # Lookback candles for Order Block structure
 

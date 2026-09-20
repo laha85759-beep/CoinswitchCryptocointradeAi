@@ -459,22 +459,34 @@ class RiskManagerAgent:
         pnl = load_json(DAILY_PNL_FILE, {})
         today = utc_now().date().isoformat()
         day_loss = float(pnl.get(today, {}).get("realized_pnl_usdt", 0) or 0)
-        if day_loss < -(portfolio_usdt * self.cfg["daily_max_drawdown_pct"] / 100.0):
-            return risk_reject(signal, "daily_drawdown_limit_reached")
+        daily_limit = portfolio_usdt * float(self.cfg.get("daily_max_drawdown_pct", 1.5)) / 100.0
+        if day_loss <= -daily_limit:
+            log.warning("CAPITAL SURVIVAL HALT: Day loss -$%.2f exceeded limit -$%.2f", abs(day_loss), daily_limit)
+            return risk_reject(signal, "capital_survival_daily_drawdown_limit_reached")
 
-        # Dynamic Position Sizing (Volatility-Adjusted)
-        base_risk_pct = float(self.cfg.get("base_risk_pct", 2.0))
-        risk_amount = portfolio_usdt * (base_risk_pct / 100.0)
-        
-        # Volatility scaled position: position = Risk / ATR%
-        volatility_adjusted_size = risk_amount / (atr_pct / 100.0)
-        
-        max_position = portfolio_usdt * self.cfg["max_position_pct"] / 100.0
+        # Capital Survival Mode: 0.25% - 0.5% max risk of total equity per trade
+        risk_pct = float(self.cfg.get("risk_per_trade_pct", 0.5))
+        risk_amount = portfolio_usdt * (risk_pct / 100.0)
+
+        # Precision SMC Stop Loss & Take Profit from AI Super Brain
+        stop_loss_pct = float(signal.get("hard_sl_pct") or self.cfg.get("stop_loss_pct", 1.5))
+        take_profit_pct = float(signal.get("take_profit_pct") or self.cfg.get("take_profit_pct", 6.0))
+
+        # Reward-to-Risk Mandate: >= 1:3 minimum
+        rr_ratio = round(take_profit_pct / max(0.1, stop_loss_pct), 2)
+        if rr_ratio < float(self.cfg.get("min_rr_ratio", 3.0)):
+            return risk_reject(signal, f"capital_survival_rr_ratio_{rr_ratio}_below_min_3")
+
+        # Volatility & SL scaled position sizing: position = risk_amount / (SL% / 100)
+        effective_sl = max(stop_loss_pct, atr_pct, 0.5)
+        volatility_adjusted_size = risk_amount / (effective_sl / 100.0)
+
+        max_position = portfolio_usdt * float(self.cfg.get("max_position_pct", 15.0)) / 100.0
         remaining_exposure = max(0.0, max_total - total_exposure)
-        
-        # Take the minimum of the volatility-adjusted size, max_position, and remaining_exposure
+
+        # Take the minimum of volatility-adjusted size, max_position, and remaining_exposure
         position_size = min(volatility_adjusted_size, max_position, remaining_exposure)
-        
+
         if position_size < self.cfg["min_order_usdt"] and portfolio_usdt >= self.cfg["min_order_usdt"]:
             position_size = min(portfolio_usdt, self.cfg["min_order_usdt"])
         if position_size < self.cfg["min_order_usdt"]:
@@ -486,8 +498,11 @@ class RiskManagerAgent:
             "approved": True,
             "reason": "approved",
             "position_size_usd": round(position_size, 2),
-            "stop_loss_pct": self.cfg["stop_loss_pct"],
-            "take_profit_pct": self.cfg["take_profit_pct"],
+            "stop_loss_pct": stop_loss_pct,
+            "take_profit_pct": take_profit_pct,
+            "hard_sl": signal.get("hard_sl"),
+            "take_profit": signal.get("take_profit"),
+            "risk_reward_ratio": rr_ratio,
             "order_type": self.cfg["risk_order_type"],
             "direction": direction,
             "atr_pct": atr_pct,

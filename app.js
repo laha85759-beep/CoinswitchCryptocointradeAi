@@ -7392,8 +7392,405 @@ window.exportAuditTradesCSV = exportAuditTradesCSV;
 document.addEventListener("DOMContentLoaded", () => {
   setTimeout(() => {
     fetchMultiMarketSignals();
+    initVideoTour();
   }, 1200);
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HIGH-DEFINITION CYBER VIDEO TOUR PLAYER & GROWTH VISUALIZER
+// ═══════════════════════════════════════════════════════════════════════════
+let tourCurrentChapter = 1;
+let tourIsPlaying = false;
+let tourAnimFrameId = null;
+let tourProgressSeconds = 0;
+const tourTotalSeconds = 105; // 1:45 total duration
+
+const tourChaptersData = {
+  1: {
+    title: "🧠 Neural Core AI Super Brain (NVIDIA GLM-5.3 & Nemotron)",
+    text: "Our institutional ensemble fuses NVIDIA GLM-5.3 (753B parameter Mixture-of-Experts), Nemotron 3.5 Lightning 30B, and Kumo Relational AI. It conducts deep architectural audits on market orderflow, filtering false breakouts and only validating asymmetric setups with >= 88% statistical probability.",
+    badge: "CHAPTER 01 / 04 • AI SUPER BRAIN"
+  },
+  2: {
+    title: "🇮🇳 Indian Equities & F&O Options PCR Radar",
+    text: "Engineered specifically for Indian traders. Scans Nifty 50, Bank Nifty, and Sensex options chains in real time. Automatically tracks Put-Call Ratio (PCR) anomalies, institutional open interest buildups, and suggests high-probability CE/PE strike prices with precise stop-losses.",
+    badge: "CHAPTER 02 / 04 • INDIA F&O RADAR"
+  },
+  3: {
+    title: "⚡ Dual-Exchange Autonomous Execution (Delta India & CoinSwitch)",
+    text: "Single-click or fully autonomous execution across Delta Exchange India (Futures & Options) and CoinSwitch Pro (Spot & C2C). Orders are routed with microsecond latency, atomic TP/SL bracket attachment, and zero phantom paper slippage.",
+    badge: "CHAPTER 03 / 04 • DUAL EXECUTION"
+  },
+  4: {
+    title: "🛡️ Capital Survival Mode & Trailing Stop Growth Engine",
+    text: "The Last Money Protocol is non-negotiable: strictly 0.25% - 0.5% risk per trade, 1.5% maximum daily loss circuit breaker, and minimum 1:3 Reward-to-Risk ratio. The moment a position gains +0.3% profit (+1R), the trailing stop instantly locks break-even (+0.1% gain) with zero downside risk.",
+    badge: "CHAPTER 04 / 04 • CAPITAL SURVIVAL"
+  }
+};
+
+function initVideoTour() {
+  const seen = localStorage.getItem("tsm_tour_seen");
+  if (!seen) {
+    setTimeout(() => {
+      openVideoTourModal();
+    }, 2500);
+  }
+}
+window.initVideoTour = initVideoTour;
+
+function openVideoTourModal() {
+  const modal = document.getElementById("videoTourModal");
+  if (modal) {
+    modal.style.display = "flex";
+    switchTourChapter(1);
+    startTourVideoPlayback();
+  }
+}
+window.openVideoTourModal = openVideoTourModal;
+
+function closeVideoTourModal() {
+  const modal = document.getElementById("videoTourModal");
+  if (modal) {
+    modal.style.display = "none";
+    tourIsPlaying = false;
+    if (tourAnimFrameId) {
+      cancelAnimationFrame(tourAnimFrameId);
+      tourAnimFrameId = null;
+    }
+    const dontShow = document.getElementById("dontShowTourAgain");
+    if (dontShow && dontShow.checked) {
+      localStorage.setItem("tsm_tour_seen", "true");
+    }
+  }
+}
+window.closeVideoTourModal = closeVideoTourModal;
+
+function handleVideoTourBackdrop(e) {
+  if (e.target && e.target.id === "videoTourModal") {
+    closeVideoTourModal();
+  }
+}
+window.handleVideoTourBackdrop = handleVideoTourBackdrop;
+
+function switchTourChapter(chapNum) {
+  tourCurrentChapter = chapNum;
+  for (let i = 1; i <= 4; i++) {
+    const btn = document.getElementById(`chapBtn${i}`);
+    if (btn) {
+      if (i === chapNum) btn.classList.add("active");
+      else btn.classList.remove("active");
+    }
+  }
+
+  const data = tourChaptersData[chapNum] || tourChaptersData[1];
+  const titleEl = document.getElementById("tourNarrativeTitle");
+  const textEl = document.getElementById("tourNarrativeText");
+  if (titleEl) titleEl.innerText = data.title;
+  if (textEl) textEl.innerText = data.text;
+
+  // Jump progress
+  tourProgressSeconds = (chapNum - 1) * 25;
+  updateTourProgressBadge();
+}
+window.switchTourChapter = switchTourChapter;
+
+function startTourVideoPlayback() {
+  const overlay = document.getElementById("videoPlayOverlay");
+  if (overlay) overlay.style.opacity = "0";
+  setTimeout(() => { if (overlay) overlay.style.display = "none"; }, 300);
+
+  tourIsPlaying = true;
+  runTourCanvasAnimation();
+}
+window.startTourVideoPlayback = startTourVideoPlayback;
+
+function updateTourProgressBadge() {
+  const badge = document.getElementById("videoProgressBadge");
+  if (!badge) return;
+  const mins = Math.floor(tourProgressSeconds / 60);
+  const secs = String(Math.floor(tourProgressSeconds % 60)).padStart(2, "0");
+  badge.innerText = `${mins}:${secs} / 1:45 • HD 60FPS`;
+}
+
+function runTourCanvasAnimation() {
+  const canvas = document.getElementById("tourVideoCanvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  let frame = 0;
+
+  function render() {
+    if (!tourIsPlaying) return;
+    frame++;
+
+    const w = canvas.width;
+    const h = canvas.height;
+
+    // Advance progress
+    if (frame % 60 === 0) {
+      tourProgressSeconds = (tourProgressSeconds + 1) % tourTotalSeconds;
+      updateTourProgressBadge();
+      const nextChap = Math.floor(tourProgressSeconds / 26) + 1;
+      if (nextChap !== tourCurrentChapter && nextChap <= 4) {
+        switchTourChapter(nextChap);
+      }
+    }
+
+    // Clear background with dark grid
+    ctx.fillStyle = "#020712";
+    ctx.fillRect(0, 0, w, h);
+
+    // Grid lines
+    ctx.strokeStyle = "rgba(0, 240, 144, 0.05)";
+    ctx.lineWidth = 1;
+    for (let x = 0; x < w; x += 40) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+    }
+    for (let y = 0; y < h; y += 40) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    }
+
+    // ── SCENE RENDERER BY CHAPTER ──
+    if (tourCurrentChapter === 1) {
+      // Scene 1: Neural Core AI & Candlestick analysis
+      drawSceneNeuralAI(ctx, w, h, frame);
+    } else if (tourCurrentChapter === 2) {
+      // Scene 2: Indian F&O Options Radar
+      drawSceneIndiaFO(ctx, w, h, frame);
+    } else if (tourCurrentChapter === 3) {
+      // Scene 3: Dual-Exchange Autonomous Execution
+      drawSceneDualExecution(ctx, w, h, frame);
+    } else {
+      // Scene 4: Capital Survival Trailing Stop Lock
+      drawSceneCapitalSurvival(ctx, w, h, frame);
+    }
+
+    // Scanline & Vignette
+    const grad = ctx.createRadialGradient(w/2, h/2, h*0.3, w/2, h/2, w*0.6);
+    grad.addColorStop(0, "rgba(0,0,0,0)");
+    grad.addColorStop(1, "rgba(2, 6, 16, 0.7)");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    tourAnimFrameId = requestAnimationFrame(render);
+  }
+
+  if (tourAnimFrameId) cancelAnimationFrame(tourAnimFrameId);
+  tourAnimFrameId = requestAnimationFrame(render);
+}
+
+// Scene 1: Neural AI
+function drawSceneNeuralAI(ctx, w, h, frame) {
+  // Candlesticks
+  const candleCount = 20;
+  const startX = 60;
+  const candleW = 18;
+  const spacing = 34;
+
+  for (let i = 0; i < candleCount; i++) {
+    const x = startX + i * spacing;
+    const wave = Math.sin((frame * 0.02) + i * 0.5) * 40;
+    const basePrice = h * 0.55 + wave + (i * 3);
+    const candleH = 20 + Math.sin(i * 1.7) * 15;
+    const isGreen = i % 3 !== 0;
+
+    ctx.strokeStyle = isGreen ? "#00f090" : "#ff3366";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(x + candleW / 2, basePrice - 20);
+    ctx.lineTo(x + candleW / 2, basePrice + candleH + 20);
+    ctx.stroke();
+
+    ctx.fillStyle = isGreen ? "rgba(0, 240, 144, 0.8)" : "rgba(255, 51, 102, 0.8)";
+    ctx.fillRect(x, basePrice, candleW, candleH);
+  }
+
+  // AI Synapse Matrix overlay
+  const cx = w * 0.72;
+  const cy = h * 0.42;
+  ctx.save();
+  ctx.shadowColor = "#00d4ff";
+  ctx.shadowBlur = 20;
+  ctx.strokeStyle = "rgba(0, 212, 255, 0.6)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 60 + Math.sin(frame * 0.05) * 5, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.fillStyle = "rgba(0, 240, 144, 0.15)";
+  ctx.fill();
+  ctx.restore();
+
+  // Neural text
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 14px Orbitron";
+  ctx.fillText("NVIDIA GLM-5.3 • NEURAL CORE", cx - 95, cy - 80);
+  ctx.fillStyle = "#00ffaa";
+  ctx.font = "11px Share Tech Mono";
+  ctx.fillText("✓ SMC Fair Value Gap Confirmed: +92.4%", cx - 95, cy + 90);
+  ctx.fillText("✓ Order Block Invalidation: $78,410", cx - 95, cy + 108);
+}
+
+// Scene 2: India F&O Radar
+function drawSceneIndiaFO(ctx, w, h, frame) {
+  ctx.fillStyle = "#ffd700";
+  ctx.font = "bold 16px Orbitron";
+  ctx.fillText("NSE NIFTY 50 • LIVE OPTIONS PCR RADAR", 60, 60);
+
+  // Radar circle
+  const cx = w * 0.35;
+  const cy = h * 0.55;
+  const r = 90;
+
+  ctx.strokeStyle = "rgba(255, 215, 0, 0.3)";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx, cy, r * 0.6, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx, cy, r * 0.3, 0, Math.PI * 2); ctx.stroke();
+
+  // Rotating sweep beam
+  const angle = (frame * 0.04) % (Math.PI * 2);
+  ctx.strokeStyle = "rgba(255, 215, 0, 0.8)";
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + Math.cos(angle) * r, cy + Math.sin(angle) * r);
+  ctx.stroke();
+
+  // Metrics Table
+  const tx = w * 0.60;
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "12px Share Tech Mono";
+  ctx.fillText("INDEX SPOT: 23,346.40 ▲ +0.33%", tx, cy - 40);
+  ctx.fillText("PCR RATIO : 1.28 (Strong Bullish Accumulation)", tx, cy - 15);
+  ctx.fillStyle = "#00f090";
+  ctx.fillText("🎯 SUGGESTED CALL: 23,400 CE @ ₹124.50", tx, cy + 15);
+  ctx.fillStyle = "#ff3366";
+  ctx.fillText("🛑 INVASION STOP  : ₹98.00 (-1.5%)", tx, cy + 40);
+  ctx.fillStyle = "#ffd700";
+  ctx.fillText("🚀 EXPANSION TP   : ₹195.00 (+56.6% ROE)", tx, cy + 65);
+}
+
+// Scene 3: Dual Execution
+function drawSceneDualExecution(ctx, w, h, frame) {
+  ctx.fillStyle = "#00d4ff";
+  ctx.font = "bold 16px Orbitron";
+  ctx.fillText("SUB-SECOND DUAL EXCHANGE ORDER ROUTING", 60, 60);
+
+  // Box 1: CoinSwitch Pro
+  const b1x = 100, by = 120, bw = 240, bh = 140;
+  ctx.fillStyle = "rgba(0, 240, 144, 0.08)";
+  ctx.strokeStyle = "#00f090";
+  ctx.lineWidth = 1.5;
+  ctx.fillRect(b1x, by, bw, bh);
+  ctx.strokeRect(b1x, by, bw, bh);
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 13px Orbitron";
+  ctx.fillText("COINSWITCH PRO", b1x + 20, by + 35);
+  ctx.font = "11px Share Tech Mono";
+  ctx.fillStyle = "#00ffaa";
+  ctx.fillText("STATUS: ATOMIC MARKET ENTRY", b1x + 20, by + 65);
+  ctx.fillText("ORDER ID: CS-LIVE-829104", b1x + 20, by + 85);
+  ctx.fillText("EXECUTION SPEED: 12ms", b1x + 20, by + 105);
+
+  // Box 2: Delta Exchange India
+  const b2x = w - 340;
+  ctx.fillStyle = "rgba(0, 212, 255, 0.08)";
+  ctx.strokeStyle = "#00d4ff";
+  ctx.lineWidth = 1.5;
+  ctx.fillRect(b2x, by, bw, bh);
+  ctx.strokeRect(b2x, by, bw, bh);
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 13px Orbitron";
+  ctx.fillText("DELTA EXCHANGE INDIA", b2x + 20, by + 35);
+  ctx.font = "11px Share Tech Mono";
+  ctx.fillStyle = "#00d4ff";
+  ctx.fillText("FUTURES/OPTIONS: 5x LEVERAGE", b2x + 20, by + 65);
+  ctx.fillText("BRACKET TP/SL: SERVER ATTACHED", b2x + 20, by + 85);
+  ctx.fillText("ZERO PHANTOM TRADES: ACTIVE", b2x + 20, by + 105);
+
+  // Connecting pulsing line
+  ctx.strokeStyle = "rgba(255, 0, 170, 0.8)";
+  ctx.setLineDash([6, 6]);
+  ctx.beginPath();
+  ctx.moveTo(b1x + bw, by + 70);
+  ctx.lineTo(b2x, by + 70);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+// Scene 4: Capital Survival Trailing Stop Lock
+function drawSceneCapitalSurvival(ctx, w, h, frame) {
+  ctx.fillStyle = "#00ff88";
+  ctx.font = "bold 16px Orbitron";
+  ctx.fillText("CAPITAL SURVIVAL PROTOCOL • ZERO LOSS GUARANTEE", 60, 60);
+
+  // Climbing profit curve
+  const startX = 100;
+  const startY = h * 0.75;
+  ctx.strokeStyle = "#00f090";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(startX, startY);
+
+  const points = 40;
+  for (let i = 0; i <= points; i++) {
+    const px = startX + i * 16;
+    const py = startY - (Math.pow(i / 10, 1.8) * 28) - Math.sin((frame * 0.05) + i * 0.3) * 6;
+    ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+
+  // Break-even lock line
+  const beY = startY - 40;
+  ctx.strokeStyle = "rgba(255, 215, 0, 0.8)";
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(startX, beY);
+  ctx.lineTo(w - 100, beY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = "#ffd700";
+  ctx.font = "11px Share Tech Mono";
+  ctx.fillText("🔒 BREAK-EVEN PROFIT LOCK (+0.3% THRESHOLD REACHED)", startX + 10, beY - 8);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "12px Orbitron";
+  ctx.fillText("CURRENT PROFIT: +4.82% • TRAILING STOP HUGGING PEAK", w * 0.45, h * 0.35);
+  ctx.fillStyle = "#00ffaa";
+  ctx.font = "11px Share Tech Mono";
+  ctx.fillText("• Downside Risk: 0.00% (Capital 100% Protected)", w * 0.45, h * 0.42);
+  ctx.fillText("• Maximum Equity Risk Per Trade: 0.25% - 0.50%", w * 0.45, h * 0.48);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VISITOR FREE DEMO EXPERIENCE & SIMULATOR
+// ═══════════════════════════════════════════════════════════════════════════
+function activateFreeDemoExperience() {
+  switchView("terminal");
+  showModernToast("⚡ Free Interactive Guest Mode Activated! Exploring live market telemetry with $10,000 virtual balance.", "success");
+}
+window.activateFreeDemoExperience = activateFreeDemoExperience;
+
+function simulateFreeTradeDemo() {
+  switchView("terminal");
+  const modal = document.getElementById("videoTourModal");
+  if (modal) modal.style.display = "none";
+
+  showModernToast("🚀 Testing 1-Click Simulated Order on BTC/USDT (Paper Capital: $10,000)...", "info");
+
+  setTimeout(() => {
+    showModernToast("✅ [MOCK FILLED] BTC/USDT Long @ $78,580 | Server SL: $77,401 (-1.5%) | TP: $83,294 (+6.0%) | R:R 1:4.0", "success");
+  }, 1200);
+
+  setTimeout(() => {
+    showModernToast("🛡️ [CAPITAL SURVIVAL] BTC moved +0.4%! Trailing stop instantly locked break-even at $78,658 (+0.1% profit guaranteed).", "success");
+  }, 3500);
+}
+window.simulateFreeTradeDemo = simulateFreeTradeDemo;
+
 
 
 

@@ -228,20 +228,20 @@ class DualExecutionAgent:
                     "reason": f"delta_balance_{delta_balance:.2f}_too_low",
                     "symbol": symbol,
                 }
-            # Smart Dynamic Volatility-Based Adaptive Leverage Engine (4x - 10x)
-            # Conservative leverage & strict margin budgeting to protect account capital
-            confidence = float(approval.get("confidence", 0.80) or 0.80)
+            # Capital Survival Protocol: Conservative 3x-5x leverage & strict 15% margin cap
+            confidence = float(approval.get("confidence", 0.88) or 0.88)
             vol_ratio = float(signal.get("supporting_data", {}).get("volume_ratio", 2.0) or 2.0)
-            
-            if confidence >= 0.92 and vol_ratio >= 2.5:
-                leverage = 10  # Max 10x Leverage on ultra-high conviction
-            elif confidence >= 0.88 or vol_ratio >= 1.8:
-                leverage = 7   # 7x Leverage on strong trend setups
-            else:
-                leverage = 4   # Safe 4x Leverage on volatile altcoin setups
 
-            # Strict risk safeguard: Never risk more than 25% of account balance on a single position
-            max_pos_margin = delta_balance * 0.25
+            max_allowed_lev = int(self.cfg.get("small_account_leverage", 5))
+            if confidence >= 0.92 and vol_ratio >= 2.5:
+                leverage = min(5, max_allowed_lev)  # Max 5x Leverage on ultra-high conviction
+            elif confidence >= 0.88:
+                leverage = min(4, max_allowed_lev)  # 4x Leverage on strong trend setups
+            else:
+                leverage = 3                        # Safe 3x Leverage default
+
+            # Strict risk safeguard: Never risk more than 15% of account balance on a single position
+            max_pos_margin = delta_balance * (float(self.cfg.get("max_position_pct", 15.0)) / 100.0)
             position_usd = min(position_usd, max_pos_margin * leverage)
         else:
             leverage = 5
@@ -604,24 +604,24 @@ class DualMonitorAgent:
                             trail_distance_pct = 0.5
                         elif pnl_pct >= 4.0:
                             trail_distance_pct = 0.8
-                        elif pnl_pct >= 0.5:
-                            trail_distance_pct = 0.4  # Immediate Break-Even + Profit Protection Lock!
+                        elif pnl_pct >= 0.3:
+                            trail_distance_pct = 0.2  # Immediate Break-Even + Profit Protection Lock!
                         else:
                             atr_pct = float(trade.get("atr_pct", 0.5))
-                            trail_distance_pct = max(0.3, min(1.0, (atr_pct if atr_pct > 0 else 0.5) * 0.8))
+                            trail_distance_pct = max(0.2, min(1.0, (atr_pct if atr_pct > 0 else 0.5) * 0.8))
 
                         entry_p = float(trade["entry_price"])
                         if direction == "long":
                             new_stop = round(float(trade["peak_price"]) * (1 - trail_distance_pct / 100.0), 8)
-                            # Immediate Break-Even Protection: Once profit >= 0.5%, stop MUST be at least entry_p * 1.001 (+0.1% profit)
-                            if pnl_pct >= 0.5:
+                            # Immediate Break-Even Protection: Once profit >= 0.3%, stop MUST be at least entry_p * 1.001 (+0.1% profit)
+                            if pnl_pct >= 0.3:
                                 new_stop = max(new_stop, round(entry_p * 1.001, 8))
                             trade["trailing_stop"] = max(float(trade.get("trailing_stop") or 0), new_stop)
                         else:
                             trough_p = float(trade.get("trough_price", trade.get("peak_price", entry_p)))
                             new_stop = round(trough_p * (1 + trail_distance_pct / 100.0), 8)
-                            # Immediate Break-Even Protection for Shorts: Once profit >= 0.5%, stop MUST be at least entry_p * 0.999 (+0.1% profit)
-                            if pnl_pct >= 0.5:
+                            # Immediate Break-Even Protection for Shorts: Once profit >= 0.3%, stop MUST be at least entry_p * 0.999 (+0.1% profit)
+                            if pnl_pct >= 0.3:
                                 new_stop = min(new_stop, round(entry_p * 0.999, 8))
                             current_stop = float(trade.get("trailing_stop") or float('inf'))
                             trade["trailing_stop"] = min(current_stop, new_stop)

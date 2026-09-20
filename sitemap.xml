@@ -6,72 +6,80 @@
   <!-- Homepage / Master Terminal -->
   <url>
     <loc>https://trade.thesmartmag.com/</loc>
-    <lastmod>2026-09-18</lastmod>
+    <lastmod>2026-09-20</lastmod>
     <changefreq>always</changefreq>
     <priority>1.0</priority>
+  </url>
+
+  <!-- Interactive Free Demo & Quant Simulator -->
+  <url>
+    <loc>https://trade.thesmartmag.com/#demo</loc>
+    <lastmod>2026-09-20</lastmod>
+    <changefreq>always</changefreq>
+    <priority>0.98</priority>
   </url>
 
   <!-- Indian EQ & F&O Options Intelligence -->
   <url>
     <loc>https://trade.thesmartmag.com/#india</loc>
-    <lastmod>2026-09-18</lastmod>
+    <lastmod>2026-09-20</lastmod>
     <changefreq>hourly</changefreq>
+    <priority>0.95</priority>
+  </url>
+
+  <!-- AI Trade Signals & Neural Core Consensus -->
+  <url>
+    <loc>https://trade.thesmartmag.com/#trades</loc>
+    <lastmod>2026-09-20</lastmod>
+    <changefreq>always</changefreq>
     <priority>0.95</priority>
   </url>
 
   <!-- Live Financial News & Macro Catalysts -->
   <url>
     <loc>https://trade.thesmartmag.com/#news</loc>
-    <lastmod>2026-09-18</lastmod>
+    <lastmod>2026-09-20</lastmod>
     <changefreq>always</changefreq>
     <priority>0.90</priority>
   </url>
 
-  <!-- Pro TradingView Chart -->
+  <!-- Pro TradingView Multi-Asset Chart -->
   <url>
     <loc>https://trade.thesmartmag.com/#chart</loc>
-    <lastmod>2026-09-18</lastmod>
+    <lastmod>2026-09-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.88</priority>
+  </url>
+
+  <!-- Real-World Asset (RWA) Tokenization Matrix -->
+  <url>
+    <loc>https://trade.thesmartmag.com/#rwa</loc>
+    <lastmod>2026-09-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
 
-  <!-- RWA Matrix -->
-  <url>
-    <loc>https://trade.thesmartmag.com/#rwa</loc>
-    <lastmod>2026-09-18</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.80</priority>
-  </url>
-
-  <!-- Prop Firms -->
+  <!-- Verified Prop Firms & Challenges -->
   <url>
     <loc>https://trade.thesmartmag.com/#partners</loc>
-    <lastmod>2026-09-18</lastmod>
+    <lastmod>2026-09-20</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.80</priority>
+    <priority>0.82</priority>
   </url>
 
-  <!-- Audit Log -->
+  <!-- Live Indian F&O Public Overview Feed -->
   <url>
-    <loc>https://trade.thesmartmag.com/#trades</loc>
-    <lastmod>2026-09-18</lastmod>
-    <changefreq>hourly</changefreq>
+    <loc>https://trade.thesmartmag.com/api/india/overview</loc>
+    <lastmod>2026-09-20</lastmod>
+    <changefreq>always</changefreq>
     <priority>0.75</priority>
   </url>
 
-  <!-- Live Public API Overview -->
-  <url>
-    <loc>https://trade.thesmartmag.com/api/india/overview</loc>
-    <lastmod>2026-09-18</lastmod>
-    <changefreq>always</changefreq>
-    <priority>0.70</priority>
-  </url>
-
-  <!-- Live News Stream -->
+  <!-- Live News Stream API -->
   <url>
     <loc>https://trade.thesmartmag.com/api/news/live</loc>
-    <lastmod>2026-09-18</lastmod>
+    <lastmod>2026-09-20</lastmod>
     <changefreq>always</changefreq>
-    <priority>0.70</priority>
+    <priority>0.75</priority>
   </url>
 </urlset>

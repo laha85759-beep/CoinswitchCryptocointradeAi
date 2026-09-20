@@ -262,26 +262,32 @@ class AIConsensusCommittee:
         consensus_score = tech_score + (nvidia_score * 0.40)
         consensus_score = min(round(consensus_score, 3), 1.0)
 
-        # 6. Precision Invalidation SL & Target TP
-        default_sl_pct = float(self.cfg.get("stop_loss_pct", 1.8))
-        default_tp_pct = float(self.cfg.get("take_profit_pct", 15.0))
+        # 6. Precision Invalidation SL & Target TP under Capital Survival Mode
+        default_sl_pct = float(self.cfg.get("stop_loss_pct", 1.5))
+        default_tp_pct = float(self.cfg.get("take_profit_pct", 6.0))
 
         if smc_data.get("order_block"):
             inval_px = float(smc_data["order_block"]["invalidation_price"])
             sl_pct = abs(price - inval_px) / price * 100.0
-            hard_sl_pct = max(0.8, min(round(sl_pct * 1.05, 2), 2.0))
+            hard_sl_pct = max(0.5, min(round(sl_pct * 1.05, 2), 1.5))  # Hard cap 1.5% SL
         elif smc_data.get("fvg"):
-            gap_bottom = float(smc_data["fvg"]["gap_bottom"])
-            sl_pct = abs(price - gap_bottom) / price * 100.0
-            hard_sl_pct = max(0.8, min(round(sl_pct * 1.05, 2), 2.0))
+            gap_boundary = float(smc_data["fvg"]["gap_bottom"] if direction == "BUY" else smc_data["fvg"]["gap_top"])
+            sl_pct = abs(price - gap_boundary) / price * 100.0
+            hard_sl_pct = max(0.5, min(round(sl_pct * 1.05, 2), 1.5))  # Hard cap 1.5% SL
         else:
-            hard_sl_pct = min(default_sl_pct, 2.0)
+            hard_sl_pct = min(default_sl_pct, 1.5)
 
-        take_profit_pct = default_tp_pct
+        # Capital Survival: Ensure minimum 1:3 Reward-to-Risk ratio (prefer 1:4+)
+        take_profit_pct = max(default_tp_pct, round(hard_sl_pct * 3.5, 2))
+        rr_ratio = round(take_profit_pct / hard_sl_pct, 2)
+
         hard_sl = price * (1 - hard_sl_pct / 100.0) if direction == "BUY" else price * (1 + hard_sl_pct / 100.0)
         take_profit = price * (1 + take_profit_pct / 100.0) if direction == "BUY" else price * (1 - take_profit_pct / 100.0)
 
-        approved = consensus_score >= self.min_consensus_score
+        # Strict Multi-Model Committee Approval
+        nvidia_approved = bool(nvidia_verdict.get("approved", False))
+        min_rr_met = (rr_ratio >= float(self.cfg.get("min_rr_ratio", 3.0)))
+        approved = (consensus_score >= self.min_consensus_score) and nvidia_approved and min_rr_met
 
         verdict = {
             "approved": approved,
@@ -299,19 +305,19 @@ class AIConsensusCommittee:
             "take_profit": round(take_profit, 6),
             "hard_sl_pct": hard_sl_pct,
             "take_profit_pct": take_profit_pct,
-            "risk_reward_ratio": round(take_profit_pct / hard_sl_pct, 2),
-            "reason": f"NVIDIA Super Brain & SMC Score: {consensus_score:.3f} (SMC: {smc_bias}, Nemotron+Kumo: {nvidia_score:.2f})",
+            "risk_reward_ratio": rr_ratio,
+            "reason": f"NVIDIA GLM-5.3 & SMC Score: {consensus_score:.3f} | R:R 1:{rr_ratio} | NV_Appr={nvidia_approved}",
         }
 
         if approved:
             log.info(
-                "⚡ [AI CONSENSUS APPROVED] %s %s | Score: %.3f (Req: %.2f) | Entry: %.4f | SL: %.4f (-%.1f%%) | TP: %.4f (+%.1f%%) | RR: 1:%.1f",
-                symbol, direction, consensus_score, self.min_consensus_score, price, hard_sl, hard_sl_pct, take_profit, take_profit_pct, verdict["risk_reward_ratio"]
+                "⚡ [AI CONSENSUS APPROVED • CAPITAL SURVIVAL] %s %s | Score: %.3f (Req: %.2f) | Entry: %.4f | SL: %.4f (-%.1f%%) | TP: %.4f (+%.1f%%) | RR: 1:%.1f",
+                symbol, direction, consensus_score, self.min_consensus_score, price, hard_sl, hard_sl_pct, take_profit, take_profit_pct, rr_ratio
             )
         else:
             log.info(
-                "🛡️ [AI CONSENSUS FILTERED] %s %s rejected | Score: %.3f < %.2f threshold (SMC=%s, Aligned=%s)",
-                symbol, direction, consensus_score, self.min_consensus_score, smc_bias, smc_aligned
+                "🛡️ [CAPITAL SURVIVAL FILTERED] %s %s rejected | Score: %.3f (Req: %.2f) | RR: 1:%.1f (Req: >=3.0) | NV_Appr: %s",
+                symbol, direction, consensus_score, self.min_consensus_score, rr_ratio, nvidia_approved
             )
 
         return verdict
