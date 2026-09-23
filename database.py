@@ -2158,6 +2158,86 @@ def get_all_banned_ips():
     except Exception:
         return []
 
+def admin_create_user(email: str, password: str, name: str = "", role: str = "trader", plan_name: str = "free", services: dict = None) -> tuple[dict | None, str | None]:
+    """Super Admin creates a user with customized role, plan, and initial permissions."""
+    user, err = create_user(email=email, password=password, name=name, role=role)
+    if not user:
+        return None, err
+    user_id = user["id"]
+    now = int(time.time())
+    
+    # Update plan if specified
+    if plan_name and plan_name != "free":
+        update_user_subscription(user_id, plan_id=plan_name, billing_interval="lifetime" if plan_name == "enterprise" else "monthly")
+        
+    # Update permissions if specified
+    if services and isinstance(services, dict):
+        for s_name, s_enabled in services.items():
+            set_user_permission_override(user_id, s_name, bool(s_enabled))
+            
+    # Auto-backup
+    _backup_users_to_disk()
+    return get_user_crm_profile(user_id), None
+
+def admin_record_profit_update(user_id: int, symbol: str, realized_pnl: float, exchange: str = "coinswitch", direction: str = "long", notes: str = "") -> dict:
+    """Admin logs/updates user profit/PnL."""
+    conn = get_db()
+    cursor = conn.cursor()
+    now = int(time.time())
+    
+    cursor.execute('''
+        INSERT INTO user_trades (user_id, exchange, symbol, direction, entry_price, qty, status, exit_price, realized_pnl, opened_at, closed_at)
+        VALUES (?, ?, ?, ?, 100.0, 1.0, 'closed', 100.0, ?, ?, ?)
+    ''', (user_id, exchange, symbol.upper(), direction.lower(), float(realized_pnl), now - 3600, now))
+    trade_id = cursor.lastrowid
+    
+    # Also log into journal
+    cursor.execute('''
+        INSERT INTO trade_journal_entries (user_id, trade_id, symbol, direction, entry_price, exit_price, pnl, setup_tag, notes, trade_date, created_at)
+        VALUES (?, ?, ?, ?, 100.0, 100.0, ?, 'Manual Profit Adjustment', ?, date('now'), ?)
+    ''', (user_id, trade_id, symbol.upper(), direction.lower(), float(realized_pnl), notes or "Admin profit update", now))
+    
+    conn.commit()
+    conn.close()
+    return {"trade_id": trade_id, "user_id": user_id, "realized_pnl": realized_pnl, "symbol": symbol}
+
+def admin_record_manual_payment(user_id: int, amount: float, payment_method: str = "crypto_usdt", plan_id: str = "pro", tx_hash: str = "") -> dict:
+    """Super Admin records a manual payment (USDT, Cash, Bank Transfer, Stripe, Rise)."""
+    conn = get_db()
+    cursor = conn.cursor()
+    now = int(time.time())
+    
+    cursor.execute('''
+        INSERT INTO payments (user_id, amount, currency, stripe_payment_id, stripe_session_id, plan_or_addon_id, status, payout_account, created_at)
+        VALUES (?, ?, 'USD', ?, ?, ?, 'succeeded', 'Manual Settlement (SuperAdmin)', ?)
+    ''', (user_id, float(amount), f"manual_{now}", tx_hash or f"tx_{now}", plan_id, now))
+    payment_id = cursor.lastrowid
+    
+    # Also insert into sales_transactions
+    cursor.execute('''
+        INSERT INTO sales_transactions (user_id, amount_usd, plan_name, payment_method, status, tx_hash, created_at)
+        VALUES (?, ?, ?, ?, 'completed', ?, ?)
+    ''', (user_id, float(amount), plan_id, payment_method, tx_hash or f"tx_{now}", now))
+    
+    conn.commit()
+    conn.close()
+    return {"payment_id": payment_id, "user_id": user_id, "amount": amount, "plan_id": plan_id}
+
+def admin_get_all_payments(limit: int = 150) -> list[dict]:
+    """Super Admin retrieves all SaaS payments and manual payment transactions."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT p.id, p.user_id, u.email, u.name, p.amount, p.currency, p.plan_or_addon_id as plan_id,
+               p.stripe_payment_id, p.payout_account, p.status, p.created_at
+        FROM payments p
+        LEFT JOIN users u ON p.user_id = u.id
+        ORDER BY p.created_at DESC LIMIT ?
+    ''', (limit,))
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return rows
+
 # Initialize on import
 init_db()
 load_banned_ips_cache()

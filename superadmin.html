@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Super Admin Command Center | TheSmartMag Sovereign AI</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/superadmin.css">
+</head>
+<body class="sa-body">
+  <!-- Top Navigation Header -->
+  <header class="sa-header">
+    <div class="sa-header-left">
+      <div class="sa-brand-badge">
+        <span class="sa-brand-icon">⚡</span>
+        <div class="sa-brand-meta">
+          <span class="sa-brand-title">THESMARTMAG</span>
+          <span class="sa-brand-sub">SOVEREIGN SUPER ADMIN // OS v3.5</span>
+        </div>
+      </div>
+      <div class="sa-telemetry-chip">
+        <span class="sa-pulse-dot"></span>
+        <span id="saServerStatusText">SYSTEM ACTIVE (24/7)</span>
+      </div>
+      <div class="sa-telemetry-chip sa-ram-chip">
+        <span>RAM:</span> <strong id="saRamText">181 MB / 512 MB (35%)</strong>
+      </div>
+      <div class="sa-capital-chip">
+        🛡️ CAPITAL SURVIVAL: LOCKED (R:R &ge; 1:3.0)
+      </div>
+    </div>
+    
+    <div class="sa-header-right">
+      <div class="sa-time-chip" id="saLiveTime">00:00:00 UTC | IST</div>
+      <a href="/" target="_blank" class="sa-btn-terminal" title="Open Main Terminal in New Tab">
+        🌐 OPEN TERMINAL
+      </a>
+      <a href="/admin" class="sa-btn-admin-switch" title="Switch to Operations Admin Cockpit">
+        🛠️ ADMIN COCKPIT
+      </a>
+      <div class="sa-user-badge">
+        <span class="sa-avatar">👑</span>
+        <span class="sa-username" id="saAdminEmail">admin@thesmartmag.com</span>
+      </div>
+      <button class="sa-btn-logout" id="saLogoutBtn" onclick="handleLogout()">LOGOUT</button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="sa-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sa-sidebar">
+      <nav class="sa-nav">
+        <button class="sa-nav-item active" data-tab="overview">
+          <span class="sa-nav-icon">📊</span>
+          <span class="sa-nav-label">Executive Overview</span>
+        </button>
+        <button class="sa-nav-item" data-tab="users">
+          <span class="sa-nav-icon">👥</span>
+          <span class="sa-nav-label">User CRM & Directory</span>
+          <span class="sa-badge-count" id="saUserCountBadge">0</span>
+        </button>
+        <button class="sa-nav-item" data-tab="services">
+          <span class="sa-nav-icon">🔐</span>
+          <span class="sa-nav-label">Service Provisioning</span>
+        </button>
+        <button class="sa-nav-item" data-tab="subscriptions">
+          <span class="sa-nav-icon">💳</span>
+          <span class="sa-nav-label">Plans & Payments</span>
+        </button>
+        <button class="sa-nav-item" data-tab="botcontrol">
+          <span class="sa-nav-icon">🤖</span>
+          <span class="sa-nav-label">Master Bot & Risk</span>
+        </button>
+        <button class="sa-nav-item" data-tab="security">
+          <span class="sa-nav-icon">🛡️</span>
+          <span class="sa-nav-label">Edge WAF & Banned IPs</span>
+          <span class="sa-badge-count sa-badge-alert" id="saBannedCountBadge">0</span>
+        </button>
+        <button class="sa-nav-item" data-tab="universal">
+          <span class="sa-nav-icon">🌐</span>
+          <span class="sa-nav-label">Universal App Jumps</span>
+        </button>
+      </nav>
+
+      <div class="sa-sidebar-footer">
+        <div class="sa-security-status">
+          <span class="sa-sec-icon">🔒</span>
+          <div>
+            <div class="sa-sec-label">Permanent Edge WAF</div>
+            <div class="sa-sec-val">Zero-Tolerance Active</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="sa-main">
+      <!-- TAB 1: EXECUTIVE OVERVIEW -->
+      <section class="sa-tab-content active" id="tab-overview">
+        <div class="sa-section-header">
+          <div>
+            <h1 class="sa-heading">Platform Command & Executive Telemetry</h1>
+            <p class="sa-subtext">Real-time status across all multi-tenant nodes, algorithmic trading daemons, and security perimeters.</p>
+          </div>
+          <div class="sa-actions-bar">
+            <button class="sa-btn-primary" onclick="openCreateUserModal()">+ ADD NEW USER</button>
+            <button class="sa-btn-warning" onclick="triggerImmediateTradeCycle()">⚡ TRIGGER TRADE CYCLE</button>
+            <button class="sa-btn-danger" onclick="panicFlattenAll()">🚨 PANIC FLATTEN ALL</button>
+          </div>
+        </div>
+
+        <!-- KPI Grid -->
+        <div class="sa-kpi-grid">
+          <div class="sa-kpi-card">
+            <div class="sa-kpi-header">
+              <span class="sa-kpi-title">TOTAL REGISTERED TRADERS</span>
+              <span class="sa-kpi-icon">👥</span>
+            </div>
+            <div class="sa-kpi-value" id="kpiTotalUsers">--</div>
+            <div class="sa-kpi-footer">
+              <span class="sa-trend-up">Active Traders: <strong id="kpiActiveUsers">--</strong></span>
+            </div>
+          </div>
+
+          <div class="sa-kpi-card">
+            <div class="sa-kpi-header">
+              <span class="sa-kpi-title">TOTAL SAAS REVENUE (USD)</span>
+              <span class="sa-kpi-icon">💰</span>
+            </div>
+            <div class="sa-kpi-value" id="kpiTotalRevenue">$0.00</div>
+            <div class="sa-kpi-footer">
+              <span>Settlement: <strong>Rise USD / Stripe</strong></span>
+            </div>
+          </div>
+
+          <div class="sa-kpi-card">
+            <div class="sa-kpi-header">
+              <span class="sa-kpi-title">24/7 AUTONOMOUS BOT</span>
+              <span class="sa-kpi-icon">🤖</span>
+            </div>
+            <div class="sa-kpi-value" id="kpiBotStatus">ACTIVE</div>
+            <div class="sa-kpi-footer">
+              <span>Super Brain: <strong>NVIDIA GLM-5.3</strong></span>
+            </div>
+          </div>
+
+          <div class="sa-kpi-card">
+            <div class="sa-kpi-header">
+              <span class="sa-kpi-title">BANNED MALICIOUS IPS</span>
+              <span class="sa-kpi-icon">🛡️</span>
+            </div>
+            <div class="sa-kpi-value" id="kpiBannedIps">0</div>
+            <div class="sa-kpi-footer">
+              <span class="sa-trend-ok">Edge WAF Auto-Defending</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Activity & Health Row -->
+        <div class="sa-two-col">
+          <div class="sa-card">
+            <div class="sa-card-header">
+              <h3>⚡ Autonomous Trading Nodes & Market State</h3>
+              <button class="sa-btn-sm" onclick="loadOverviewData()">🔄 Refresh</button>
+            </div>
+            <div class="sa-card-body" id="saNodeDetails">
+              <div class="sa-node-item">
+                <span>CoinSwitch Pro Spot Execution Engine</span>
+                <span class="sa-badge sa-badge-success">OPERATIONAL</span>
+              </div>
+              <div class="sa-node-item">
+                <span>Delta Exchange India Perpetual Futures</span>
+                <span class="sa-badge sa-badge-success">OPERATIONAL</span>
+              </div>
+              <div class="sa-node-item">
+                <span>NVIDIA GLM-5.3 & Nemotron Super Brain Committee</span>
+                <span class="sa-badge sa-badge-success">ONLINE</span>
+              </div>
+              <div class="sa-node-item">
+                <span>Indian Equities & F&O Scanner (Nifty / BankNifty)</span>
+                <span class="sa-badge sa-badge-success">ACTIVE</span>
+              </div>
+              <div class="sa-node-item">
+                <span>Forex & Economic News Telegram Broadcaster</span>
+                <span class="sa-badge sa-badge-success">STREAMING</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="sa-card">
+            <div class="sa-card-header">
+              <h3>📜 Recent Platform & Audit Logs</h3>
+              <button class="sa-btn-sm" onclick="loadAuditLogs()">View Full</button>
+            </div>
+            <div class="sa-card-body sa-log-feed" id="saQuickAuditLog">
+              <div class="sa-log-line">[SYSTEM] Sovereign Super Admin initialized.</div>
+              <div class="sa-log-line">[WAF] Edge firewall inspection active.</div>
+              <div class="sa-log-line">[AUTONOMOUS] Capital Survival Mode active (Min R:R 1:3).</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: USER CRM & DIRECTORY -->
+      <section class="sa-tab-content" id="tab-users">
+        <div class="sa-section-header">
+          <div>
+            <h1 class="sa-heading">User Directory & CRM Management</h1>
+            <p class="sa-subtext">Comprehensive control over all platform accounts, roles, access statuses, and personal trading accounts.</p>
+          </div>
+          <div class="sa-actions-bar">
+            <button class="sa-btn-primary" onclick="openCreateUserModal()">+ CREATE NEW USER</button>
+            <button class="sa-btn-secondary" onclick="loadUsersTable()">🔄 REFRESH USERS</button>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="sa-filter-bar">
+          <input type="text" id="userSearchInput" class="sa-input sa-search" placeholder="Search by name, email, ID..." oninput="filterUsersTable()">
+          <select id="userRoleFilter" class="sa-select" onchange="filterUsersTable()">
+            <option value="all">All Roles</option>
+            <option value="trader">Traders</option>
+            <option value="admin">Admins</option>
+            <option value="superadmin">Super Admins</option>
+          </select>
+          <select id="userPlanFilter" class="sa-select" onchange="filterUsersTable()">
+            <option value="all">All Plans</option>
+            <option value="free">Free</option>
+            <option value="starter">Starter</option>
+            <option value="pro">Pro Trader</option>
+            <option value="elite">Elite</option>
+            <option value="enterprise">Enterprise</option>
+          </select>
+          <select id="userStatusFilter" class="sa-select" onchange="filterUsersTable()">
+            <option value="all">All Statuses</option>
+            <option value="active">Active Only</option>
+            <option value="suspended">Suspended Only</option>
+          </select>
+        </div>
+
+        <!-- Users Table -->
+        <div class="sa-table-container">
+          <table class="sa-table" id="usersTable">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>TRADER / EMAIL</th>
+                <th>ROLE</th>
+                <th>SAAS PLAN</th>
+                <th>SUB STATUS</th>
+                <th>SPENT</th>
+                <th>STATE</th>
+                <th>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody">
+              <tr>
+                <td colspan="8" class="sa-text-center">Loading registered users...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TAB 3: SERVICE PROVISIONING MATRIX -->
+      <section class="sa-tab-content" id="tab-services">
+        <div class="sa-section-header">
+          <div>
+            <h1 class="sa-heading">Individual User Service Provisioning</h1>
+            <p class="sa-subtext">Select any user and grant, restrict, or customize their access to each of the 8 individual platform modules with real-time persistence.</p>
+          </div>
+          <div class="sa-user-picker-bar">
+            <label for="provisionUserSelect">SELECT USER:</label>
+            <select id="provisionUserSelect" class="sa-select sa-select-lg" onchange="loadUserServicesMatrix()">
+              <option value="">-- Choose User --</option>
+            </select>
+            <button class="sa-btn-sm sa-btn-success" onclick="bulkToggleServices(true)">ENABLE ALL</button>
+            <button class="sa-btn-sm sa-btn-danger" onclick="bulkToggleServices(false)">DISABLE ALL</button>
+          </div>
+        </div>
+
+        <!-- Current Selected User Banner -->
+        <div class="sa-selected-user-banner" id="selectedUserBanner" style="display: none;">
+          <div class="sa-user-meta-chip">
+            <span>Configuring Services For:</span> <strong id="provisionUserEmail">--</strong>
+          </div>
+          <div class="sa-user-meta-chip">
+            <span>Base Plan:</span> <strong id="provisionUserPlan">--</strong>
+          </div>
+          <div class="sa-user-meta-chip">
+            <span>Role:</span> <strong id="provisionUserRole">--</strong>
+          </div>
+        </div>
+
+        <!-- 8 Services Grid -->
+        <div class="sa-services-grid" id="servicesGrid">
+          <!-- 1. AI Real-Time Signals -->
+          <div class="sa-service-card" data-service="ai_signals">
+            <div class="sa-service-icon">⚡</div>
+            <div class="sa-service-info">
+              <h4>AI Signals & Multi-Market Scanner</h4>
+              <p>Real-time momentum pump/dump signals, crypto order-book imbalances, and automated alerts.</p>
+            </div>
+            <label class="sa-switch">
+              <input type="checkbox" id="svc_ai_signals" onchange="toggleUserService('ai_signals')">
+              <span class="sa-slider"></span>
+            </label>
+          </div>
+
+          <!-- 2. Indian Equities & F&O Scanner -->
+          <div class="sa-service-card" data-service="india_fo">
+            <div class="sa-service-icon">🇮🇳</div>
+            <div class="sa-service-info">
+              <h4>Indian Equities & F&O Options Radar</h4>
+              <p>Live Nifty, BankNifty option chain PCR, IV percentile, and multi-broker F&O automated routing.</p>
+            </div>
+            <label class="sa-switch">
+              <input type="checkbox" id="svc_india_fo" onchange="toggleUserService('india_fo')">
+              <span class="sa-slider"></span>
+            </label>
+          </div>
+
+          <!-- 3. Forex & Macro Commodities -->
+          <div class="sa-service-card" data-service="forex_macro">
+            <div class="sa-service-icon">🌍</div>
+            <div class="sa-service-info">
+              <h4>Forex & Macro Economic News</h4>
+              <p>High-impact ForexFactory economic calendar, Gold/Crude catalysts, and institutional sentiment.</p>
+            </div>
+            <label class="sa-switch">
+              <input type="checkbox" id="svc_forex_macro" onchange="toggleUserService('forex_macro')">
+              <span class="sa-slider"></span>
+            </label>
+          </div>
+
+          <!-- 4. Autonomous Autobot Trading Engine -->
+          <div class="sa-service-card" data-service="autobot_trading">
+            <div class="sa-service-icon">🤖</div>
+            <div class="sa-service-info">
+              <h4>Autonomous Bot Trade Execution</h4>
+              <p>24/7 cloud auto-execution on CoinSwitch Pro and Delta Exchange India with trailing stop safeguards.</p>
+            </div>
+            <label class="sa-switch">
+              <input type="checkbox" id="svc_autobot_trading" onchange="toggleUserService('autobot_trading')">
+              <span class="sa-slider"></span>
+            </label>
+          </div>
+
+          <!-- 5. Prop Firm Challenge Copier -->
+          <div class="sa-service-card" data-service="prop_firms">
+            <div class="sa-service-icon">🏆</div>
+            <div class="sa-service-info">
+              <h4>Prop Firm Challenge Copier & Deals</h4>
+              <p>Evaluation pass copier, exclusive discounts (MFFU, Atlas, Blue Guardian), and drawdown protection.</p>
+            </div>
+            <label class="sa-switch">
+              <input type="checkbox" id="svc_prop_firms" onchange="toggleUserService('prop_firms')">
+              <span class="sa-slider"></span>
+            </label>
+          </div>
+
+          <!-- 6. JournalIt Institutional Trading Journal -->
+          <div class="sa-service-card" data-service="journal_it">
+            <div class="sa-service-icon">📖</div>
+            <div class="sa-service-info">
+              <h4>JournalIt Trading Journal & Analytics</h4>
+              <p>Auto-sync trade history, emotional tagging, calendar heatmaps, and institutional performance metrics.</p>
+            </div>
+            <label class="sa-switch">
+              <input type="checkbox" id="svc_journal_it" onchange="toggleUserService('journal_it')">
+              <span class="sa-slider"></span>
+            </label>
+          </div>
+
+          <!-- 7. Algorithmic Strategy Builder -->
+          <div class="sa-service-card" data-service="strategy_builder">
+            <div class="sa-service-icon">🛠️</div>
+            <div class="sa-service-info">
+              <h4>Strategy Builder & Quant Lab</h4>
+              <p>Visual strategy designer, SMC order-block configuration, backtesting, and custom indicator webhooks.</p>
+            </div>
+            <label class="sa-switch">
+              <input type="checkbox" id="svc_strategy_builder" onchange="toggleUserService('strategy_builder')">
+              <span class="sa-slider"></span>
+            </label>
+          </div>
+
+          <!-- 8. NVIDIA GLM-5.3 Super Brain Consensus -->
+          <div class="sa-service-card" data-service="nvidia_super_brain">
+            <div class="sa-service-icon">🧠</div>
+            <div class="sa-service-info">
+              <h4>NVIDIA GLM-5.3 & Nemotron Super Brain</h4>
+              <p>Ultra-deep 753B parameter multi-model AI consensus committee and institutional liquidity trap detection.</p>
+            </div>
+            <label class="sa-switch">
+              <input type="checkbox" id="svc_nvidia_super_brain" onchange="toggleUserService('nvidia_super_brain')">
+              <span class="sa-slider"></span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: SAAS PLANS & PAYMENTS -->
+      <section class="sa-tab-content" id="tab-subscriptions">
+        <div class="sa-section-header">
+          <div>
+            <h1 class="sa-heading">Subscription & Payment Operations</h1>
+            <p class="sa-subtext">Manually grant subscriptions, record crypto/cash transactions, and monitor platform revenue settlement.</p>
+          </div>
+          <div class="sa-actions-bar">
+            <button class="sa-btn-primary" onclick="openManualPaymentModal()">+ RECORD MANUAL PAYMENT</button>
+            <button class="sa-btn-secondary" onclick="loadPaymentsTable()">🔄 REFRESH PAYMENTS</button>
+          </div>
+        </div>
+
+        <!-- Manual Plan Activation Widget -->
+        <div class="sa-card sa-mb-4">
+          <div class="sa-card-header">
+            <h3>⚡ Quick Subscription Grant / Override</h3>
+          </div>
+          <div class="sa-card-body">
+            <form id="quickSubForm" onsubmit="handleQuickSubGrant(event)" class="sa-sub-grant-form">
+              <div class="sa-form-group">
+                <label>Select User:</label>
+                <select id="quickSubUser" class="sa-select" required>
+                  <option value="">-- Choose User --</option>
+                </select>
+              </div>
+              <div class="sa-form-group">
+                <label>Plan:</label>
+                <select id="quickSubPlan" class="sa-select" required>
+                  <option value="starter">Starter Trader ($19/mo)</option>
+                  <option value="pro" selected>Pro Trader ($49/mo)</option>
+                  <option value="elite">Elite Trader ($99/mo)</option>
+                  <option value="enterprise">Enterprise Custom (VIP)</option>
+                </select>
+              </div>
+              <div class="sa-form-group">
+                <label>Billing Duration:</label>
+                <select id="quickSubInterval" class="sa-select" required>
+                  <option value="monthly">1 Month (30 Days)</option>
+                  <option value="quarterly">3 Months (90 Days)</option>
+                  <option value="yearly">1 Year (365 Days)</option>
+                  <option value="lifetime">Lifetime Access</option>
+                </select>
+              </div>
+              <div class="sa-form-group">
+                <label>Payment Amount Received ($):</label>
+                <input type="number" step="0.01" id="quickSubAmount" class="sa-input" placeholder="0.00" value="0.00">
+              </div>
+              <div class="sa-form-group">
+                <label>Payment Method:</label>
+                <select id="quickSubMethod" class="sa-select">
+                  <option value="crypto_usdt">Crypto (USDT/USDC)</option>
+                  <option value="rise_usd">Rise Business USD</option>
+                  <option value="stripe">Stripe Credit Card</option>
+                  <option value="bank_wire">Bank Wire / IMPS</option>
+                  <option value="complimentary">Complimentary / Free Grant</option>
+                </select>
+              </div>
+              <div class="sa-form-group sa-align-end">
+                <button type="submit" class="sa-btn-primary">GRANT ACCESS & RECORD</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Payments Ledger Table -->
+        <div class="sa-table-container">
+          <table class="sa-table" id="paymentsTable">
+            <thead>
+              <tr>
+                <th>TX ID</th>
+                <th>USER / EMAIL</th>
+                <th>AMOUNT (USD)</th>
+                <th>PLAN</th>
+                <th>SETTLEMENT ACCOUNT</th>
+                <th>STATUS</th>
+                <th>TIMESTAMP</th>
+              </tr>
+            </thead>
+            <tbody id="paymentsTableBody">
+              <tr>
+                <td colspan="7" class="sa-text-center">Loading payments ledger...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TAB 5: MASTER BOT & RISK CONTROLS -->
+      <section class="sa-tab-content" id="tab-botcontrol">
+        <div class="sa-section-header">
+          <div>
+            <h1 class="sa-heading">Autonomous Trading Bot & Risk Guardrails</h1>
+            <p class="sa-subtext">Direct command interface for master bot state, circuit breakers, and Capital Survival parameters.</p>
+          </div>
+        </div>
+
+        <div class="sa-two-col">
+          <div class="sa-card">
+            <div class="sa-card-header">
+              <h3>🤖 Master Bot Execution State</h3>
+            </div>
+            <div class="sa-card-body">
+              <div class="sa-control-group">
+                <div>
+                  <h4 id="masterBotStatusHeader">Master Trading Bot: ACTIVE</h4>
+                  <p>When active, the 24/7 autonomous loop executes high-probability trades across CoinSwitch and Delta India.</p>
+                </div>
+                <button id="masterBotToggleBtn" class="sa-btn-danger" onclick="toggleMasterBot()">PAUSE MASTER BOT</button>
+              </div>
+
+              <hr class="sa-divider">
+
+              <div class="sa-control-group">
+                <div>
+                  <h4>Emergency Panic Flatten</h4>
+                  <p>Instantly market-close ALL open positions across CoinSwitch Pro and Delta Exchange India.</p>
+                </div>
+                <button class="sa-btn-danger" onclick="panicFlattenAll()">PANIC FLATTEN ALL</button>
+              </div>
+
+              <hr class="sa-divider">
+
+              <div class="sa-control-group">
+                <div>
+                  <h4>Trigger Autonomous Scan Cycle</h4>
+                  <p>Forces the 6-model AI ensemble to scan 250+ pairs and Indian options right now.</p>
+                </div>
+                <button class="sa-btn-primary" onclick="triggerImmediateTradeCycle()">TRIGGER SCAN NOW</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="sa-card">
+            <div class="sa-card-header">
+              <h3>🛡️ Capital Survival Protocol (Non-Negotiable)</h3>
+            </div>
+            <div class="sa-card-body">
+              <ul class="sa-risk-list">
+                <li>
+                  <span>Risk per Trade (Max Equity):</span>
+                  <strong>0.25% - 0.50%</strong>
+                </li>
+                <li>
+                  <span>Max Open Concurrent Trades:</span>
+                  <strong>2 Positions (Max 1.5% Exposure)</strong>
+                </li>
+                <li>
+                  <span>Daily Loss Hard Circuit Breaker:</span>
+                  <strong>-1.50% (Trading Halts for the Day)</strong>
+                </li>
+                <li>
+                  <span>Weekly Loss Hard Limit:</span>
+                  <strong>-3.00%</strong>
+                </li>
+                <li>
+                  <span>Minimum Reward-to-Risk (R:R):</span>
+                  <strong>&ge; 1:3.0 (Prefers 1:4.0+)</strong>
+                </li>
+                <li>
+                  <span>Stop Loss Ceiling:</span>
+                  <strong>1.50% Maximum Hard Cap</strong>
+                </li>
+                <li>
+                  <span>Break-Even Trailing Lock:</span>
+                  <strong>Triggers at +0.30% (+1R)</strong>
+                </li>
+                <li>
+                  <span>Fail-Closed Principle:</span>
+                  <strong>100% Cash when conditions uncertain</strong>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 6: EDGE WAF & BANNED IPS -->
+      <section class="sa-tab-content" id="tab-security">
+        <div class="sa-section-header">
+          <div>
+            <h1 class="sa-heading">Edge Security Firewall & Banned IPs</h1>
+            <p class="sa-subtext">Automated defense against vulnerability probes, brute-force attackers, and malicious scrapers.</p>
+          </div>
+          <div class="sa-actions-bar">
+            <button class="sa-btn-danger" onclick="openManualBanModal()">+ MANUALLY BAN IP</button>
+            <button class="sa-btn-secondary" onclick="loadBannedIpsTable()">🔄 REFRESH BLACKLIST</button>
+          </div>
+        </div>
+
+        <div class="sa-table-container">
+          <table class="sa-table" id="bannedIpsTable">
+            <thead>
+              <tr>
+                <th>IP ADDRESS</th>
+                <th>REASON / VIOLATION</th>
+                <th>STRIKES</th>
+                <th>BANNED AT</th>
+                <th>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody id="bannedIpsTableBody">
+              <tr>
+                <td colspan="5" class="sa-text-center">Loading banned IP list...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TAB 7: UNIVERSAL APP JUMPS -->
+      <section class="sa-tab-content" id="tab-universal">
+        <div class="sa-section-header">
+          <div>
+            <h1 class="sa-heading">Universal Terminal Jump Hub</h1>
+            <p class="sa-subtext">Direct one-click access into any section of the live client terminal with Super Admin master privileges.</p>
+          </div>
+        </div>
+
+        <div class="sa-jump-grid">
+          <a href="/#trades" target="_blank" class="sa-jump-card">
+            <span class="sa-jump-icon">⚡</span>
+            <h4>Live Quant Cockpit & Trades</h4>
+            <p>Real-time orderbook depth, active positions, and CoinSwitch / Delta live order monitors.</p>
+          </a>
+
+          <a href="/#india" target="_blank" class="sa-jump-card">
+            <span class="sa-jump-icon">🇮🇳</span>
+            <h4>India Equities & F&O Options</h4>
+            <p>Nifty & BankNifty PCR radar, max pain strike table, and F&O automated signals.</p>
+          </a>
+
+          <a href="/#news" target="_blank" class="sa-jump-card">
+            <span class="sa-jump-icon">📰</span>
+            <h4>News & Macro Economic Radar</h4>
+            <p>ForexFactory calendar, global breaking crypto feeds, and market sentiment gauges.</p>
+          </a>
+
+          <a href="/#pro-chart" target="_blank" class="sa-jump-card">
+            <span class="sa-jump-icon">📈</span>
+            <h4>TradingView Multi-Asset Pro Chart</h4>
+            <p>BTC, ETH, Gold, Crude, Forex, and Indian indices on institutional charts.</p>
+          </a>
+
+          <a href="/#cockpit" target="_blank" class="sa-jump-card">
+            <span class="sa-jump-icon">👤</span>
+            <h4>Trader Cockpit & Portfolio Vaults</h4>
+            <p>Exchange API credentials, user settings, performance analytics, and risk limits.</p>
+          </a>
+
+          <a href="/#demo" target="_blank" class="sa-jump-card">
+            <span class="sa-jump-icon">🧪</span>
+            <h4>Free Demo Simulator Experience</h4>
+            <p>$10,000 mock trade execution sandbox for testing high-probability setups.</p>
+          </a>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODAL: ADD NEW USER -->
+  <div class="sa-modal-overlay" id="createUserModal">
+    <div class="sa-modal-card">
+      <div class="sa-modal-header">
+        <h3>+ Create New User Account</h3>
+        <button class="sa-modal-close" onclick="closeCreateUserModal()">&times;</button>
+      </div>
+      <form id="createUserForm" onsubmit="handleCreateUserSubmit(event)">
+        <div class="sa-form-row">
+          <div class="sa-form-group">
+            <label>Full Name:</label>
+            <input type="text" id="newUserName" class="sa-input" placeholder="e.g. John Doe" required>
+          </div>
+          <div class="sa-form-group">
+            <label>Email Address:</label>
+            <input type="email" id="newUserEmail" class="sa-input" placeholder="trader@example.com" required>
+          </div>
+        </div>
+
+        <div class="sa-form-row">
+          <div class="sa-form-group">
+            <label>Initial Password (Min 6 chars):</label>
+            <input type="password" id="newUserPassword" class="sa-input" placeholder="••••••••" required>
+          </div>
+          <div class="sa-form-group">
+            <label>Role:</label>
+            <select id="newUserRole" class="sa-select">
+              <option value="trader" selected>Trader (Standard User)</option>
+              <option value="admin">Operations Admin</option>
+              <option value="superadmin">Super Admin</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="sa-form-group">
+          <label>Initial SaaS Plan:</label>
+          <select id="newUserPlan" class="sa-select">
+            <option value="free">Free Access</option>
+            <option value="starter">Starter Trader ($19/mo)</option>
+            <option value="pro" selected>Pro Trader ($49/mo)</option>
+            <option value="elite">Elite Trader ($99/mo)</option>
+            <option value="enterprise">Enterprise Custom</option>
+          </select>
+        </div>
+
+        <div class="sa-form-group">
+          <label>Pre-Activate Services:</label>
+          <div class="sa-checkbox-grid">
+            <label class="sa-checkbox-label">
+              <input type="checkbox" id="nu_ai_signals" checked> ⚡ AI Signals
+            </label>
+            <label class="sa-checkbox-label">
+              <input type="checkbox" id="nu_india_fo" checked> 🇮🇳 India F&O
+            </label>
+            <label class="sa-checkbox-label">
+              <input type="checkbox" id="nu_forex_macro" checked> 🌍 Forex Macro
+            </label>
+            <label class="sa-checkbox-label">
+              <input type="checkbox" id="nu_autobot_trading" checked> 🤖 Autobot Execution
+            </label>
+            <label class="sa-checkbox-label">
+              <input type="checkbox" id="nu_prop_firms" checked> 🏆 Prop Firms
+            </label>
+            <label class="sa-checkbox-label">
+              <input type="checkbox" id="nu_journal_it" checked> 📖 JournalIt
+            </label>
+            <label class="sa-checkbox-label">
+              <input type="checkbox" id="nu_strategy_builder" checked> 🛠️ Strategy Builder
+            </label>
+            <label class="sa-checkbox-label">
+              <input type="checkbox" id="nu_nvidia_super_brain" checked> 🧠 GLM-5.3 Super Brain
+            </label>
+          </div>
+        </div>
+
+        <div class="sa-modal-footer">
+          <button type="button" class="sa-btn-secondary" onclick="closeCreateUserModal()">Cancel</button>
+          <button type="submit" class="sa-btn-primary">CREATE USER</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: MANUAL BAN IP -->
+  <div class="sa-modal-overlay" id="manualBanModal">
+    <div class="sa-modal-card">
+      <div class="sa-modal-header">
+        <h3>🛡️ Manually Blacklist IP Address</h3>
+        <button class="sa-modal-close" onclick="closeManualBanModal()">&times;</button>
+      </div>
+      <form id="manualBanForm" onsubmit="handleManualBanSubmit(event)">
+        <div class="sa-form-group">
+          <label>IP Address:</label>
+          <input type="text" id="banIpInput" class="sa-input" placeholder="e.g. 192.168.1.1" required>
+        </div>
+        <div class="sa-form-group">
+          <label>Ban Reason:</label>
+          <input type="text" id="banReasonInput" class="sa-input" placeholder="e.g. Suspicious automated probing / exploit attempt" required>
+        </div>
+        <div class="sa-modal-footer">
+          <button type="button" class="sa-btn-secondary" onclick="closeManualBanModal()">Cancel</button>
+          <button type="submit" class="sa-btn-danger">PERMANENTLY BAN IP</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- DRAWER: USER CRM PROFILE -->
+  <div class="sa-drawer-overlay" id="userCrmDrawer" onclick="closeUserCrmDrawer(event)">
+    <div class="sa-drawer" onclick="event.stopPropagation()">
+      <div class="sa-drawer-header">
+        <h3 id="crmUserTitle">User Profile #--</h3>
+        <button class="sa-drawer-close" onclick="closeUserCrmDrawer()">&times;</button>
+      </div>
+      <div class="sa-drawer-body" id="crmDrawerBody">
+        Loading user data...
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADMINISTRATIVE LOGIN OVERLAY -->
+  <div class="sa-modal-overlay" id="saLoginModal" style="display:none; z-index: 9999; background: rgba(3, 7, 18, 0.95); backdrop-filter: blur(8px);">
+    <div class="sa-modal-card" style="max-width: 420px; border: 1px solid rgba(0, 240, 255, 0.4); box-shadow: 0 0 40px rgba(0, 240, 255, 0.15);">
+      <div class="sa-modal-header" style="justify-content: center; text-align: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
+        <div style="text-align: center;">
+          <div style="font-size: 32px; margin-bottom: 6px;">⚡</div>
+          <h3 style="margin: 0; font-size: 18px; color: #fff; letter-spacing: 1px;">SUPER ADMIN ACCESS</h3>
+          <p style="margin: 4px 0 0 0; font-size: 12px; color: #94a3b8;">Enter credentials to unlock sovereign command center</p>
+        </div>
+      </div>
+      <form id="saLoginForm" onsubmit="handleSaLogin(event)" style="padding: 20px 24px;">
+        <div id="saLoginErrorMsg" style="display: none; padding: 10px; margin-bottom: 15px; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; border-radius: 6px; font-size: 12px; color: #fca5a5;"></div>
+        <div class="sa-form-group">
+          <label style="font-size: 12px; color: #cbd5e1;">Username or Email:</label>
+          <input type="text" id="saLoginUser" class="sa-input" placeholder="admin@thesmartmag.com" required autocomplete="username">
+        </div>
+        <div class="sa-form-group">
+          <label style="font-size: 12px; color: #cbd5e1;">Master Secret / Password:</label>
+          <input type="password" id="saLoginPass" class="sa-input" placeholder="••••••••••••••••" required autocomplete="current-password">
+        </div>
+        <div style="margin-top: 20px;">
+          <button type="submit" id="saLoginSubmitBtn" class="sa-btn-primary" style="width: 100%; justify-content: center; padding: 12px; font-size: 13px; font-weight: 700; letter-spacing: 1px;">
+            AUTHENTICATE SUPER ADMIN
+          </button>
+        </div>
+        <div style="margin-top: 15px; text-align: center;">
+          <a href="/" style="font-size: 12px; color: #64748b; text-decoration: none;">&larr; Return to Public Terminal</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/superadmin.js"></script>
+</body>
+</html>

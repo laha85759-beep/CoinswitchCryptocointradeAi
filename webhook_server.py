@@ -254,6 +254,24 @@ def serve_dashboard():
     response.headers["Expires"] = "0"
     return response
 
+@app.route("/superadmin", methods=["GET"])
+@app.route("/superadmin/", methods=["GET"])
+def serve_superadmin():
+    response = send_from_directory(os.path.dirname(os.path.abspath(__file__)), "superadmin.html")
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
+@app.route("/admin", methods=["GET"])
+@app.route("/admin/", methods=["GET"])
+def serve_admin():
+    response = send_from_directory(os.path.dirname(os.path.abspath(__file__)), "admin.html")
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
 @app.route("/robots.txt", methods=["GET"])
 def serve_robots():
     response = send_from_directory(os.path.dirname(os.path.abspath(__file__)), "robots.txt")
@@ -1747,6 +1765,8 @@ def _verify_admin_token(token: str) -> bool:
 @app.route("/api/admin/login", methods=["POST"])
 def admin_login():
     try:
+        from security import create_jwt_token
+        from database import authenticate_user, get_user_by_email
         data = request.json or {}
         username = str(data.get("username", "")).strip().lower()
         password = str(data.get("password", "")).strip()
@@ -1754,19 +1774,36 @@ def admin_login():
         configured_user = str(CONFIG.get("admin_username", "admin@thesmartmag.com")).strip().lower()
         configured_pass = str(CONFIG.get("admin_password", "SmartMag@Quant2026!")).strip()
 
+        user_obj = None
+        role = "superadmin"
+
         if (username == configured_user or username == "thesmartmag" or username == "admin") and password == configured_pass:
-            token = _generate_admin_token(configured_user)
-            log.info("Admin login successful for %s", username)
-            return jsonify({
+            admin_user = get_user_by_email("admin@thesmartmag.com")
+            if admin_user:
+                user_obj = admin_user
+                role = admin_user.get("role", "superadmin")
+            else:
+                user_obj = {"id": 1, "email": configured_user, "role": "superadmin", "name": "Super Admin"}
+        else:
+            db_user, db_err = authenticate_user(username, password)
+            if not db_err and db_user and db_user.get("role") in ("superadmin", "admin"):
+                user_obj = db_user
+                role = db_user.get("role")
+
+        if user_obj:
+            jwt_tok = create_jwt_token({"user_id": user_obj["id"], "email": user_obj["email"], "role": role})
+            legacy_tok = _generate_admin_token(user_obj["email"])
+            log.info("Admin login successful for %s (role: %s)", username, role)
+            resp = jsonify({
                 "status": "success",
-                "message": "Authentication successful",
-                "token": token,
-                "user": {
-                    "username": configured_user,
-                    "brand": CONFIG.get("brand_name", "TheSmartMag Quant Terminal"),
-                    "role": "Super Admin"
-                }
-            }), 200
+                "message": f"Administrative session established ({role})",
+                "token": jwt_tok,
+                "legacy_token": legacy_tok,
+                "user": user_obj
+            })
+            resp.set_cookie("auth_token", jwt_tok, max_age=86400 * 7, httponly=False, samesite="Lax")
+            resp.set_cookie("tsm_token", legacy_tok, max_age=86400 * 7, httponly=False, samesite="Lax")
+            return resp, 200
         else:
             log.warning("Failed admin login attempt for user: %s", username)
             return jsonify({"status": "error", "message": "Invalid username or password"}), 401

@@ -295,7 +295,7 @@
         <button class="tsm-drawer-item green" id="drawerTraderTab" data-view="trader" onclick="switchView('trader'); toggleMobileNavDrawer();" style="display:none;">
           <span class="nc-tab-ico">👤</span><span>TRADER COCKPIT</span>
         </button>
-        <button class="tsm-drawer-item magenta" id="drawerAdminTab" data-view="admin" onclick="switchView('admin'); toggleMobileNavDrawer();">
+        <button class="tsm-drawer-item magenta" id="drawerAdminTab" data-view="admin" onclick="toggleAdminView(); toggleMobileNavDrawer();">
           <span class="nc-tab-ico">⚙</span><span>SUPER ADMIN PORTAL</span>
         </button>
       </div>
@@ -379,7 +379,7 @@
           </div>
         </button>
 
-        <button class="tsm-dock-item magenta" id="dockAdminBtn" data-view="admin" onclick="switchView('admin')" title="Super Admin Control Portal">
+        <button class="tsm-dock-item magenta" id="dockAdminBtn" data-view="admin" onclick="toggleAdminView()" title="Super Admin Control Portal">
           <span class="tsm-dock-icon">⚙</span>
           <div class="tsm-dock-info">
             <span class="tsm-dock-title">SUPER ADMIN</span>

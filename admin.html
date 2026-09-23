@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Operations Admin Cockpit | TheSmartMag Quant Trading</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/admin.css">
+</head>
+<body class="adm-body">
+  <!-- Top Bar -->
+  <header class="adm-header">
+    <div class="adm-header-left">
+      <div class="adm-brand">
+        <span class="adm-brand-icon">🛠️</span>
+        <div>
+          <span class="adm-brand-title">THESMARTMAG</span>
+          <span class="adm-brand-sub">OPERATIONS ADMIN COCKPIT // v3.5</span>
+        </div>
+      </div>
+      <div class="adm-badge-role">
+        <span>ROLE:</span> <strong id="admRoleBadge">OPERATIONS ADMIN</strong>
+      </div>
+    </div>
+
+    <div class="adm-header-right">
+      <div class="adm-clock" id="admClock">00:00:00 UTC | IST</div>
+      <a href="/" target="_blank" class="adm-btn-outline">🌐 TERMINAL</a>
+      <a href="/superadmin" class="adm-btn-superadmin" id="admSuperAdminBtn" style="display: none;" title="Go to Sovereign Super Admin">
+        👑 SUPER ADMIN
+      </a>
+      <div class="adm-user-chip">
+        <span id="admUserEmail">admin@thesmartmag.com</span>
+      </div>
+      <button class="adm-btn-logout" onclick="handleAdminLogout()">LOGOUT</button>
+    </div>
+  </header>
+
+  <!-- Container -->
+  <div class="adm-container">
+    <!-- Sidebar Navigation -->
+    <aside class="adm-sidebar">
+      <nav class="adm-nav">
+        <button class="adm-nav-item active" data-tab="apikeys">
+          <span class="adm-nav-icon">🔑</span>
+          <span>API Key Management</span>
+        </button>
+        <button class="adm-nav-item" data-tab="profit">
+          <span class="adm-nav-icon">💰</span>
+          <span>User Profit Update</span>
+        </button>
+        <button class="adm-nav-item" data-tab="dashboard">
+          <span class="adm-nav-icon">📊</span>
+          <span>User Dashboard Viewer</span>
+        </button>
+        <button class="adm-nav-item" data-tab="journal">
+          <span class="adm-nav-icon">📖</span>
+          <span>Trading Journal</span>
+        </button>
+        <button class="adm-nav-item" data-tab="strategy">
+          <span class="adm-nav-icon">🛠️</span>
+          <span>Strategy Builder</span>
+        </button>
+        <button class="adm-nav-item" data-tab="manualtrade">
+          <span class="adm-nav-icon">⚡</span>
+          <span>Manual Trade Order</span>
+        </button>
+        <button class="adm-nav-item" data-tab="autobot">
+          <span class="adm-nav-icon">🤖</span>
+          <span>Pre-Configured Autobot</span>
+        </button>
+      </nav>
+      <div class="adm-sidebar-notice">
+        <span>🔒 Scoped Operations Environment. Master risk limits enforced.</span>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="adm-main">
+      <!-- TAB 1: API KEY MANAGEMENT -->
+      <section class="adm-tab-content active" id="tab-apikeys">
+        <div class="adm-section-header">
+          <div>
+            <h2>🔑 User Exchange API Keys Assignment</h2>
+            <p>Securely add, inspect, and update exchange API credentials (CoinSwitch Pro & Delta India) on behalf of assigned traders.</p>
+          </div>
+        </div>
+
+        <div class="adm-card">
+          <div class="adm-card-header">
+            <h3>Assign Exchange Keys</h3>
+          </div>
+          <div class="adm-card-body">
+            <form id="assignKeysForm" onsubmit="handleAssignKeys(event)">
+              <div class="adm-form-group">
+                <label>Select Target Trader:</label>
+                <select id="keysUserSelect" class="adm-select" required onchange="handleKeysUserSelect()">
+                  <option value="">-- Choose Trader --</option>
+                </select>
+              </div>
+
+              <div class="adm-two-col">
+                <div class="adm-box">
+                  <h4>CoinSwitch Pro (Spot)</h4>
+                  <div class="adm-form-group">
+                    <label>API Key:</label>
+                    <input type="text" id="csApiKey" class="adm-input" placeholder="e.g. cs_key_...">
+                  </div>
+                  <div class="adm-form-group">
+                    <label>API Secret (32-byte Ed25519 Hex):</label>
+                    <input type="password" id="csApiSecret" class="adm-input" placeholder="••••••••••••••••">
+                  </div>
+                </div>
+
+                <div class="adm-box">
+                  <h4>Delta Exchange India (F&O / Perps)</h4>
+                  <div class="adm-form-group">
+                    <label>API Key:</label>
+                    <input type="text" id="deltaApiKey" class="adm-input" placeholder="e.g. delta_key_...">
+                  </div>
+                  <div class="adm-form-group">
+                    <label>API Secret:</label>
+                    <input type="password" id="deltaApiSecret" class="adm-input" placeholder="••••••••••••••••">
+                  </div>
+                </div>
+              </div>
+
+              <div class="adm-form-actions">
+                <button type="submit" class="adm-btn-primary">SAVE & ENCRYPT API KEYS</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: USER PROFIT UPDATE -->
+      <section class="adm-tab-content" id="tab-profit">
+        <div class="adm-section-header">
+          <div>
+            <h2>💰 User Profit & PnL Log Update</h2>
+            <p>Log realized profits, manual trade closures, or institutional PnL corrections directly into a trader's account records.</p>
+          </div>
+        </div>
+
+        <div class="adm-card">
+          <div class="adm-card-header">
+            <h3>Record Realized Trade Profit</h3>
+          </div>
+          <div class="adm-card-body">
+            <form id="profitUpdateForm" onsubmit="handleProfitUpdate(event)">
+              <div class="adm-grid-3">
+                <div class="adm-form-group">
+                  <label>Trader Account:</label>
+                  <select id="profitUserSelect" class="adm-select" required>
+                    <option value="">-- Choose Trader --</option>
+                  </select>
+                </div>
+                <div class="adm-form-group">
+                  <label>Asset Symbol:</label>
+                  <input type="text" id="profitSymbol" class="adm-input" placeholder="BTC/USDT, ETH/USDT, NIFTY" value="BTC/USDT" required>
+                </div>
+                <div class="adm-form-group">
+                  <label>Realized PnL ($ USD):</label>
+                  <input type="number" step="0.01" id="profitAmount" class="adm-input" placeholder="+125.50" required>
+                </div>
+              </div>
+
+              <div class="adm-grid-3">
+                <div class="adm-form-group">
+                  <label>Exchange:</label>
+                  <select id="profitExchange" class="adm-select">
+                    <option value="coinswitch">CoinSwitch Pro</option>
+                    <option value="delta">Delta Exchange India</option>
+                    <option value="fenix_indian">Indian Broker (NSE/BSE)</option>
+                    <option value="universal">Universal CCXT</option>
+                  </select>
+                </div>
+                <div class="adm-form-group">
+                  <label>Direction:</label>
+                  <select id="profitDirection" class="adm-select">
+                    <option value="long">Long (Buy)</option>
+                    <option value="short">Short (Sell)</option>
+                  </select>
+                </div>
+                <div class="adm-form-group">
+                  <label>Notes / Strategy Reason:</label>
+                  <input type="text" id="profitNotes" class="adm-input" placeholder="e.g. SMC Order Block 1:4 R:R Target hit">
+                </div>
+              </div>
+
+              <div class="adm-form-actions">
+                <button type="submit" class="adm-btn-success">LOG PROFIT ADJUSTMENT</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: USER DASHBOARD VIEWER -->
+      <section class="adm-tab-content" id="tab-dashboard">
+        <div class="adm-section-header">
+          <div>
+            <h2>📊 User Dashboard & Portfolio Viewer</h2>
+            <p>Monitor real-time trading telemetry, open orders, win-rate, and equity progression for any user.</p>
+          </div>
+          <div class="adm-user-picker">
+            <select id="viewerUserSelect" class="adm-select" onchange="loadTraderDashboardView()">
+              <option value="">-- Choose Trader --</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="traderDashboardContainer" class="adm-dash-view">
+          <p class="adm-placeholder-text">Please select a trader from the dropdown above to view their live dashboard.</p>
+        </div>
+      </section>
+
+      <!-- TAB 4: TRADING JOURNAL -->
+      <section class="adm-tab-content" id="tab-journal">
+        <div class="adm-section-header">
+          <div>
+            <h2>📖 JournalIt Institutional Trading Log</h2>
+            <p>Review and record institutional journal entries, psychological tags, setup classifications, and execution notes.</p>
+          </div>
+        </div>
+
+        <div class="adm-card">
+          <div class="adm-card-header">
+            <h3>Add Institutional Journal Entry</h3>
+          </div>
+          <div class="adm-card-body">
+            <form id="journalForm" onsubmit="handleJournalSubmit(event)">
+              <div class="adm-grid-3">
+                <div class="adm-form-group">
+                  <label>Trader:</label>
+                  <select id="journalUserSelect" class="adm-select" required>
+                    <option value="">-- Choose Trader --</option>
+                  </select>
+                </div>
+                <div class="adm-form-group">
+                  <label>Asset Symbol:</label>
+                  <input type="text" id="journalSymbol" class="adm-input" placeholder="BTC/USDT" required>
+                </div>
+                <div class="adm-form-group">
+                  <label>Direction:</label>
+                  <select id="journalDirection" class="adm-select">
+                    <option value="long">Long</option>
+                    <option value="short">Short</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="adm-grid-3">
+                <div class="adm-form-group">
+                  <label>Entry Price:</label>
+                  <input type="number" step="0.0001" id="journalEntryPrice" class="adm-input" placeholder="68500.00" required>
+                </div>
+                <div class="adm-form-group">
+                  <label>Exit Price:</label>
+                  <input type="number" step="0.0001" id="journalExitPrice" class="adm-input" placeholder="71200.00" required>
+                </div>
+                <div class="adm-form-group">
+                  <label>Net PnL ($):</label>
+                  <input type="number" step="0.01" id="journalPnl" class="adm-input" placeholder="+270.00" required>
+                </div>
+              </div>
+
+              <div class="adm-grid-3">
+                <div class="adm-form-group">
+                  <label>Setup Tag:</label>
+                  <select id="journalSetupTag" class="adm-select">
+                    <option value="SMC Order Block Mitigation">SMC Order Block Mitigation</option>
+                    <option value="Liquidity Sweep Run">Liquidity Sweep Run</option>
+                    <option value="FVG Fair Value Gap">FVG Fair Value Gap</option>
+                    <option value="Trend Breakout">Trend Breakout</option>
+                    <option value="Indian F&O Strike Reversal">Indian F&O Strike Reversal</option>
+                  </select>
+                </div>
+                <div class="adm-form-group">
+                  <label>Trader Emotion:</label>
+                  <select id="journalEmotion" class="adm-select">
+                    <option value="Disciplined">Disciplined</option>
+                    <option value="Patient">Patient</option>
+                    <option value="Confident">Confident</option>
+                    <option value="FOMO Warning">FOMO Warning</option>
+                  </select>
+                </div>
+                <div class="adm-form-group">
+                  <label>Notes:</label>
+                  <input type="text" id="journalNotes" class="adm-input" placeholder="Execution review notes...">
+                </div>
+              </div>
+
+              <div class="adm-form-actions">
+                <button type="submit" class="adm-btn-primary">RECORD JOURNAL ENTRY</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 5: STRATEGY BUILDER -->
+      <section class="adm-tab-content" id="tab-strategy">
+        <div class="adm-section-header">
+          <div>
+            <h2>🛠️ Strategy Builder & Parameters Tuner</h2>
+            <p>Tune algorithmic execution thresholds, indicator sensitivity, and SMC order block filters.</p>
+          </div>
+        </div>
+
+        <div class="adm-card">
+          <div class="adm-card-header">
+            <h3>Algorithmic Presets</h3>
+          </div>
+          <div class="adm-card-body">
+            <div class="adm-strategy-grid">
+              <div class="adm-strategy-item">
+                <h4>AI Consensus Committee (GLM-5.3 + Nemotron)</h4>
+                <p>Ensemble strategy combining 753B parameter MoE reasoning with technical momentum. Minimum 1:3 R:R enforced.</p>
+                <div class="adm-strategy-meta">Status: <strong class="adm-text-success">ACTIVE (Production Default)</strong></div>
+              </div>
+
+              <div class="adm-strategy-item">
+                <h4>SMC Liquidity Gap & Fair Value Run</h4>
+                <p>Detects unfilled imbalance candles and institutional liquidity pools across 250+ crypto pairs.</p>
+                <div class="adm-strategy-meta">Status: <strong class="adm-text-success">ACTIVE</strong></div>
+              </div>
+
+              <div class="adm-strategy-item">
+                <h4>Indian F&O Delta Neutral Volatility Scanner</h4>
+                <p>Scans Nifty & BankNifty strikes with PCR &gt; 1.3 or &lt; 0.7 for rapid mean-reversion scalp entries.</p>
+                <div class="adm-strategy-meta">Status: <strong class="adm-text-success">ACTIVE</strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 6: MANUAL TRADE ORDER -->
+      <section class="adm-tab-content" id="tab-manualtrade">
+        <div class="adm-section-header">
+          <div>
+            <h2>⚡ Manual Order Execution Terminal</h2>
+            <p>Execute manual spot or perpetual orders across CoinSwitch Pro and Delta Exchange India with pre-trade risk validation.</p>
+          </div>
+        </div>
+
+        <div class="adm-card">
+          <div class="adm-card-header">
+            <h3>Place Live Order</h3>
+          </div>
+          <div class="adm-card-body">
+            <form id="manualTradeForm" onsubmit="handleManualTradeOrder(event)">
+              <div class="adm-grid-3">
+                <div class="adm-form-group">
+                  <label>Exchange:</label>
+                  <select id="tradeExchange" class="adm-select">
+                    <option value="coinswitch">CoinSwitch Pro (Spot)</option>
+                    <option value="delta">Delta Exchange India (Futures)</option>
+                  </select>
+                </div>
+                <div class="adm-form-group">
+                  <label>Symbol:</label>
+                  <input type="text" id="tradeSymbol" class="adm-input" placeholder="BTC/USDT" value="BTC/USDT" required>
+                </div>
+                <div class="adm-form-group">
+                  <label>Side:</label>
+                  <select id="tradeSide" class="adm-select">
+                    <option value="buy">BUY / LONG</option>
+                    <option value="sell">SELL / SHORT</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="adm-grid-3">
+                <div class="adm-form-group">
+                  <label>Order Type:</label>
+                  <select id="tradeType" class="adm-select">
+                    <option value="market">Market Order</option>
+                    <option value="limit">Limit Order</option>
+                  </select>
+                </div>
+                <div class="adm-form-group">
+                  <label>Quantity / Amount ($ USD):</label>
+                  <input type="number" step="0.01" id="tradeAmount" class="adm-input" placeholder="25.00" value="25.00" required>
+                </div>
+                <div class="adm-form-group">
+                  <label>Stop Loss (%):</label>
+                  <input type="number" step="0.1" id="tradeSl" class="adm-input" placeholder="1.5" value="1.5">
+                </div>
+              </div>
+
+              <div class="adm-form-actions">
+                <button type="submit" class="adm-btn-primary">SUBMIT MANUAL TRADE ORDER</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 7: PRE-CONFIGURED AUTOBOT -->
+      <section class="adm-tab-content" id="tab-autobot">
+        <div class="adm-section-header">
+          <div>
+            <h2>🤖 Pre-Configured Autonomous Bot Monitor</h2>
+            <p>Supervise autonomous bot execution with locked safety guardrails (0.5% max risk per trade, 1:3 min R:R).</p>
+          </div>
+        </div>
+
+        <div class="adm-card">
+          <div class="adm-card-header">
+            <h3>Autobot Operational Presets</h3>
+          </div>
+          <div class="adm-card-body">
+            <div class="adm-control-row">
+              <div>
+                <h4>Capital Survival Small-Account Preset</h4>
+                <p>Automated execution locked to 0.5% max equity risk, 1:3 minimum R:R ratio, and trailing stop lock at +0.3%.</p>
+              </div>
+              <span class="adm-badge adm-badge-success">PRESET LOCKED & ACTIVE</span>
+            </div>
+
+            <hr class="adm-divider">
+
+            <div class="adm-control-row">
+              <div>
+                <h4>Run Instant Scan Cycle</h4>
+                <p>Run a background multi-agent scan cycle to evaluate immediate trade opportunities.</p>
+              </div>
+              <button class="adm-btn-primary" onclick="triggerAdminScanCycle()">RUN CYCLE</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODAL: OPERATIONS ADMIN LOGIN OVERLAY -->
+  <div class="adm-modal-overlay" id="admLoginModal" style="display:none; position: fixed; inset: 0; background: rgba(3, 7, 18, 0.95); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center;">
+    <div style="background: #0b1329; border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 12px; width: 100%; max-width: 420px; box-shadow: 0 0 40px rgba(0, 240, 255, 0.15); overflow: hidden;">
+      <div style="padding: 24px 24px 16px; text-align: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
+        <div style="font-size: 32px; margin-bottom: 6px;">🛠️</div>
+        <h3 style="margin: 0; font-size: 18px; color: #fff; letter-spacing: 1px;">OPERATIONS ADMIN LOGIN</h3>
+        <p style="margin: 4px 0 0 0; font-size: 12px; color: #94a3b8;">Authenticate to access trader ops & trade execution cockpit</p>
+      </div>
+      <form id="admLoginForm" onsubmit="handleAdmLogin(event)" style="padding: 20px 24px;">
+        <div id="admLoginErrorMsg" style="display: none; padding: 10px; margin-bottom: 15px; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; border-radius: 6px; font-size: 12px; color: #fca5a5;"></div>
+        <div class="adm-form-group">
+          <label style="font-size: 12px; color: #cbd5e1;">Username or Email:</label>
+          <input type="text" id="admLoginUser" class="adm-input" placeholder="admin@thesmartmag.com" required autocomplete="username">
+        </div>
+        <div class="adm-form-group">
+          <label style="font-size: 12px; color: #cbd5e1;">Password:</label>
+          <input type="password" id="admLoginPass" class="adm-input" placeholder="••••••••••••••••" required autocomplete="current-password">
+        </div>
+        <div style="margin-top: 20px;">
+          <button type="submit" id="admLoginSubmitBtn" class="adm-btn-primary" style="width: 100%; justify-content: center; padding: 12px; font-size: 13px; font-weight: 700;">
+            AUTHENTICATE OPERATIONS COCKPIT
+          </button>
+        </div>
+        <div style="margin-top: 15px; text-align: center;">
+          <a href="/" style="font-size: 12px; color: #64748b; text-decoration: none;">&larr; Return to Public Terminal</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/admin.js"></script>
+</body>
+</html>

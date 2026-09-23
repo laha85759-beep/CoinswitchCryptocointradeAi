@@ -293,7 +293,29 @@ function switchView(viewName, updateHash = true) {
 }
 
 function toggleAdminView() {
-  switchView("admin");
+  if (currentUser) {
+    if (currentUser.role === "admin") {
+      window.location.href = "/admin";
+      return;
+    } else {
+      window.location.href = "/superadmin";
+      return;
+    }
+  }
+  const token = getAdminAuthToken();
+  if (token) {
+    try {
+      const parts = token.split('.');
+      if (parts.length === 3) {
+        const payload = JSON.parse(atob(parts[1]));
+        if (payload.role === "admin") {
+          window.location.href = "/admin";
+          return;
+        }
+      }
+    } catch (e) {}
+  }
+  window.location.href = "/superadmin";
 }
 
 // ── 4. TradingView Pro Chart & Live Position Integration ──────────────────
@@ -1118,9 +1140,13 @@ function updateUserUI(user, settings, exConnections) {
     }
     if (authLockNotice) authLockNotice.style.display = "none";
 
-    // STRICT ROLE CHECK: Only reveal Super Admin controls to authenticated superadmin
-    if (user.role === "superadmin") {
-      if (adminNavBtn) adminNavBtn.style.display = "flex";
+    // STRICT ROLE CHECK: Reveal Admin controls to authenticated superadmin or admin
+    if (user.role === "superadmin" || user.role === "admin") {
+      if (adminNavBtn) {
+        adminNavBtn.style.display = "flex";
+        const btnTxt = document.getElementById("adminNavBtnText");
+        if (btnTxt) btnTxt.textContent = user.role === "superadmin" ? "SUPER ADMIN" : "ADMIN";
+      }
       if (superAdminTab) superAdminTab.style.display = "flex";
       if (dockAdminBtn) dockAdminBtn.style.display = "flex";
     } else {
