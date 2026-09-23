@@ -138,7 +138,7 @@ CONFIG = {
     # ── Multi-agent pipeline settings ─────────────────────────────────────────
     "watchlist":           _watchlist_env(),
     "poll_interval_sec":   _int_env("POLL_INTERVAL_SEC", 900),
-    "paper_trading_mode":  _bool_env("PAPER_TRADING_MODE", False),
+    "paper_trading_mode":  False,  # STRICTLY REAL MONEY ONLY - NO DEMO / PAPER TRADING
     "paper_portfolio_usdt": _float_env("PAPER_PORTFOLIO_USDT", 1000.0),
     "telegram_channel_url":     os.getenv("TELEGRAM_CHANNEL_URL", "https://t.me/FOREXINDIAN_BOT"),
     "telegram_bot_url":         os.getenv("TELEGRAM_BOT_URL", "https://t.me/LiveForexSignalsAI_bot"),

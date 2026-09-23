@@ -1630,9 +1630,8 @@ def update_admin_settings():
         data = request.get_json(force=True) if request.data else {}
         updates = {}
         
-        # Validate and apply updates safely
-        if "paper_trading_mode" in data and data["paper_trading_mode"] is not None:
-            updates["paper_trading_mode"] = bool(data["paper_trading_mode"])
+        # Always enforce real live money execution (no demo/paper mode)
+        updates["paper_trading_mode"] = False
         if "max_capital_pct" in data and data["max_capital_pct"] not in (None, ""):
             try:
                 updates["max_capital_pct"] = int(data["max_capital_pct"])
