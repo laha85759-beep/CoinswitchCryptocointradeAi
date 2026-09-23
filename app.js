@@ -7,7 +7,7 @@ let currentTvTimeframe = "5";
 let lastCachedPositions = null;
 let lastCachedTickers = null;
 let lastCachedUserData = null;
-let currentView = "terminal";
+let currentView = "landing";
 let adminToken = sessionStorage.getItem("tsm_admin_token") || "";
 let userToken = localStorage.getItem("tsm_user_token") || "";
 let currentUser = null;
@@ -58,6 +58,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }, 6000);
   if (window.location.hash) {
     handleHashRouting();
+  } else {
+    switchView("landing", false);
   }
   window.addEventListener("hashchange", handleHashRouting);
 });
@@ -245,8 +247,10 @@ function formatLocalizedDateTime(timestamp) {
 // ── 3. Tab & View Navigation ──────────────────────────────────────────────
 function handleHashRouting() {
   const hash = window.location.hash.replace("#", "").toLowerCase().trim();
-  if (["terminal", "rwa", "partners", "india", "news", "chart", "trades", "admin"].includes(hash)) {
+  if (["landing", "terminal", "rwa", "partners", "india", "news", "chart", "trades", "signals", "admin", "trader"].includes(hash)) {
     switchView(hash, false);
+  } else {
+    switchView("landing", false);
   }
 }
 
@@ -274,7 +278,14 @@ function switchView(viewName, updateHash = true) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  if (viewName === "chart") {
+  if (viewName === "landing") {
+    if (typeof initHeroCandleChart === "function") {
+      setTimeout(initHeroCandleChart, 50);
+    }
+    if (typeof loadRealCandlesForHero === "function") {
+      loadRealCandlesForHero(heroActiveSym || "BTC/USDT", heroActiveTf || "15m");
+    }
+  } else if (viewName === "chart") {
     initTradingViewWidget("tradingview_widget_fullscreen", currentTvSymbol, currentTvTimeframe);
     updateProChartPositionBanner();
   } else if (viewName === "news") {
