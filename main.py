@@ -521,6 +521,18 @@ def run() -> None:
     except Exception as alpha_exc:
         log.warning("AlphaMomentumSniperAgent notice: %s", alpha_exc)
 
+    # ── Step 3.2: Institutional Volume Profile & RVOL Breakout Strategy ──────
+    try:
+        from volume_strategy_agent import VolumeStrategyAgent
+        vol_agent = VolumeStrategyAgent(CONFIG, min_rvol=1.8)
+        volume_signals = vol_agent.scan_market_data(market_data)
+        for vs in volume_signals:
+            signals.append(vs)
+            log.info("VolumeStrategyAgent: Injected volume breakout target %s (%s, conf=%.3f, cause=%s)",
+                     vs["symbol"], vs["direction"].upper(), vs["confidence"], vs["suspected_cause"])
+    except Exception as vol_exc:
+        log.warning("VolumeStrategyAgent notice: %s", vol_exc)
+
     if kronos_agent and market_map:
         try:
             candidate_signals = [s for s in signals if s["signal"] in ("pump", "dump")]

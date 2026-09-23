@@ -401,12 +401,12 @@ class RiskManagerAgent:
         symbol = signal["symbol"]
         if execution_halted:
             return risk_reject(signal, "circuit_breaker_halted_execution")
-        # Accept pump signals and high-confidence watch signals
-        if signal["signal"] == "pump":
+        # Accept pump signals, volume breakout signals, and high-confidence watch signals
+        if signal["signal"] in ("pump", "volume_breakout", "volume_surge", "alpha_momentum"):
             pass  # continue to evaluation
         elif signal["signal"] == "dump" and self.cfg.get("short_selling_enabled", False):
             pass  # Will be traded as short on Delta
-        elif signal["signal"] == "watch" and signal["confidence"] >= 0.50:
+        elif signal["signal"] == "watch" and signal["confidence"] >= self.cfg.get("min_confidence", 0.72):
             pass  # high-confidence watch = tradeable
         else:
             return risk_reject(signal, f"signal_is_{signal['signal']}")
@@ -487,9 +487,12 @@ class RiskManagerAgent:
         # Take the minimum of volatility-adjusted size, max_position, and remaining_exposure
         position_size = min(volatility_adjusted_size, max_position, remaining_exposure)
 
-        if position_size < self.cfg["min_order_usdt"] and portfolio_usdt >= self.cfg["min_order_usdt"]:
-            position_size = min(portfolio_usdt, self.cfg["min_order_usdt"])
-        if position_size < self.cfg["min_order_usdt"]:
+        min_ord = float(self.cfg.get("min_order_usdt", 0.05))
+        if position_size < min_ord and portfolio_usdt >= min_ord:
+            position_size = min(portfolio_usdt, min_ord)
+        elif position_size < min_ord and portfolio_usdt > 0.0:
+            position_size = portfolio_usdt
+        if position_size <= 0:
             return risk_reject(signal, f"position_{position_size:.2f}_below_min_order")
 
         return {

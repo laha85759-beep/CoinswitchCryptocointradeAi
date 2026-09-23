@@ -169,7 +169,7 @@ CONFIG = {
     "max_open_trades":          _int_env("MAX_OPEN_TRADES",                2),  # Max 2 concurrent positions
     "max_total_exposure_pct":   _float_env("MAX_TOTAL_EXPOSURE_PCT",    25.0),  # Max 25% total margin exposed
     "max_trades_per_hour":      _int_env("MAX_TRADES_PER_HOUR",          4),
-    "min_confidence":           _float_env("MIN_CONFIDENCE",             0.88), # High conviction filter
+    "min_confidence":           _float_env("MIN_CONFIDENCE",             0.72), # High conviction momentum & volume breakout filter
     "min_rr_ratio":             _float_env("MIN_RR_RATIO",               3.0),  # Minimum 1:3 Reward-to-Risk ratio (prefer 1:4+)
     "stop_loss_pct":            _float_env("STOP_LOSS_PCT",              1.5),  # Max 1.5% Precision Invalidation Stop Loss
     "take_profit_pct":          _float_env("TAKE_PROFIT_PCT",            6.0),  # Minimum 1:4 R:R target (6.0% TP vs 1.5% SL)

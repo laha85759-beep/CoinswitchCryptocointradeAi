@@ -4741,7 +4741,13 @@ function renderIndianStockScreener() {
   if (!tbody) return;
 
   let list = cachedIndianStocks || [];
-  if (currentStockFilter === 'bull') {
+  if (currentStockFilter === 'nse') {
+    list = list.filter(s => (s.exchange || 'NSE').toUpperCase() === 'NSE');
+  } else if (currentStockFilter === 'bse') {
+    list = list.filter(s => (s.exchange || '').toUpperCase() === 'BSE');
+  } else if (currentStockFilter === 'momentum') {
+    list = list.filter(s => (s.rvol && s.rvol >= 2.0) || (s.signal || '').includes('MOMENTUM'));
+  } else if (currentStockFilter === 'bull') {
     list = list.filter(s => (s.signal || '').includes('BUY'));
   } else if (currentStockFilter === 'bear') {
     list = list.filter(s => (s.signal || '').includes('SELL'));
@@ -4752,7 +4758,7 @@ function renderIndianStockScreener() {
   }
 
   if (list.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" class="text-center empty-state">No NSE stocks found for sector filter '${currentStockFilter}'.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11" class="text-center empty-state">No equities found for filter '${currentStockFilter}'.</td></tr>`;
     return;
   }
 
@@ -4763,12 +4769,20 @@ function renderIndianStockScreener() {
     if (isBull) sigBadge = `<span class="tsm-badge-pill admin font-mono">🟢 ${escapeHtml(stk.signal)}</span>`;
     else if (isBear) sigBadge = `<span class="tsm-badge-pill gold font-mono" style="border-color:rgba(255,51,102,0.5); color:#ff3366;">🔴 ${escapeHtml(stk.signal)}</span>`;
 
+    const exch = (stk.exchange || 'NSE').toUpperCase();
+    const exchBadge = exch === 'BSE'
+      ? `<span class="tsm-badge-pill" style="background:rgba(245,166,35,0.15); border:1px solid #f5a623; color:#f5a623; font-weight:700;">🟡 BSE</span>`
+      : `<span class="tsm-badge-pill" style="background:rgba(0,212,255,0.15); border:1px solid #00d4ff; color:#00d4ff; font-weight:700;">🔵 NSE</span>`;
+
     const chgClass = stk.change_pct >= 0 ? 'green' : 'red-text';
     const chgSign = stk.change_pct >= 0 ? '+' : '';
+    const rvolVal = stk.rvol ? Number(stk.rvol).toFixed(1) + 'x' : '1.2x';
+    const rvolClass = (stk.rvol && stk.rvol >= 2.0) ? 'gold' : 'cyan';
 
     return `
       <tr>
         <td><strong class="cyan" style="font-family:var(--font-orb);">${escapeHtml(stk.symbol)}</strong></td>
+        <td>${exchBadge}</td>
         <td>
           <div style="font-weight:600;">${escapeHtml(stk.name)}</div>
           <div style="font-size:9.5px; color:var(--text-muted);">${escapeHtml(stk.sector)}</div>
@@ -4779,6 +4793,7 @@ function renderIndianStockScreener() {
           <span class="green">H: ₹${Number(stk.high).toFixed(1)}</span><br>
           <span class="red-text">L: ₹${Number(stk.low).toFixed(1)}</span>
         </td>
+        <td class="font-mono ${rvolClass}" style="font-weight:700;">${rvolVal}</td>
         <td>${sigBadge}</td>
         <td class="font-mono green">₹${Number(stk.target1).toLocaleString('en-IN')}</td>
         <td class="font-mono green">₹${Number(stk.target2).toLocaleString('en-IN')}</td>
@@ -7816,6 +7831,291 @@ function simulateFreeTradeDemo() {
   }, 3500);
 }
 window.simulateFreeTradeDemo = simulateFreeTradeDemo;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// THESMARTMAG TRADE • HERO INTERACTIVE CANDLESTICK TERMINAL WIDGET
+// ═══════════════════════════════════════════════════════════════════════════
+let heroActiveSym = "XAUUSD";
+let heroActivePrice = 2364.80;
+let heroActiveTf = "15m";
+let heroShowIndicators = true;
+let heroCandleData = [];
+
+function generateHeroCandles(basePrice = 2364.80, count = 38) {
+  const candles = [];
+  let price = basePrice * 0.985;
+  for (let i = 0; i < count; i++) {
+    const change = (Math.random() - 0.48) * (basePrice * 0.006);
+    const open = price;
+    const close = open + change;
+    const high = Math.max(open, close) + Math.random() * (basePrice * 0.003);
+    const low = Math.min(open, close) - Math.random() * (basePrice * 0.003);
+    const volume = Math.floor(Math.random() * 800) + 120;
+    candles.push({ open, high, low, close, volume });
+    price = close;
+  }
+  candles[candles.length - 1].close = basePrice;
+  return candles;
+}
+
+function initHeroCandleChart() {
+  const canvas = document.getElementById("tsmHeroCandleCanvas");
+  if (!canvas || !canvas.parentElement) return;
+
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  const w = rect.width || 560;
+  const h = rect.height || 400;
+
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(dpr, dpr);
+
+  if (heroCandleData.length === 0) {
+    heroCandleData = generateHeroCandles(heroActivePrice, 38);
+  }
+
+  // Clear background
+  ctx.fillStyle = "#080d1a";
+  ctx.fillRect(0, 0, w, h);
+
+  // Subtle Grid
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
+  ctx.lineWidth = 1;
+  const gridRows = 6;
+  const gridCols = 7;
+  for (let r = 0; r <= gridRows; r++) {
+    const y = (h / gridRows) * r;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(w - 60, y);
+    ctx.stroke();
+  }
+  for (let c = 0; c <= gridCols; c++) {
+    const x = ((w - 60) / gridCols) * c;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, h - 25);
+    ctx.stroke();
+  }
+
+  // Price Scale Calculation
+  let minP = Math.min(...heroCandleData.map(c => c.low));
+  let maxP = Math.max(...heroCandleData.map(c => c.high));
+  const pad = (maxP - minP) * 0.08 || 1;
+  minP -= pad;
+  maxP += pad;
+
+  const chartW = w - 65;
+  const chartH = h - 60;
+  const candleW = Math.max(4, Math.floor(chartW / heroCandleData.length) - 3);
+
+  // Draw Candlesticks & Volume Bars
+  const maxVol = Math.max(...heroCandleData.map(c => c.volume)) || 1000;
+  const maPoints = [];
+
+  heroCandleData.forEach((c, i) => {
+    const x = i * (chartW / heroCandleData.length) + 6;
+    const yOpen = chartH - ((c.open - minP) / (maxP - minP)) * chartH + 10;
+    const yClose = chartH - ((c.close - minP) / (maxP - minP)) * chartH + 10;
+    const yHigh = chartH - ((c.high - minP) / (maxP - minP)) * chartH + 10;
+    const yLow = chartH - ((c.low - minP) / (maxP - minP)) * chartH + 10;
+    const isUp = c.close >= c.open;
+
+    // Wick
+    ctx.strokeStyle = isUp ? "#00d084" : "#f43f5e";
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(x + candleW / 2, yHigh);
+    ctx.lineTo(x + candleW / 2, yLow);
+    ctx.stroke();
+
+    // Body
+    ctx.fillStyle = isUp ? "#00d084" : "#f43f5e";
+    const bodyY = Math.min(yOpen, yClose);
+    const bodyH = Math.max(2, Math.abs(yClose - yOpen));
+    ctx.fillRect(x, bodyY, candleW, bodyH);
+
+    // Volume Bar at Bottom
+    const volH = (c.volume / maxVol) * 32;
+    ctx.fillStyle = isUp ? "rgba(0, 208, 132, 0.35)" : "rgba(244, 63, 94, 0.35)";
+    ctx.fillRect(x, h - 25 - volH, candleW, volH);
+
+    maPoints.push({ x: x + candleW / 2, y: (yOpen + yClose) / 2 });
+  });
+
+  // Moving Average / EMA Line
+  if (heroShowIndicators && maPoints.length > 3) {
+    ctx.strokeStyle = "#f5a623";
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    maPoints.forEach((p, idx) => {
+      if (idx === 0) ctx.moveTo(p.x, p.y);
+      else ctx.lineTo(p.x, p.y);
+    });
+    ctx.stroke();
+  }
+
+  // Right Price Axis & Current Price Badge
+  const curY = chartH - ((heroActivePrice - minP) / (maxP - minP)) * chartH + 10;
+
+  // Dotted horizontal price line
+  ctx.strokeStyle = "rgba(0, 208, 132, 0.5)";
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.moveTo(0, curY);
+  ctx.lineTo(chartW, curY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Axis labels
+  ctx.fillStyle = "#64748b";
+  ctx.font = "10px monospace";
+  for (let r = 0; r <= gridRows; r++) {
+    const y = (chartH / gridRows) * r + 10;
+    const priceVal = maxP - (r / gridRows) * (maxP - minP);
+    const textVal = priceVal > 1000 ? priceVal.toFixed(1) : priceVal.toFixed(4);
+    ctx.fillText(textVal, chartW + 5, y + 3);
+  }
+
+  // Highlight Current Price Pill on Right Axis
+  ctx.fillStyle = "#00d084";
+  ctx.fillRect(chartW + 2, curY - 9, 58, 18);
+  ctx.fillStyle = "#030712";
+  ctx.font = "bold 10px monospace";
+  const curText = heroActivePrice > 1000 ? Number(heroActivePrice).toFixed(1) : heroActivePrice.toFixed(4);
+  ctx.fillText(curText, chartW + 6, curY + 3);
+
+  // Time Axis Labels
+  ctx.fillStyle = "#64748b";
+  ctx.font = "9.5px monospace";
+  const times = ["12:00", "15:00", "18:00", "21:00", "22:00"];
+  times.forEach((t, idx) => {
+    const tx = (chartW / (times.length - 1)) * idx;
+    ctx.fillText(t, Math.max(4, tx - 12), h - 8);
+  });
+}
+window.initHeroCandleChart = initHeroCandleChart;
+
+function selectHeroWatchlistSym(symbol, price, chg) {
+  heroActiveSym = symbol;
+  heroActivePrice = price;
+  const symBadge = document.getElementById("heroTerminalSym");
+  if (symBadge) symBadge.textContent = symbol;
+
+  document.querySelectorAll(".tsm-wl-row").forEach(row => {
+    if (row.textContent.includes(symbol)) row.classList.add("active");
+    else row.classList.remove("active");
+  });
+
+  heroCandleData = generateHeroCandles(price, 38);
+  initHeroCandleChart();
+}
+window.selectHeroWatchlistSym = selectHeroWatchlistSym;
+
+function filterHeroWatchlist(category, btn) {
+  const tabs = document.querySelectorAll(".tsm-wl-tab");
+  tabs.forEach(t => t.classList.remove("active"));
+  if (btn) btn.classList.add("active");
+
+  const rows = document.querySelectorAll(".tsm-wl-row");
+  rows.forEach(r => {
+    const text = r.textContent;
+    if (category === "all") {
+      r.style.display = "grid";
+    } else if (category === "crypto") {
+      r.style.display = (text.includes("BTC") || text.includes("ETH")) ? "grid" : "none";
+    } else if (category === "forex") {
+      r.style.display = (text.includes("EUR") || text.includes("GBP")) ? "grid" : "none";
+    } else if (category === "indices") {
+      r.style.display = (text.includes("NAS") || text.includes("US30") || text.includes("XAU") || text.includes("USOIL")) ? "grid" : "none";
+    }
+  });
+}
+window.filterHeroWatchlist = filterHeroWatchlist;
+
+function setHeroChartTimeframe(tf, btn) {
+  heroActiveTf = tf;
+  document.querySelectorAll(".tsm-tf-btn").forEach(b => b.classList.remove("active"));
+  if (btn) btn.classList.add("active");
+  heroCandleData = generateHeroCandles(heroActivePrice, 38);
+  initHeroCandleChart();
+}
+window.setHeroChartTimeframe = setHeroChartTimeframe;
+
+function toggleHeroIndicators() {
+  heroShowIndicators = !heroShowIndicators;
+  initHeroCandleChart();
+}
+window.toggleHeroIndicators = toggleHeroIndicators;
+
+function refreshHeroChartData() {
+  heroCandleData = generateHeroCandles(heroActivePrice, 38);
+  initHeroCandleChart();
+}
+window.refreshHeroChartData = refreshHeroChartData;
+
+function switchLandingAsset(category) {
+  document.querySelectorAll(".tsm-asset-pill").forEach(p => p.classList.remove("active"));
+  const clicked = Array.from(document.querySelectorAll(".tsm-asset-pill")).find(p => p.textContent.toLowerCase().includes(category));
+  if (clicked) clicked.classList.add("active");
+
+  if (category === "crypto") {
+    selectHeroWatchlistSym("BTCUSDT", 67320.50, 2.45);
+  } else if (category === "forex") {
+    selectHeroWatchlistSym("EURUSD", 1.0874, 0.18);
+  } else if (category === "commodities") {
+    selectHeroWatchlistSym("XAUUSD", 2364.80, -0.32);
+  } else if (category === "indices") {
+    selectHeroWatchlistSym("NAS100", 19842.30, 0.42);
+  } else if (category === "stocks") {
+    switchView("india");
+  }
+}
+window.switchLandingAsset = switchLandingAsset;
+
+function openOrderFromMockup(side) {
+  const token = localStorage.getItem("tsm_user_token");
+  if (!token) {
+    openAuthModal("login");
+  } else {
+    switchView("terminal");
+    showModernToast(`⚡ Order ticket opened: ${side} ${heroActiveSym} @ $${heroActivePrice}`, "info");
+  }
+}
+window.openOrderFromMockup = openOrderFromMockup;
+
+function toggleBillingPeriod(period) {
+  const btnM = document.getElementById("btnPlanMonthly");
+  const btnY = document.getElementById("btnPlanYearly");
+  const pricePro = document.getElementById("planPricePro");
+  const priceElite = document.getElementById("planPriceElite");
+
+  if (period === "yearly") {
+    if (btnM) btnM.classList.remove("active");
+    if (btnY) btnY.classList.add("active");
+    if (pricePro) pricePro.innerHTML = "$23 <small>/month</small>";
+    if (priceElite) priceElite.innerHTML = "$79 <small>/month</small>";
+  } else {
+    if (btnY) btnY.classList.remove("active");
+    if (btnM) btnM.classList.add("active");
+    if (pricePro) pricePro.innerHTML = "$29 <small>/month</small>";
+    if (priceElite) priceElite.innerHTML = "$99 <small>/month</small>";
+  }
+}
+window.toggleBillingPeriod = toggleBillingPeriod;
+
+// Auto-initialize candlestick chart after DOM is ready
+window.addEventListener("DOMContentLoaded", () => {
+  setTimeout(initHeroCandleChart, 250);
+});
+window.addEventListener("resize", () => {
+  if (document.getElementById("view-landing")?.classList.contains("active")) {
+    initHeroCandleChart();
+  }
+});
+setTimeout(initHeroCandleChart, 500);
 
 
 

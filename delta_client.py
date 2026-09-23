@@ -276,8 +276,10 @@ class DeltaClient:
             return []
 
     def get_usdt_balance(self) -> float:
-        """Return total USD / USDT account balance on Delta Exchange India."""
+        """Return total USD / USDT account balance on Delta Exchange India (including INR conversion)."""
         try:
+            usdt_bal = 0.0
+            inr_bal = 0.0
             for item in self.get_balances():
                 asset_sym = (
                     item.get("asset_symbol")
@@ -285,13 +287,21 @@ class DeltaClient:
                 )
                 asset_sym = str(asset_sym).upper()
                 asset_id = str(item.get("asset_id", ""))
+                total = float(item.get("balance", 0) or 0)
+                available = float(item.get("available_balance", 0) or 0)
+                val = available if available > 0 else total
+
                 if asset_sym in ("USDT", "USD") or asset_id in ("5", "14"):
-                    total = float(item.get("balance", 0) or 0)
-                    available = float(item.get("available_balance", 0) or 0)
-                    # Always prefer available (unlocked) balance for new trade placement
-                    val = available if available > 0 else total
-                    if val > 0:
-                        return val
+                    if val > usdt_bal:
+                        usdt_bal = val
+                elif asset_sym in ("INR", "RS"):
+                    if val > inr_bal:
+                        inr_bal = val
+
+            if usdt_bal > 0:
+                return usdt_bal
+            if inr_bal > 0:
+                return round(inr_bal / 88.0, 2)
         except Exception as exc:
             log.warning("Delta balance error: %s", exc)
         return 0.0
@@ -324,20 +334,10 @@ class DeltaClient:
         """Fetch all currently open margined positions on Delta Exchange India."""
         try:
             data = self._request("GET", "/v2/positions/margined")
-            if isinstance(data, dict) and data.get("result"):
-                open_pos = [p for p in data.get("result", []) if float(p.get("size") or 0) != 0]
-                if open_pos:
-                    return open_pos
+            if isinstance(data, dict) and "result" in data:
+                return [p for p in (data.get("result") or []) if float(p.get("size") or 0) != 0]
         except Exception as exc:
             log.debug("Delta /v2/positions/margined query notice: %s", exc)
-
-        try:
-            data2 = self._request("GET", "/v2/positions")
-            if isinstance(data2, dict) and data2.get("result"):
-                return [p for p in data2.get("result", []) if float(p.get("size") or 0) != 0]
-        except Exception as exc:
-            log.debug("Delta /v2/positions query notice: %s", exc)
-
         return []
 
     # ── Orders ───────────────────────────────────────────────────────────────

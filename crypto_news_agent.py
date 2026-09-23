@@ -196,6 +196,7 @@ class CryptoNewsIntelligenceAgent:
             # Extract assets
             assets = self.extract_assets(title, item.get("summary", ""))
             asset_tags = " ".join([f"#{a}" for a in assets]) if assets else "#CRYPTO #MARKET"
+            coins_display = ", ".join(assets) if assets else "BROAD CRYPTO MARKET"
             primary_asset = assets[0] if assets else "CRYPTO"
 
             # Analyze Sentiment & Bias
@@ -206,12 +207,12 @@ class CryptoNewsIntelligenceAgent:
             if not is_important:
                 continue
 
-            # Format Telegram Message
+            # Format Telegram Message showing all detected coins
             msg = (
                 f"{analysis['icon']} *HIGH-IMPACT CRYPTO NEWS ALERT*\n"
                 f"═════════════════════════\n"
-                f"🪙 *Asset Tag*: `{asset_tags}`\n"
-                f"📍 *Primary Coin*: *{primary_asset}*\n"
+                f"🪙 *Coins Detected*: *{coins_display}*\n"
+                f"🏷 *Asset Tags*: `{asset_tags}`\n"
                 f"📰 *Headline*:\n`{title}`\n"
                 f"─────────────────────────\n"
                 f"📊 *AI Sentiment*: `{analysis['sentiment']}`\n"

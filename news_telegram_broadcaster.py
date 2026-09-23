@@ -126,15 +126,31 @@ class NewsTelegramBroadcaster:
             )
             
         if top_stocks:
-            msg += f"⚡ <b>TOP INTRADAY MOMENTUM EQUITIES:</b>\n"
-            for s in top_stocks[:3]:
-                sym = s.get("symbol", "")
-                ltp = s.get("ltp", 0)
-                sig = s.get("signal", "RANGE")
-                t1 = s.get("target1", 0)
-                sl = s.get("stop_loss", 0)
-                icon = "🟢" if "BUY" in sig else "🔴"
-                msg += f"• <b>{sym}</b> (₹{ltp}) ➔ {icon} <b>{sig}</b> | TGT: ₹{t1} | SL: ₹{sl}\n"
+            nse_stocks = [s for s in top_stocks if s.get("exchange") == "NSE"]
+            bse_stocks = [s for s in top_stocks if s.get("exchange") == "BSE"]
+            
+            msg += f"⚡ <b>INTRADAY MOMENTUM EQUITIES (NSE &amp; BSE):</b>\n"
+            if nse_stocks:
+                msg += f"<b>[NSE Top Momentum]</b>\n"
+                for s in nse_stocks[:3]:
+                    sym = s.get("symbol", "")
+                    ltp = s.get("ltp", 0)
+                    sig = s.get("signal", "RANGE")
+                    t1 = s.get("target1", 0)
+                    sl = s.get("stop_loss", 0)
+                    icon = "🟢" if "BUY" in sig else "🔴"
+                    msg += f"• <code>{sym}</code> (₹{ltp}) ➔ {icon} <b>{sig}</b> | TGT: ₹{t1} | SL: ₹{sl}\n"
+            if bse_stocks:
+                msg += f"<b>[BSE Intraday Momentum]</b>\n"
+                for s in bse_stocks[:3]:
+                    sym = s.get("symbol", "")
+                    ltp = s.get("ltp", 0)
+                    sig = s.get("signal", "BUY")
+                    t1 = s.get("target1", 0)
+                    sl = s.get("stop_loss", 0)
+                    rvol = s.get("rvol", 2.0)
+                    icon = "🟢" if "BUY" in sig else "🔴"
+                    msg += f"• <code>{sym}</code> (₹{ltp}) ➔ {icon} <b>{sig}</b> (RVOL {rvol}x) | TGT: ₹{t1} | SL: ₹{sl}\n"
             msg += "\n"
 
         if top_headlines:

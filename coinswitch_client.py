@@ -280,6 +280,13 @@ class CoinSwitchClient:
                 return available
         return 0.0
 
+    def get_balances(self) -> dict:
+        """Return dictionary of available asset balances."""
+        return {
+            "USDT": self.get_usdt_balance(),
+            "INR": self.get_inr_balance()
+        }
+
     def place_order(
         self,
         symbol: str,

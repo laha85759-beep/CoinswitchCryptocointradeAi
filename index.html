@@ -128,19 +128,21 @@
   <canvas id="neuralBgCanvas"></canvas>
   <div class="cyber-scanlines"></div>
 
-  <!-- ══════════ REAL-TIME MULTI-MARKET SCROLLING TICKER TAPE (HIGH PERFORMANCE) ══════════ -->
-  <div class="tsm-macro-ticker-tape" id="macroTickerTape">
-    <div class="tsm-ticker-track" id="macroTickerTrack">
-      <span class="ticker-item"><span class="sym-ico">🇮🇳</span> <strong>NIFTY 50</strong> ₹23,346.40 <span class="green font-mono">▲ +0.33%</span></span>
-      <span class="ticker-item"><span class="sym-ico">🏦</span> <strong>BANK NIFTY</strong> ₹56,358.70 <span class="green font-mono">▲ +0.54%</span></span>
-      <span class="ticker-item"><span class="sym-ico">🥇</span> <strong>GOLD (XAU)</strong> $2,741.20 <span class="green font-mono">▲ +1.41%</span></span>
-      <span class="ticker-item"><span class="sym-ico">₿</span> <strong>BTC/USDT</strong> $78,580.00 <span class="green font-mono">▲ +1.39%</span></span>
-      <span class="ticker-item"><span class="sym-ico">💱</span> <strong>EUR/USD</strong> 1.0854 <span class="green font-mono">▲ +0.22%</span></span>
-      <span class="ticker-item"><span class="sym-ico">◎</span> <strong>SOL/USDT</strong> $103.15 <span class="green font-mono">▲ +5.62%</span></span>
-      <span class="ticker-item"><span class="sym-ico">🥈</span> <strong>SILVER (XAG)</strong> $33.58 <span class="green font-mono">▲ +2.15%</span></span>
-      <span class="ticker-item"><span class="sym-ico">🛢️</span> <strong>WTI CRUDE</strong> $71.45 <span class="green font-mono">▲ +0.85%</span></span>
-      <span class="ticker-item"><span class="sym-ico">✕</span> <strong>XRP/USDT</strong> $1.3850 <span class="green font-mono">▲ +1.81%</span></span>
-      <span class="ticker-item"><span class="sym-ico">🏛</span> <strong>BSE SENSEX</strong> ₹74,294.96 <span class="red-text font-mono">▼ -0.06%</span></span>
+  <!-- ══════════ REAL-TIME MULTI-MARKET LIVE TICKER RIBBON (MATCHES MOCKUP) ══════════ -->
+  <div class="tsm-trade-ticker-bar" id="macroTickerTape">
+    <div class="tsm-ticker-items" id="macroTickerTrack">
+      <span class="tsm-tick-unit"><span class="tsm-tick-sym">BTCUSDT</span> <span class="tsm-tick-price" id="tick-btc">67,320.50</span> <span class="tsm-tick-chg up" id="tick-btc-chg">▲ +2.45%</span></span>
+      <span class="tsm-tick-unit"><span class="tsm-tick-sym">ETHUSDT</span> <span class="tsm-tick-price" id="tick-eth">3,245.10</span> <span class="tsm-tick-chg up" id="tick-eth-chg">▲ +1.24%</span></span>
+      <span class="tsm-tick-unit"><span class="tsm-tick-sym">XAUUSD</span> <span class="tsm-tick-price" id="tick-xau">2,364.80</span> <span class="tsm-tick-chg down" id="tick-xau-chg">▼ -0.32%</span></span>
+      <span class="tsm-tick-unit"><span class="tsm-tick-sym">EURUSD</span> <span class="tsm-tick-price" id="tick-eur">1.0874</span> <span class="tsm-tick-chg up" id="tick-eur-chg">▲ +0.18%</span></span>
+      <span class="tsm-tick-unit"><span class="tsm-tick-sym">GBPUSD</span> <span class="tsm-tick-price" id="tick-gbp">1.2736</span> <span class="tsm-tick-chg up" id="tick-gbp-chg">▲ +0.21%</span></span>
+      <span class="tsm-tick-unit"><span class="tsm-tick-sym">USOIL</span> <span class="tsm-tick-price" id="tick-oil">74.21</span> <span class="tsm-tick-chg up" id="tick-oil-chg">▲ +0.65%</span></span>
+      <span class="tsm-tick-unit"><span class="tsm-tick-sym">NIFTY 50</span> <span class="tsm-tick-price" id="tick-nifty">25,380.45</span> <span class="tsm-tick-chg up">▲ +0.42%</span></span>
+      <span class="tsm-tick-unit"><span class="tsm-tick-sym">BSE SENSEX</span> <span class="tsm-tick-price" id="tick-sensex">83,120.15</span> <span class="tsm-tick-chg up">▲ +0.38%</span></span>
+    </div>
+    <div class="tsm-live-pill">
+      <span class="tsm-live-dot-pulse"></span>
+      <span>Live Markets</span>
     </div>
   </div>
 
@@ -167,80 +169,43 @@
     </div>
   </div>
 
-  <!-- TOP MASTER NAVIGATION BAR -->
-  <header class="nc-top-header">
-    <!-- BRAND LOGO & SYSTEM STATUS -->
-    <div class="nc-hdr-left">
-      <a href="https://thesmartmag.com" target="_blank" class="nc-brand" title="TheSmartMag Quantum AI SuperBrain">
-        <div class="nc-brain-icon-mini">
-          <svg width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="grad-cyber-1" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#00f090" />
-                <stop offset="50%" stop-color="#00d4ff" />
-                <stop offset="100%" stop-color="#ff00aa" />
-              </linearGradient>
-              <linearGradient id="grad-cyber-2" x1="100%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stop-color="#ffd700" />
-                <stop offset="100%" stop-color="#00f090" />
-              </linearGradient>
-            </defs>
-            <!-- Hexagonal Outer Shield -->
-            <polygon points="19,2 34,10.5 34,27.5 19,36 4,27.5 4,10.5" stroke="url(#grad-cyber-1)" stroke-width="1.8" fill="rgba(2, 8, 18, 0.75)" />
-            <!-- Concentric Orbiting Dashed Techno-Ring -->
-            <circle cx="19" cy="19" r="14.5" stroke="url(#grad-cyber-2)" stroke-width="1.2" stroke-dasharray="3 5 8 3" fill="none" class="nc-logo-orbital" />
-            <!-- Left Neural Synapse Conduit -->
-            <path d="M19 8 C14 8 10 12 10 17 C10 21 13 24 16 26 C17.5 27 19 28 19 30" stroke="#00f090" stroke-width="1.4" stroke-linecap="round" fill="none" class="nc-logo-synapse-l" />
-            <!-- Right Neural Synapse Conduit -->
-            <path d="M19 8 C24 8 28 12 28 17 C28 21 25 24 22 26 C20.5 27 19 28 19 30" stroke="#00d4ff" stroke-width="1.4" stroke-linecap="round" fill="none" class="nc-logo-synapse-r" />
-            <!-- Cross Quantum Bridges -->
-            <path d="M13 14 Q19 16 25 14" stroke="#ff00aa" stroke-width="1.1" stroke-linecap="round" fill="none" />
-            <path d="M11 19 Q19 18 27 19" stroke="#00f090" stroke-width="1.2" stroke-linecap="round" fill="none" />
-            <path d="M14 24 Q19 23 24 24" stroke="#00d4ff" stroke-width="1.1" stroke-linecap="round" fill="none" />
-            <!-- Vertical Data Axis -->
-            <line x1="19" y1="5" x2="19" y2="33" stroke="rgba(255,255,255,0.4)" stroke-width="1" stroke-dasharray="2 3" />
-            <!-- Pulsing Quantum Fusion Core -->
-            <circle cx="19" cy="19" r="4.5" fill="url(#grad-cyber-1)" class="nc-logo-core-pulse" />
-            <circle cx="19" cy="19" r="2" fill="#ffffff" />
-            <!-- Vertex Energy Satellite Beacons -->
-            <circle cx="19" cy="2" r="1.5" fill="#00f090" class="nc-logo-beacon-1" />
-            <circle cx="34" cy="10.5" r="1.5" fill="#00d4ff" class="nc-logo-beacon-2" />
-            <circle cx="34" cy="27.5" r="1.5" fill="#ff00aa" class="nc-logo-beacon-3" />
-            <circle cx="19" cy="36" r="1.5" fill="#ffd700" class="nc-logo-beacon-4" />
-            <circle cx="4" cy="27.5" r="1.5" fill="#ff00aa" class="nc-logo-beacon-5" />
-            <circle cx="4" cy="10.5" r="1.5" fill="#00f090" class="nc-logo-beacon-6" />
-          </svg>
-        </div>
-        <div class="nc-brand-text">
-          <div style="display:flex; align-items:center; gap:6px;">
-            <span class="nc-app-title">THESMARTMAG</span>
-            <span class="nc-nav-os-badge">OS v3</span>
-          </div>
-          <span class="nc-brand-sub">QUANTUM AI • MULTI-EXCHANGE TERMINAL</span>
-        </div>
+  <!-- TOP MASTER NAVIGATION BAR (THE SMARTMAG TRADE INSTITUTIONAL HEADER) -->
+  <header class="nc-top-header tsm-trade-header">
+    <!-- BRAND LOGO WITH THREE GOLDEN BARS -->
+    <div class="nc-hdr-left" style="display:flex; align-items:center; gap:24px;">
+      <a href="javascript:void(0)" onclick="switchView('landing')" class="tsm-trade-logo" title="TheSmartMag Trade • Institutional Multi-Asset Platform">
+        <span class="tsm-bars-icon"><span></span><span></span><span></span></span>
+        <span class="tsm-trade-brand-text"><strong>TheSmartMag</strong> <span>Trade</span></span>
       </a>
+
+      <!-- Institutional Navigation Links from Mockup -->
+      <nav class="tsm-trade-nav-links" id="tsmTradeNavLinks">
+        <a href="javascript:void(0)" onclick="switchView('terminal')" title="Live Trading Terminal Cockpit">Trading</a>
+        <a href="javascript:void(0)" onclick="switchView('india')" title="Global & Indian Equities / F&O">Markets</a>
+        <a href="javascript:void(0)" onclick="switchView('chart')" title="Interactive Pro TradingView Chart">Tools</a>
+        <a href="javascript:void(0)" onclick="switchView('landing'); setTimeout(() => { const el = document.getElementById('pricingSection'); if(el) el.scrollIntoView({behavior:'smooth'}); }, 100);" title="Trading & Platform Plans">Pricing</a>
+        <a href="javascript:void(0)" onclick="openVideoTourModal()" title="Platform Video Tour & Education">Education</a>
+        <a href="javascript:void(0)" onclick="switchView('partners')" title="Prop Firms & Institutional Partners">Partners</a>
+        <a href="javascript:void(0)" onclick="switchView('landing'); setTimeout(() => { const el = document.getElementById('footerSection'); if(el) el.scrollIntoView({behavior:'smooth'}); }, 100);" title="About TheSmartMag">About</a>
+      </nav>
     </div>
 
-    <!-- RIGHT HUD CONTROLS (TOUR, DEMO, USER, KEYS, LOGOUT, CLOCK, JARVIS VOICE, MOBILE HAMBURGER) -->
-    <div class="nc-hdr-right">
-      <button class="nc-btn-tour" id="headerTourBtn" onclick="openVideoTourModal()" title="Watch 60s Tour: Services & How to Grow">
-        <span>🎥</span><span>TOUR &amp; SERVICES</span>
+    <!-- RIGHT HUD CONTROLS (SEARCH, SIGN IN, GET STARTED, USER, KEYS, LOGOUT, CLOCK, ADMIN, MOBILE MENU) -->
+    <div class="nc-hdr-right" style="display:flex; align-items:center; gap:10px;">
+      <button class="tsm-btn-search-icon" onclick="switchView('chart')" title="Search Instruments / Tickers">🔍</button>
+      
+      <!-- Primary Mockup CTAs: Sign In & Get Started -->
+      <button class="tsm-btn-nav-signin" id="navSignInBtn" onclick="openAuthModal('login')">
+        <span>👤</span><span>Sign In</span>
       </button>
-      <button class="nc-btn-demo" id="headerDemoBtn" onclick="simulateFreeTradeDemo()" title="Test All Features in Free Simulator Mode">
-        <span>⚡</span><span>FREE DEMO</span>
+      <button class="tsm-btn-nav-getstarted" id="navGetStartedBtn" onclick="openAuthModal('register')">
+        Get Started
       </button>
-      <button class="nc-btn-jarvis-voice" id="headerJarvisVoiceBtn" onclick="toggleJarvisBriefingVoice()" title="Jarvis Voice AI Market Briefing">
-        <span class="voice-wave-visualizer">
-          <span class="voice-wave-bar"></span>
-          <span class="voice-wave-bar"></span>
-          <span class="voice-wave-bar"></span>
-          <span class="voice-wave-bar"></span>
-        </span>
-        <span id="jarvisVoiceBtnText">🎙️ JARVIS VOICE</span>
-      </button>
-      <div id="userProfilePill" class="nc-user-pill" onclick="openAuthModal()" title="Trader Account">
+
+      <!-- Authenticated Trader Cockpit Pill (Shown when logged in) -->
+      <div id="userProfilePill" class="nc-user-pill" onclick="switchView('trader')" title="Trader Cockpit & Portfolio" style="display:none;">
         <span class="nc-user-icon">👤</span>
-        <span id="userProfileText">SIGN IN / JOIN</span>
+        <span id="userProfileText">TRADER</span>
       </div>
       <button class="nc-btn-keys" id="connectKeysBtn" onclick="openExchangeKeysModal()" title="Connect CoinSwitch & Delta API Keys" style="display:none;">
         <span>🔑</span><span>API KEYS</span>
@@ -251,7 +216,7 @@
       <div class="nc-clock-pill" id="live-utc-clock" onclick="toggleClockMode()" title="Click to toggle between Your Country Local Time and UTC Market Time">
         <span class="nc-clock-flag">🌐</span> <span>00:00:00</span> <span class="nc-clock-tz-badge">LOCAL</span>
       </div>
-      <button class="nc-btn-admin" id="adminNavBtn" onclick="toggleAdminView()" title="Admin Control Center">
+      <button class="nc-btn-admin" id="adminNavBtn" onclick="toggleAdminView()" title="Super Admin Control Portal">
         <span>⚙</span><span id="adminNavBtnText">ADMIN</span>
       </button>
       <button class="nc-btn-mobile-menu" id="mobileMenuBtn" onclick="toggleMobileNavDrawer()" title="Navigation Menu">
@@ -307,7 +272,15 @@
     <!-- ══════════ MASTER SECTION COMMAND DOCK (ALL MENU OPTIONS VISIBLE & INTERACTIVE) ══════════ -->
     <div class="tsm-section-command-dock" id="sectionCommandDock">
       <div class="tsm-dock-grid">
-        <button class="tsm-dock-item active" data-view="terminal" onclick="switchView('terminal')" title="Live Master Terminal Cockpit &amp; PnL">
+        <button class="tsm-dock-item active" data-view="landing" onclick="switchView('landing')" title="TheSmartMag Trade Institutional Portal &amp; Live Demo">
+          <span class="tsm-dock-icon">🌐</span>
+          <div class="tsm-dock-info">
+            <span class="tsm-dock-title">OVERVIEW</span>
+            <span class="tsm-dock-chip gold">HOME</span>
+          </div>
+        </button>
+
+        <button class="tsm-dock-item" data-view="terminal" onclick="switchView('terminal')" title="Live Master Terminal Cockpit &amp; PnL">
           <span class="tsm-dock-icon">⚡</span>
           <div class="tsm-dock-info">
             <span class="tsm-dock-title">TERMINAL</span>
@@ -400,8 +373,479 @@
            data-full-width-responsive="true"></ins>
     </div>
 
+    <!-- ══════════ VIEW 0: THESMARTMAG TRADE INSTITUTIONAL LANDING PAGE (MATCHES MOCKUP) ══════════ -->
+    <div id="view-landing" class="nc-view-pane tsm-view-section active">
+      <div class="tsm-landing-hero">
+        <div class="tsm-hero-grid">
+          <!-- Hero Left Column -->
+          <div class="tsm-hero-left">
+            <h1 class="tsm-hero-title">
+              Trade Global Markets <br>
+              <span class="tsm-gold-text">with Precision</span>
+            </h1>
+            <p class="tsm-hero-sub">
+              Professional trading tools, real-time data and automation for traders who demand an edge. Powered by NVIDIA Super Brain AI and multi-exchange execution.
+            </p>
+
+            <!-- Asset Selector Pills -->
+            <div class="tsm-asset-pills">
+              <button class="tsm-asset-pill" onclick="switchLandingAsset('stocks')">
+                <span class="tsm-asset-icon">📈</span><span>Stocks</span>
+              </button>
+              <button class="tsm-asset-pill" onclick="switchLandingAsset('forex')">
+                <span class="tsm-asset-icon">💱</span><span>Forex</span>
+              </button>
+              <button class="tsm-asset-pill active" onclick="switchLandingAsset('crypto')">
+                <span class="tsm-asset-icon">₿</span><span>Crypto</span>
+              </button>
+              <button class="tsm-asset-pill" onclick="switchLandingAsset('commodities')">
+                <span class="tsm-asset-icon">🥇</span><span>Commodities</span>
+              </button>
+              <button class="tsm-asset-pill" onclick="switchLandingAsset('indices')">
+                <span class="tsm-asset-icon">🏛</span><span>Indices</span>
+              </button>
+            </div>
+
+            <!-- Hero CTA Buttons -->
+            <div class="tsm-hero-ctas">
+              <button class="tsm-btn-hero-primary" onclick="openAuthModal('register')">
+                <span>Start Trading Free</span> <span>&rarr;</span>
+              </button>
+              <button class="tsm-btn-hero-secondary" onclick="activateFreeDemoExperience()">
+                <span>▶</span> <span>View Live Demo</span>
+              </button>
+            </div>
+
+            <!-- Trust Points -->
+            <div class="tsm-hero-trust">
+              <span class="tsm-trust-item"><span class="tsm-trust-check">✓</span> No credit card required</span>
+              <span class="tsm-trust-item"><span class="tsm-trust-check">✓</span> Secure &amp; encrypted</span>
+              <span class="tsm-trust-item"><span class="tsm-trust-check">✓</span> Trusted by 10K+ traders</span>
+            </div>
+          </div>
+
+          <!-- Hero Right Column: Interactive Trading Terminal Widget -->
+          <div class="tsm-mockup-terminal" id="heroInteractiveTerminal">
+            <!-- Left Drawing Toolbar -->
+            <div class="tsm-term-toolbar">
+              <button class="tsm-tb-btn active" title="Pointer / Crosshair">┼</button>
+              <button class="tsm-tb-btn" title="Trend Line">╱</button>
+              <button class="tsm-tb-btn" title="Pitchfork / Fib">⑂</button>
+              <button class="tsm-tb-btn" title="Brush / Highlighter">✎</button>
+              <button class="tsm-tb-btn" title="Text Note">T</button>
+              <button class="tsm-tb-btn" title="Measure Ruler">📐</button>
+              <button class="tsm-tb-btn" title="Lock Tools">🔒</button>
+              <button class="tsm-tb-btn" title="Trash / Clear">🗑</button>
+            </div>
+
+            <!-- Main Chart Workspace -->
+            <div class="tsm-term-chart-area">
+              <div class="tsm-term-topbar">
+                <div class="tsm-term-sym-info">
+                  <span class="tsm-term-sym-badge" id="heroTerminalSym">XAUUSD</span>
+                  <div class="tsm-tf-pills">
+                    <button class="tsm-tf-btn" onclick="setHeroChartTimeframe('1m', this)">1m</button>
+                    <button class="tsm-tf-btn" onclick="setHeroChartTimeframe('5m', this)">5m</button>
+                    <button class="tsm-tf-btn active" onclick="setHeroChartTimeframe('15m', this)">15m</button>
+                    <button class="tsm-tf-btn" onclick="setHeroChartTimeframe('1h', this)">1h</button>
+                    <button class="tsm-tf-btn" onclick="setHeroChartTimeframe('4h', this)">4h</button>
+                    <button class="tsm-tf-btn" onclick="setHeroChartTimeframe('D', this)">D</button>
+                  </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <button class="tsm-term-ind-btn" onclick="toggleHeroIndicators()">
+                    <span>📊 Indicators</span>
+                  </button>
+                  <button class="tsm-tb-btn" onclick="refreshHeroChartData()" title="Refresh Chart">🔄</button>
+                </div>
+              </div>
+
+              <!-- Candlestick Canvas Container -->
+              <div class="tsm-chart-canvas-wrap">
+                <canvas id="tsmHeroCandleCanvas"></canvas>
+              </div>
+            </div>
+
+            <!-- Right Watchlist Panel -->
+            <div class="tsm-term-watchlist">
+              <div class="tsm-wl-tabs">
+                <button class="tsm-wl-tab active" onclick="filterHeroWatchlist('all', this)">Watchlist</button>
+                <button class="tsm-wl-tab" onclick="filterHeroWatchlist('crypto', this)">Crypto</button>
+                <button class="tsm-wl-tab" onclick="filterHeroWatchlist('forex', this)">Forex</button>
+                <button class="tsm-wl-tab" onclick="filterHeroWatchlist('indices', this)">Indices</button>
+              </div>
+              <div class="tsm-wl-table-head">
+                <span>Symbol</span>
+                <span>Last</span>
+                <span style="text-align:right;">Chg%</span>
+              </div>
+              <div class="tsm-wl-rows" id="heroWatchlistRows">
+                <!-- Dynamically populated rows from mockup -->
+                <div class="tsm-wl-row active" onclick="selectHeroWatchlistSym('XAUUSD', 2364.80, -0.32)">
+                  <div class="tsm-wl-sym-box"><span class="tsm-wl-ico">🥇</span><span>XAUUSD</span></div>
+                  <div class="tsm-wl-price">2,364.80</div>
+                  <div class="tsm-wl-chg down">-0.32%</div>
+                </div>
+                <div class="tsm-wl-row" onclick="selectHeroWatchlistSym('BTCUSDT', 67320.50, 2.45)">
+                  <div class="tsm-wl-sym-box"><span class="tsm-wl-ico">₿</span><span>BTCUSDT</span></div>
+                  <div class="tsm-wl-price">67,320.50</div>
+                  <div class="tsm-wl-chg up">+2.45%</div>
+                </div>
+                <div class="tsm-wl-row" onclick="selectHeroWatchlistSym('ETHUSDT', 3245.10, 1.24)">
+                  <div class="tsm-wl-sym-box"><span class="tsm-wl-ico">Ξ</span><span>ETHUSDT</span></div>
+                  <div class="tsm-wl-price">3,245.10</div>
+                  <div class="tsm-wl-chg up">+1.24%</div>
+                </div>
+                <div class="tsm-wl-row" onclick="selectHeroWatchlistSym('EURUSD', 1.0874, 0.18)">
+                  <div class="tsm-wl-sym-box"><span class="tsm-wl-ico">€</span><span>EURUSD</span></div>
+                  <div class="tsm-wl-price">1.0874</div>
+                  <div class="tsm-wl-chg up">+0.18%</div>
+                </div>
+                <div class="tsm-wl-row" onclick="selectHeroWatchlistSym('GBPUSD', 1.2736, 0.21)">
+                  <div class="tsm-wl-sym-box"><span class="tsm-wl-ico">£</span><span>GBPUSD</span></div>
+                  <div class="tsm-wl-price">1.2736</div>
+                  <div class="tsm-wl-chg up">+0.21%</div>
+                </div>
+                <div class="tsm-wl-row" onclick="selectHeroWatchlistSym('USOIL', 74.21, 0.65)">
+                  <div class="tsm-wl-sym-box"><span class="tsm-wl-ico">🛢</span><span>USOIL</span></div>
+                  <div class="tsm-wl-price">74.21</div>
+                  <div class="tsm-wl-chg up">+0.65%</div>
+                </div>
+                <div class="tsm-wl-row" onclick="selectHeroWatchlistSym('NAS100', 19842.30, 0.42)">
+                  <div class="tsm-wl-sym-box"><span class="tsm-wl-ico">🏛</span><span>NAS100</span></div>
+                  <div class="tsm-wl-price">19,842.30</div>
+                  <div class="tsm-wl-chg up">+0.42%</div>
+                </div>
+                <div class="tsm-wl-row" onclick="selectHeroWatchlistSym('US30', 42318.60, 0.38)">
+                  <div class="tsm-wl-sym-box"><span class="tsm-wl-ico">🇺🇸</span><span>US30</span></div>
+                  <div class="tsm-wl-price">42,318.60</div>
+                  <div class="tsm-wl-chg up">+0.38%</div>
+                </div>
+              </div>
+              <div class="tsm-wl-exec-bar">
+                <button class="tsm-btn-wl-buy" onclick="openOrderFromMockup('BUY')">Buy</button>
+                <button class="tsm-btn-wl-sell" onclick="openOrderFromMockup('SELL')">Sell</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Key Stats Row -->
+      <div class="tsm-stats-row">
+        <div class="tsm-stat-card">
+          <div class="tsm-stat-num">500+</div>
+          <div class="tsm-stat-lbl">Trading Instruments</div>
+        </div>
+        <div class="tsm-stat-card">
+          <div class="tsm-stat-num">24/7</div>
+          <div class="tsm-stat-lbl">Global Market Access</div>
+        </div>
+        <div class="tsm-stat-card">
+          <div class="tsm-stat-num">&lt; 20ms</div>
+          <div class="tsm-stat-lbl">Ultra-Fast Execution</div>
+        </div>
+        <div class="tsm-stat-card">
+          <div class="tsm-stat-num">99.9%</div>
+          <div class="tsm-stat-lbl">Platform Uptime</div>
+        </div>
+        <div class="tsm-stat-card" style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
+          <div style="font-size:24px; margin-bottom:4px;">🛡️</div>
+          <div class="tsm-stat-lbl" style="font-weight:700; color:#fff;">Licensed Technology</div>
+        </div>
+      </div>
+
+      <!-- Feature Grid ("Everything You Need to Trade") -->
+      <section class="tsm-features-section" id="featuresSection">
+        <div class="tsm-features-left">
+          <h2>Everything<br>You Need to Trade</h2>
+          <p>Professional-grade tools, institutional risk controls, and automated trading algorithms designed for modern traders.</p>
+          <button class="tsm-btn-explore" onclick="switchView('terminal')">
+            <span>Explore All Features</span> <span>&rarr;</span>
+          </button>
+        </div>
+        <div class="tsm-features-grid">
+          <div class="tsm-feature-card">
+            <div class="tsm-feature-icon blue">📈</div>
+            <h3>Advanced Charts</h3>
+            <p>Professional charting with 100+ technical indicators, multi-timeframe analysis and live depth.</p>
+          </div>
+          <div class="tsm-feature-card">
+            <div class="tsm-feature-icon blue">⚡</div>
+            <h3>Trading Terminal</h3>
+            <p>Fast, reliable, and intuitive multi-exchange order execution across Delta India &amp; CoinSwitch.</p>
+          </div>
+          <div class="tsm-feature-card">
+            <div class="tsm-feature-icon green">🤖</div>
+            <h3>Automated Trading</h3>
+            <p>Run strategies with autonomous AI bots, Volume Surge filters, and NVIDIA GLM-5.3 intelligence.</p>
+          </div>
+          <div class="tsm-feature-card">
+            <div class="tsm-feature-icon purple">📊</div>
+            <h3>Market Analysis</h3>
+            <p>Real-time breaking news catalysts, economic calendars, and Indian F&amp;O Options PCR tracking.</p>
+          </div>
+          <div class="tsm-feature-card">
+            <div class="tsm-feature-icon blue">🛡️</div>
+            <h3>Risk Management</h3>
+            <p>Advanced Capital Survival mode, strict stop losses, and automatic profit lock-in mechanisms.</p>
+          </div>
+          <div class="tsm-feature-card">
+            <div class="tsm-feature-icon gold">🌐</div>
+            <h3>Multi-Asset Access</h3>
+            <p>Trade Forex, Stocks, Crypto, Commodities, and BSE/NSE Momentum Equities from one unified portal.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Multi-Device Showcase ("Trade Anytime, Anywhere") -->
+      <section class="tsm-devices-section" id="devicesSection">
+        <div class="tsm-devices-left">
+          <h2>Trade Anytime,<br>Anywhere</h2>
+          <p>A seamless, ultra-responsive experience across all your devices with synchronized orders and positions.</p>
+          <div class="tsm-app-badges">
+            <button class="tsm-app-badge-btn" onclick="openVideoTourModal()">
+              <span style="font-size:20px;">🍎</span>
+              <div class="tsm-badge-txt"><small>Download on the</small><strong>App Store</strong></div>
+            </button>
+            <button class="tsm-app-badge-btn" onclick="openVideoTourModal()">
+              <span style="font-size:20px;">▶</span>
+              <div class="tsm-badge-txt"><small>GET IT ON</small><strong>Google Play</strong></div>
+            </button>
+            <button class="tsm-app-badge-btn" onclick="openVideoTourModal()">
+              <span style="font-size:20px;">🪟</span>
+              <div class="tsm-badge-txt"><small>Download for</small><strong>Windows</strong></div>
+            </button>
+          </div>
+        </div>
+        <div class="tsm-devices-preview">
+          <div class="tsm-mockup-screen-laptop">
+            <div style="background:#040711; border-radius:6px; padding:12px; border:1px solid #141c2c;">
+              <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:11px; color:#94a3b8;">
+                <span>BTC/USDT 15m • THE SMARTMAG TERMINAL</span>
+                <span class="green">LIVE ● 67,320.50</span>
+              </div>
+              <div style="height:140px; background:radial-gradient(ellipse at center, rgba(0,208,132,0.1) 0%, transparent 70%); display:flex; align-items:center; justify-content:center; border:1px dashed #1e293b; border-radius:4px;">
+                <span style="color:#f5a623; font-family:var(--font-mono); font-size:12px;">📊 MULTI-SCREEN CLOUD SYNC ACTIVE</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tsm-device-bullets">
+          <div class="tsm-dev-bullet">
+            <div class="tsm-dev-bullet-icon">🔄</div>
+            <span>Real-time sync</span>
+          </div>
+          <div class="tsm-dev-bullet">
+            <div class="tsm-dev-bullet-icon">📋</div>
+            <span>Full functionality</span>
+          </div>
+          <div class="tsm-dev-bullet">
+            <div class="tsm-dev-bullet-icon">📱</div>
+            <span>Native mobile apps</span>
+          </div>
+          <div class="tsm-dev-bullet">
+            <div class="tsm-dev-bullet-icon">💻</div>
+            <span>Works on any device</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Asset Category Cards Row -->
+      <section class="tsm-assets-row" id="assetsSection">
+        <div class="tsm-asset-card" onclick="switchView('chart')">
+          <div class="tsm-asset-card-icons">💵 💶 💷 💴</div>
+          <div class="tsm-asset-card-info">
+            <h4>Forex</h4>
+            <p>Major, minor &amp; exotic pairs</p>
+          </div>
+          <div class="tsm-asset-card-arrow">&rarr;</div>
+        </div>
+        <div class="tsm-asset-card" onclick="switchView('india')">
+          <div class="tsm-asset-card-icons">🍎 🟢 🚗</div>
+          <div class="tsm-asset-card-info">
+            <h4>Stocks</h4>
+            <p>US &amp; Indian BSE/NSE equities</p>
+          </div>
+          <div class="tsm-asset-card-arrow">&rarr;</div>
+        </div>
+        <div class="tsm-asset-card" onclick="switchView('terminal')">
+          <div class="tsm-asset-card-icons">₿ Ξ ◎</div>
+          <div class="tsm-asset-card-info">
+            <h4>Crypto</h4>
+            <p>Trade BTC, ETH and 300+ coins</p>
+          </div>
+          <div class="tsm-asset-card-arrow">&rarr;</div>
+        </div>
+        <div class="tsm-asset-card" onclick="switchView('chart')">
+          <div class="tsm-asset-card-icons">🥇 🥈 🛢️</div>
+          <div class="tsm-asset-card-info">
+            <h4>Commodities</h4>
+            <p>Gold, Oil, Silver &amp; more</p>
+          </div>
+          <div class="tsm-asset-card-arrow">&rarr;</div>
+        </div>
+        <div class="tsm-asset-card" onclick="switchView('india')">
+          <div class="tsm-asset-card-icons">🗽 🏛 📈</div>
+          <div class="tsm-asset-card-info">
+            <h4>Indices</h4>
+            <p>NIFTY, SENSEX, NAS100 &amp; US30</p>
+          </div>
+          <div class="tsm-asset-card-arrow">&rarr;</div>
+        </div>
+      </section>
+
+      <!-- Pricing Plans Section ("Choose a Plan That Fits You") -->
+      <section class="tsm-pricing-section" id="pricingSection">
+        <div class="tsm-pricing-header">
+          <div class="tsm-pricing-lead">
+            <small>PRICING</small>
+            <h2>Choose a Plan That Fits You</h2>
+            <p>Flexible plans for every type of trader. Upgrade or cancel anytime.</p>
+          </div>
+          <div class="tsm-pricing-toggle">
+            <button class="tsm-toggle-btn active" id="btnPlanMonthly" onclick="toggleBillingPeriod('monthly')">Monthly</button>
+            <button class="tsm-toggle-btn" id="btnPlanYearly" onclick="toggleBillingPeriod('yearly')">Yearly <span class="tsm-save-chip">Save 20%</span></button>
+          </div>
+        </div>
+        <div class="tsm-pricing-cards">
+          <!-- Starter Plan -->
+          <div class="tsm-plan-card">
+            <div class="tsm-plan-top">
+              <h3>Starter</h3>
+              <div class="tsm-plan-sub">For beginners &amp; learners</div>
+              <div class="tsm-plan-price">$0 <small>/month</small></div>
+              <ul class="tsm-plan-features">
+                <li><span class="tsm-plan-check">✓</span> Basic TradingView charts</li>
+                <li><span class="tsm-plan-check">✓</span> Real-time market data</li>
+                <li><span class="tsm-plan-check">✓</span> Limited AI signals (5/day)</li>
+                <li><span class="tsm-plan-check">✓</span> Community telegram access</li>
+              </ul>
+            </div>
+            <button class="tsm-plan-btn outline" onclick="openAuthModal('register')">Get Started</button>
+          </div>
+
+          <!-- Pro Plan (Most Popular) -->
+          <div class="tsm-plan-card featured">
+            <span class="tsm-featured-badge">Most Popular</span>
+            <div class="tsm-plan-top">
+              <h3>Pro</h3>
+              <div class="tsm-plan-sub">For active day traders</div>
+              <div class="tsm-plan-price" id="planPricePro">$29 <small>/month</small></div>
+              <ul class="tsm-plan-features">
+                <li><span class="tsm-plan-check">✓</span> Real-time high-speed data</li>
+                <li><span class="tsm-plan-check">✓</span> 100+ Advanced indicators</li>
+                <li><span class="tsm-plan-check">✓</span> Automated AI trading bots</li>
+                <li><span class="tsm-plan-check">✓</span> Custom strategy builder</li>
+                <li><span class="tsm-plan-check">✓</span> Priority customer support</li>
+              </ul>
+            </div>
+            <button class="tsm-plan-btn solid" onclick="openAuthModal('register')">Get Started</button>
+          </div>
+
+          <!-- Elite Plan -->
+          <div class="tsm-plan-card">
+            <div class="tsm-plan-top">
+              <h3>Elite</h3>
+              <div class="tsm-plan-sub">For professional traders</div>
+              <div class="tsm-plan-price" id="planPriceElite">$99 <small>/month</small></div>
+              <ul class="tsm-plan-features">
+                <li><span class="tsm-plan-check">✓</span> Everything in Pro plan</li>
+                <li><span class="tsm-plan-check">✓</span> Advanced institutional analytics</li>
+                <li><span class="tsm-plan-check">✓</span> Direct API execution keys</li>
+                <li><span class="tsm-plan-check">✓</span> Volume surge custom alerts</li>
+                <li><span class="tsm-plan-check">✓</span> Dedicated account manager</li>
+              </ul>
+            </div>
+            <button class="tsm-plan-btn outline" onclick="openAuthModal('register')">Get Started</button>
+          </div>
+
+          <!-- Enterprise Plan -->
+          <div class="tsm-plan-card">
+            <div class="tsm-plan-top">
+              <h3>Enterprise</h3>
+              <div class="tsm-plan-sub">For institutions &amp; prop teams</div>
+              <div class="tsm-plan-price">Custom</div>
+              <ul class="tsm-plan-features">
+                <li><span class="tsm-plan-check">✓</span> White-label portal solution</li>
+                <li><span class="tsm-plan-check">✓</span> Multi-account sub-API desk</li>
+                <li><span class="tsm-plan-check">✓</span> Dedicated quant engineer</li>
+                <li><span class="tsm-plan-check">✓</span> Custom volume &amp; ML strategies</li>
+              </ul>
+            </div>
+            <button class="tsm-plan-btn outline" onclick="openAuthModal('register')">Contact Sales</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Global Community Section -->
+      <section class="tsm-community-section">
+        <div class="tsm-comm-left">
+          <h2>Join a Growing Global<br>Trading Community</h2>
+          <p>10,000+ traders worldwide are already trading smarter with TheSmartMag Trade.</p>
+          <button class="tsm-btn-hero-primary" onclick="openAuthModal('register')">
+            <span>Start Trading Free</span> <span>&rarr;</span>
+          </button>
+        </div>
+        <div class="tsm-comm-stats">
+          <div class="tsm-comm-stat-box">
+            <div class="tsm-comm-stat-num">10K+</div>
+            <div class="tsm-comm-stat-lbl">Active Traders</div>
+          </div>
+          <div class="tsm-comm-stat-box">
+            <div class="tsm-comm-stat-num">150+</div>
+            <div class="tsm-comm-stat-lbl">Countries</div>
+          </div>
+          <div class="tsm-comm-stat-box">
+            <div class="tsm-comm-stat-num">$2.5B+</div>
+            <div class="tsm-comm-stat-lbl">Monthly Volume</div>
+          </div>
+        </div>
+        <div class="tsm-comm-right">
+          <div class="tsm-comm-quote">"Professional tools.<br>Real opportunities."</div>
+          <div class="tsm-trade-logo">
+            <span class="tsm-bars-icon"><span></span><span></span><span></span></span>
+            <span class="tsm-trade-brand-text"><strong>TheSmartMag</strong> <span>Trade</span></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Institutional Footer -->
+      <footer class="tsm-institutional-footer" id="footerSection">
+        <div class="tsm-footer-top">
+          <div class="tsm-trade-logo">
+            <span class="tsm-bars-icon"><span></span><span></span><span></span></span>
+            <span class="tsm-trade-brand-text"><strong>TheSmartMag</strong> <span>Trade</span></span>
+          </div>
+          <ul class="tsm-footer-links">
+            <li><a href="javascript:void(0)" onclick="switchView('terminal')">Trading</a></li>
+            <li><a href="javascript:void(0)" onclick="switchView('india')">Markets</a></li>
+            <li><a href="javascript:void(0)" onclick="switchView('chart')">Tools</a></li>
+            <li><a href="javascript:void(0)" onclick="switchView('landing'); document.getElementById('pricingSection').scrollIntoView();">Pricing</a></li>
+            <li><a href="javascript:void(0)" onclick="openVideoTourModal()">Education</a></li>
+            <li><a href="javascript:void(0)" onclick="switchView('partners')">Partners</a></li>
+            <li><a href="javascript:void(0)" onclick="openVideoTourModal()">Help</a></li>
+          </ul>
+          <div class="tsm-footer-socials">
+            <a href="https://x.com" target="_blank" class="tsm-soc-icon" title="Twitter / X">𝕏</a>
+            <a href="https://linkedin.com" target="_blank" class="tsm-soc-icon" title="LinkedIn">in</a>
+            <a href="https://youtube.com" target="_blank" class="tsm-soc-icon" title="YouTube">▶</a>
+            <a href="https://instagram.com" target="_blank" class="tsm-soc-icon" title="Instagram">📷</a>
+          </div>
+        </div>
+        <div class="tsm-footer-bottom">
+          <div>&copy; 2026 TheSmartMag Trade. All rights reserved.</div>
+          <div class="tsm-footer-policies">
+            <a href="javascript:void(0)">Terms</a>
+            <a href="javascript:void(0)">Privacy</a>
+            <a href="javascript:void(0)">Risk Disclosure</a>
+          </div>
+        </div>
+      </footer>
+    </div>
+
     <!-- ══════════ VIEW 1: SUPERBRAIN NEURAL DASHBOARD ══════════ -->
-    <div id="view-terminal" class="nc-view-pane tsm-view-section active">
+    <div id="view-terminal" class="nc-view-pane tsm-view-section">
 
       <!-- THREE-COLUMN NEURAL CORE COCKPIT (MATCHES APPROVED IMAGE) -->
       <div class="nc-cockpit-grid">
@@ -723,29 +1167,34 @@
           </div>
         </div>
 
-        <!-- Section 1: Intraday Stock Momentum Radar -->
+        <!-- Section 1: Intraday Stock Momentum Radar (NSE & BSE Equities) -->
         <div class="tsm-panel" style="margin-bottom:16px;">
           <div class="tsm-panel-header">
-            <div class="tsm-panel-title">⚡ NSE TOP INTRADAY MOMENTUM EQUITIES RADAR</div>
-            <span class="tsm-badge-gold">REAL-TIME PRICES &amp; SIGNALS</span>
+            <div class="tsm-panel-title">⚡ NSE &amp; BSE TOP INTRADAY MOMENTUM EQUITIES RADAR</div>
+            <span class="tsm-badge-gold">REAL-TIME PRICES &amp; VOLUME SPIKES</span>
           </div>
           <div class="news-filter-bar" style="margin-bottom:10px;">
-            <span style="font-family:var(--font-mono); font-size:10px; color:var(--text-dim); margin-right:6px;">SECTOR FILTERS:</span>
-            <button class="news-filter-btn active" onclick="filterIndianStocks('all', this)">ALL NSE STOCKS</button>
+            <span style="font-family:var(--font-mono); font-size:10px; color:var(--text-dim); margin-right:6px;">EXCHANGE &amp; MOMENTUM FILTERS:</span>
+            <button class="news-filter-btn active" onclick="filterIndianStocks('all', this)">ALL EQUITIES (22)</button>
+            <button class="news-filter-btn" onclick="filterIndianStocks('nse', this)">🔵 NSE BLUE-CHIP</button>
+            <button class="news-filter-btn" onclick="filterIndianStocks('bse', this)">🟡 BSE INTRADAY MOMENTUM</button>
+            <button class="news-filter-btn" onclick="filterIndianStocks('momentum', this)">⚡ HIGH RVOL (&gt;2.0x)</button>
             <button class="news-filter-btn" onclick="filterIndianStocks('bull', this)">🟢 INTRADAY BUY</button>
             <button class="news-filter-btn" onclick="filterIndianStocks('bear', this)">🔴 INTRADAY SHORT</button>
             <button class="news-filter-btn" onclick="filterIndianStocks('bank', this)">🏦 BANKING</button>
             <button class="news-filter-btn" onclick="filterIndianStocks('it', this)">💻 IT &amp; TECH</button>
           </div>
-          <div class="tsm-table-wrap" style="max-height:420px; overflow-y:auto;">
+          <div class="tsm-table-wrap" style="max-height:460px; overflow-y:auto;">
             <table class="tsm-table">
               <thead>
                 <tr>
                   <th>SYMBOL</th>
+                  <th>EXCHANGE</th>
                   <th>COMPANY / SECTOR</th>
                   <th>LTP (₹)</th>
                   <th>CHG %</th>
                   <th>DAY HIGH / LOW</th>
+                  <th>RVOL</th>
                   <th>INTRADAY SIGNAL</th>
                   <th>TARGET 1</th>
                   <th>TARGET 2</th>
@@ -753,7 +1202,7 @@
                 </tr>
               </thead>
               <tbody id="india-stocks-tbody">
-                <tr><td colspan="9" class="text-center empty-state">Loading live NSE stocks data...</td></tr>
+                <tr><td colspan="11" class="text-center empty-state">Loading live NSE &amp; BSE momentum stocks data...</td></tr>
               </tbody>
             </table>
           </div>

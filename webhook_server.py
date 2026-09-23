@@ -357,7 +357,9 @@ def get_terminal_data():
         if delta_client is not None:
             try:
                 delta_bal = delta_client.get_usdt_balance()
-                if isinstance(delta_bal, dict):
+                if isinstance(delta_bal, (int, float)) and float(delta_bal) > 0:
+                    delta_usdt = float(delta_bal)
+                elif isinstance(delta_bal, dict):
                     b_d = float(
                         delta_bal.get("available_balance", 0.0) or
                         delta_bal.get("balance", 0.0) or

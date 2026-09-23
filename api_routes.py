@@ -1181,8 +1181,14 @@ def get_india_market_overview():
 
 @api_bp.route("/api/india/stocks", methods=["GET"])
 def get_india_stocks():
+    ex_filter = request.args.get("exchange", "all").strip().upper()
+    filter_type = request.args.get("filter", "").strip().lower()
     with indian_agent.lock:
         stocks = list(indian_agent.cached_stocks)
+    if ex_filter in ("NSE", "BSE"):
+        stocks = [s for s in stocks if s.get("exchange", "NSE") == ex_filter]
+    if filter_type == "momentum":
+        stocks = [s for s in stocks if "MOMENTUM" in s.get("signal", "") or s.get("rvol", 1.0) >= 2.0 or s.get("change_pct", 0) >= 2.0]
     return jsonify({
         "status": "success",
         "total": len(stocks),
