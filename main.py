@@ -11,6 +11,7 @@ Every cycle:
 Same signal → same trade → two exchanges → doubled exposure, same strategy.
 """
 
+import hashlib
 import logging
 import os
 import sys
