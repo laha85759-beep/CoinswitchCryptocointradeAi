@@ -9,6 +9,34 @@
   padding: 0;
 }
 
+/* ─── NUCLEAR SCROLLBAR KILL (prevents ANY horizontal page scroll) ─────── */
+html, body, #tsm-trade-app {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+}
+* { max-width: 100%; }
+::-webkit-scrollbar:horizontal { display: none !important; height: 0 !important; }
+html::-webkit-scrollbar { width: 4px; height: 0; }
+/* Ticker bar must never expand beyond viewport */
+.tsm-trade-ticker-bar,
+.tsm-ticker-items,
+.macroTickerTape { overflow: hidden !important; }
+.tsm-ticker-items { flex: 1 1 0; min-width: 0; overflow: hidden !important; }
+.ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #cbd5e1;
+  white-space: nowrap;
+  cursor: pointer;
+  font-size: 11.5px;
+}
+.ticker-item strong { color: #fff; font-weight: 700; }
+.ticker-item .green { color: #00d084; font-family: var(--font-mono, monospace); }
+.ticker-item .red-text { color: #f43f5e; font-family: var(--font-mono, monospace); }
+.sym-ico { font-size: 13px; }
+
+
 :root {
   --bg-space:       #030712;
   --bg-hud:         rgba(6, 14, 26, 0.88);
@@ -46,7 +74,9 @@ html, body {
   font-family: var(--font-body);
   font-size: 13px;
   line-height: 1.4;
-  overflow-x: hidden;
+  overflow-x: hidden !important;
+  max-width: 100vw;
+  width: 100%;
 }
 
 body.neural-core-os {
@@ -246,14 +276,12 @@ body.neural-core-os {
   display: flex;
   align-items: center;
   gap: 6px;
-  overflow-x: auto;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 240, 144, 0.2) transparent;
+  overflow: hidden;
   flex: 1;
   justify-content: center;
   max-width: 1100px;
   padding: 4px 0;
-  -webkit-overflow-scrolling: touch;
+  flex-wrap: wrap;
 }
 .nc-hdr-nav::-webkit-scrollbar { height: 3px; }
 .nc-hdr-nav::-webkit-scrollbar-thumb { background: rgba(0, 240, 144, 0.25); border-radius: 3px; }
@@ -6131,9 +6159,18 @@ input::placeholder, textarea::placeholder {
   align-items: center;
   justify-content: space-between;
   font-size: 11.5px;
-  overflow-x: auto;
+  overflow-x: hidden !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
   white-space: nowrap;
   gap: 20px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.tsm-trade-ticker-bar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 .tsm-ticker-items {
   display: flex;
@@ -7168,6 +7205,173 @@ input::placeholder, textarea::placeholder {
   .tsm-term-toolbar { display: none; }
   .tsm-term-watchlist { border-left: none; border-top: 1px solid #141c2c; }
 }
+
+/* ── Exchange Credentials & MT5 Modal Styles ── */
+.ex-tabs-bar {
+  display: flex;
+  gap: 6px;
+  background: rgba(3, 8, 18, 0.7);
+  padding: 4px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 14px;
+  overflow-x: auto;
+}
+.ex-tab-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.ex-tab-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+}
+.ex-tab-btn.active {
+  background: linear-gradient(135deg, rgba(0, 240, 144, 0.18), rgba(0, 212, 255, 0.18));
+  color: var(--neon-green, #00f090);
+  border: 1px solid rgba(0, 240, 144, 0.4);
+}
+.ex-tab-pane {
+  display: none;
+}
+.ex-tab-pane.active {
+  display: block;
+  animation: fadeIn 0.2s ease;
+}
+.cred-validation-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+.cred-validation-badge.valid {
+  background: rgba(0, 240, 144, 0.12);
+  border: 1px solid var(--neon-green, #00f090);
+  color: var(--neon-green, #00f090);
+}
+.cred-validation-badge.invalid {
+  background: rgba(255, 51, 102, 0.12);
+  border: 1px solid var(--neon-red, #ff3366);
+  color: var(--neon-red, #ff3366);
+}
+.cred-validation-badge.testing {
+  background: rgba(245, 166, 35, 0.12);
+  border: 1px solid #f5a623;
+  color: #f5a623;
+}
+
+/* ── Strategy Builder & Verified Win-Rate Showcase ── */
+.strat-showcase-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.strat-card {
+  background: rgba(8, 14, 28, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+.strat-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(0, 240, 144, 0.4);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 240, 144, 0.1);
+}
+.strat-card.active-strat {
+  border-color: var(--neon-green, #00f090);
+  background: linear-gradient(180deg, rgba(0, 240, 144, 0.08) 0%, rgba(8, 14, 28, 0.95) 100%);
+  box-shadow: 0 0 25px rgba(0, 240, 144, 0.2);
+}
+.strat-winrate-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-orb);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--neon-green, #00f090);
+  margin: 6px 0;
+}
+.strat-metrics-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 8px;
+  margin: 12px 0;
+  text-align: center;
+}
+.strat-metrics-row .m-val {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+}
+.strat-metrics-row .m-lbl {
+  font-size: 9.5px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.custom-strat-panel {
+  background: rgba(8, 14, 28, 0.85);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 12px;
+  padding: 22px;
+  margin-top: 20px;
+}
+.ind-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+.ind-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.15s;
+}
+.ind-checkbox-label:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+.ind-checkbox-label input[type="checkbox"]:checked + span {
+  color: var(--neon-cyan, #00d4ff);
+  font-weight: 700;
+}
+
 
 
 
