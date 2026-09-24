@@ -7372,6 +7372,28 @@ input::placeholder, textarea::placeholder {
   font-weight: 700;
 }
 
+/* ── Trader Cockpit Sub-Tabs ── */
+.trader-subnav-bar { display:flex; flex-wrap:wrap; gap:4px; padding:10px 16px; background:rgba(0,0,0,0.3); border-bottom:1px solid rgba(255,255,255,0.06); overflow-x:auto; scrollbar-width:none; }
+.trader-subnav-bar::-webkit-scrollbar { display:none; }
+.trader-tab-btn { padding:6px 14px; background:transparent; border:1px solid rgba(255,255,255,0.08); border-radius:5px; color:var(--text-dim, #6e7681); font-family:var(--font-mono, monospace); font-size:10px; letter-spacing:1px; cursor:pointer; transition:all 0.2s; white-space:nowrap; }
+.trader-tab-btn:hover { border-color:rgba(0,240,144,0.4); color:var(--neon-green, #00ff88); background:rgba(0,240,144,0.06); }
+.trader-tab-btn.active { border-color:var(--neon-green, #00ff88); color:var(--neon-green, #00ff88); background:rgba(0,240,144,0.1); }
+.trader-tab-btn.gold { border-color:rgba(255,215,0,0.3); color:var(--neon-gold, #ffd700); }
+.trader-tab-btn.gold.active { background:rgba(255,215,0,0.1); border-color:var(--neon-gold, #ffd700); }
+.trader-sub-section { display:none; }
+.trader-sub-section.active { display:block; }
+.trader-risk-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:14px; }
+.trader-vault-card { background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.07); border-radius:8px; padding:14px; }
+.trader-vault-title { font-family:var(--font-mono, monospace); font-size:10px; letter-spacing:1px; color:var(--text-dim, #6e7681); display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.multi-broker-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(300px,1fr)); gap:14px; }
+.broker-card { background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.07); border-radius:8px; padding:14px; }
+.broker-card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.broker-card-title { font-family:var(--font-mono, monospace); font-size:11px; font-weight:700; color:var(--text-primary, #d0d7de); }
+.broker-badge { font-family:var(--font-mono, monospace); font-size:9px; padding:2px 8px; border-radius:3px; letter-spacing:1px; }
+.broker-badge.connected { background:rgba(0,240,144,0.15); color:#00ff88; border:1px solid rgba(0,240,144,0.3); }
+.broker-badge.disconnected { background:rgba(255,255,255,0.05); color:#6e7681; border:1px solid rgba(255,255,255,0.1); }
+
+
 
 
 

@@ -353,6 +353,75 @@ def get_me(user):
         }
     })
 
+@api_bp.route("/api/user/trader-dashboard", methods=["GET"])
+@user_required
+def get_trader_dashboard(user):
+    """Returns ONLY the logged-in user's own data — never the bot's admin data."""
+    from database import get_user_api_keys, get_user_settings, get_user_closed_trades
+    uid = user["id"]
+    settings = get_user_settings(uid)
+    keys = get_user_api_keys(uid)
+    
+    # Try fetching live balances using user's own saved API keys
+    cs_usdt = 0.0
+    cs_inr = 0.0
+    delta_usdt = 0.0
+    
+    if keys.get("has_cs"):
+        try:
+            from coinswitch_client import CoinSwitchClient
+            u_cs = CoinSwitchClient(keys["cs_key"], keys["cs_secret"])
+            cs_usdt = float(u_cs.get_usdt_balance() or 0)
+            cs_inr = float(u_cs.get_inr_balance() or 0)
+        except Exception as e:
+            log.debug("User CS balance error: %s", e)
+    
+    if keys.get("has_delta"):
+        try:
+            from delta_client import DeltaClient
+            u_delta = DeltaClient(keys["delta_key"], keys["delta_secret"])
+            delta_usdt = float(u_delta.get_usdt_balance() or 0)
+        except Exception as e:
+            log.debug("User Delta balance error: %s", e)
+    
+    total_capital = round(cs_usdt + cs_inr / 84.0 + delta_usdt, 2)
+    
+    # Closed trades from DB for this user only
+    closed = []
+    try:
+        closed = get_user_closed_trades(uid) or []
+    except Exception:
+        pass
+    
+    wins = [t for t in closed if float(t.get("pnl_usdt", 0)) > 0]
+    win_rate = round(len(wins) / len(closed) * 100, 1) if closed else 100.0
+    total_pnl = sum(float(t.get("pnl_usdt", 0)) for t in closed)
+    
+    return jsonify({
+        "status": "success",
+        "user": user,
+        "balances": {
+            "cs_usdt": cs_usdt,
+            "cs_inr": cs_inr,
+            "delta_usdt": delta_usdt,
+            "total_capital_usdt": total_capital
+        },
+        "settings": settings,
+        "exchange_connections": {
+            "coinswitch": keys.get("has_cs", False),
+            "delta": keys.get("has_delta", False),
+            "coinswitch_connected": keys.get("has_cs", False),
+            "delta_connected": keys.get("has_delta", False)
+        },
+        "performance": {
+            "total_realized_pnl_usdt": round(total_pnl, 2),
+            "closed_trades_count": len(closed),
+            "win_rate_pct": win_rate
+        },
+        "open_positions": {"coinswitch": [], "delta": [], "total_count": 0},
+        "closed_trades": closed[:50]
+    })
+
 # ── 2. USER SETTINGS & EXCHANGE KEYS ────────────────────────────────────────
 @api_bp.route("/api/user/exchange-keys", methods=["POST"])
 @user_required

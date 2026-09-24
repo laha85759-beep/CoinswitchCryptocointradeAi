@@ -2442,6 +2442,28 @@ def delete_user_strategy(user_id: int, strategy_id: int) -> bool:
     conn.close()
     return True
 
+def get_user_closed_trades(user_id: int, limit: int = 100) -> list:
+    """Fetch closed trades from closed_trades or trade_history tables for a specific user."""
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        # Try trade_history table first
+        cursor.execute('''
+            SELECT symbol, direction, entry_price, exit_price, qty, pnl_usdt, exchange, opened_at, closed_at, reason
+            FROM trade_history
+            WHERE user_id = ?
+            ORDER BY closed_at DESC
+            LIMIT ?
+        ''', (user_id, limit))
+        rows = cursor.fetchall()
+        if rows:
+            return [dict(r) for r in rows]
+        return []
+    except Exception:
+        return []
+    finally:
+        conn.close()
+
 # Initialize on import
 init_db()
 load_banned_ips_cache()

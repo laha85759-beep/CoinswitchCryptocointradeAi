@@ -116,10 +116,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=20260924-1040">
+  <link rel="stylesheet" href="styles.css?v=20260924-1900">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Monetag Ad Scripts -->
+  <script>(function(s){s.dataset.zone='11802121',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+  <script src="https://quge5.com/88/tag.min.js" data-zone="285853" async data-cfasync="false"></script>
+  <script src="https://5gvci.com/act/files/tag.min.js?z=11880194" data-cfasync="false" async></script>
+  <script>(function(s){s.dataset.zone='11880195',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
 </head>
 <body class="neural-core-os theme-thesmartmag">
 
@@ -133,7 +138,16 @@
     <div class="tsm-ticker-items" id="macroTickerTrack">
       <span class="tsm-tick-unit"><span class="tsm-tick-sym">BTCUSDT</span> <span class="tsm-tick-price" id="tick-btc">67,320.50</span> <span class="tsm-tick-chg up" id="tick-btc-chg">▲ +2.45%</span></span>
       <span class="tsm-tick-unit"><span class="tsm-tick-sym">ETHUSDT</span> <span class="tsm-tick-price" id="tick-eth">3,245.10</span> <span class="tsm-tick-chg up" id="tick-eth-chg">▲ +1.24%</span></span>
-      <span class="tsm-tick-unit"><span class="tsm-tick-sym">XAUUSD</span> <span class="tsm-tick-price" id="tick-xau">2,364.80</span> <span class="tsm-tick-chg down" id="tick-xau-chg">▼ -0.32%</span></span>
+      <span class="tsm-tick-unit"><span class="tsm-tick-sym">XAUUSD</span> <span class="tsm-tick-price" id="tick-xauusd">2,364.80</span> <span class="tsm-tick-chg down" id="tick-xauusd-chg">▼ -0.32%</span></span>
+              <span class="tsm-tick-sep">|</span>
+              <span class="tsm-tick-unit">
+                <span class="tsm-tick-sym">NASDAQ</span> <span class="tsm-tick-price" id="tick-nasdaq">-- </span><span class="tsm-tick-chg" id="tick-nasdaq-chg">--</span>
+              </span>
+              <span class="tsm-tick-sep">|</span>
+              <span class="tsm-tick-unit">
+                <span class="tsm-tick-sym">S&amp;P500</span> <span class="tsm-tick-price" id="tick-sp500">-- </span><span class="tsm-tick-chg" id="tick-sp500-chg">--</span>
+              </span>
+              <span class="tsm-tick-sep">|</span>
       <span class="tsm-tick-unit"><span class="tsm-tick-sym">EURUSD</span> <span class="tsm-tick-price" id="tick-eur">1.0874</span> <span class="tsm-tick-chg up" id="tick-eur-chg">▲ +0.18%</span></span>
       <span class="tsm-tick-unit"><span class="tsm-tick-sym">GBPUSD</span> <span class="tsm-tick-price" id="tick-gbp">1.2736</span> <span class="tsm-tick-chg up" id="tick-gbp-chg">▲ +0.21%</span></span>
       <span class="tsm-tick-unit"><span class="tsm-tick-sym">USOIL</span> <span class="tsm-tick-price" id="tick-oil">74.21</span> <span class="tsm-tick-chg up" id="tick-oil-chg">▲ +0.65%</span></span>
@@ -1065,21 +1079,53 @@
     </div>
     <!-- VIEW 2: RWA & ALTCOIN MATRIX -->
     <div id="view-rwa" class="nc-view-pane tsm-view-section">
+      <!-- Static RWA Cards -->
       <div class="tsm-panel">
         <div class="tsm-panel-header">
           <div class="tsm-panel-title">🏛 REAL-WORLD ASSETS (RWA) &amp; VIRAL ALTCOIN HEATMAP</div>
-          <span class="tsm-badge-cyan">PRIORITY WATCHLIST</span>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span class="tsm-badge-cyan">PRIORITY WATCHLIST</span>
+            <button class="tsm-btn-cta gold" style="padding:4px 10px;font-size:10px;" onclick="shareRwaToTelegram()">📲 TELEGRAM</button>
+          </div>
         </div>
         <p class="tsm-panel-desc">Real-World Asset tokenization and high-beta altcoins monitored 24/7 with institutional volume and orderbook imbalance tracking.</p>
         <div class="tsm-rwa-grid">
-          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">ONDO</div><div class="tsm-rwa-name">Ondo Finance</div><div class="tsm-rwa-sector">US Treasuries &amp; Yield</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
-          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">OM</div><div class="tsm-rwa-name">MANTRA Chain</div><div class="tsm-rwa-sector">RWA Layer 1</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
-          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">PENDLE</div><div class="tsm-rwa-name">Pendle Finance</div><div class="tsm-rwa-sector">Yield Tokenization</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
-          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">LINK</div><div class="tsm-rwa-name">Chainlink</div><div class="tsm-rwa-sector">Cross-Chain CCIP</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
-          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">AVAX</div><div class="tsm-rwa-name">Avalanche</div><div class="tsm-rwa-sector">Evergreen Subnets</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
-          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">MKR</div><div class="tsm-rwa-name">Maker / Sky</div><div class="tsm-rwa-sector">Decentralized Credit</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
-          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">CFG</div><div class="tsm-rwa-name">Centrifuge</div><div class="tsm-rwa-sector">Structured Asset Pools</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
-          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">XAUT</div><div class="tsm-rwa-name">Tether Gold</div><div class="tsm-rwa-sector">Gold Commodity RWA</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">ONDO</div><div class="tsm-rwa-name">Ondo Finance</div><div class="tsm-rwa-sector">US Treasuries &amp; Yield</div><div class="tsm-rwa-price" id="rwa-p-ondo">--</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">OM</div><div class="tsm-rwa-name">MANTRA Chain</div><div class="tsm-rwa-sector">RWA Layer 1</div><div class="tsm-rwa-price" id="rwa-p-om">--</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">PENDLE</div><div class="tsm-rwa-name">Pendle Finance</div><div class="tsm-rwa-sector">Yield Tokenization</div><div class="tsm-rwa-price" id="rwa-p-pendle">--</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">LINK</div><div class="tsm-rwa-name">Chainlink</div><div class="tsm-rwa-sector">Cross-Chain CCIP</div><div class="tsm-rwa-price" id="rwa-p-link">--</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">AVAX</div><div class="tsm-rwa-name">Avalanche</div><div class="tsm-rwa-sector">Evergreen Subnets</div><div class="tsm-rwa-price" id="rwa-p-avax">--</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">MKR</div><div class="tsm-rwa-name">Maker / Sky</div><div class="tsm-rwa-sector">Decentralized Credit</div><div class="tsm-rwa-price" id="rwa-p-mkr">--</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">CFG</div><div class="tsm-rwa-name">Centrifuge</div><div class="tsm-rwa-sector">Structured Asset Pools</div><div class="tsm-rwa-price" id="rwa-p-cfg">--</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">XAUT</div><div class="tsm-rwa-name">Tether Gold</div><div class="tsm-rwa-sector">Gold RWA</div><div class="tsm-rwa-price" id="rwa-p-xaut">--</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">SOL</div><div class="tsm-rwa-name">Solana</div><div class="tsm-rwa-sector">L1 Smart Contracts</div><div class="tsm-rwa-price" id="rwa-p-sol">--</div><div class="tsm-rwa-status green">INSTITUTIONAL BID</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">SUI</div><div class="tsm-rwa-name">Sui Network</div><div class="tsm-rwa-sector">Move-Lang L1</div><div class="tsm-rwa-price" id="rwa-p-sui">--</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">APT</div><div class="tsm-rwa-name">Aptos</div><div class="tsm-rwa-sector">Move-Lang L1</div><div class="tsm-rwa-price" id="rwa-p-apt">--</div><div class="tsm-rwa-status cyan">ACCUMULATION</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">TIA</div><div class="tsm-rwa-name">Celestia</div><div class="tsm-rwa-sector">Modular DA Layer</div><div class="tsm-rwa-price" id="rwa-p-tia">--</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">INJ</div><div class="tsm-rwa-name">Injective</div><div class="tsm-rwa-sector">DeFi L1 Chain</div><div class="tsm-rwa-price" id="rwa-p-inj">--</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">ARB</div><div class="tsm-rwa-name">Arbitrum</div><div class="tsm-rwa-sector">ETH L2 Rollup</div><div class="tsm-rwa-price" id="rwa-p-arb">--</div><div class="tsm-rwa-status cyan">ACCUMULATION</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">OP</div><div class="tsm-rwa-name">Optimism</div><div class="tsm-rwa-sector">ETH L2 Rollup</div><div class="tsm-rwa-price" id="rwa-p-op">--</div><div class="tsm-rwa-status cyan">ACCUMULATION</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">JUP</div><div class="tsm-rwa-name">Jupiter</div><div class="tsm-rwa-sector">Solana DEX Aggregator</div><div class="tsm-rwa-price" id="rwa-p-jup">--</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
+          <!-- Global Index Cards -->
+          <div class="tsm-rwa-card" style="border-color:rgba(255,215,0,0.3);"><div class="tsm-rwa-ticker gold-text">XAUUSD</div><div class="tsm-rwa-name">Gold Spot</div><div class="tsm-rwa-sector">Commodity / Safe Haven</div><div class="tsm-rwa-price gold-text" id="rwa-p-xauusd">--</div><div class="tsm-rwa-status gold">GLOBAL MACRO</div></div>
+          <div class="tsm-rwa-card" style="border-color:rgba(255,215,0,0.3);"><div class="tsm-rwa-ticker gold-text">NASDAQ</div><div class="tsm-rwa-name">QQQ / NASDAQ-100</div><div class="tsm-rwa-sector">US Tech Index</div><div class="tsm-rwa-price gold-text" id="rwa-p-nasdaq">--</div><div class="tsm-rwa-status gold">GLOBAL MACRO</div></div>
+          <div class="tsm-rwa-card" style="border-color:rgba(255,215,0,0.3);"><div class="tsm-rwa-ticker gold-text">S&amp;P500</div><div class="tsm-rwa-name">SPY / S&amp;P 500</div><div class="tsm-rwa-sector">US Broad Market Index</div><div class="tsm-rwa-price gold-text" id="rwa-p-sp500">--</div><div class="tsm-rwa-status gold">GLOBAL MACRO</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">DOGE</div><div class="tsm-rwa-name">Dogecoin</div><div class="tsm-rwa-sector">Memecoin / Payment</div><div class="tsm-rwa-price" id="rwa-p-doge">--</div><div class="tsm-rwa-status cyan">MEME SURGE WATCH</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">SHIB</div><div class="tsm-rwa-name">Shiba Inu</div><div class="tsm-rwa-sector">Memecoin / DeFi</div><div class="tsm-rwa-price" id="rwa-p-shib">--</div><div class="tsm-rwa-status cyan">MEME SURGE WATCH</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">PEPE</div><div class="tsm-rwa-name">Pepe Coin</div><div class="tsm-rwa-sector">Memecoin</div><div class="tsm-rwa-price" id="rwa-p-pepe">--</div><div class="tsm-rwa-status cyan">MEME SURGE WATCH</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">WIF</div><div class="tsm-rwa-name">dogwifhat</div><div class="tsm-rwa-sector">Solana Memecoin</div><div class="tsm-rwa-price" id="rwa-p-wif">--</div><div class="tsm-rwa-status cyan">MEME SURGE WATCH</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">BNB</div><div class="tsm-rwa-name">BNB Chain</div><div class="tsm-rwa-sector">Exchange Chain / DeFi</div><div class="tsm-rwa-price" id="rwa-p-bnb">--</div><div class="tsm-rwa-status green">INSTITUTIONAL BID</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">ADA</div><div class="tsm-rwa-name">Cardano</div><div class="tsm-rwa-sector">Proof-of-Stake L1</div><div class="tsm-rwa-price" id="rwa-p-ada">--</div><div class="tsm-rwa-status cyan">ACCUMULATION</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">DOT</div><div class="tsm-rwa-name">Polkadot</div><div class="tsm-rwa-sector">Parachain Ecosystem</div><div class="tsm-rwa-price" id="rwa-p-dot">--</div><div class="tsm-rwa-status cyan">ACCUMULATION</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">ATOM</div><div class="tsm-rwa-name">Cosmos</div><div class="tsm-rwa-sector">IBC Interoperability</div><div class="tsm-rwa-price" id="rwa-p-atom">--</div><div class="tsm-rwa-status cyan">ACCUMULATION</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">NEAR</div><div class="tsm-rwa-name">Near Protocol</div><div class="tsm-rwa-sector">Sharded L1 / AI Chain</div><div class="tsm-rwa-price" id="rwa-p-near">--</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">FTM</div><div class="tsm-rwa-name">Fantom / Sonic</div><div class="tsm-rwa-sector">DAG-based L1</div><div class="tsm-rwa-price" id="rwa-p-ftm">--</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">UNI</div><div class="tsm-rwa-name">Uniswap</div><div class="tsm-rwa-sector">DEX Governance</div><div class="tsm-rwa-price" id="rwa-p-uni">--</div><div class="tsm-rwa-status cyan">ACCUMULATION</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">AAVE</div><div class="tsm-rwa-name">Aave</div><div class="tsm-rwa-sector">Lending Protocol</div><div class="tsm-rwa-price" id="rwa-p-aave">--</div><div class="tsm-rwa-status green">ARMED FOR BREAKOUT</div></div>
+          <div class="tsm-rwa-card"><div class="tsm-rwa-ticker">CRV</div><div class="tsm-rwa-name">Curve Finance</div><div class="tsm-rwa-sector">Stablecoin DEX</div><div class="tsm-rwa-price" id="rwa-p-crv">--</div><div class="tsm-rwa-status cyan">ACCUMULATION</div></div>
+        </div>
+        <div style="font-size:10px; color:var(--text-dim); margin-top:10px; font-family:var(--font-mono);">
+          📡 Prices sourced from CoinGecko API &bull; Updated every 60 seconds &bull; <span id="rwaLastUpdate">Updating...</span>
         </div>
       </div>
     </div>
@@ -4781,6 +4827,6 @@
     }
   </script>
 
-  <script src="app.js?v=20260924-1040"></script>
+  <script src="app.js?v=20260924-1900"></script>
 </body>
 </html>
