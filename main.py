@@ -504,9 +504,12 @@ def run() -> None:
                 sym = top_alpha["symbol"]
                 # Convert DELTA futures symbol to standard symbol format if needed
                 std_sym = sym[:-3] + "/USDT" if sym.endswith("USD") else sym
+                dir_str = str(top_alpha.get("direction", "long")).lower()
+                sig_type = "pump" if dir_str in ("long", "buy", "pump") else "dump"
                 alpha_signal = {
                     "symbol": std_sym,
-                    "signal": top_alpha["direction"],
+                    "signal": sig_type,
+                    "direction": "long" if sig_type == "pump" else "short",
                     "confidence": float(top_alpha["alpha_score"]),
                     "suspected_cause": top_alpha.get("reason", "alpha_momentum_surge"),
                     "supporting_data": {

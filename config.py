@@ -206,7 +206,7 @@ CONFIG = {
 
     # ── AI Consensus Committee & SMC Structural Engine ───────────────────────────
     "ai_consensus_enabled":          _bool_env("AI_CONSENSUS_ENABLED", True),
-    "ai_consensus_min_score":        _float_env("AI_CONSENSUS_MIN_SCORE", 0.88),  # Strict 88% multi-agent agreement required
+    "ai_consensus_min_score":        _float_env("AI_CONSENSUS_MIN_SCORE", 0.82),  # High-conviction multi-agent agreement required (calibrated)
     "smc_fvg_min_pct":               _float_env("SMC_FVG_MIN_PCT", 0.3),          # Min 0.3% Fair Value Gap
     "smc_order_block_lookback":      _int_env("SMC_ORDER_BLOCK_LOOKBACK", 30),    # Lookback candles for Order Block structure
 

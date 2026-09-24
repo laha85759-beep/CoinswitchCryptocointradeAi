@@ -2,6 +2,11 @@ import sqlite3
 import os
 import json
 import time
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except Exception:
+    pass
 from security import hash_password, verify_password, xor_encrypt, xor_decrypt
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "platform.db")
@@ -508,6 +513,29 @@ def init_db():
                 (admin_id, now + (10 * 365 * 86400), now, now)
             )
             conn.commit()
+
+    # Synchronize Super Admin profile with live broker keys from environment
+    cs_k = os.getenv("CS_API_KEY", "") or os.getenv("COINSWITCH_API_KEY", "")
+    cs_s = os.getenv("CS_API_SECRET", "") or os.getenv("COINSWITCH_API_SECRET", "")
+    dl_k = os.getenv("DELTA_API_KEY", "")
+    dl_s = os.getenv("DELTA_API_SECRET", "")
+    if cs_k or dl_k:
+        cs_k_enc = xor_encrypt(cs_k) if cs_k else ""
+        cs_s_enc = xor_encrypt(cs_s) if cs_s else ""
+        dl_k_enc = xor_encrypt(dl_k) if dl_k else ""
+        dl_s_enc = xor_encrypt(dl_s) if dl_s else ""
+        cursor.execute('''
+            INSERT INTO user_api_keys (user_id, cs_api_key_enc, cs_api_secret_enc, delta_api_key_enc, delta_api_secret_enc, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(user_id) DO UPDATE SET
+                cs_api_key_enc = CASE WHEN excluded.cs_api_key_enc != '' THEN excluded.cs_api_key_enc ELSE user_api_keys.cs_api_key_enc END,
+                cs_api_secret_enc = CASE WHEN excluded.cs_api_secret_enc != '' THEN excluded.cs_api_secret_enc ELSE user_api_keys.cs_api_secret_enc END,
+                delta_api_key_enc = CASE WHEN excluded.delta_api_key_enc != '' THEN excluded.delta_api_key_enc ELSE user_api_keys.delta_api_key_enc END,
+                delta_api_secret_enc = CASE WHEN excluded.delta_api_secret_enc != '' THEN excluded.delta_api_secret_enc ELSE user_api_keys.delta_api_secret_enc END,
+                updated_at = excluded.updated_at
+        ''', (admin_id, cs_k_enc, cs_s_enc, dl_k_enc, dl_s_enc, now))
+        conn.commit()
+        print(f"Synchronized Super Admin broker credentials for user_id={admin_id}")
 
     # ── Platform Admin (full platform access, no broker key exposure) ──
     cursor.execute("SELECT id FROM users WHERE email = ?", ("platformadmin@thesmartmag.com",))

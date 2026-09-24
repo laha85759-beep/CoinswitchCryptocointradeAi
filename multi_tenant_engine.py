@@ -1,4 +1,4 @@
-﻿import logging
+import logging
 import time
 from database import get_db, get_user_api_keys, get_user_settings
 from coinswitch_client import CoinSwitchClient
@@ -62,21 +62,28 @@ def dispatch_signals_to_all_users(approved_signals: list[dict], global_cfg: dict
             sl_price = round(price * (1.0 - (hard_sl_pct / 100.0)), 6) if direction in ["buy", "long"] else round(price * (1.0 + (hard_sl_pct / 100.0)), 6)
             tp_price = round(price * (1.0 + (take_profit_pct / 100.0)), 6) if direction in ["buy", "long"] else round(price * (1.0 - (take_profit_pct / 100.0)), 6)
 
-            # Execute on CoinSwitch if configured
+            # Execute on CoinSwitch if configured (spot only supports BUY)
             if keys["has_cs"] and direction in ["buy", "long"]:
                 try:
                     cs_client = CoinSwitchClient(keys["cs_key"], keys["cs_secret"])
-                    # Sizing: default small capital risk per trade
-                    trade_amt_inr = 50.0  # safe small sizing per user
-                    order_res = cs_client.place_order(symbol=symbol, side="buy", order_type="market", amount=trade_amt_inr)
-                    if order_res and order_res.get("status") in ["filled", "success", "open"]:
-                        cursor.execute('''
-                            INSERT INTO user_trades (user_id, exchange, symbol, direction, entry_price, qty, status, sl_price, tp_price, opened_at)
-                            VALUES (?, 'coinswitch', ?, ?, ?, 1.0, 'open', ?, ?, ?)
-                        ''', (user_id, symbol, direction, price, sl_price, tp_price, now))
-                        conn.commit()
-                        total_executed += 1
-                        log.info(f"Executed CoinSwitch trade for User #{user_id} ({user['email']}) on {symbol}")
+                    cs_usdt_bal = max(float(cs_client.get_usdt_balance()), 0.0)
+                    if cs_usdt_bal >= 0.5:
+                        trade_usdt = min(cs_usdt_bal * 0.95, 2.0)
+                        qty = round(trade_usdt / price, 6) if price > 0 else 1.0
+                        order_res = cs_client.place_order(symbol, "buy", "MARKET", qty)
+                        if order_res and (order_res.get("order_id") or order_res.get("id") or order_res.get("status") in ["filled", "success", "open"]):
+                            c_db = get_db()
+                            c_cur = c_db.cursor()
+                            c_cur.execute('''
+                                INSERT INTO user_trades (user_id, exchange, symbol, direction, entry_price, qty, status, sl_price, tp_price, opened_at)
+                                VALUES (?, 'coinswitch', ?, ?, ?, ?, 'open', ?, ?, ?)
+                            ''', (user_id, symbol, direction, price, qty, sl_price, tp_price, now))
+                            c_db.commit()
+                            c_db.close()
+                            total_executed += 1
+                            log.info(f"Executed CoinSwitch live trade for User #{user_id} ({user['email']}) on {symbol}")
+                    else:
+                        log.debug("User #%s CS USDT balance $%.2f below minimum $0.50", user_id, cs_usdt_bal)
                 except Exception as exc:
                     log.warning(f"CoinSwitch execution error for User #{user_id}: {exc}")
 
@@ -84,19 +91,26 @@ def dispatch_signals_to_all_users(approved_signals: list[dict], global_cfg: dict
             if keys["has_delta"]:
                 try:
                     dl_client = DeltaClient(keys["delta_key"], keys["delta_secret"])
-                    # Delta futures trade
-                    cursor.execute('''
-                        INSERT INTO user_trades (user_id, exchange, symbol, direction, entry_price, qty, status, sl_price, tp_price, opened_at)
-                        VALUES (?, 'delta', ?, ?, ?, 1.0, 'open', ?, ?, ?)
-                    ''', (user_id, symbol, direction, price, sl_price, tp_price, now))
-                    conn.commit()
-                    total_executed += 1
-                    log.info(f"Executed Delta trade for User #{user_id} ({user['email']}) on {symbol}")
+                    dl_usdt_bal = max(float(dl_client.get_usdt_balance()), 0.0)
+                    if dl_usdt_bal >= 0.5:
+                        delta_side = "buy" if direction in ["buy", "long"] else "sell"
+                        prod_id = dl_client.symbol_to_product_id(symbol)
+                        if prod_id:
+                            order_res = dl_client.place_order(symbol=symbol, side=delta_side, order_type="market", size=1)
+                            if order_res and (order_res.get("id") or order_res.get("success")):
+                                c_db = get_db()
+                                c_cur = c_db.cursor()
+                                c_cur.execute('''
+                                    INSERT INTO user_trades (user_id, exchange, symbol, direction, entry_price, qty, status, sl_price, tp_price, opened_at)
+                                    VALUES (?, 'delta', ?, ?, ?, 1.0, 'open', ?, ?, ?)
+                                ''', (user_id, symbol, direction, price, sl_price, tp_price, now))
+                                c_db.commit()
+                                c_db.close()
+                                total_executed += 1
+                                log.info(f"Executed Delta live trade for User #{user_id} ({user['email']}) on {symbol}")
+                    else:
+                        log.debug("User #%s Delta USDT balance $%.2f below minimum $0.50", user_id, dl_usdt_bal)
                 except Exception as exc:
                     log.warning(f"Delta execution error for User #{user_id}: {exc}")
 
-            conn.close()
-
     return {"users_processed": len(active_users), "trades_executed": total_executed}
-
-print("multi_tenant_engine.py created successfully!")

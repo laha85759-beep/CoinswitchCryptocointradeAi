@@ -268,7 +268,7 @@ class NvidiaSuperBrainEngine:
                 data = resp.json()
                 probs = data.get("probabilities") or data.get("prediction")
                 log.info("Kumo Relational Model: %s prediction probability: %s", symbol, probs)
-                return 0.88 if probs else 0.75
+                return 0.88 if probs else 0.85
         except Exception as e:
             log.debug("Kumo Relational prediction notice: %s", e)
 

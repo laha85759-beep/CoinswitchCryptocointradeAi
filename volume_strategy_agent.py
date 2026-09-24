@@ -98,7 +98,7 @@ class VolumeStrategyAgent:
         # Bullish: green candle (close > open), above VWAP, positive price jump with RVOL >= 2.0
         if close > open_p and close > vwap and price_change_pct >= 0.35:
             direction = "long"
-            signal_type = "volume_breakout"
+            signal_type = "pump"
             base_conf = min(0.95, 0.76 + (min(rvol, 5.0) - 2.0) * 0.06)
         # Bearish: red candle (close < open), below VWAP, negative price drop with RVOL >= 2.0
         elif close < open_p and close < vwap and price_change_pct <= -0.35 and self.cfg.get("short_selling_enabled", True):
