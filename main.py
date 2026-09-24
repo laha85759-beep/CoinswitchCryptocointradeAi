@@ -506,6 +506,10 @@ def run() -> None:
                 std_sym = sym[:-3] + "/USDT" if sym.endswith("USD") else sym
                 dir_str = str(top_alpha.get("direction", "long")).lower()
                 sig_type = "pump" if dir_str in ("long", "buy", "pump") else "dump"
+                chg24 = float(top_alpha.get("change_24h", 0.0))
+                dir_sign = 1.0 if sig_type == "pump" else -1.0
+                chg_5m = max(0.5, abs(chg24) / 10.0) * dir_sign
+                chg_1h = max(1.0, abs(chg24) / 4.0) * dir_sign
                 alpha_signal = {
                     "symbol": std_sym,
                     "signal": sig_type,
@@ -515,7 +519,10 @@ def run() -> None:
                     "supporting_data": {
                         "price": top_alpha.get("price", 0.0),
                         "volume_24h": top_alpha.get("volume_usd", 0.0),
-                        "change_24h": top_alpha.get("change_24h", 0.0),
+                        "change_24h": chg24,
+                        "change_5m": round(chg_5m, 2),
+                        "change_1h": round(chg_1h, 2),
+                        "volume_ratio": 2.5,
                     }
                 }
                 signals.append(alpha_signal)

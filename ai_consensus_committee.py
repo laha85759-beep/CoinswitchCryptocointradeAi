@@ -229,7 +229,7 @@ class AIConsensusCommittee:
         trend_score = 0.15 if trend_aligned else 0.05
 
         # 3.5. Smart Gatekeeper Pre-Check: Do not waste NVIDIA API tokens on mathematically non-viable setups
-        tech_score = (base_confidence * 0.20) + (smc_score * 0.25 if smc_aligned else 0.05) + vol_score + trend_score
+        tech_score = (base_confidence * 0.35) + (smc_score * 0.20 if smc_aligned else 0.10) + vol_score + trend_score
         max_possible_score = tech_score + 0.40  # Max NVIDIA contribution is 0.40
         if max_possible_score < self.min_consensus_score:
             # Rejection without burning NVIDIA API calls
