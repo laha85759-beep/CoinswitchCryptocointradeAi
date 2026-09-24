@@ -116,7 +116,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=20260924-1015">
+  <link rel="stylesheet" href="styles.css?v=20260924-1040">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -573,20 +573,16 @@
         <div class="tsm-devices-left">
           <h2>Trade Anytime,<br>Anywhere</h2>
           <p>A seamless, ultra-responsive experience across all your devices with synchronized orders and positions.</p>
-          <div class="tsm-app-badges">
-            <button class="tsm-app-badge-btn" onclick="openAuthModal('register')">
-              <span style="font-size:20px;">🍎</span>
-              <div class="tsm-badge-txt"><small>Get Started on</small><strong>App Store</strong></div>
-            </button>
-            <button class="tsm-app-badge-btn" onclick="openAuthModal('register')">
-              <span style="font-size:20px;">▶</span>
-              <div class="tsm-badge-txt"><small>GET IT ON</small><strong>Google Play</strong></div>
-            </button>
-            <button class="tsm-app-badge-btn" onclick="openAuthModal('register')">
-              <span style="font-size:20px;">🪟</span>
-              <div class="tsm-badge-txt"><small>Download for</small><strong>Windows</strong></div>
-            </button>
-          </div>
+            <div class="tsm-app-badges">
+              <a href="#" onclick="openAuthModal('register'); return false;" class="tsm-app-badge-btn" style="text-decoration:none;">
+                <span style="font-size:20px;">🚀</span>
+                <div class="tsm-badge-txt"><small>Start Trading</small><strong>Free Account</strong></div>
+              </a>
+              <a href="#" onclick="openAuthModal('login'); return false;" class="tsm-app-badge-btn" style="text-decoration:none;">
+                <span style="font-size:20px;">🔑</span>
+                <div class="tsm-badge-txt"><small>Already a Member?</small><strong>Sign In</strong></div>
+              </a>
+            </div>
         </div>
         <div class="tsm-devices-preview">
           <div class="tsm-mockup-screen-laptop">
@@ -4632,7 +4628,7 @@
   </div>
 
   <!-- ══════════ HIGH QUALITY VIDEO TOUR & SERVICE EXPLAINER POPUP MODAL ══════════ -->
-  <div class="video-tour-overlay" id="videoTourModal" style="display:none;" onclick="handleVideoTourBackdrop(event)">
+  <div class="video-tour-overlay" id="videoTourModal" style="display:none !important;" hidden onclick="handleVideoTourBackdrop(event)">
     <div class="video-tour-card">
       <div class="video-tour-header">
         <div class="video-tour-title">
@@ -4785,6 +4781,6 @@
     }
   </script>
 
-  <script src="app.js?v=20260924-1015"></script>
+  <script src="app.js?v=20260924-1040"></script>
 </body>
 </html>

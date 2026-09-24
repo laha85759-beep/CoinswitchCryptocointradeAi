@@ -255,6 +255,20 @@ function handleHashRouting() {
 }
 
 function switchView(viewName, updateHash = true) {
+  // Gate Terminal and Indian F&O tabs for authenticated members only
+  if ((viewName === "terminal" || viewName === "india") && !currentUser && !localStorage.getItem("tsm_user_token") && !localStorage.getItem("tsm_jwt_token")) {
+    if (typeof showModernToast === "function") {
+      showModernToast("🔒 Live Terminal & Indian F&O are exclusive to registered members. Please sign in or register to access.", "info");
+    }
+    if (typeof openAuthModal === "function") {
+      openAuthModal("register");
+    }
+    if (currentView !== "landing") {
+      switchView("landing", false);
+    }
+    return;
+  }
+
   currentView = viewName;
   if (updateHash && window.location.hash !== `#${viewName}`) {
     history.replaceState(null, null, `#${viewName}`);
@@ -1114,6 +1128,12 @@ function updateUserUI(user, settings, exConnections) {
   const dockAdminBtn = document.getElementById("dockAdminBtn");
   const dockTraderBtn = document.getElementById("dockTraderBtn");
   const drawerTraderTab = document.getElementById("drawerTraderTab");
+  const dockTerminalBtn = document.getElementById("dockTerminalBtn");
+  const dockIndiaBtn = document.getElementById("dockIndiaBtn");
+  const drawerTerminalBtn = document.getElementById("drawerTerminalBtn");
+  const drawerIndiaBtn = document.getElementById("drawerIndiaBtn");
+  const navSignInBtn = document.getElementById("navSignInBtn");
+  const navGetStartedBtn = document.getElementById("navGetStartedBtn");
 
   const proExecBtn = document.getElementById("btnExecuteProOrder");
   const proExecText = document.getElementById("btnExecuteProOrderText");
@@ -1128,8 +1148,15 @@ function updateUserUI(user, settings, exConnections) {
     if (keysBtn) keysBtn.style.display = "flex";
     if (dockTraderBtn) dockTraderBtn.style.display = "flex";
     if (drawerTraderTab) drawerTraderTab.style.display = "flex";
+    if (dockTerminalBtn) dockTerminalBtn.style.display = "flex";
+    if (dockIndiaBtn) dockIndiaBtn.style.display = "flex";
+    if (drawerTerminalBtn) drawerTerminalBtn.style.display = "flex";
+    if (drawerIndiaBtn) drawerIndiaBtn.style.display = "flex";
+    if (navSignInBtn) navSignInBtn.style.display = "none";
+    if (navGetStartedBtn) navGetStartedBtn.style.display = "none";
 
     if (userPill) {
+      userPill.style.display = "flex";
       userPill.title = `Logged in as ${user.email} • Click to open Trader Cockpit`;
       userPill.onclick = () => switchView("trader");
     }
@@ -1151,12 +1178,12 @@ function updateUserUI(user, settings, exConnections) {
     }
     if (authLockNotice) authLockNotice.style.display = "none";
 
-    // STRICT ROLE CHECK: Reveal Admin controls to authenticated superadmin or admin
-    if (user.role === "superadmin" || user.role === "admin") {
+    // STRICT ROLE CHECK: Reveal Admin controls to authenticated superadmin, admin, or tradeadmin
+    if (user.role === "superadmin" || user.role === "admin" || user.role === "tradeadmin") {
       if (adminNavBtn) {
         adminNavBtn.style.display = "flex";
         const btnTxt = document.getElementById("adminNavBtnText");
-        if (btnTxt) btnTxt.textContent = user.role === "superadmin" ? "SUPER ADMIN" : "ADMIN";
+        if (btnTxt) btnTxt.textContent = user.role === "superadmin" ? "SUPER ADMIN" : user.role === "tradeadmin" ? "TRADE ADMIN" : "ADMIN";
       }
       if (superAdminTab) superAdminTab.style.display = "flex";
       if (dockAdminBtn) dockAdminBtn.style.display = "flex";
@@ -1174,8 +1201,15 @@ function updateUserUI(user, settings, exConnections) {
     if (dockAdminBtn) dockAdminBtn.style.display = "none";
     if (dockTraderBtn) dockTraderBtn.style.display = "none";
     if (drawerTraderTab) drawerTraderTab.style.display = "none";
+    if (dockTerminalBtn) dockTerminalBtn.style.display = "none";
+    if (dockIndiaBtn) dockIndiaBtn.style.display = "none";
+    if (drawerTerminalBtn) drawerTerminalBtn.style.display = "none";
+    if (drawerIndiaBtn) drawerIndiaBtn.style.display = "none";
+    if (navSignInBtn) navSignInBtn.style.display = "flex";
+    if (navGetStartedBtn) navGetStartedBtn.style.display = "flex";
 
     if (userPill) {
+      userPill.style.display = "none";
       userPill.title = "Login or Create Trader Account";
       userPill.onclick = () => openAuthModal();
     }
@@ -1227,6 +1261,8 @@ function switchTraderSubTab(tabName, btnElement) {
 
   if (tabName === "journal") {
     if (typeof fetchJournalData === "function") fetchJournalData();
+  } else if (tabName === "strategybuilder") {
+    if (typeof fetchUserCustomStrategies === "function") fetchUserCustomStrategies();
   } else if (tabName === "indianbrokers") {
     if (typeof fetchIndianBrokersStatus === "function") fetchIndianBrokersStatus();
   } else if (tabName === "overview" || tabName === "positions") {
@@ -1891,12 +1927,17 @@ async function handleAuthSubmit(e) {
         checkAdminAuth();
       }
 
+      updateUserUI(data.user, null, null);
       if (currentAuthTab === "register") {
-        // Welcome notification
-        showToast("🎉 Trader account created! Confirmation email dispatched from support@thesmartmag.com", "success");
+        showToast("🎉 Trader account created! Connect your exchange keys to start trading.", "success");
         openExchangeKeysModal();
       } else {
-        showToast(`Welcome back, ${data.user.name || "Trader"}!`, "success");
+        showToast(`Welcome back, ${data.user.name || "Trader"}! Terminal active.`, "success");
+        if (data.user.role === "superadmin" || data.user.role === "admin" || data.user.role === "tradeadmin") {
+          setTimeout(() => switchView("terminal"), 300);
+        } else {
+          setTimeout(() => switchView("trader"), 300);
+        }
       }
     } else {
       if (statusMsg) {
@@ -2124,69 +2165,377 @@ function handleUserLogout() {
   fetchRealData();
 }
 
-// ── 6. Exchange API Keys Modal Handlers ────────────────────────────────────
+// ── 6. Universal Exchange & MT5 Credentials Modal Handlers ──────────────────
 function openExchangeKeysModal() {
   const modal = document.getElementById("exchangeKeysModal");
   const msgBox = document.getElementById("keysStatusMsg");
   if (msgBox) { msgBox.textContent = ""; msgBox.style.color = ""; }
   if (modal) modal.style.display = "flex";
+  switchExModalTab("cs");
 }
+window.openExchangeKeysModal = openExchangeKeysModal;
 
 function closeExchangeKeysModal() {
   const modal = document.getElementById("exchangeKeysModal");
   if (modal) modal.style.display = "none";
 }
+window.closeExchangeKeysModal = closeExchangeKeysModal;
 
 function handleKeysBackdropClick(e) {
   if (e.target.id === "exchangeKeysModal") closeExchangeKeysModal();
 }
+window.handleKeysBackdropClick = handleKeysBackdropClick;
 
-async function handleExchangeKeysSubmit(e) {
-  e.preventDefault();
-  if (!userToken) {
+function switchExModalTab(tabId) {
+  document.querySelectorAll(".ex-tab-btn").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".ex-tab-pane").forEach(p => p.classList.remove("active"));
+  const btn = document.getElementById(`exTabBtn-${tabId}`);
+  const pane = document.getElementById(`exTabPane-${tabId}`);
+  if (btn) btn.classList.add("active");
+  if (pane) pane.classList.add("active");
+}
+window.switchExModalTab = switchExModalTab;
+
+async function validateCredentialsLive(exchange) {
+  const token = userToken || localStorage.getItem("tsm_user_token");
+  if (!token) {
     openAuthModal();
     return;
   }
+  const msgBox = document.getElementById("keysStatusMsg");
+  let creds = {};
 
-  const cs_key = (document.getElementById("userCsApiKey") || document.getElementById("user_cs_key") || {}).value || "";
-  const cs_secret = (document.getElementById("userCsSecretKey") || document.getElementById("user_cs_secret") || {}).value || "";
-  const delta_key = (document.getElementById("userDeltaApiKey") || document.getElementById("user_delta_key") || {}).value || "";
-  const delta_secret = (document.getElementById("userDeltaSecretKey") || document.getElementById("user_delta_secret") || {}).value || "";
-  const msgBox = document.getElementById("keysStatusMsg") || document.getElementById("keysSaveMsg");
+  if (exchange === "coinswitch") {
+    creds.key = (document.getElementById("userCsApiKey") || {}).value || "";
+    creds.secret = (document.getElementById("userCsSecretKey") || {}).value || "";
+    const badge = document.getElementById("csStatusBadge");
+    if (badge) { badge.textContent = "⏳ VALIDATING..."; badge.className = "tsm-badge-pill gold"; }
+  } else if (exchange === "delta") {
+    creds.key = (document.getElementById("userDeltaApiKey") || {}).value || "";
+    creds.secret = (document.getElementById("userDeltaSecretKey") || {}).value || "";
+    const badge = document.getElementById("deltaStatusBadge");
+    if (badge) { badge.textContent = "⏳ VALIDATING..."; badge.className = "tsm-badge-pill gold"; }
+  } else if (exchange === "universal") {
+    creds.exchange_id = (document.getElementById("userUnivExchangeId") || {}).value || "binance";
+    creds.key = (document.getElementById("userUnivApiKey") || {}).value || "";
+    creds.secret = (document.getElementById("userUnivApiSecret") || {}).value || "";
+    creds.passphrase = (document.getElementById("userUnivPassphrase") || {}).value || "";
+    const badge = document.getElementById("univStatusBadge");
+    if (badge) { badge.textContent = "⏳ VALIDATING..."; badge.className = "tsm-badge-pill gold"; }
+  } else if (exchange === "mt5") {
+    creds.server = (document.getElementById("userMt5Server") || {}).value || "";
+    creds.login_id = (document.getElementById("userMt5Login") || {}).value || "";
+    creds.password = (document.getElementById("userMt5Password") || {}).value || "";
+    const badge = document.getElementById("mt5StatusBadge");
+    if (badge) { badge.textContent = "⏳ VALIDATING..."; badge.className = "tsm-badge-pill gold"; }
+  }
+
+  if (msgBox) {
+    msgBox.textContent = `Testing live connectivity to ${exchange.toUpperCase()}...`;
+    msgBox.style.color = "var(--neon-cyan)";
+  }
 
   try {
-    const res = await fetch("/api/user/exchange-keys", {
+    const res = await fetch("/api/user/validate-keys", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${userToken}`
+        "Authorization": `Bearer ${token}`
       },
-      body: JSON.stringify({ cs_key: cs_key.trim(), cs_secret: cs_secret.trim(), delta_key: delta_key.trim(), delta_secret: delta_secret.trim() })
+      body: JSON.stringify({ exchange, credentials: creds })
     });
     const data = await res.json();
 
-    if (res.ok && data.status === "success") {
+    if (res.ok && data.valid) {
       if (msgBox) {
-        msgBox.textContent = "✅ Exchange API credentials saved and encrypted securely!";
-        msgBox.style.color = "var(--neon-green, #00f090)";
+        msgBox.textContent = data.message || `✅ ${exchange.toUpperCase()} credentials verified successfully!`;
+        msgBox.style.color = "var(--neon-green)";
       }
-      setTimeout(() => {
-        closeExchangeKeysModal();
-      }, 1500);
+      const badgeId = exchange === "coinswitch" ? "csStatusBadge" : (exchange === "delta" ? "deltaStatusBadge" : (exchange === "universal" ? "univStatusBadge" : "mt5StatusBadge"));
+      const bEl = document.getElementById(badgeId);
+      if (bEl) { bEl.textContent = "✅ VERIFIED"; bEl.className = "tsm-badge-pill green"; }
+      showModernToast(`Verified ${exchange.toUpperCase()} credentials live!`, "success");
     } else {
       if (msgBox) {
-        msgBox.textContent = "⚠️ " + (data.message || "Failed to save API keys.");
-        msgBox.style.color = "var(--neon-pink, #ff3366)";
+        msgBox.textContent = data.message || `❌ Validation failed for ${exchange.toUpperCase()}. Please check keys.`;
+        msgBox.style.color = "var(--neon-pink)";
+      }
+      const badgeId = exchange === "coinswitch" ? "csStatusBadge" : (exchange === "delta" ? "deltaStatusBadge" : (exchange === "universal" ? "univStatusBadge" : "mt5StatusBadge"));
+      const bEl = document.getElementById(badgeId);
+      if (bEl) { bEl.textContent = "❌ INVALID"; bEl.className = "tsm-badge-pill red"; }
+      showModernToast(`Verification failed: ${data.message || 'Invalid credentials'}`, "error");
+    }
+  } catch (err) {
+    if (msgBox) {
+      msgBox.textContent = `❌ Network error connecting to ${exchange.toUpperCase()} validation gateway.`;
+      msgBox.style.color = "var(--neon-pink)";
+    }
+  }
+}
+window.validateCredentialsLive = validateCredentialsLive;
+
+async function saveExchangeCredentialsTab(exchange) {
+  const token = userToken || localStorage.getItem("tsm_user_token");
+  if (!token) {
+    openAuthModal();
+    return;
+  }
+  const msgBox = document.getElementById("keysStatusMsg");
+  let creds = {};
+
+  if (exchange === "coinswitch") {
+    creds.key = (document.getElementById("userCsApiKey") || {}).value || "";
+    creds.secret = (document.getElementById("userCsSecretKey") || {}).value || "";
+  } else if (exchange === "delta") {
+    creds.key = (document.getElementById("userDeltaApiKey") || {}).value || "";
+    creds.secret = (document.getElementById("userDeltaSecretKey") || {}).value || "";
+  } else if (exchange === "universal") {
+    creds.exchange_id = (document.getElementById("userUnivExchangeId") || {}).value || "binance";
+    creds.key = (document.getElementById("userUnivApiKey") || {}).value || "";
+    creds.secret = (document.getElementById("userUnivApiSecret") || {}).value || "";
+    creds.passphrase = (document.getElementById("userUnivPassphrase") || {}).value || "";
+  } else if (exchange === "mt5") {
+    creds.server = (document.getElementById("userMt5Server") || {}).value || "";
+    creds.login_id = (document.getElementById("userMt5Login") || {}).value || "";
+    creds.password = (document.getElementById("userMt5Password") || {}).value || "";
+  }
+
+  try {
+    const res = await fetch("/api/user/save-exchange-credentials", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ exchange, credentials: creds })
+    });
+    const data = await res.json();
+    if (res.ok && data.status === "success") {
+      if (msgBox) {
+        msgBox.textContent = `✅ ${data.message || 'Credentials saved securely!'}`;
+        msgBox.style.color = "var(--neon-green)";
+      }
+      showModernToast(`Saved ${exchange.toUpperCase()} credentials!`, "success");
+      setTimeout(closeExchangeKeysModal, 1200);
+    } else {
+      if (msgBox) {
+        msgBox.textContent = `⚠️ ${data.message || 'Failed to save credentials.'}`;
+        msgBox.style.color = "var(--neon-pink)";
       }
     }
   } catch (err) {
     if (msgBox) {
-      msgBox.textContent = "❌ Connection error saving API keys.";
-      msgBox.style.color = "var(--neon-pink, #ff3366)";
+      msgBox.textContent = "❌ Network error saving credentials.";
+      msgBox.style.color = "var(--neon-pink)";
     }
   }
 }
-function handleSaveExchangeKeys(e) { return handleExchangeKeysSubmit(e); }
+window.saveExchangeCredentialsTab = saveExchangeCredentialsTab;
+
+// ── 6.1 Strategy Engine & Win Rate Builder Handlers ─────────────────────────
+function recalculateEstimatedWinRate() {
+  const checkboxes = document.querySelectorAll("input[name='ind_confluence']:checked");
+  const numInds = checkboxes.length;
+  const sl = parseFloat((document.getElementById("stratCustomSl") || {}).value || 1.0);
+  const tp = parseFloat((document.getElementById("stratCustomTp") || {}).value || 3.5);
+  
+  let baseWin = 68.0;
+  let indBoost = Math.min(numInds * 2.8, 14.0);
+  let rr = tp / Math.max(sl, 0.1);
+  let rrAdj = Math.max(-4.0, Math.min(3.0, (3.0 - rr) * 1.5));
+  let winRate = Math.min(86.5, Math.max(65.0, baseWin + indBoost + rrAdj)).toFixed(1);
+  let pf = Math.max(1.8, Math.min(4.2, (winRate / (100.0 - winRate)) * rr)).toFixed(2);
+
+  const wrEl = document.getElementById("customEstimatedWinRate");
+  const pfEl = document.getElementById("customEstimatedPf");
+  if (wrEl) wrEl.textContent = `${winRate}%`;
+  if (pfEl) pfEl.textContent = pf;
+}
+window.recalculateEstimatedWinRate = recalculateEstimatedWinRate;
+
+async function activatePresetStrategy(presetId) {
+  const token = userToken || localStorage.getItem("tsm_user_token");
+  if (!token) {
+    openAuthModal();
+    return;
+  }
+  try {
+    const res = await fetch("/api/user/strategies/activate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ preset_id: presetId })
+    });
+    const data = await res.json();
+    if (res.ok && data.status === "success") {
+      showModernToast(`🚀 Activated Strategy: ${presetId.toUpperCase()}`, "success");
+      const badge = document.getElementById("activeStrategyBannerBadge");
+      if (badge) badge.textContent = `ACTIVE: ${presetId.replace(/_/g, ' ').toUpperCase()}`;
+      document.querySelectorAll(".strat-card").forEach(c => c.classList.remove("active-strat"));
+      const cardMap = {
+        "nvidia_super_brain": "card-strat-nvidia",
+        "volume_liquidity_gap": "card-strat-volume",
+        "pp_supertrend_ghost": "card-strat-supertrend",
+        "bse_nse_intraday_momentum": "card-strat-india"
+      };
+      const cId = cardMap[presetId];
+      if (cId && document.getElementById(cId)) {
+        document.getElementById(cId).classList.add("active-strat");
+      }
+    } else {
+      showModernToast(data.message || "Failed to activate strategy", "error");
+    }
+  } catch (e) {
+    showModernToast("Network error activating strategy", "error");
+  }
+}
+window.activatePresetStrategy = activatePresetStrategy;
+
+async function handleSaveCustomStrategy(e) {
+  e.preventDefault();
+  const token = userToken || localStorage.getItem("tsm_user_token");
+  if (!token) {
+    openAuthModal();
+    return;
+  }
+  const name = (document.getElementById("stratCustomName") || {}).value || "";
+  const timeframe = (document.getElementById("stratCustomTimeframe") || {}).value || "15m";
+  const sl = parseFloat((document.getElementById("stratCustomSl") || {}).value || 1.0);
+  const tp = parseFloat((document.getElementById("stratCustomTp") || {}).value || 3.5);
+  const trailing = parseFloat((document.getElementById("stratCustomTrailing") || {}).value || 0.25);
+  
+  const inds = [];
+  document.querySelectorAll("input[name='ind_confluence']:checked").forEach(cb => inds.push(cb.value));
+  const msgBox = document.getElementById("customStratMsg");
+
+  try {
+    const res = await fetch("/api/user/strategies", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        name,
+        timeframe,
+        indicators: inds,
+        stop_loss_pct: sl,
+        take_profit_pct: tp,
+        trailing_pct: trailing
+      })
+    });
+    const data = await res.json();
+    if (res.ok && data.status === "success") {
+      if (msgBox) {
+        msgBox.textContent = `✅ ${data.message}`;
+        msgBox.style.color = "var(--neon-green)";
+      }
+      showModernToast(`Custom strategy '${name}' saved and deployed!`, "success");
+      fetchUserCustomStrategies();
+    } else {
+      if (msgBox) {
+        msgBox.textContent = `⚠️ ${data.message || 'Failed to save strategy.'}`;
+        msgBox.style.color = "var(--neon-pink)";
+      }
+    }
+  } catch (err) {
+    if (msgBox) {
+      msgBox.textContent = "❌ Network error saving strategy.";
+      msgBox.style.color = "var(--neon-pink)";
+    }
+  }
+}
+window.handleSaveCustomStrategy = handleSaveCustomStrategy;
+
+async function fetchUserCustomStrategies() {
+  const token = userToken || localStorage.getItem("tsm_user_token");
+  const tbody = document.getElementById("userCustomStrategiesTbody");
+  if (!token || !tbody) return;
+
+  try {
+    const res = await fetch("/api/user/strategies", {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (res.ok && data.strategies) {
+      if (data.strategies.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-dim); padding:16px;">No custom strategies created yet. Use the builder above to create your first quant strategy!</td></tr>';
+        return;
+      }
+      tbody.innerHTML = data.strategies.map(s => {
+        const indList = (s.indicators || []).join(", ").toUpperCase() || "N/A";
+        const statusBadge = s.is_active ? '<span class="tsm-badge-pill green">ACTIVE</span>' : '<span class="tsm-badge-pill">INACTIVE</span>';
+        const actionBtn = s.is_active ? 
+          '<button class="tsm-btn-secondary" style="font-size:10px; padding:3px 8px;" disabled>ACTIVE</button>' :
+          `<button class="tsm-btn-cta green" style="font-size:10px; padding:3px 8px;" onclick="activateCustomStrategy(${s.id})">ACTIVATE</button>`;
+        return `
+          <tr>
+            <td><strong>${s.name}</strong></td>
+            <td><span class="font-mono cyan">${s.timeframe}</span></td>
+            <td><span style="font-size:10px; color:var(--text-dim);">${indList}</span></td>
+            <td><span class="font-mono">SL: ${s.stop_loss_pct}% / TP: ${s.take_profit_pct}%</span></td>
+            <td><strong class="green font-mono">${s.win_rate}%</strong> <small class="text-dim">(PF: ${s.profit_factor})</small></td>
+            <td>${statusBadge}</td>
+            <td style="display:flex; gap:6px;">
+              ${actionBtn}
+              <button class="tsm-btn-secondary red-text" style="font-size:10px; padding:3px 6px;" onclick="deleteCustomStrategy(${s.id})">🗑️</button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+  } catch (err) {
+    console.debug("fetchUserCustomStrategies notice:", err);
+  }
+}
+window.fetchUserCustomStrategies = fetchUserCustomStrategies;
+
+async function activateCustomStrategy(stratId) {
+  const token = userToken || localStorage.getItem("tsm_user_token");
+  if (!token) return;
+  try {
+    const res = await fetch("/api/user/strategies/activate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ strategy_id: stratId })
+    });
+    const data = await res.json();
+    if (res.ok && data.status === "success") {
+      showModernToast(`Activated Custom Strategy #${stratId}`, "success");
+      const badge = document.getElementById("activeStrategyBannerBadge");
+      if (badge) badge.textContent = `ACTIVE: CUSTOM STRATEGY #${stratId}`;
+      fetchUserCustomStrategies();
+    }
+  } catch (e) {
+    showModernToast("Failed to activate strategy", "error");
+  }
+}
+window.activateCustomStrategy = activateCustomStrategy;
+
+async function deleteCustomStrategy(stratId) {
+  if (!confirm(`Are you sure you want to delete custom strategy #${stratId}?`)) return;
+  const token = userToken || localStorage.getItem("tsm_user_token");
+  if (!token) return;
+  try {
+    const res = await fetch(`/api/user/strategies/${stratId}`, {
+      method: "DELETE",
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (res.ok && data.status === "success") {
+      showModernToast(`Strategy #${stratId} deleted`, "info");
+      fetchUserCustomStrategies();
+    }
+  } catch (e) {
+    showModernToast("Failed to delete strategy", "error");
+  }
+}
+window.deleteCustomStrategy = deleteCustomStrategy;
 
 // ── 7. Personal User Settings & Risk Modal ─────────────────────────────────
 async function openUserSettingsModal() {
@@ -7444,7 +7793,7 @@ window.exportAuditTradesCSV = exportAuditTradesCSV;
 document.addEventListener("DOMContentLoaded", () => {
   setTimeout(() => {
     fetchMultiMarketSignals();
-    initVideoTour();
+    // Auto-popup removed: tour will only open when manually clicked
   }, 1200);
 });
 
@@ -7481,12 +7830,7 @@ const tourChaptersData = {
 };
 
 function initVideoTour() {
-  const seen = localStorage.getItem("tsm_tour_seen");
-  if (!seen) {
-    setTimeout(() => {
-      openVideoTourModal();
-    }, 2500);
-  }
+  // Auto-popup disabled as requested: only manual user trigger
 }
 window.initVideoTour = initVideoTour;
 

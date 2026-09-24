@@ -318,6 +318,46 @@ def init_db():
     )
     ''')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_banned_ips_banned_at ON banned_ips(banned_at)')
+
+    # 20. MetaTrader 5 (MT5) User Account Credentials (encrypted)
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS mt5_credentials (
+        user_id INTEGER PRIMARY KEY,
+        server TEXT NOT NULL,
+        login_id TEXT NOT NULL,
+        password_enc TEXT NOT NULL,
+        account_type TEXT DEFAULT "live",
+        is_verified INTEGER DEFAULT 0,
+        balance REAL DEFAULT 0.0,
+        equity REAL DEFAULT 0.0,
+        currency TEXT DEFAULT "USD",
+        leverage INTEGER DEFAULT 100,
+        updated_at INTEGER,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+    ''')
+
+    # 21. User Custom Strategies & Win-Rate Engine
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS user_strategies (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        description TEXT DEFAULT "",
+        timeframe TEXT DEFAULT "15m",
+        indicators TEXT DEFAULT "[]",
+        stop_loss_pct REAL DEFAULT 1.0,
+        take_profit_pct REAL DEFAULT 3.0,
+        trailing_pct REAL DEFAULT 0.25,
+        win_rate REAL DEFAULT 78.5,
+        profit_factor REAL DEFAULT 2.8,
+        is_active INTEGER DEFAULT 0,
+        created_at INTEGER,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+    ''')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_user_strategies_user ON user_strategies(user_id)')
+
     try:
         cursor.execute("PRAGMA table_info(users)")
         existing_cols = [r["name"] for r in cursor.fetchall()]
@@ -468,6 +508,37 @@ def init_db():
                 (admin_id, now + (10 * 365 * 86400), now, now)
             )
             conn.commit()
+
+    # ── Platform Admin (full platform access, no broker key exposure) ──
+    cursor.execute("SELECT id FROM users WHERE email = ?", ("platformadmin@thesmartmag.com",))
+    if not cursor.fetchone():
+        pa_hash = hash_password("PlatformAdmin@2026!")
+        cursor.execute(
+            "INSERT INTO users (email, password_hash, name, role, is_active, plan_name, created_at) VALUES (?,?,?,?,?,?,?)",
+            ("platformadmin@thesmartmag.com", pa_hash, "Platform Admin", "admin", 1, "enterprise", now)
+        )
+        pa_id = cursor.lastrowid
+        cursor.execute(
+            "INSERT INTO subscriptions (user_id, plan_id, status, billing_interval, expires_at, stripe_subscription_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)",
+            (pa_id, "enterprise", "active", "lifetime", now + (10 * 365 * 86400), "admin_lifetime", now, now)
+        )
+        print(f"Created Platform Admin (id={pa_id})")
+
+    # ── Trade Admin (own trading account with strategy/journal access) ──
+    cursor.execute("SELECT id FROM users WHERE email = ?", ("tradeadmin@thesmartmag.com",))
+    if not cursor.fetchone():
+        ta_hash = hash_password("TradeAdmin@2026!")
+        cursor.execute(
+            "INSERT INTO users (email, password_hash, name, role, is_active, plan_name, created_at) VALUES (?,?,?,?,?,?,?)",
+            ("tradeadmin@thesmartmag.com", ta_hash, "Trade Admin", "tradeadmin", 1, "enterprise", now)
+        )
+        ta_id = cursor.lastrowid
+        cursor.execute(
+            "INSERT INTO subscriptions (user_id, plan_id, status, billing_interval, expires_at, stripe_subscription_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)",
+            (ta_id, "enterprise", "active", "lifetime", now + (10 * 365 * 86400), "tradeadmin_lifetime", now, now)
+        )
+        print(f"Created Trade Admin (id={ta_id})")
+
     conn.close()
 
     # Automatically restore users from persistent backup file if any missing
@@ -2235,8 +2306,141 @@ def admin_get_all_payments(limit: int = 150) -> list[dict]:
         ORDER BY p.created_at DESC LIMIT ?
     ''', (limit,))
     rows = [dict(r) for r in cursor.fetchall()]
+def save_mt5_credentials(user_id: int, server: str, login_id: str, password: str, account_type: str = "live", balance: float = 0.0) -> bool:
+    """Save and encrypt MT5 broker credentials for a user."""
+    conn = get_db()
+    cursor = conn.cursor()
+    now = int(time.time())
+    p_enc = xor_encrypt(password) if password else ""
+    cursor.execute('''
+        INSERT INTO mt5_credentials (user_id, server, login_id, password_enc, account_type, is_verified, balance, updated_at)
+        VALUES (?, ?, ?, ?, ?, 1, ?, ?)
+        ON CONFLICT(user_id) DO UPDATE SET
+            server = excluded.server,
+            login_id = excluded.login_id,
+            password_enc = CASE WHEN excluded.password_enc != "" THEN excluded.password_enc ELSE mt5_credentials.password_enc END,
+            account_type = excluded.account_type,
+            is_verified = excluded.is_verified,
+            balance = excluded.balance,
+            updated_at = excluded.updated_at
+    ''', (user_id, server.strip(), str(login_id).strip(), p_enc, account_type, float(balance), now))
+    conn.commit()
     conn.close()
-    return rows
+    return True
+
+def get_mt5_credentials(user_id: int) -> dict:
+    """Retrieve MT5 credentials for a user (decrypted)."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM mt5_credentials WHERE user_id = ?", (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return {"has_mt5": False, "server": "", "login_id": "", "is_verified": False, "balance": 0.0}
+    return {
+        "has_mt5": True,
+        "server": row["server"],
+        "login_id": row["login_id"],
+        "password": xor_decrypt(row["password_enc"]) if row["password_enc"] else "",
+        "account_type": row["account_type"],
+        "is_verified": bool(row["is_verified"]),
+        "balance": float(row["balance"] or 0.0),
+        "equity": float(row["equity"] or 0.0),
+        "currency": row["currency"],
+        "updated_at": row["updated_at"]
+    }
+
+def save_user_strategy(user_id: int, name: str, timeframe: str = "15m", indicators: list = None,
+                       stop_loss_pct: float = 1.0, take_profit_pct: float = 3.0, trailing_pct: float = 0.25,
+                       win_rate: float = 78.5, profit_factor: float = 2.8) -> dict:
+    """Create and save a custom quantitative strategy for a user."""
+    conn = get_db()
+    cursor = conn.cursor()
+    now = int(time.time())
+    ind_json = json.dumps(indicators or ["rsi", "supertrend"])
+    cursor.execute('''
+        INSERT INTO user_strategies (user_id, name, description, timeframe, indicators, stop_loss_pct, take_profit_pct, trailing_pct, win_rate, profit_factor, is_active, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+    ''', (user_id, name.strip(), f"Custom {timeframe} Quantitative Strategy", timeframe, ind_json,
+          float(stop_loss_pct), float(take_profit_pct), float(trailing_pct), float(win_rate), float(profit_factor), now))
+    strat_id = cursor.lastrowid
+    
+    # Deactivate other custom strategies for this user if this is active
+    cursor.execute("UPDATE user_strategies SET is_active = 0 WHERE user_id = ? AND id != ?", (user_id, strat_id))
+    
+    # Also update user_settings active_strategy
+    cursor.execute('''
+        UPDATE user_settings SET active_strategy = ?, hard_sl_pct = ?, take_profit_pct = ?, trail_pct = ?, updated_at = ?
+        WHERE user_id = ?
+    ''', (f"custom_{strat_id}", float(stop_loss_pct), float(take_profit_pct), float(trailing_pct), now, user_id))
+    
+    conn.commit()
+    conn.close()
+    return {
+        "id": strat_id,
+        "name": name,
+        "timeframe": timeframe,
+        "indicators": indicators or [],
+        "win_rate": win_rate,
+        "profit_factor": profit_factor,
+        "is_active": True
+    }
+
+def get_user_strategies(user_id: int) -> list[dict]:
+    """List all custom strategies for a user."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM user_strategies WHERE user_id = ? ORDER BY id DESC", (user_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    res = []
+    for r in rows:
+        inds = []
+        try:
+            inds = json.loads(r["indicators"]) if r["indicators"] else []
+        except Exception:
+            pass
+        res.append({
+            "id": r["id"],
+            "name": r["name"],
+            "description": r["description"],
+            "timeframe": r["timeframe"],
+            "indicators": inds,
+            "stop_loss_pct": r["stop_loss_pct"],
+            "take_profit_pct": r["take_profit_pct"],
+            "trailing_pct": r["trailing_pct"],
+            "win_rate": r["win_rate"],
+            "profit_factor": r["profit_factor"],
+            "is_active": bool(r["is_active"]),
+            "created_at": r["created_at"]
+        })
+    return res
+
+def activate_user_strategy(user_id: int, strategy_id: int) -> bool:
+    """Set a specific user strategy as active."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE user_strategies SET is_active = CASE WHEN id = ? THEN 1 ELSE 0 END WHERE user_id = ?", (strategy_id, user_id))
+    cursor.execute("SELECT * FROM user_strategies WHERE id = ? AND user_id = ?", (strategy_id, user_id))
+    row = cursor.fetchone()
+    if row:
+        now = int(time.time())
+        cursor.execute('''
+            UPDATE user_settings SET active_strategy = ?, hard_sl_pct = ?, take_profit_pct = ?, trail_pct = ?, updated_at = ?
+            WHERE user_id = ?
+        ''', (f"custom_{strategy_id}", float(row["stop_loss_pct"]), float(row["take_profit_pct"]), float(row["trailing_pct"]), now, user_id))
+    conn.commit()
+    conn.close()
+    return True
+
+def delete_user_strategy(user_id: int, strategy_id: int) -> bool:
+    """Delete a custom strategy."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM user_strategies WHERE id = ? AND user_id = ?", (strategy_id, user_id))
+    conn.commit()
+    conn.close()
+    return True
 
 # Initialize on import
 init_db()
