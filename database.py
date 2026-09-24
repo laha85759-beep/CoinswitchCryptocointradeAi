@@ -565,8 +565,26 @@ def init_db():
             "INSERT INTO subscriptions (user_id, plan_id, status, billing_interval, expires_at, stripe_subscription_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)",
             (ta_id, "enterprise", "active", "lifetime", now + (10 * 365 * 86400), "tradeadmin_lifetime", now, now)
         )
+        cursor.execute(
+            "INSERT OR IGNORE INTO user_settings (user_id, hard_sl_pct, take_profit_pct, trail_pct, max_capital_pct, active_strategy, autotrade_enabled, updated_at) VALUES (?, 2.0, 15.0, 0.2, 40.0, 'ai_consensus', 1, ?)",
+            (ta_id, now)
+        )
+        if cs_k or dl_k:
+            cursor.execute('''
+                INSERT INTO user_api_keys (user_id, cs_api_key_enc, cs_api_secret_enc, delta_api_key_enc, delta_api_secret_enc, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(user_id) DO NOTHING
+            ''', (ta_id, cs_k_enc, cs_s_enc, dl_k_enc, dl_s_enc, now))
         print(f"Created Trade Admin (id={ta_id})")
 
+    # ── Ensure all active users have default autotrade user_settings ──
+    cursor.execute('''
+        INSERT OR IGNORE INTO user_settings (user_id, hard_sl_pct, take_profit_pct, trail_pct, max_capital_pct, active_strategy, autotrade_enabled, updated_at)
+        SELECT id, 2.0, 15.0, 0.2, 40.0, 'ai_consensus', 1, ?
+        FROM users WHERE is_active = 1
+    ''', (now,))
+    cursor.execute("UPDATE user_settings SET autotrade_enabled = 1 WHERE user_id = ?", (admin_id,))
+    conn.commit()
     conn.close()
 
     # Automatically restore users from persistent backup file if any missing

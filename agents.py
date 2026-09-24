@@ -399,6 +399,9 @@ class RiskManagerAgent:
 
     def _evaluate_one(self, signal: dict, execution_halted: bool, cached_portfolio_usdt: float = None) -> dict:
         symbol = signal["symbol"]
+        if not signal.get("signal_id"):
+            basis = f"{symbol}:{signal.get('signal')}:{utc_iso()[:16]}"
+            signal["signal_id"] = hashlib.sha256(basis.encode("utf-8")).hexdigest()[:20]
         if execution_halted:
             return risk_reject(signal, "circuit_breaker_halted_execution")
         # Accept pump signals, volume breakout signals, and high-confidence watch signals
@@ -437,7 +440,7 @@ class RiskManagerAgent:
             return risk_reject(signal, "symbol_already_open")
 
         processed = load_json(PROCESSED_SIGNALS_FILE, [])
-        if signal["signal_id"] in processed:
+        if signal.get("signal_id") in processed:
             return risk_reject(signal, "duplicate_signal_id")
 
         if trades_this_hour(trades) >= self.cfg["max_trades_per_hour"]:
@@ -496,7 +499,7 @@ class RiskManagerAgent:
             return risk_reject(signal, f"position_{position_size:.2f}_below_min_order")
 
         return {
-            "signal_id": signal["signal_id"],
+            "signal_id": signal.get("signal_id", ""),
             "symbol": symbol,
             "approved": True,
             "reason": "approved",
@@ -510,7 +513,7 @@ class RiskManagerAgent:
             "direction": direction,
             "atr_pct": atr_pct,
             "approval_token": hashlib.sha256(
-                f"{signal['signal_id']}:{utc_iso()}".encode("utf-8")
+                f"{signal.get('signal_id', '')}:{utc_iso()}".encode("utf-8")
             ).hexdigest()[:24],
             "signal": signal,
             "timestamp": utc_iso(),

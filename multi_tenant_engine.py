@@ -43,9 +43,9 @@ def dispatch_signals_to_all_users(approved_signals: list[dict], global_cfg: dict
         for sig in approved_signals:
             symbol = sig.get("symbol", "")
             direction = sig.get("direction", "buy")
-            price = float(sig.get("price", 0.0))
-            confidence = float(sig.get("confidence", 0.0))
-            sig_strategy = sig.get("strategy", "ai_consensus")
+            price = float(sig.get("price") or sig.get("signal", {}).get("supporting_data", {}).get("price") or 0.0)
+            confidence = float(sig.get("confidence") or sig.get("signal", {}).get("confidence") or 0.0)
+            sig_strategy = sig.get("strategy") or sig.get("signal", {}).get("suspected_cause") or "ai_consensus"
 
             # Strategy Filter
             if user_strategy != "combined" and user_strategy != sig_strategy and confidence < 0.85:

@@ -510,7 +510,10 @@ def run() -> None:
                 dir_sign = 1.0 if sig_type == "pump" else -1.0
                 chg_5m = max(0.5, abs(chg24) / 10.0) * dir_sign
                 chg_1h = max(1.0, abs(chg24) / 4.0) * dir_sign
+                basis = f"{std_sym}:{sig_type}:{int(time.time())}"
+                sig_id = hashlib.sha256(basis.encode("utf-8")).hexdigest()[:20]
                 alpha_signal = {
+                    "signal_id": sig_id,
                     "symbol": std_sym,
                     "signal": sig_type,
                     "direction": "long" if sig_type == "pump" else "short",

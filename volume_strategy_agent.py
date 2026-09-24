@@ -9,6 +9,7 @@ Detects high-conviction trade setups using institutional volume data:
 5. Strict Capital Survival R:R >= 1:3.0 targets.
 """
 
+import hashlib
 import logging
 import math
 import time
@@ -124,7 +125,11 @@ class VolumeStrategyAgent:
             symbol, direction.upper(), rvol, close, vwap, base_conf
         )
 
+        basis = f"{symbol}:{signal_type}:{int(time.time())}"
+        sig_id = hashlib.sha256(basis.encode("utf-8")).hexdigest()[:20]
+
         return {
+            "signal_id": sig_id,
             "symbol": symbol,
             "signal": signal_type,
             "direction": direction,
