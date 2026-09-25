@@ -111,10 +111,10 @@ async function fetchXAUUSDPrice() {
       const d = await res.json();
       const goldPrice = d?.gold?.usd;
       if (goldPrice) {
-        const el = document.getElementById('tick-xauusd');
-        if (el) el.textContent = '$' + Number(goldPrice).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
-        const el2 = document.getElementById('hero-xauusd-price');
-        if (el2) el2.textContent = '$' + Number(goldPrice).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+        ['tick-xau', 'tick-xauusd', 'hero-xauusd-price'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = '$' + Number(goldPrice).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+        });
       }
     }
   } catch(e) {}
@@ -125,8 +125,8 @@ window.fetchXAUUSDPrice = fetchXAUUSDPrice;
 async function fetchStockIndices() {
   try {
     const symbols = [
-      {sym: 'QQQ', id: 'tick-nasdaq', label: 'NASDAQ'},
-      {sym: 'SPY', id: 'tick-sp500', label: 'S&P500'}
+      {sym: 'QQQ', ids: ['tick-nasdaq'], label: 'NASDAQ'},
+      {sym: 'SPY', ids: ['tick-spx', 'tick-sp500'], label: 'S&P500'}
     ];
     for (const s of symbols) {
       try {
@@ -138,14 +138,16 @@ async function fetchStockIndices() {
           const price = result?.meta?.regularMarketPrice;
           const prevClose = result?.meta?.chartPreviousClose;
           if (price) {
-            const el = document.getElementById(s.id);
-            if (el) el.textContent = '$' + Number(price).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ';
-            const chgEl = document.getElementById(s.id + '-chg');
-            if (chgEl && prevClose) {
-              const pct = ((price - prevClose) / prevClose * 100).toFixed(2);
-              chgEl.textContent = (pct >= 0 ? '+' : '') + pct + '%';
-              chgEl.style.color = pct >= 0 ? 'var(--neon-green, #00ff88)' : 'var(--neon-pink, #ff3366)';
-            }
+            s.ids.forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.textContent = '$' + Number(price).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+              const chgEl = document.getElementById(id + '-chg');
+              if (chgEl && prevClose) {
+                const pct = ((price - prevClose) / prevClose * 100).toFixed(2);
+                chgEl.textContent = (pct >= 0 ? '▲ +' : '▼ ') + pct + '%';
+                chgEl.style.color = pct >= 0 ? 'var(--neon-green, #00ff88)' : 'var(--neon-pink, #ff3366)';
+              }
+            });
           }
         }
       } catch(e2) {}
@@ -1359,7 +1361,8 @@ function renderTraderDashboard(userData, fullData) {
 
   // 1. Header & Profile
   const welcomeTitle = document.getElementById("traderHeaderWelcomeTitle");
-  if (welcomeTitle) welcomeTitle.textContent = `Welcome, ${u.name || u.email.split('@')[0]}`;
+  const userDisplayName = u.name || (u.email ? u.email.split('@')[0] : 'Trader');
+  if (welcomeTitle) welcomeTitle.textContent = `Welcome, ${userDisplayName}`;
 
   const emailEl = document.getElementById("traderHeaderEmail");
   if (emailEl) emailEl.textContent = u.email || "--";
@@ -2717,12 +2720,16 @@ async function fetchRealData() {
     if (!res.ok) return;
     const data = await res.json();
 
-    const balances = userData && userData.balances ? userData.balances : data.balances;
+    const isNonSuperadminUser = currentUser && currentUser.role !== "superadmin";
+    const balances = isNonSuperadminUser 
+      ? (userData && userData.balances ? userData.balances : { total_capital_usdt: 0, cs_usdt: 0, cs_inr: 0, delta_usdt: 0 })
+      : (userData && userData.balances ? userData.balances : data.balances);
+
     if (balances) {
-      const totalUsdt = Number(balances.total_capital_usdt || 8.26).toFixed(2);
-      const csUsdt = Number(balances.cs_usdt || 2.34).toFixed(2);
-      const csInr = Number(balances.cs_inr || 5.01).toFixed(2);
-      const deltaUsdt = Number(balances.delta_usdt || 5.86).toFixed(2);
+      const totalUsdt = Number(balances.total_capital_usdt || 0).toFixed(2);
+      const csUsdt = Number(balances.cs_usdt || 0).toFixed(2);
+      const csInr = Number(balances.cs_inr || 0).toFixed(2);
+      const deltaUsdt = Number(balances.delta_usdt || 0).toFixed(2);
 
       const capEl = document.getElementById("total-capital");
       if (capEl) capEl.innerHTML = `$${totalUsdt} <span class="nc-hex-unit">USDT</span>`;
@@ -2734,7 +2741,9 @@ async function fetchRealData() {
       if (deltaBalEl) deltaBalEl.textContent = `Delta: $${deltaUsdt}`;
     }
 
-    const perf = userData && userData.performance ? userData.performance : data.performance;
+    const perf = isNonSuperadminUser
+      ? (userData && userData.performance ? userData.performance : { total_realized_pnl_usdt: 0, closed_trades_count: 0 })
+      : (userData && userData.performance ? userData.performance : data.performance);
     if (perf) {
       const pnlUsdt = Number(perf.total_realized_pnl_usdt || 0.0);
       const pnlEl = document.getElementById("total-pnl-value");
@@ -2811,13 +2820,17 @@ async function fetchRealData() {
       }
     }
 
-    const csTrades = (userData && userData.open_positions && Array.isArray(userData.open_positions.coinswitch) && userData.open_positions.coinswitch.length > 0)
-      ? userData.open_positions.coinswitch
-      : (data.open_positions && Array.isArray(data.open_positions.coinswitch) ? data.open_positions.coinswitch : []);
+    const csTrades = isNonSuperadminUser
+      ? (userData && userData.open_positions && Array.isArray(userData.open_positions.coinswitch) ? userData.open_positions.coinswitch : [])
+      : ((userData && userData.open_positions && Array.isArray(userData.open_positions.coinswitch) && userData.open_positions.coinswitch.length > 0)
+          ? userData.open_positions.coinswitch
+          : (data.open_positions && Array.isArray(data.open_positions.coinswitch) ? data.open_positions.coinswitch : []));
 
-    const deltaTrades = (userData && userData.open_positions && Array.isArray(userData.open_positions.delta) && userData.open_positions.delta.length > 0)
-      ? userData.open_positions.delta
-      : (data.open_positions && Array.isArray(data.open_positions.delta) ? data.open_positions.delta : []);
+    const deltaTrades = isNonSuperadminUser
+      ? (userData && userData.open_positions && Array.isArray(userData.open_positions.delta) ? userData.open_positions.delta : [])
+      : ((userData && userData.open_positions && Array.isArray(userData.open_positions.delta) && userData.open_positions.delta.length > 0)
+          ? userData.open_positions.delta
+          : (data.open_positions && Array.isArray(data.open_positions.delta) ? data.open_positions.delta : []));
 
     const positions = {
       coinswitch: csTrades,

@@ -1098,16 +1098,16 @@ def get_user_terminal_data(user):
         except Exception:
             pass
 
-    if delta_usdt <= 0:
+    if delta_usdt <= 0 and user.get("role") == "superadmin":
         try:
             from config import CONFIG
             if CONFIG.get("delta_api_key"):
                 m_client = DeltaClient(CONFIG["delta_api_key"], CONFIG["delta_api_secret"])
-                delta_usdt = float(m_client.get_usdt_balance() or 5.86)
+                delta_usdt = float(m_client.get_usdt_balance() or 0.0)
             else:
-                delta_usdt = 5.86
+                delta_usdt = 0.0
         except Exception:
-            delta_usdt = 5.86
+            delta_usdt = 0.0
             
     total_capital_usdt = round(cs_usdt + (cs_inr / 88.0) + delta_usdt, 2)
     available_margin = round(total_capital_usdt * 0.95, 2)

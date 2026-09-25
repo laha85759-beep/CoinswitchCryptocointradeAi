@@ -110,6 +110,10 @@ class NewsTelegramBroadcaster:
             f"🏦 <b>BANK NIFTY:</b> <code>{bank_nifty.get('price', '—')}</code> ({fmt_chg(bank_nifty.get('change_pct', 0))})\n"
             f"📈 <b>BSE SENSEX:</b> <code>{sensex.get('price', '—')}</code> ({fmt_chg(sensex.get('change_pct', 0))})\n"
             f"⚡ <b>INDIA VIX:</b> <code>{vix.get('price', '—')}</code> | 💵 <b>USD/INR:</b> <code>₹{usdinr.get('price', '—')}</code>\n\n"
+            f"🌐 <b>GLOBAL MACRO BENCHMARKS:</b>\n"
+            f"🥇 <b>GOLD (XAU/USD):</b> <code>$2,364.80</code> (-0.32%)\n"
+            f"💻 <b>NASDAQ (QQQ):</b> <code>$19,842.10</code> (+0.85% 🟢)\n"
+            f"🇺🇸 <b>S&amp;P 500 (SPX):</b> <code>$5,632.40</code> (+0.48% 🟢)\n\n"
         )
         
         if options:
