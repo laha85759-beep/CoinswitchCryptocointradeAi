@@ -182,6 +182,10 @@ CONFIG = {
     "min_order_usdt":           _float_env("MIN_ORDER_USDT",             0.05),
     "risk_order_type":          os.getenv("RISK_ORDER_TYPE",           "market"),
 
+    # ── Weekend Trading Blackout (Monday to Friday Live Trade Execution Only) ──
+    # saturday and sunday all live trade execute and no trade , trade only monday to friday
+    "weekend_trading_disabled":     _bool_env("WEEKEND_TRADING_DISABLED",   True),  # Blocks new trade entries on Saturday & Sunday (monitoring remains 24/7)
+
     # ── Execution settings ────────────────────────────────────────────────────
     "slippage_tolerance_pct":       _float_env("SLIPPAGE_TOLERANCE_PCT",    3.0),  # 3.0% max slippage ceiling between scan price and live futures fill
     "limit_slippage_offset_pct":    _float_env("LIMIT_SLIPPAGE_OFFSET_PCT", 0.2),

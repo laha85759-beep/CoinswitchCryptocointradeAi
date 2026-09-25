@@ -56,12 +56,14 @@ MORNING_REPORT_FILE = BASE_DIR / "last_morning_report.txt"
 DAILY_REPORT_FILE   = BASE_DIR / "last_daily_report.txt"
 WEEKLY_REPORT_FILE  = BASE_DIR / "last_weekly_report.txt"
 MONDAY_NOTICE_FILE  = BASE_DIR / "last_monday_notice.txt"
+WEEKEND_NOTICE_FILE = BASE_DIR / "last_weekend_notice.txt"
 
 # In-memory guards to strictly guarantee zero duplicate reports in daemon process
 _LAST_DAILY_REPORT_DATE: Optional[str] = None
 _LAST_MORNING_REPORT_DATE: Optional[str] = None
 _LAST_WEEKLY_REPORT_KEY: Optional[str] = None
 _LAST_MONDAY_NOTICE_KEY: Optional[str] = None
+_LAST_WEEKEND_NOTICE_KEY: Optional[str] = None
 _LAST_NEWS_SCAN_TIME: float = 0.0
 
 
@@ -152,26 +154,61 @@ def _send_morning_report_if_due(
 
 
 def _send_monday_resumption_notice(notifier: TelegramNotifier) -> None:
+    global _LAST_MONDAY_NOTICE_KEY
     try:
         now_utc = datetime.now(timezone.utc)
         week_key = now_utc.strftime("%Y-W%U")
+        if _LAST_MONDAY_NOTICE_KEY == week_key:
+            return
         last_sent = MONDAY_NOTICE_FILE.read_text(encoding="utf-8").strip() if MONDAY_NOTICE_FILE.exists() else ""
         if last_sent == week_key:
+            _LAST_MONDAY_NOTICE_KEY = week_key
             return
         msg = (
             "🌅 *OPUS 4.7 • WEEKLY MARKET RESUMPTION NOTICE*\n"
             "═════════════════════════\n"
             "• *Status*: Trading & Monitoring Pipeline Fully Active\n"
+            "• *Execution Window*: Monday–Friday Live Execution Online\n"
             "• *Multi-Coin Scanner*: Scanning 250+ Spot & Futures Markets\n"
             "• *Instant Trailing*: 🟢 Active across all positions\n"
             "═════════════════════════\n"
             "🚀 *READY FOR HIGH-PROFIT WEEKLY BREAKOUT TRADES!*"
         )
         notifier.send(msg)
+        _LAST_MONDAY_NOTICE_KEY = week_key
         MONDAY_NOTICE_FILE.write_text(week_key, encoding="utf-8")
         log.info("Monday Resumption Telegram Notice Sent!")
     except Exception as exc:
         log.warning("Failed to send Monday notice: %s", exc)
+
+
+def _send_weekend_pause_notice(notifier: TelegramNotifier) -> None:
+    global _LAST_WEEKEND_NOTICE_KEY
+    try:
+        now_utc = datetime.now(timezone.utc)
+        weekend_key = now_utc.strftime("%Y-W%U-WKND")
+        if _LAST_WEEKEND_NOTICE_KEY == weekend_key:
+            return
+        last_sent = WEEKEND_NOTICE_FILE.read_text(encoding="utf-8").strip() if WEEKEND_NOTICE_FILE.exists() else ""
+        if last_sent == weekend_key:
+            _LAST_WEEKEND_NOTICE_KEY = weekend_key
+            return
+        msg = (
+            "🛡️ *OPUS 4.7 • WEEKEND EXECUTION POLICY ACTIVE*\n"
+            "═════════════════════════\n"
+            "• *Policy*: Weekend Trade Execution Paused (Saturday & Sunday)\n"
+            "• *Schedule*: Live Trade Entries Run Monday to Friday Only\n"
+            "• *Active Positions*: 🟢 Trailing Stop & Hard SL Monitored 24/7\n"
+            "• *Capital Survival*: Zero weekend liquidity gap risk\n"
+            "═════════════════════════\n"
+            "⏳ *New trades resume automatically Monday 00:00 UTC.*"
+        )
+        notifier.send(msg)
+        _LAST_WEEKEND_NOTICE_KEY = weekend_key
+        WEEKEND_NOTICE_FILE.write_text(weekend_key, encoding="utf-8")
+        log.info("Weekend Execution Pause Telegram Notice Sent!")
+    except Exception as exc:
+        log.warning("Failed to send weekend pause notice: %s", exc)
 
 
 def _send_daily_report_if_due(
@@ -598,8 +635,12 @@ def run() -> None:
         log.info("  %-15s | %-5s | conf=%.3f | %s",
                  s["symbol"], s["signal"], s["confidence"], s["suspected_cause"])
 
-    if datetime.now(timezone.utc).weekday() == 0:
+    now_weekday = datetime.now(timezone.utc).weekday()
+    if now_weekday == 0:
         _send_monday_resumption_notice(notifier)
+    elif now_weekday in (5, 6) and CONFIG.get("weekend_trading_disabled", True):
+        _send_weekend_pause_notice(notifier)
+        log.info("Weekend trade blackout ACTIVE (UTC Day %s). Position monitoring and trailing SL remain 100%% active 24/7.", now_weekday)
 
     # ── Step 4 & 5: Risk + Dual Execution ────────────────────────────────────
     log.info("Step 4/5 — Risk evaluation")

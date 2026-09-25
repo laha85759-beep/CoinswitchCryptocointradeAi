@@ -17,6 +17,7 @@ Trade files:
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 import logging
 import time
 from pathlib import Path
@@ -71,6 +72,12 @@ class DualExecutionAgent:
 
     def execute(self, approvals: list[dict]) -> list[dict]:
         """Execute all approved trades on both exchanges."""
+        if self.cfg.get("weekend_trading_disabled", True):
+            now_utc = datetime.now(timezone.utc)
+            if now_utc.weekday() in (5, 6):
+                log.info("DualExecutionAgent: Weekend trade execution blocked (%s). Live trading operates Monday to Friday only.", now_utc.strftime("%A"))
+                return []
+
         all_results = []
         for approval in approvals:
             if approval.get("approved") is not True:

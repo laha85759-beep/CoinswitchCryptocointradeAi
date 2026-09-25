@@ -1,5 +1,6 @@
 import logging
 import time
+from datetime import datetime, timezone
 from database import get_db, get_user_api_keys, get_user_settings
 from coinswitch_client import CoinSwitchClient
 from delta_client import DeltaClient
@@ -13,6 +14,13 @@ def dispatch_signals_to_all_users(approved_signals: list[dict], global_cfg: dict
     """
     if not approved_signals:
         return {"users_processed": 0, "trades_executed": 0}
+
+    cfg = global_cfg or {}
+    if cfg.get("weekend_trading_disabled", True):
+        now_utc = datetime.now(timezone.utc)
+        if now_utc.weekday() in (5, 6):
+            log.info("Multi-Tenant Engine: Weekend trading blocked (%s). Trades execute Monday to Friday only.", now_utc.strftime("%A"))
+            return {"users_processed": 0, "trades_executed": 0, "reason": "weekend_trading_disabled"}
 
     conn = get_db()
     cursor = conn.cursor()

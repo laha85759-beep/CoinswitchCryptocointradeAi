@@ -249,6 +249,12 @@ class OptionsHedgeAgent:
         if not plan:
             return {"status": "error", "reason": "invalid_plan"}
 
+        if self.cfg.get("weekend_trading_disabled", True):
+            now_utc = datetime.now(timezone.utc)
+            if now_utc.weekday() in (5, 6):
+                log.info("OptionsHedgeAgent: Weekend options entry blocked (%s). Trading runs Monday to Friday only.", now_utc.strftime("%A"))
+                return {"status": "error", "reason": "weekend_trading_disabled"}
+
         # Place Call Leg
         call_leg = plan["call_leg"]
         try:

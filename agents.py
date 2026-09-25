@@ -404,6 +404,11 @@ class RiskManagerAgent:
             signal["signal_id"] = hashlib.sha256(basis.encode("utf-8")).hexdigest()[:20]
         if execution_halted:
             return risk_reject(signal, "circuit_breaker_halted_execution")
+        # Weekend Trading Blackout: No new live trade entries on Saturday (5) & Sunday (6)
+        if self.cfg.get("weekend_trading_disabled", True):
+            now_utc = datetime.now(timezone.utc)
+            if now_utc.weekday() in (5, 6):
+                return risk_reject(signal, f"weekend_trading_disabled_{now_utc.strftime('%A').lower()}_trade_only_monday_to_friday")
         # Accept pump signals, volume breakout signals, and high-confidence watch signals
         if signal["signal"] in ("pump", "volume_breakout", "volume_surge", "alpha_momentum"):
             pass  # continue to evaluation
