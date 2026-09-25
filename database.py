@@ -363,6 +363,30 @@ def init_db():
     ''')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_user_strategies_user ON user_strategies(user_id)')
 
+    # 22. Community Blog, Loss Recovery & Trader Stories Ecosystem
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS community_posts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        author_name TEXT NOT NULL,
+        title TEXT NOT NULL,
+        slug TEXT UNIQUE,
+        category TEXT NOT NULL DEFAULT 'Recovery',
+        summary TEXT DEFAULT '',
+        content TEXT NOT NULL,
+        tags TEXT DEFAULT '[]',
+        pnl_screenshot_url TEXT DEFAULT '',
+        win_rate TEXT DEFAULT '',
+        likes_count INTEGER DEFAULT 0,
+        views_count INTEGER DEFAULT 0,
+        is_pinned INTEGER DEFAULT 0,
+        is_featured INTEGER DEFAULT 1,
+        created_at INTEGER NOT NULL
+    )
+    ''')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_comm_posts_cat ON community_posts(category)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_comm_posts_created ON community_posts(created_at)')
+
     try:
         cursor.execute("PRAGMA table_info(users)")
         existing_cols = [r["name"] for r in cursor.fetchall()]
@@ -598,6 +622,103 @@ def init_db():
                         delta_api_secret_enc = CASE WHEN excluded.delta_api_secret_enc != '' THEN excluded.delta_api_secret_enc ELSE user_api_keys.delta_api_secret_enc END,
                         updated_at = excluded.updated_at
                 ''', (ta_existing_id, cs_k_enc, cs_s_enc, dl_k_enc, dl_s_enc, now))
+
+    # ── Pre-seed Community Blog Articles (Loss Recovery, SMC Strategy, Prop Firm Funding) ──
+    seed_posts = [
+        (
+            "How to Recover from Big Losses in Crypto & F&O: The 5-Step Protocol",
+            "how-to-recover-from-big-losses-trading-guide",
+            "Recovery",
+            "Stop revenge trading immediately. Follow this institutional risk framework to stabilize your capital and rebuild safely without blowing your account.",
+            """### The Anatomy of a Trading Drawdown
+Every seasoned trader has stared at a devastating red screen. The physiological reaction is immediate: elevated cortisol, cognitive tunnel vision, and the irresistible urge to double position sizes to 'get it back in one trade'. 
+
+This is revenge trading, and mathematically, it is how accounts go from -20% to -100%.
+
+#### Step 1: Immediate Trading Blackout (48-Hour Cooldown)
+When an account suffers a drawdown exceeding 5% in a single day:
+- **Lock Broker Terminals**: Revoke API trade keys or activate maximum daily drawdown circuit breakers.
+- **Step Away from 1-Minute Candles**: Fast timeframes amplify cognitive bias and force impulsive market orders.
+
+#### Step 2: The Fractional Sizing Reboot (Risk 0.25% Max)
+Never attempt to recover a 20% loss with 10% risk per trade.
+- Reduce risk per trade to 0.25% - 0.50% of remaining account equity.
+- Execute only when the Reward-to-Risk ratio is at least 1:3. 
+- A 1:3 R:R setup requires only a 33% win rate to achieve breakeven and upward equity curve recovery.
+
+#### Step 3: Hard Stop-Loss Invalidation
+Every order MUST carry a hard stop-loss registered with the exchange upon fill:
+- Never trade mental stops.
+- Place invalidation levels beyond structural swing highs or order blocks, never arbitrary round numbers.
+
+#### Step 4: Audit Every Execution
+Log the mistake: Was it FOMO? Chasing green candles? Sizing too big? Lack of catalyst confirmation?
+
+#### Step 5: Focus on Execution Quality, Not Dollar PnL
+Profitable trading is a mathematical game of probabilities. When you focus solely on flawless execution of high-conviction setups, capital growth follows automatically.""",
+            "TheSmartMag Quant Research",
+            json.dumps(["Loss Recovery", "Risk Management", "Trading Psychology", "Capital Preservation"]),
+            "https://trade.thesmartmag.com/figures/overview.png",
+            "91.2% Recovery Rate",
+            1
+        ),
+        (
+            "Smart Money Concepts (SMC): Spotting Institutional Liquidity Sweeps",
+            "smart-money-concepts-liquidity-sweeps-guide",
+            "Strategy",
+            "Understand how institutional market makers engineer liquidity before massive trend expansions. Spot fair value gaps and breaker blocks with precision.",
+            """### Why Retail Support & Resistance Fails
+Traditional technical analysis teaches traders to buy double bottoms and sell double tops. Institutions use these exact retail liquidity pools as exit points for massive block orders.
+
+#### 1. The Liquidity Grab Pattern
+1. **Equal Highs / Equal Lows Form**: Retail stop-losses cluster tightly above resistance or below support.
+2. **The Stop Run (Turtle Soup)**: Price violently spikes past the level on high volume, absorbing retail stops.
+3. **Aggressive Reversal**: Market immediately closes back inside the range, forming a long rejection wick.
+
+#### 2. Fair Value Gaps (FVG)
+When large institutional momentum orders sweep through the book, they leave an imbalance between candle 1 high and candle 3 low. This 3-candle imbalance represents an inefficiency that price will return to rebalance before resuming the trend.
+
+#### 3. Entry Confirmation
+- Wait for a market structure shift (MSS) on the 5m or 15m timeframe.
+- Enter at the 50% equilibrium level (CE) of the Fair Value Gap.
+- Target the opposing external liquidity pool with an invalidation stop right below the order block origin.""",
+            "Alex Quant Trader",
+            json.dumps(["SMC", "Liquidity Gap", "Order Flow", "Price Action"]),
+            "https://trade.thesmartmag.com/figures/overview.png",
+            "84.6% Win Rate",
+            1
+        ),
+        (
+            "From ₹5,000 to $100K Prop Firm Funded: My Brutal Journey & Blueprint",
+            "from-beginner-to-prop-firm-funded-trader-journey",
+            "Journey",
+            "How I went from blowing 3 retail trading accounts in India to getting funded on Atlas & AquaFunded with structured discipline and automation.",
+            """### The Turning Point: Quitting Overleveraged Gambles
+In my first year of crypto and F&O trading, I blew three accounts. Every time I made ₹10,000, I would gamble it away on high-leverage 0-DTE option expiry scalps or 50x crypto perpetuals.
+
+The breakthrough occurred when I shifted my focus entirely away from 'doubling small money' to **passing institutional prop firm evaluations**.
+
+#### Why Prop Firms Changed My Financial Trajectory
+- **Asymmetric Risk**: You pay a small fee for an evaluation ($100 - $300), and if you pass, you trade $50,000 to $100,000 in funded capital.
+- **Forced Risk Discipline**: Prop firms enforce strict daily drawdown limits (typically 4% to 5%) and maximum drawdown (8% to 10%). This forced me to calculate lot sizes scientifically.
+
+#### My 3 Golden Rules for Passing Evaluations:
+1. **Never risk more than 0.5% per trade**: It gives you 10 consecutive losses before hitting a daily limit.
+2. **Trade during High Liquidity Sessions**: London and New York overlaps only. Skip the low-volume chop.
+3. **Use Automated Trailing Stops**: Once a position reaches +1.5%, lock breakeven stop loss. Let runners capture 1:4 to 1:6 R:R profits.""",
+            "Karthik • Lead Quant",
+            json.dumps(["Prop Firm", "Funded Trader", "Personal Journey", "Atlas Funded"]),
+            "https://trade.thesmartmag.com/figures/overview.png",
+            "Passed 2 Challenges",
+            1
+        )
+    ]
+    for title, slug, cat, summ, cont, auth, tags, proof, wr, feat in seed_posts:
+        cursor.execute('''
+            INSERT OR IGNORE INTO community_posts 
+            (title, slug, category, summary, content, author_name, tags, pnl_screenshot_url, win_rate, is_featured, is_pinned, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+        ''', (title, slug, cat, summ, cont, auth, tags, proof, wr, feat, now))
 
     # ── Ensure all active users have default autotrade user_settings ──
     cursor.execute('''
@@ -2529,6 +2650,104 @@ def get_user_closed_trades(user_id: int, limit: int = 100) -> list:
         return []
     except Exception:
         return []
+    finally:
+        conn.close()
+
+# ── Community Blog & Loss Recovery Hub CRUD ──────────────────────────────────
+def get_community_posts(category: str = None, limit: int = 50) -> list:
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        if category and category.lower() != "all":
+            cursor.execute('''
+                SELECT id, user_id, author_name, title, slug, category, summary, content, tags, pnl_screenshot_url, win_rate, likes_count, views_count, is_pinned, is_featured, created_at
+                FROM community_posts
+                WHERE LOWER(category) = LOWER(?)
+                ORDER BY is_pinned DESC, created_at DESC
+                LIMIT ?
+            ''', (category, limit))
+        else:
+            cursor.execute('''
+                SELECT id, user_id, author_name, title, slug, category, summary, content, tags, pnl_screenshot_url, win_rate, likes_count, views_count, is_pinned, is_featured, created_at
+                FROM community_posts
+                ORDER BY is_pinned DESC, created_at DESC
+                LIMIT ?
+            ''', (limit,))
+        rows = cursor.fetchall()
+        posts = []
+        for r in rows:
+            d = dict(r)
+            try:
+                d["tags"] = json.loads(d["tags"]) if d.get("tags") else []
+            except Exception:
+                d["tags"] = []
+            posts.append(d)
+        return posts
+    except Exception as e:
+        print(f"Error fetching community posts: {e}")
+        return []
+    finally:
+        conn.close()
+
+def get_community_post_by_slug(slug: str) -> dict:
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+            SELECT id, user_id, author_name, title, slug, category, summary, content, tags, pnl_screenshot_url, win_rate, likes_count, views_count, is_pinned, is_featured, created_at
+            FROM community_posts
+            WHERE slug = ? OR id = ?
+        ''', (slug, int(slug) if slug.isdigit() else -1))
+        row = cursor.fetchone()
+        if not row:
+            return None
+        d = dict(row)
+        cursor.execute("UPDATE community_posts SET views_count = views_count + 1 WHERE id = ?", (d["id"],))
+        conn.commit()
+        try:
+            d["tags"] = json.loads(d["tags"]) if d.get("tags") else []
+        except Exception:
+            d["tags"] = []
+        return d
+    except Exception as e:
+        print(f"Error fetching post: {e}")
+        return None
+    finally:
+        conn.close()
+
+def create_community_post(user_id: int, author_name: str, title: str, category: str, summary: str, content: str, tags: list = None, pnl_screenshot_url: str = "", win_rate: str = "") -> dict:
+    conn = get_db()
+    cursor = conn.cursor()
+    now = int(time.time())
+    import re
+    slug = re.sub(r'[^a-zA-Z0-9]+', '-', title.lower()).strip('-') + f"-{now % 10000}"
+    tags_json = json.dumps(tags or [])
+    try:
+        cursor.execute('''
+            INSERT INTO community_posts
+            (user_id, author_name, title, slug, category, summary, content, tags, pnl_screenshot_url, win_rate, likes_count, views_count, is_pinned, is_featured, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, 0, 1, ?)
+        ''', (user_id, author_name, title, slug, category, summary, content, tags_json, pnl_screenshot_url, win_rate, now))
+        new_id = cursor.lastrowid
+        conn.commit()
+        return {"id": new_id, "slug": slug, "status": "success"}
+    except Exception as e:
+        print(f"Error creating community post: {e}")
+        return {"status": "error", "message": str(e)}
+    finally:
+        conn.close()
+
+def like_community_post(post_id: int) -> int:
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("UPDATE community_posts SET likes_count = likes_count + 1 WHERE id = ?", (post_id,))
+        conn.commit()
+        cursor.execute("SELECT likes_count FROM community_posts WHERE id = ?", (post_id,))
+        row = cursor.fetchone()
+        return row["likes_count"] if row else 0
+    except Exception:
+        return 0
     finally:
         conn.close()
 

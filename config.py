@@ -169,11 +169,11 @@ CONFIG = {
     "max_open_trades":          _int_env("MAX_OPEN_TRADES",               10),  # Allow up to 10 concurrent positions across exchanges
     "max_total_exposure_pct":   _float_env("MAX_TOTAL_EXPOSURE_PCT",    25.0),  # Max 25% total margin exposed
     "max_trades_per_hour":      _int_env("MAX_TRADES_PER_HOUR",          4),
-    "min_confidence":           _float_env("MIN_CONFIDENCE",             0.72), # High conviction momentum & volume breakout filter
+    "min_confidence":           _float_env("MIN_CONFIDENCE",             0.80), # Strict high-conviction momentum, volume surge & AI consensus filter
     "min_rr_ratio":             _float_env("MIN_RR_RATIO",               3.0),  # Minimum 1:3 Reward-to-Risk ratio (prefer 1:4+)
     "stop_loss_pct":            _float_env("STOP_LOSS_PCT",              1.5),  # Max 1.5% Precision Invalidation Stop Loss
-    "take_profit_pct":          _float_env("TAKE_PROFIT_PCT",            6.0),  # Minimum 1:4 R:R target (6.0% TP vs 1.5% SL)
-    "trail_activation_pct":     _float_env("TRAIL_ACTIVATION_PCT",       0.3),  # INSTANT breakeven trailing stop activation at +0.3% profit
+    "take_profit_pct":          _float_env("TAKE_PROFIT_PCT",           10.0),  # Extended 10.0% TP to capture full multi-hour momentum expansion
+    "trail_activation_pct":     _float_env("TRAIL_ACTIVATION_PCT",       1.5),  # Activates trailing stop only after solid +1.5% move (gives breathing room)
     "small_account_leverage":   _int_env("SMALL_ACCOUNT_LEVERAGE",        5),   # Max 5x leverage in Capital Survival Mode
     "scalp_lot_multiplier":     _float_env("SCALP_LOT_MULTIPLIER",       1.0),
     "daily_max_drawdown_pct":   _float_env("DAILY_MAX_DRAWDOWN_PCT",     1.5),  # Strict 1.5% max daily drawdown ceiling

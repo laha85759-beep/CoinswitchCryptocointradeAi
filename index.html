@@ -112,6 +112,28 @@
           }
         }
       ]
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      "headline": "How to Recover from Big Losses in Crypto & F&O: The 5-Step Protocol",
+      "description": "Stop revenge trading immediately. Follow this institutional risk framework to stabilize your capital and rebuild safely without blowing your account.",
+      "image": "https://trade.thesmartmag.com/figures/overview.png",
+      "author": {
+        "@type": "Organization",
+        "name": "TheSmartMag Quant Research"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "TheSmartMag",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://trade.thesmartmag.com/figures/overview.png"
+        }
+      },
+      "datePublished": "2026-09-24",
+      "dateModified": "2026-09-25",
+      "mainEntityOfPage": "https://trade.thesmartmag.com/#blog"
     }
   ]
   </script>
@@ -122,7 +144,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=20260925-1030">
+  <link rel="stylesheet" href="styles.css?v=20260925-2015">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -243,6 +265,9 @@
         <button class="tsm-drawer-item green" data-view="trades" onclick="switchView('trades'); toggleMobileNavDrawer();">
           <span class="nc-tab-ico">🎯</span><span>AI TRADE SIGNALS</span>
         </button>
+        <button class="tsm-drawer-item cyan" data-view="blog" onclick="switchView('blog'); toggleMobileNavDrawer();">
+          <span class="nc-tab-ico">📚</span><span>COMMUNITY &amp; BLOG</span>
+        </button>
         <button class="tsm-drawer-item green" id="drawerTraderTab" data-view="trader" onclick="switchView('trader'); toggleMobileNavDrawer();" style="display:none;">
           <span class="nc-tab-ico">👤</span><span>TRADER COCKPIT</span>
         </button>
@@ -319,6 +344,14 @@
           <div class="tsm-dock-info">
             <span class="tsm-dock-title">AI SIGNALS</span>
             <span class="tsm-dock-chip green">NEWS TRADES</span>
+          </div>
+        </button>
+
+        <button class="tsm-dock-item cyan" data-view="blog" onclick="switchView('blog')" title="Trader Community Blog, Loss Recovery Protocols &amp; Verified Journeys">
+          <span class="tsm-dock-icon">📚</span>
+          <div class="tsm-dock-info">
+            <span class="tsm-dock-title">COMMUNITY</span>
+            <span class="tsm-dock-chip cyan">BLOG &amp; RECOVERY</span>
           </div>
         </button>
 
@@ -4042,8 +4075,55 @@
           </div>
         </div>
 
+    <!-- ══════════ VIEW: TRADER COMMUNITY BLOG & RECOVERY PLAYBOOK ══════════ -->
+    <div id="view-blog" class="nc-view-pane tsm-view-section" style="display:none;">
+      <div class="tsm-panel" style="margin-bottom:16px;">
+        <div class="tsm-panel-header" style="flex-wrap:wrap; gap:12px;">
+          <div>
+            <div class="tsm-panel-title">📚 TRADER COMMUNITY &amp; LOSS RECOVERY HUB</div>
+            <div class="tsm-panel-desc">Real trader journeys, verified strategies, psychology breakdowns, and proven capital recovery playbooks.</div>
+          </div>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <button class="tsm-btn-cta cyan" onclick="openCreatePostModal()" style="margin:0; padding:7px 14px; font-size:11px;">
+              <span>✍</span> <span>WRITE TRADER STORY / GUIDE</span>
+            </button>
+            <button class="tsm-btn-secondary" onclick="fetchCommunityBlogPosts()" style="margin:0; padding:7px 12px; font-size:11px;">
+              <span>🔄</span> <span>REFRESH</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Category Filter Tabs -->
+        <div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.08); margin-bottom:16px;">
+          <button class="tsm-tab-btn active" id="blogCatAll" onclick="filterBlogCategory('all', this)">ALL STORIES</button>
+          <button class="tsm-tab-btn" onclick="filterBlogCategory('Recovery', this)">🛡️ LOSS RECOVERY</button>
+          <button class="tsm-tab-btn" onclick="filterBlogCategory('Strategy', this)">🎯 SMC STRATEGIES</button>
+          <button class="tsm-tab-btn" onclick="filterBlogCategory('Journey', this)">🚀 FUNDED JOURNEYS</button>
+          <button class="tsm-tab-btn" onclick="filterBlogCategory('Psychology', this)">🧠 TRADING PSYCHOLOGY</button>
+        </div>
+
+        <!-- Featured High-Impact Affiliate Banner (Atlas Funded & Delta India) -->
+        <div style="background:linear-gradient(135deg, rgba(255,215,0,0.08), rgba(0,212,255,0.05)); border:1px solid rgba(255,215,0,0.3); border-radius:8px; padding:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+          <div>
+            <span class="tsm-badge-pill gold" style="margin-bottom:4px;">EXCLUSIVE SPONSORSHIP</span>
+            <div style="font-weight:700; font-size:13px; color:var(--neon-gold);">Trade with Zero Risk on Funded Accounts &amp; Get 10% Fee Rebate</div>
+            <div style="font-size:11px; color:var(--text-sec);">Pass your funded challenge with our autonomous risk engine on Atlas &amp; AquaFunded, or trade Indian Crypto Futures with Delta Exchange India.</div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <a href="https://atlasfunded.com/?ref=12275" target="_blank" rel="noopener" class="tsm-btn-cta gold" style="text-decoration:none; padding:8px 14px; font-size:11px;">
+              GET $100K FUNDED ⚡
+            </a>
+            <a href="https://www.delta.exchange/?code=YXQSZA" target="_blank" rel="noopener" class="tsm-btn-cta cyan" style="text-decoration:none; padding:8px 14px; font-size:11px;">
+              DELTA INDIA (10% OFF) 🇮🇳
+            </a>
+          </div>
+        </div>
+
+        <!-- Blog Posts Grid -->
+        <div id="blogPostsGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:16px;">
+          <div class="empty-state" style="grid-column:1/-1;">Loading community articles and recovery guides...</div>
+        </div>
       </div>
-    </div>
     </div>
 
   </main>
@@ -5109,7 +5189,99 @@
     }
   </script>
 
-  <script src="app.js?v=20260925-1030"></script>
+  <!-- ══════════ COMMUNITY BLOG POST MODAL ══════════ -->
+  <div id="createPostModal" class="palette-overlay" style="display:none;" onclick="handleCreatePostBackdrop(event)">
+    <div class="tsm-auth-modal-card" style="max-width:620px;">
+      <div class="tsm-auth-header-bar">
+        <div class="tsm-auth-title">✍ PUBLISH TRADER ARTICLE / LOSS RECOVERY GUIDE</div>
+        <button type="button" class="tsm-auth-close-btn" onclick="closeCreatePostModal()">✕</button>
+      </div>
+
+      <form id="createPostForm" onsubmit="handlePublishBlogPost(event)" style="display:flex; flex-direction:column; gap:10px; margin-top:10px;">
+        <div>
+          <label style="font-size:10px; color:var(--text-dim); font-family:var(--font-mono); font-weight:700;">ARTICLE TITLE</label>
+          <input type="text" id="postTitle" class="tsm-input" placeholder="e.g. How I Turned Around a -35% Crypto Drawdown with Breakeven Trailing" required style="width:100%; margin-top:4px;">
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <div>
+            <label style="font-size:10px; color:var(--text-dim); font-family:var(--font-mono); font-weight:700;">CATEGORY</label>
+            <select id="postCategory" class="tsm-input font-mono" style="width:100%; margin-top:4px;">
+              <option value="Recovery">🛡️ Loss Recovery</option>
+              <option value="Strategy">🎯 SMC Strategy</option>
+              <option value="Journey">🚀 Funded Trader Journey</option>
+              <option value="Psychology">🧠 Trading Psychology</option>
+              <option value="Guide">📖 Beginner Guide</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:10px; color:var(--text-dim); font-family:var(--font-mono); font-weight:700;">VERIFIED WIN RATE / STAT</label>
+            <input type="text" id="postWinRate" class="tsm-input font-mono" placeholder="e.g. 84.5% or Passed $100K Challenge" style="width:100%; margin-top:4px;">
+          </div>
+        </div>
+
+        <div>
+          <label style="font-size:10px; color:var(--text-dim); font-family:var(--font-mono); font-weight:700;">SUMMARY / HOOK (1-2 SENTENCES)</label>
+          <input type="text" id="postSummary" class="tsm-input" placeholder="Brief preview explaining what other traders will learn from your experience" style="width:100%; margin-top:4px;">
+        </div>
+
+        <div>
+          <label style="font-size:10px; color:var(--text-dim); font-family:var(--font-mono); font-weight:700;">ARTICLE CONTENT (MARKDOWN SUPPORTED)</label>
+          <textarea id="postContent" class="tsm-input font-mono" rows="8" placeholder="Share your step-by-step framework, trade setup rules, psychology lessons, or chart breakdown..." required style="width:100%; margin-top:4px; font-size:12px; resize:vertical;"></textarea>
+        </div>
+
+        <div>
+          <label style="font-size:10px; color:var(--text-dim); font-family:var(--font-mono); font-weight:700;">PNL / TRADE PROOF SCREENSHOT URL</label>
+          <input type="url" id="postScreenshotUrl" class="tsm-input font-mono" placeholder="https://... (direct image link to TradingView chart or broker fill)" style="width:100%; margin-top:4px;">
+        </div>
+
+        <button type="submit" class="tsm-btn-cta cyan" id="btnPublishPost" style="margin-top:6px; padding:10px; font-size:12px; font-weight:700; letter-spacing:1px; width:100%; justify-content:center;">
+          🚀 PUBLISH TO COMMUNITY BLOG
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ══════════ ARTICLE READER MODAL ══════════ -->
+  <div id="readArticleModal" class="palette-overlay" style="display:none;" onclick="handleReadArticleBackdrop(event)">
+    <div class="tsm-auth-modal-card" style="max-width:760px; max-height:85vh; overflow-y:auto;">
+      <div class="tsm-auth-header-bar" style="position:sticky; top:0; background:rgba(6,14,26,0.98); z-index:10;">
+        <span class="tsm-badge-pill cyan" id="articleCategoryBadge">RECOVERY</span>
+        <button type="button" class="tsm-auth-close-btn" onclick="closeReadArticleModal()">✕</button>
+      </div>
+
+      <div style="padding:14px 4px;">
+        <h2 id="articleModalTitle" style="color:var(--text-primary); font-family:var(--font-heading); font-size:18px; margin-bottom:8px; line-height:1.4;"></h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.08); font-family:var(--font-mono); font-size:11px; color:var(--text-dim);">
+          <div>Author: <span id="articleModalAuthor" class="cyan font-mono"></span> • <span id="articleModalDate"></span></div>
+          <div style="display:flex; gap:12px; align-items:center;">
+            <span id="articleModalViews">👁 0 views</span>
+            <button class="tsm-btn-small green" id="btnLikeArticle" onclick="handleLikeCurrentArticle()">❤️ LIKE (<span id="articleModalLikes">0</span>)</button>
+          </div>
+        </div>
+
+        <div id="articleModalProofWrap" style="display:none; margin-bottom:16px;">
+          <img id="articleModalProofImg" src="" alt="Trade Execution Proof" style="width:100%; max-height:360px; object-fit:contain; border-radius:6px; border:1px solid rgba(0,240,144,0.3); background:#020509;">
+        </div>
+
+        <div id="articleModalContent" style="color:var(--text-sec); font-size:13px; line-height:1.7; white-space:pre-wrap; font-family:var(--font-body);"></div>
+
+        <!-- In-Article Affiliate Conversion Widget -->
+        <div style="margin-top:24px; padding:14px; background:rgba(0,240,144,0.06); border:1px solid rgba(0,240,144,0.25); border-radius:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div>
+            <div style="font-weight:700; font-size:12px; color:var(--neon-green);">Execute this Strategy with 0% Capital Risk</div>
+            <div style="font-size:11px; color:var(--text-sec);">Apply this setup on Atlas &amp; AquaFunded prop firm challenges or Delta Exchange India with automated trailing stops.</div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <a href="https://atlasfunded.com/?ref=12275" target="_blank" rel="noopener" class="tsm-btn-cta gold" style="text-decoration:none; padding:6px 12px; font-size:10.5px;">Atlas Funded ⚡</a>
+            <a href="https://www.delta.exchange/?code=YXQSZA" target="_blank" rel="noopener" class="tsm-btn-cta cyan" style="text-decoration:none; padding:6px 12px; font-size:10.5px;">Delta 10% Off 🇮🇳</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=20260925-2015"></script>
   <!-- Monetag In-Page / Vignette Execution Scripts -->
   <script>(function(s){s.dataset.zone='11802121',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
   <script src="https://quge5.com/88/tag.min.js" data-zone="285853" async data-cfasync="false"></script>

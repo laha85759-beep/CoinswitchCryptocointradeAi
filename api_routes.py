@@ -20,7 +20,8 @@ from database import (
     get_saas_dashboard_metrics, get_all_users_saas_management,
     save_mt5_credentials, get_mt5_credentials,
     save_user_strategy, get_user_strategies, activate_user_strategy, delete_user_strategy,
-    save_ccxt_exchange_keys, get_ccxt_exchange_keys
+    save_ccxt_exchange_keys, get_ccxt_exchange_keys,
+    get_community_posts, get_community_post_by_slug, create_community_post, like_community_post
 )
 from email_service import send_welcome_email, send_password_reset_email, send_inquiry_confirmation, send_login_alert_email
 from coinswitch_client import CoinSwitchClient
@@ -2235,5 +2236,60 @@ def admin_get_user_details(admin_user, user_id):
         "delta_key_masked": (keys.get("delta_api_key", "")[:6] + "...") if keys.get("delta_api_key") else "",
     }
     return jsonify({"status": "success", "user": crm, "api_keys": masked_keys})
+
+# ── Community Blog & Loss Recovery Hub Endpoints ─────────────────────────────
+@api_bp.route("/api/blog/posts", methods=["GET"])
+def api_get_blog_posts():
+    category = request.args.get("category", "")
+    limit = int(request.args.get("limit", 50))
+    posts = get_community_posts(category=category, limit=limit)
+    return jsonify({"status": "success", "posts": posts, "count": len(posts)})
+
+@api_bp.route("/api/blog/posts/<slug>", methods=["GET"])
+def api_get_blog_post_detail(slug):
+    post = get_community_post_by_slug(slug)
+    if not post:
+        return jsonify({"status": "error", "message": "Article not found"}), 404
+    return jsonify({"status": "success", "post": post})
+
+@api_bp.route("/api/blog/posts", methods=["POST"])
+def api_create_blog_post():
+    data = request.get_json(silent=True) or {}
+    user = get_bearer_user()
+    user_id = user["id"] if user else None
+    
+    title = data.get("title", "").strip()
+    content = data.get("content", "").strip()
+    category = data.get("category", "Recovery").strip()
+    summary = data.get("summary", "").strip()
+    author_name = data.get("author_name", "").strip() or (user["name"] if user else "Anonymous Trader")
+    tags = data.get("tags", [])
+    pnl_screenshot_url = data.get("pnl_screenshot_url", "").strip()
+    win_rate = data.get("win_rate", "").strip()
+    
+    if not title or len(title) < 5:
+        return jsonify({"status": "error", "message": "Title must be at least 5 characters"}), 400
+    if not content or len(content) < 20:
+        return jsonify({"status": "error", "message": "Content must be at least 20 characters"}), 400
+        
+    res = create_community_post(
+        user_id=user_id,
+        author_name=author_name,
+        title=title,
+        category=category,
+        summary=summary,
+        content=content,
+        tags=tags,
+        pnl_screenshot_url=pnl_screenshot_url,
+        win_rate=win_rate
+    )
+    if res.get("status") == "success":
+        return jsonify({"status": "success", "post": res, "message": "Article published to Community Blog successfully!"})
+    return jsonify({"status": "error", "message": res.get("message", "Failed to publish post")}), 500
+
+@api_bp.route("/api/blog/posts/<int:post_id>/like", methods=["POST"])
+def api_like_blog_post(post_id):
+    likes = like_community_post(post_id)
+    return jsonify({"status": "success", "post_id": post_id, "likes_count": likes})
 
 print("api_routes.py Multi-Market Trade Suggestions, SaaS Subscription & User Persistence integration complete!")

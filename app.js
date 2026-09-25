@@ -305,7 +305,7 @@ function formatLocalizedDateTime(timestamp) {
 // ── 3. Tab & View Navigation ──────────────────────────────────────────────
 function handleHashRouting() {
   const hash = window.location.hash.replace("#", "").toLowerCase().trim();
-  if (["landing", "terminal", "rwa", "partners", "india", "news", "chart", "trades", "signals", "admin", "trader"].includes(hash)) {
+  if (["landing", "terminal", "rwa", "partners", "india", "news", "chart", "trades", "signals", "admin", "trader", "blog"].includes(hash)) {
     switchView(hash, false);
   } else {
     switchView("landing", false);
@@ -372,6 +372,8 @@ function switchView(viewName, updateHash = true) {
     if (typeof fetchTraderTerminalData === "function") fetchTraderTerminalData();
   } else if (viewName === "admin") {
     checkAdminAuth();
+  } else if (viewName === "blog") {
+    if (typeof fetchCommunityBlogPosts === "function") fetchCommunityBlogPosts();
   }
 }
 
@@ -8579,6 +8581,211 @@ function toggleBillingPeriod(period) {
   }
 }
 window.toggleBillingPeriod = toggleBillingPeriod;
+
+// ── COMMUNITY BLOG & LOSS RECOVERY HUB CLIENT LOGIC ───────────────────────
+let currentBlogCategory = "all";
+let currentReadingPostId = null;
+
+async function fetchCommunityBlogPosts() {
+  const grid = document.getElementById("blogPostsGrid");
+  if (!grid) return;
+  try {
+    const url = currentBlogCategory && currentBlogCategory !== "all" 
+      ? `/api/blog/posts?category=${encodeURIComponent(currentBlogCategory)}`
+      : `/api/blog/posts`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.status === "success" && Array.isArray(data.posts)) {
+      renderBlogPosts(data.posts);
+    } else {
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">No community stories found in this category yet. Be the first to share your playbook!</div>`;
+    }
+  } catch (err) {
+    console.error("Error fetching blog posts:", err);
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">Error loading community posts. Please click Refresh.</div>`;
+  }
+}
+window.fetchCommunityBlogPosts = fetchCommunityBlogPosts;
+
+function renderBlogPosts(posts) {
+  const grid = document.getElementById("blogPostsGrid");
+  if (!grid) return;
+  if (!posts || posts.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">No articles published yet. Click 'Write Trader Story' to share your journey!</div>`;
+    return;
+  }
+  grid.innerHTML = posts.map(p => {
+    const dateStr = p.created_at ? new Date(p.created_at * 1000).toLocaleDateString() : "Recent";
+    const catBadgeClass = p.category === "Recovery" ? "gold" : p.category === "Strategy" ? "cyan" : "green";
+    const proofTag = p.pnl_screenshot_url ? `<span class="tsm-badge-pill green font-mono">📸 PROOF ATTACHED</span>` : "";
+    const wrBadge = p.win_rate ? `<span class="tsm-badge-pill gold font-mono">🎯 ${escapeHtml(p.win_rate)}</span>` : "";
+
+    return `
+      <div class="tsm-panel" style="display:flex; flex-direction:column; justify-content:space-between; height:100%; transition:all 0.25s ease;" onmouseover="this.style.borderColor='rgba(0,240,144,0.4)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span class="tsm-badge-pill ${catBadgeClass}">${escapeHtml(p.category.toUpperCase())}</span>
+            <div style="display:flex; gap:6px;">${proofTag} ${wrBadge}</div>
+          </div>
+          <h3 style="font-size:14px; color:var(--text-primary); margin-bottom:8px; line-height:1.4; cursor:pointer;" onclick="openReadArticleModal('${p.slug || p.id}')">${escapeHtml(p.title)}</h3>
+          <p style="font-size:12px; color:var(--text-sec); line-height:1.5; margin-bottom:12px;">${escapeHtml(p.summary || (p.content.substring(0, 140) + '...'))}</p>
+        </div>
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; font-family:var(--font-mono); color:var(--text-dim); padding-top:10px; border-top:1px solid rgba(255,255,255,0.05); margin-bottom:10px;">
+            <span>By <strong class="cyan">${escapeHtml(p.author_name || 'Trader')}</strong></span>
+            <span>${dateStr}</span>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="tsm-btn-secondary" style="flex:1; padding:6px; font-size:11px;" onclick="openReadArticleModal('${p.slug || p.id}')">📖 READ FULL PLAYBOOK</button>
+            <button class="tsm-btn-small green" style="padding:6px 10px; font-size:11px;" onclick="likePostFromCard(${p.id}, this)">❤️ ${p.likes_count || 0}</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function filterBlogCategory(cat, btnEl) {
+  currentBlogCategory = cat;
+  document.querySelectorAll("#view-blog .tsm-tab-btn").forEach(b => b.classList.remove("active"));
+  if (btnEl) btnEl.classList.add("active");
+  fetchCommunityBlogPosts();
+}
+window.filterBlogCategory = filterBlogCategory;
+
+function openCreatePostModal() {
+  const modal = document.getElementById("createPostModal");
+  if (modal) modal.style.display = "flex";
+}
+window.openCreatePostModal = openCreatePostModal;
+
+function closeCreatePostModal() {
+  const modal = document.getElementById("createPostModal");
+  if (modal) modal.style.display = "none";
+}
+window.closeCreatePostModal = closeCreatePostModal;
+
+function handleCreatePostBackdrop(e) {
+  if (e.target.id === "createPostModal") closeCreatePostModal();
+}
+window.handleCreatePostBackdrop = handleCreatePostBackdrop;
+
+async function handlePublishBlogPost(e) {
+  e.preventDefault();
+  const title = document.getElementById("postTitle")?.value.trim();
+  const category = document.getElementById("postCategory")?.value;
+  const win_rate = document.getElementById("postWinRate")?.value.trim();
+  const summary = document.getElementById("postSummary")?.value.trim();
+  const content = document.getElementById("postContent")?.value.trim();
+  const pnl_screenshot_url = document.getElementById("postScreenshotUrl")?.value.trim();
+
+  if (!title || !content) {
+    showModernToast("Please provide both article title and content.", "warning");
+    return;
+  }
+
+  const btn = document.getElementById("btnPublishPost");
+  if (btn) btn.disabled = true;
+
+  try {
+    const token = localStorage.getItem("tsm_jwt_token") || localStorage.getItem("tsm_user_token");
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const res = await fetch("/api/blog/posts", {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify({
+        title, category, win_rate, summary, content, pnl_screenshot_url,
+        author_name: (currentUser && currentUser.name) ? currentUser.name : "Quant Trader"
+      })
+    });
+    const data = await res.json();
+    if (data.status === "success") {
+      showModernToast("🎉 Story published to Community Blog successfully!", "success");
+      closeCreatePostModal();
+      document.getElementById("createPostForm")?.reset();
+      fetchCommunityBlogPosts();
+    } else {
+      showModernToast(data.message || "Failed to publish article", "error");
+    }
+  } catch (err) {
+    showModernToast("Network error publishing story", "error");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+window.handlePublishBlogPost = handlePublishBlogPost;
+
+async function openReadArticleModal(slugOrId) {
+  try {
+    const res = await fetch(`/api/blog/posts/${slugOrId}`);
+    const data = await res.json();
+    if (data.status === "success" && data.post) {
+      const p = data.post;
+      currentReadingPostId = p.id;
+      document.getElementById("articleCategoryBadge").textContent = (p.category || "GUIDE").toUpperCase();
+      document.getElementById("articleModalTitle").textContent = p.title;
+      document.getElementById("articleModalAuthor").textContent = p.author_name || "Quant Trader";
+      document.getElementById("articleModalDate").textContent = p.created_at ? new Date(p.created_at * 1000).toLocaleDateString() : "";
+      document.getElementById("articleModalViews").textContent = `👁 ${p.views_count || 1} views`;
+      document.getElementById("articleModalLikes").textContent = p.likes_count || 0;
+      document.getElementById("articleModalContent").textContent = p.content;
+
+      const proofWrap = document.getElementById("articleModalProofWrap");
+      const proofImg = document.getElementById("articleModalProofImg");
+      if (p.pnl_screenshot_url && proofWrap && proofImg) {
+        proofImg.src = p.pnl_screenshot_url;
+        proofWrap.style.display = "block";
+      } else if (proofWrap) {
+        proofWrap.style.display = "none";
+      }
+
+      const modal = document.getElementById("readArticleModal");
+      if (modal) modal.style.display = "flex";
+    }
+  } catch (err) {
+    console.error("Error opening article:", err);
+  }
+}
+window.openReadArticleModal = openReadArticleModal;
+
+function closeReadArticleModal() {
+  const modal = document.getElementById("readArticleModal");
+  if (modal) modal.style.display = "none";
+  currentReadingPostId = null;
+}
+window.closeReadArticleModal = closeReadArticleModal;
+
+function handleReadArticleBackdrop(e) {
+  if (e.target.id === "readArticleModal") closeReadArticleModal();
+}
+window.handleReadArticleBackdrop = handleReadArticleBackdrop;
+
+async function handleLikeCurrentArticle() {
+  if (!currentReadingPostId) return;
+  try {
+    const res = await fetch(`/api/blog/posts/${currentReadingPostId}/like`, { method: "POST" });
+    const data = await res.json();
+    if (data.status === "success") {
+      const el = document.getElementById("articleModalLikes");
+      if (el) el.textContent = data.likes_count;
+      showModernToast("❤️ Liked!", "success");
+    }
+  } catch (e) {}
+}
+window.handleLikeCurrentArticle = handleLikeCurrentArticle;
+
+async function likePostFromCard(postId, btnEl) {
+  try {
+    const res = await fetch(`/api/blog/posts/${postId}/like`, { method: "POST" });
+    const data = await res.json();
+    if (data.status === "success" && btnEl) {
+      btnEl.innerHTML = `❤️ ${data.likes_count}`;
+    }
+  } catch (e) {}
+}
+window.likePostFromCard = likePostFromCard;
 
 // Auto-initialize candlestick chart after DOM is ready with real live data
 window.addEventListener("DOMContentLoaded", () => {
