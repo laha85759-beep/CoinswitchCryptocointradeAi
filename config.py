@@ -166,7 +166,7 @@ CONFIG = {
     "capital_survival_mode":    _bool_env("CAPITAL_SURVIVAL_MODE",      True),  # Last Money Protocol: Capital preservation above all else
     "risk_per_trade_pct":       _float_env("RISK_PER_TRADE_PCT",         0.5),  # 0.25% - 0.5% max risk per trade
     "max_position_pct":         _float_env("MAX_POSITION_PCT",          15.0),  # Max 15% capital per trade
-    "max_open_trades":          _int_env("MAX_OPEN_TRADES",                2),  # Max 2 concurrent positions
+    "max_open_trades":          _int_env("MAX_OPEN_TRADES",               10),  # Allow up to 10 concurrent positions across exchanges
     "max_total_exposure_pct":   _float_env("MAX_TOTAL_EXPOSURE_PCT",    25.0),  # Max 25% total margin exposed
     "max_trades_per_hour":      _int_env("MAX_TRADES_PER_HOUR",          4),
     "min_confidence":           _float_env("MIN_CONFIDENCE",             0.72), # High conviction momentum & volume breakout filter
