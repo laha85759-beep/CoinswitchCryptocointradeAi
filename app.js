@@ -50,10 +50,13 @@ document.addEventListener("DOMContentLoaded", () => {
   setInterval(fetchIndianMarketData, 8000);
   fetchLiveTickerTape();
   setInterval(fetchLiveTickerTape, 6000);
-  fetchXAUUSDPrice();
-  setInterval(fetchXAUUSDPrice, 30000);
+  fetchCommoditiesLive();
+  setInterval(fetchCommoditiesLive, 6000);
   fetchStockIndices();
-  setInterval(fetchStockIndices, 60000);
+  setInterval(fetchStockIndices, 20000);
+  if (typeof fetchCommunityBlogPosts === "function") {
+    fetchCommunityBlogPosts();
+  }
   checkAdminAuth();
   setInterval(() => {
     if (adminToken && currentView === "admin") {
@@ -102,10 +105,78 @@ async function fetchLiveTickerTape() {
 }
 window.fetchLiveTickerTape = fetchLiveTickerTape;
 
-// ── Live XAUUSD Price from CoinGecko ──────────────────────────────────────
-async function fetchXAUUSDPrice() {
+// ── Live Multi-Market Commodities Engine (Gold, Silver, Oil, Gas) ───────────
+async function fetchCommoditiesLive() {
   try {
-    // Use CoinGecko for gold price in USD
+    // 1. Fetch unified quotes from backend market gateway
+    const res = await fetch('/api/market/ticker-bar');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.status === 'success' && Array.isArray(data.tickers)) {
+        data.tickers.forEach(t => {
+          const isUp = Number(t.change_pct || 0) >= 0;
+          const sign = isUp ? '+' : '';
+          const chgTxt = `${t.arrow || (isUp ? '▲' : '▼')} ${sign}${t.change_pct}%`;
+          const chgColor = isUp ? 'var(--neon-green, #00ff88)' : 'var(--neon-pink, #ff3366)';
+
+          if (t.id === 'gold') {
+            ['tick-xau', 'tick-xauusd', 'hero-xauusd-price'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.textContent = t.price_formatted;
+            });
+            const chgEl = document.getElementById('tick-xau-chg');
+            if (chgEl) { chgEl.textContent = chgTxt; chgEl.style.color = chgColor; }
+          } else if (t.id === 'silver') {
+            const el = document.getElementById('tick-silver');
+            if (el) el.textContent = t.price_formatted;
+            const chgEl = document.getElementById('tick-silver-chg');
+            if (chgEl) { chgEl.textContent = chgTxt; chgEl.style.color = chgColor; }
+          } else if (t.id === 'crude') {
+            ['tick-oil', 'tick-usoil'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.textContent = t.price_formatted;
+            });
+            const chgEl = document.getElementById('tick-oil-chg');
+            if (chgEl) { chgEl.textContent = chgTxt; chgEl.style.color = chgColor; }
+          } else if (t.id === 'btc') {
+            const el = document.getElementById('tick-btc');
+            if (el) el.textContent = t.price_formatted;
+            const chgEl = document.getElementById('tick-btc-chg');
+            if (chgEl) { chgEl.textContent = chgTxt; chgEl.style.color = chgColor; }
+          } else if (t.id === 'eth') {
+            const el = document.getElementById('tick-eth');
+            if (el) el.textContent = t.price_formatted;
+            const chgEl = document.getElementById('tick-eth-chg');
+            if (chgEl) { chgEl.textContent = chgTxt; chgEl.style.color = chgColor; }
+          } else if (t.id === 'nifty') {
+            const el = document.getElementById('tick-nifty');
+            if (el) el.textContent = t.price_formatted;
+            const chgEl = document.getElementById('tick-nifty-chg');
+            if (chgEl) { chgEl.textContent = chgTxt; chgEl.style.color = chgColor; }
+          } else if (t.id === 'sensex') {
+            const el = document.getElementById('tick-sensex');
+            if (el) el.textContent = t.price_formatted;
+            const chgEl = document.getElementById('tick-sensex-chg');
+            if (chgEl) { chgEl.textContent = chgTxt; chgEl.style.color = chgColor; }
+          } else if (t.id === 'eurusd') {
+            const el = document.getElementById('tick-eur');
+            if (el) el.textContent = t.price_formatted;
+            const chgEl = document.getElementById('tick-eur-chg');
+            if (chgEl) { chgEl.textContent = chgTxt; chgEl.style.color = chgColor; }
+          } else if (t.id === 'gbpusd') {
+            const el = document.getElementById('tick-gbp');
+            if (el) el.textContent = t.price_formatted;
+            const chgEl = document.getElementById('tick-gbp-chg');
+            if (chgEl) { chgEl.textContent = chgTxt; chgEl.style.color = chgColor; }
+          }
+        });
+        return;
+      }
+    }
+  } catch(e) {}
+
+  // Fallback to CoinGecko for gold if server is sleeping
+  try {
     const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=gold&vs_currencies=usd', {cache:'no-store'});
     if (res.ok) {
       const d = await res.json();
@@ -119,14 +190,16 @@ async function fetchXAUUSDPrice() {
     }
   } catch(e) {}
 }
-window.fetchXAUUSDPrice = fetchXAUUSDPrice;
+window.fetchCommoditiesLive = fetchCommoditiesLive;
+window.fetchXAUUSDPrice = fetchCommoditiesLive;
 
 // ── Live NASDAQ (QQQ) & S&P 500 (SPY) via Yahoo Finance / AllOrigins ─────────
 async function fetchStockIndices() {
   try {
     const symbols = [
       {sym: 'QQQ', ids: ['tick-nasdaq'], label: 'NASDAQ'},
-      {sym: 'SPY', ids: ['tick-spx', 'tick-sp500'], label: 'S&P500'}
+      {sym: 'SPY', ids: ['tick-spx', 'tick-sp500'], label: 'S&P500'},
+      {sym: 'NG=F', ids: ['tick-natgas'], label: 'NATGAS'}
     ];
     for (const s of symbols) {
       try {

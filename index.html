@@ -144,7 +144,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=20260925-2015">
+  <link rel="stylesheet" href="styles.css?v=20260925-2200">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -161,14 +161,16 @@
     <div class="tsm-ticker-items" id="macroTickerTrack">
       <span class="tsm-tick-unit"><span class="tsm-tick-sym">BTCUSDT</span> <span class="tsm-tick-price" id="tick-btc">67,320.50</span> <span class="tsm-tick-chg up" id="tick-btc-chg">▲ +2.45%</span></span>
       <span class="tsm-tick-unit"><span class="tsm-tick-sym">ETHUSDT</span> <span class="tsm-tick-price" id="tick-eth">3,245.10</span> <span class="tsm-tick-chg up" id="tick-eth-chg">▲ +1.24%</span></span>
-      <span class="tsm-tick-unit"><span class="tsm-tick-sym">XAUUSD</span> <span class="tsm-tick-price" id="tick-xau">2,364.80</span> <span class="tsm-tick-chg down" id="tick-xau-chg">▼ -0.32%</span></span>
+      <span class="tsm-tick-unit"><span class="tsm-tick-sym">GOLD (XAU/USD)</span> <span class="tsm-tick-price" id="tick-xau">$2,745.20</span> <span class="tsm-tick-chg up" id="tick-xau-chg">▲ +1.41%</span></span>
+      <span class="tsm-tick-unit"><span class="tsm-tick-sym">SILVER (XAG/USD)</span> <span class="tsm-tick-price" id="tick-silver">$33.60</span> <span class="tsm-tick-chg up" id="tick-silver-chg">▲ +2.15%</span></span>
+      <span class="tsm-tick-unit"><span class="tsm-tick-sym">WTI CRUDE OIL</span> <span class="tsm-tick-price" id="tick-oil">$71.45</span> <span class="tsm-tick-chg up" id="tick-oil-chg">▲ +0.85%</span></span>
+      <span class="tsm-tick-unit"><span class="tsm-tick-sym">NATGAS</span> <span class="tsm-tick-price" id="tick-natgas">$2.68</span> <span class="tsm-tick-chg up" id="tick-natgas-chg">▲ +0.52%</span></span>
       <span class="tsm-tick-unit"><span class="tsm-tick-sym">NASDAQ (QQQ)</span> <span class="tsm-tick-price" id="tick-nasdaq">19,842.10</span> <span class="tsm-tick-chg up" id="tick-nasdaq-chg">▲ +0.85%</span></span>
       <span class="tsm-tick-unit"><span class="tsm-tick-sym">S&amp;P 500 (SPX)</span> <span class="tsm-tick-price" id="tick-spx">5,632.40</span> <span class="tsm-tick-chg up" id="tick-spx-chg">▲ +0.48%</span></span>
       <span class="tsm-tick-unit"><span class="tsm-tick-sym">EURUSD</span> <span class="tsm-tick-price" id="tick-eur">1.0874</span> <span class="tsm-tick-chg up" id="tick-eur-chg">▲ +0.18%</span></span>
       <span class="tsm-tick-unit"><span class="tsm-tick-sym">GBPUSD</span> <span class="tsm-tick-price" id="tick-gbp">1.2736</span> <span class="tsm-tick-chg up" id="tick-gbp-chg">▲ +0.21%</span></span>
-      <span class="tsm-tick-unit"><span class="tsm-tick-sym">USOIL</span> <span class="tsm-tick-price" id="tick-oil">74.21</span> <span class="tsm-tick-chg up" id="tick-oil-chg">▲ +0.65%</span></span>
-      <span class="tsm-tick-unit"><span class="tsm-tick-sym">NIFTY 50</span> <span class="tsm-tick-price" id="tick-nifty">25,380.45</span> <span class="tsm-tick-chg up">▲ +0.42%</span></span>
-      <span class="tsm-tick-unit"><span class="tsm-tick-sym">BSE SENSEX</span> <span class="tsm-tick-price" id="tick-sensex">83,120.15</span> <span class="tsm-tick-chg up">▲ +0.38%</span></span>
+      <span class="tsm-tick-unit"><span class="tsm-tick-sym">NIFTY 50</span> <span class="tsm-tick-price" id="tick-nifty">25,380.45</span> <span class="tsm-tick-chg up" id="tick-nifty-chg">▲ +0.42%</span></span>
+      <span class="tsm-tick-unit"><span class="tsm-tick-sym">BSE SENSEX</span> <span class="tsm-tick-price" id="tick-sensex">83,120.15</span> <span class="tsm-tick-chg up" id="tick-sensex-chg">▲ +0.38%</span></span>
     </div>
     <div class="tsm-live-pill">
       <span class="tsm-live-dot-pulse"></span>
@@ -4074,9 +4076,11 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
 
     <!-- ══════════ VIEW: TRADER COMMUNITY BLOG & RECOVERY PLAYBOOK ══════════ -->
-    <div id="view-blog" class="nc-view-pane tsm-view-section" style="display:none;">
+    <div id="view-blog" class="nc-view-pane tsm-view-section">
       <div class="tsm-panel" style="margin-bottom:16px;">
         <div class="tsm-panel-header" style="flex-wrap:wrap; gap:12px;">
           <div>
@@ -5281,7 +5285,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=20260925-2015"></script>
+  <script src="app.js?v=20260925-2200"></script>
   <!-- Monetag In-Page / Vignette Execution Scripts -->
   <script>(function(s){s.dataset.zone='11802121',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
   <script src="https://quge5.com/88/tag.min.js" data-zone="285853" async data-cfasync="false"></script>

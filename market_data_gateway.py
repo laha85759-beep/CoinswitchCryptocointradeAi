@@ -73,8 +73,43 @@ class MarketDataGateway:
             if cached["data"] and cached["expires_at"] > now:
                 return cached["data"]
             
-            # Fetch or update baseline quotes
+            # Fetch authentic live data from real_market_feed
             quotes = dict(self._default_quotes)
+            try:
+                from real_market_feed import market_feed
+                live = market_feed.get_all_tickers()
+                if live:
+                    key_map = {
+                        "gold": ("gold", "USD"),
+                        "silver": ("silver", "USD"),
+                        "crude": ("crude", "USD"),
+                        "btc": ("btc", "USDT"),
+                        "eth": ("eth", "USDT"),
+                        "sol": ("sol", "USDT"),
+                        "xrp": ("xrp", "USDT"),
+                        "nifty": ("nifty", "INR"),
+                        "banknifty": ("banknifty", "INR"),
+                        "sensex": ("sensex", "INR"),
+                        "eurusd": ("eurusd", "FX"),
+                        "gbpusd": ("gbpusd", "FX"),
+                        "usdjpy": ("usdjpy", "FX")
+                    }
+                    for q_key, (feed_key, unit) in key_map.items():
+                        if feed_key in live:
+                            f_item = live[feed_key]
+                            p = float(f_item.get("price_spot") or f_item.get("price") or 0.0)
+                            chg = float(f_item.get("chg_spot_24h") or f_item.get("chg_24h") or 0.0)
+                            if p > 0:
+                                quotes[q_key] = {
+                                    "symbol": quotes[q_key]["symbol"],
+                                    "price": p,
+                                    "change_pct": chg,
+                                    "direction": "up" if chg >= 0 else "down",
+                                    "unit": unit
+                                }
+            except Exception as e:
+                log.debug("Real market feed sync error: %s", e)
+
             self.cache["quotes"] = {
                 "data": quotes,
                 "expires_at": now + 3.0  # Strict 3-sec TTL
