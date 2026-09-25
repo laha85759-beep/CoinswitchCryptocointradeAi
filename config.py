@@ -183,7 +183,7 @@ CONFIG = {
     "risk_order_type":          os.getenv("RISK_ORDER_TYPE",           "market"),
 
     # ── Execution settings ────────────────────────────────────────────────────
-    "slippage_tolerance_pct":       _float_env("SLIPPAGE_TOLERANCE_PCT",    1.5),  # Tight 1.5% slippage ceiling
+    "slippage_tolerance_pct":       _float_env("SLIPPAGE_TOLERANCE_PCT",    3.0),  # 3.0% max slippage ceiling between scan price and live futures fill
     "limit_slippage_offset_pct":    _float_env("LIMIT_SLIPPAGE_OFFSET_PCT", 0.2),
     "max_retries":                  _int_env("MAX_RETRIES",                   3),
     "circuit_breaker_error_limit":  _int_env("CIRCUIT_BREAKER_ERROR_LIMIT",   5),

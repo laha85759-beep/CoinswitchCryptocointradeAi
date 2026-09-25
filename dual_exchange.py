@@ -218,7 +218,9 @@ class DualExecutionAgent:
         # Get Delta balance for risk-based position sizing
         if not self.cfg["paper_trading_mode"]:
             try:
+                raw_bals = self.delta_client.get_balances()
                 delta_balance = max(self.delta_client.get_usdt_balance(), 0.0)
+                log.info("Delta wallet balance parsed: $%.4f USDT (raw balances: %s)", delta_balance, raw_bals)
             except Exception as exc:
                 log.warning("Delta balance fetch failed: %s", exc)
                 delta_balance = 0.0
