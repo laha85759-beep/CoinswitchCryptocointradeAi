@@ -96,7 +96,15 @@ def dispatch_signals_to_all_users(approved_signals: list[dict], global_cfg: dict
                         delta_side = "buy" if direction in ["buy", "long"] else "sell"
                         prod_id = dl_client.symbol_to_product_id(symbol)
                         if prod_id:
-                            order_res = dl_client.place_order(symbol=symbol, side=delta_side, order_type="market", size=1)
+                            order_res = dl_client.place_order(
+                                symbol=symbol,
+                                side=delta_side,
+                                order_type="market",
+                                quantity=1.0,
+                                stop_loss_price=sl_price,
+                                take_profit_price=tp_price,
+                                leverage=3,
+                            )
                             if order_res and (order_res.get("id") or order_res.get("success")):
                                 c_db = get_db()
                                 c_cur = c_db.cursor()

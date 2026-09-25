@@ -240,20 +240,33 @@ class DualExecutionAgent:
             else:
                 leverage = 3                        # Safe 3x Leverage default
 
-            # Strict risk safeguard: Never risk more than 15% of account balance on a single position
-            max_pos_margin = delta_balance * (float(self.cfg.get("max_position_pct", 15.0)) / 100.0)
+            # Strict risk safeguard:
+            # For standard accounts, cap margin at max_position_pct (15%).
+            # For small accounts (< $50), allow position margin up to free balance or $5 max,
+            # so the minimum 1-contract order size can actually be placed rather than always rejected.
+            base_margin = delta_balance * (float(self.cfg.get("max_position_pct", 15.0)) / 100.0)
+            if delta_balance < 50.0:
+                max_pos_margin = min(delta_balance * 0.85, max(base_margin, 2.50))
+            else:
+                max_pos_margin = base_margin
             position_usd = min(position_usd, max_pos_margin * leverage)
         else:
             leverage = 5
+            max_pos_margin = position_usd
 
         # Dynamic risk-based lot size (contracts) considering contract_value & leverage
         contract_notional = current_price * contract_val
         if contract_notional > 0:
+            margin_per_contract = contract_notional / leverage
+            if margin_per_contract > delta_balance:
+                log.warning("Delta order skipped for %s: 1 contract requires $%.4f margin, available balance is $%.4f",
+                            symbol, margin_per_contract, delta_balance)
+                return {
+                    "status": "rejected",
+                    "reason": f"insufficient_margin (1 contract needs ${margin_per_contract:.3f}, avail ${delta_balance:.3f})",
+                    "symbol": symbol,
+                }
             max_contracts_for_balance = int((max_pos_margin * leverage) / contract_notional) if delta_balance > 0 else 0
-            if max_contracts_for_balance < 1 and (contract_notional / leverage) > delta_balance:
-                log.warning("Delta order skipped for %s: 1 contract requires $%.4f margin, available is $%.4f",
-                            symbol, (contract_notional / leverage), delta_balance)
-                return {"status": "rejected", "reason": "insufficient_margin_for_min_lot", "symbol": symbol}
             calculated_contracts = int(position_usd / contract_notional) if position_usd > 0 else 1
             num_contracts = max(1, min(calculated_contracts, max(1, max_contracts_for_balance)))
         else:
@@ -294,8 +307,16 @@ class DualExecutionAgent:
                     calc_sl = round(current_price * (1 + stop_loss_pct / 100.0), 4)
                     calc_tp = round(current_price * (1 - take_profit_pct / 100.0), 4)
 
-                # ALWAYS execute MARKET order entry with ATOMIC TP (+4.8%) & SL (-0.05%) on Delta Exchange India
-                order = self.delta_client.place_order(symbol, side, "market", qty, stop_loss_price=calc_sl, take_profit_price=calc_tp)
+                # Execute MARKET order entry with ATOMIC TP & SL and calibrated leverage on Delta Exchange India
+                order = self.delta_client.place_order(
+                    symbol=symbol,
+                    side=side,
+                    order_type="market",
+                    quantity=qty,
+                    stop_loss_price=calc_sl,
+                    take_profit_price=calc_tp,
+                    leverage=leverage,
+                )
                 order_id = order.get("id") or order.get("order_id")
                 if not order_id:
                     return {"status": "error", "reason": "missing_order_id", "symbol": symbol}
@@ -309,17 +330,6 @@ class DualExecutionAgent:
                     if filled:
                         break
                     time.sleep(2)
-
-                # 1. Attach server-side position bracket orders (HARD STOP-LOSS & TAKE-PROFIT) on Delta Exchange engine
-                try:
-                    bracket_res = self.delta_client._request("POST", "/v2/orders/bracket", body={
-                        "product_id": product_id,
-                        "stop_loss_price": str(calc_sl),
-                        "take_profit_price": str(calc_tp),
-                    })
-                    log.info("Delta LIVE HARD POSITION BRACKET SL (%s) & TP (%s) attached for %s: success=%s", calc_sl, calc_tp, symbol, bracket_res.get("success", True))
-                except Exception as b_exc:
-                    log.warning("Failed to attach Delta position bracket TP/SL for %s: %s", symbol, b_exc)
 
                 result = {
                     "status": "filled",

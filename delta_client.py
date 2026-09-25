@@ -19,6 +19,7 @@ import hashlib
 import hmac
 import json
 import logging
+import math
 import time
 from typing import Any
 
@@ -120,12 +121,13 @@ class DeltaClient:
             if not data.get("success", True):
                 log.warning("Delta API error on %s %s: %s", method, endpoint, data)
             return data
-        except requests.HTTPError:
+        except requests.HTTPError as http_err:
+            resp_detail = getattr(resp, "text", "")[:300]
             if resp.status_code in (401, 403):
-                log.debug("Delta auth notice (%s) on %s %s: %s", resp.status_code, method, endpoint, resp.text[:200])
+                log.debug("Delta auth notice (%s) on %s %s: %s", resp.status_code, method, endpoint, resp_detail)
                 return {"success": False, "error": "unauthorized", "result": []}
-            log.error("HTTP %s on %s %s: %s", resp.status_code, method, endpoint, resp.text[:300])
-            raise
+            log.error("HTTP %s on %s %s: %s", resp.status_code, method, endpoint, resp_detail)
+            raise RuntimeError(f"HTTP {resp.status_code} on {method} {endpoint}: {resp_detail}") from http_err
         except Exception as exc:
             log.error("Request error on %s %s: %s", method, endpoint, exc)
             return {"success": False, "error": str(exc), "result": []}
@@ -353,6 +355,15 @@ class DeltaClient:
             log.debug("Delta set_leverage notice for product_id=%s: %s", product_id, exc)
             return {}
 
+    @staticmethod
+    def round_to_tick(price: float, tick_size: float) -> float:
+        """Round price to the product's tick size with correct precision."""
+        if not tick_size or tick_size <= 0:
+            return round(price, 4)
+        ticks = round(price / tick_size)
+        decimals = max(0, -int(math.floor(math.log10(tick_size)))) if tick_size < 1 else 0
+        return round(ticks * tick_size, decimals)
+
     def place_order(
         self,
         symbol: str,
@@ -382,6 +393,9 @@ class DeltaClient:
 
         size = max(1, int(round(quantity)))
 
+        # Fetch product tick_size for accurate price formatting (prevents 400 Bad Request)
+        tick_size = float(product_info.get("tick_size") or 0.0)
+
         body: dict = {
             "product_id": product_id,
             "size": size,
@@ -389,14 +403,17 @@ class DeltaClient:
             "order_type": "limit_order" if order_type.lower() == "limit" else "market_order",
         }
         if price is not None and order_type.lower() == "limit":
-            body["limit_price"] = str(round(price, 8))
+            formatted_price = self.round_to_tick(price, tick_size)
+            body["limit_price"] = str(formatted_price)
 
         if stop_loss_price and stop_loss_price > 0:
-            body["stop_loss_price"] = str(round(stop_loss_price, 4))
+            formatted_sl = self.round_to_tick(stop_loss_price, tick_size)
+            body["stop_loss_price"] = str(formatted_sl)
             body["stop_loss_order_type"] = "market_order"
 
         if take_profit_price and take_profit_price > 0:
-            body["take_profit_price"] = str(round(take_profit_price, 4))
+            formatted_tp = self.round_to_tick(take_profit_price, tick_size)
+            body["take_profit_price"] = str(formatted_tp)
             body["take_profit_order_type"] = "limit_order"
 
         log.info(

@@ -573,9 +573,31 @@ def init_db():
             cursor.execute('''
                 INSERT INTO user_api_keys (user_id, cs_api_key_enc, cs_api_secret_enc, delta_api_key_enc, delta_api_secret_enc, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?)
-                ON CONFLICT(user_id) DO NOTHING
+                ON CONFLICT(user_id) DO UPDATE SET
+                    cs_api_key_enc = CASE WHEN excluded.cs_api_key_enc != '' THEN excluded.cs_api_key_enc ELSE user_api_keys.cs_api_key_enc END,
+                    cs_api_secret_enc = CASE WHEN excluded.cs_api_secret_enc != '' THEN excluded.cs_api_secret_enc ELSE user_api_keys.cs_api_secret_enc END,
+                    delta_api_key_enc = CASE WHEN excluded.delta_api_key_enc != '' THEN excluded.delta_api_key_enc ELSE user_api_keys.delta_api_key_enc END,
+                    delta_api_secret_enc = CASE WHEN excluded.delta_api_secret_enc != '' THEN excluded.delta_api_secret_enc ELSE user_api_keys.delta_api_secret_enc END,
+                    updated_at = excluded.updated_at
             ''', (ta_id, cs_k_enc, cs_s_enc, dl_k_enc, dl_s_enc, now))
         print(f"Created Trade Admin (id={ta_id})")
+    else:
+        # If tradeadmin already exists, sync keys if env vars are present
+        if cs_k or dl_k:
+            cursor.execute("SELECT id FROM users WHERE email = ?", ("tradeadmin@thesmartmag.com",))
+            ta_row = cursor.fetchone()
+            if ta_row:
+                ta_existing_id = ta_row["id"]
+                cursor.execute('''
+                    INSERT INTO user_api_keys (user_id, cs_api_key_enc, cs_api_secret_enc, delta_api_key_enc, delta_api_secret_enc, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(user_id) DO UPDATE SET
+                        cs_api_key_enc = CASE WHEN excluded.cs_api_key_enc != '' THEN excluded.cs_api_key_enc ELSE user_api_keys.cs_api_key_enc END,
+                        cs_api_secret_enc = CASE WHEN excluded.cs_api_secret_enc != '' THEN excluded.cs_api_secret_enc ELSE user_api_keys.cs_api_secret_enc END,
+                        delta_api_key_enc = CASE WHEN excluded.delta_api_key_enc != '' THEN excluded.delta_api_key_enc ELSE user_api_keys.delta_api_key_enc END,
+                        delta_api_secret_enc = CASE WHEN excluded.delta_api_secret_enc != '' THEN excluded.delta_api_secret_enc ELSE user_api_keys.delta_api_secret_enc END,
+                        updated_at = excluded.updated_at
+                ''', (ta_existing_id, cs_k_enc, cs_s_enc, dl_k_enc, dl_s_enc, now))
 
     # ── Ensure all active users have default autotrade user_settings ──
     cursor.execute('''
