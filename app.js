@@ -8727,6 +8727,16 @@ function filterBlogCategory(cat, btnEl) {
 window.filterBlogCategory = filterBlogCategory;
 
 function openCreatePostModal() {
+  const token = localStorage.getItem("tsm_jwt_token") || localStorage.getItem("tsm_user_token");
+  if (!currentUser && !token) {
+    if (typeof showModernToast === "function") {
+      showModernToast("🔒 Please sign in or register to publish your trading story and playbooks.", "info");
+    }
+    if (typeof openAuthModal === "function") {
+      openAuthModal("login");
+    }
+    return;
+  }
   const modal = document.getElementById("createPostModal");
   if (modal) modal.style.display = "flex";
 }
@@ -8745,6 +8755,14 @@ window.handleCreatePostBackdrop = handleCreatePostBackdrop;
 
 async function handlePublishBlogPost(e) {
   e.preventDefault();
+  const token = localStorage.getItem("tsm_jwt_token") || localStorage.getItem("tsm_user_token");
+  if (!currentUser && !token) {
+    showModernToast("🔒 Session expired. Please log in again to publish.", "warning");
+    closeCreatePostModal();
+    if (typeof openAuthModal === "function") openAuthModal("login");
+    return;
+  }
+
   const title = document.getElementById("postTitle")?.value.trim();
   const category = document.getElementById("postCategory")?.value;
   const win_rate = document.getElementById("postWinRate")?.value.trim();
@@ -8761,9 +8779,10 @@ async function handlePublishBlogPost(e) {
   if (btn) btn.disabled = true;
 
   try {
-    const token = localStorage.getItem("tsm_jwt_token") || localStorage.getItem("tsm_user_token");
-    const headers = { "Content-Type": "application/json" };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const headers = { 
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    };
 
     const res = await fetch("/api/blog/posts", {
       method: "POST",

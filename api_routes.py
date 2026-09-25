@@ -2253,16 +2253,16 @@ def api_get_blog_post_detail(slug):
     return jsonify({"status": "success", "post": post})
 
 @api_bp.route("/api/blog/posts", methods=["POST"])
-def api_create_blog_post():
+@user_required
+def api_create_blog_post(user):
     data = request.get_json(silent=True) or {}
-    user = get_bearer_user()
-    user_id = user["id"] if user else None
+    user_id = user["id"]
     
     title = data.get("title", "").strip()
     content = data.get("content", "").strip()
     category = data.get("category", "Recovery").strip()
     summary = data.get("summary", "").strip()
-    author_name = data.get("author_name", "").strip() or (user["name"] if user else "Anonymous Trader")
+    author_name = user.get("name") or user.get("email", "").split("@")[0] or "Quant Trader"
     tags = data.get("tags", [])
     pnl_screenshot_url = data.get("pnl_screenshot_url", "").strip()
     win_rate = data.get("win_rate", "").strip()
