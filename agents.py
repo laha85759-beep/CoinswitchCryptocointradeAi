@@ -772,7 +772,18 @@ class MonitorReporterAgent:
 
                 active_stop = float(trade.get("trailing_stop") or trade["hard_sl"])
                 reason = None
-                if current <= active_stop:
+
+                # ── Mandatory Weekend Protection Auto-Flatten Protocol ──
+                # If Friday late evening (>=21:00 UTC) or weekend, auto-close to eliminate gap risk
+                now_utc = datetime.now(timezone.utc)
+                is_weekend_flatten_due = (
+                    (now_utc.weekday() == 4 and now_utc.hour >= 21) or
+                    (now_utc.weekday() in (5, 6))
+                ) and self.cfg.get("weekend_trading_disabled", True)
+
+                if is_weekend_flatten_due:
+                    reason = "weekend_protection"
+                elif current <= active_stop:
                     reason = "trailing_stop" if trade.get("trail_active") else "stop_loss"
                 elif current >= float(trade.get("take_profit", math.inf)):
                     reason = "take_profit"
@@ -827,6 +838,7 @@ class MonitorReporterAgent:
             "take_profit": "🎯 TAKE PROFIT",
             "trailing_stop": "📈 TRAILING STOP",
             "stop_loss": "🛑 STOP LOSS",
+            "weekend_protection": "🛡️ WEEKEND AUTO-FLATTEN (FRI CLOSE)",
         }.get(reason, reason.upper())
 
         # Append to closed_trades.json for UI history

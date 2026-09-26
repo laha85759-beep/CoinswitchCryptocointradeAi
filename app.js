@@ -8826,11 +8826,20 @@ async function openReadArticleModal(slugOrId) {
 
       const proofWrap = document.getElementById("articleModalProofWrap");
       const proofImg = document.getElementById("articleModalProofImg");
-      if (p.pnl_screenshot_url && proofWrap && proofImg) {
-        proofImg.src = p.pnl_screenshot_url;
-        proofWrap.style.display = "block";
+      const rawImgUrl = (p.pnl_screenshot_url || "").trim();
+      const isValidImg = rawImgUrl.startsWith("http://") || rawImgUrl.startsWith("https://") || rawImgUrl.startsWith("/");
+
+      if (isValidImg && proofWrap && proofImg) {
+        proofImg.onerror = function() {
+          if (proofWrap) proofWrap.style.display = "none";
+        };
+        proofImg.onload = function() {
+          if (proofWrap) proofWrap.style.display = "block";
+        };
+        proofImg.src = rawImgUrl;
       } else if (proofWrap) {
         proofWrap.style.display = "none";
+        if (proofImg) proofImg.src = "";
       }
 
       const modal = document.getElementById("readArticleModal");

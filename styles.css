@@ -7393,6 +7393,180 @@ input::placeholder, textarea::placeholder {
 .broker-badge.connected { background:rgba(0,240,144,0.15); color:#00ff88; border:1px solid rgba(0,240,144,0.3); }
 .broker-badge.disconnected { background:rgba(255,255,255,0.05); color:#6e7681; border:1px solid rgba(255,255,255,0.1); }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   CYBERPUNK NEON CONTROLS & MODERN CARD SPECIFICATIONS (v89.0)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Universal Tab & Filter Buttons (Community Blog, Multi-Market, Signals) */
+.tsm-tab-btn, button.tsm-tab-btn {
+  background: rgba(6, 14, 28, 0.85) !important;
+  border: 1px solid rgba(0, 240, 144, 0.25) !important;
+  color: var(--text-dim, #94a3b8) !important;
+  padding: 8px 16px !important;
+  border-radius: 6px !important;
+  font-family: var(--font-mono, monospace) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.8px !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  white-space: nowrap !important;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35) !important;
+}
+
+.tsm-tab-btn:hover, button.tsm-tab-btn:hover {
+  background: rgba(0, 240, 144, 0.12) !important;
+  border-color: var(--neon-green, #00f090) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 14px rgba(0, 240, 144, 0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+.tsm-tab-btn.active, button.tsm-tab-btn.active {
+  background: linear-gradient(135deg, rgba(0, 240, 144, 0.25), rgba(0, 212, 255, 0.18)) !important;
+  border-color: var(--neon-green, #00f090) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 16px rgba(0, 240, 144, 0.4), inset 0 0 10px rgba(0, 240, 144, 0.15) !important;
+  text-shadow: 0 0 8px rgba(0, 240, 144, 0.6) !important;
+}
+
+/* Small Filter / Category Buttons in Multi-Market Signals Ribbon */
+.tsm-btn-small, button.tsm-btn-small {
+  background: rgba(8, 18, 34, 0.88) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: var(--text-dim, #94a3b8) !important;
+  padding: 6px 13px !important;
+  border-radius: 5px !important;
+  font-family: var(--font-mono, monospace) !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.6px !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  white-space: nowrap !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) !important;
+}
+
+.tsm-btn-small:hover {
+  transform: translateY(-1px) !important;
+  color: #ffffff !important;
+}
+
+.tsm-btn-small.green:hover, .tsm-btn-small.green.active {
+  background: linear-gradient(135deg, rgba(0, 240, 144, 0.25), rgba(0, 212, 255, 0.15)) !important;
+  border-color: var(--neon-green, #00f090) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 12px rgba(0, 240, 144, 0.35) !important;
+}
+
+.tsm-btn-small.gold:hover, .tsm-btn-small.gold.active {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.22), rgba(255, 140, 0, 0.15)) !important;
+  border-color: var(--neon-gold, #ffd700) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.35) !important;
+}
+
+.tsm-btn-small.cyan:hover, .tsm-btn-small.cyan.active {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.22), rgba(0, 150, 255, 0.15)) !important;
+  border-color: var(--neon-cyan, #00d4ff) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.35) !important;
+}
+
+.tsm-btn-small.purple:hover, .tsm-btn-small.purple.active {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(255, 0, 170, 0.15)) !important;
+  border-color: var(--neon-purple, #a855f7) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.35) !important;
+}
+
+/* KPI Card Grid & Containers (Signals KPI, Portfolio KPI) */
+.tsm-kpi-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 14px !important;
+}
+
+@media (max-width: 1100px) {
+  .tsm-kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .tsm-kpi-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.tsm-card {
+  background: linear-gradient(135deg, rgba(6, 14, 28, 0.95), rgba(12, 24, 46, 0.88)) !important;
+  border: 1px solid rgba(0, 240, 144, 0.2) !important;
+  border-radius: 8px !important;
+  padding: 16px 20px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.tsm-card:hover {
+  transform: translateY(-2px) !important;
+  border-color: rgba(0, 240, 144, 0.45) !important;
+  box-shadow: 0 8px 30px rgba(0, 240, 144, 0.15), 0 0 1px rgba(0, 240, 144, 0.5) !important;
+}
+
+.tsm-card-title {
+  font-family: var(--font-mono, monospace) !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  letter-spacing: 1.5px !important;
+  color: var(--text-dim, #94a3b8) !important;
+  text-transform: uppercase !important;
+  margin-bottom: 6px !important;
+}
+
+.tsm-card-val {
+  font-family: var(--font-orb, 'Orbitron', monospace) !important;
+  font-size: 22px !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+  line-height: 1.2 !important;
+  margin-bottom: 4px !important;
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.2) !important;
+}
+
+.tsm-card-sub {
+  font-family: var(--font-mono, monospace) !important;
+  font-size: 10.5px !important;
+  color: var(--text-dim, #94a3b8) !important;
+  line-height: 1.3 !important;
+}
+
+/* Image Fallback and Proof Screenshot Framing in Modal */
+#articleModalProofWrap {
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(2, 6, 14, 0.95);
+  border: 1px solid rgba(0, 240, 144, 0.35);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.7);
+}
+
+#articleModalProofImg {
+  display: block;
+  width: 100%;
+  max-height: 380px;
+  object-fit: contain;
+  background: #030712;
+}
+
+
 
 
 
