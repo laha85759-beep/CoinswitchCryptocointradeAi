@@ -389,12 +389,29 @@ class RiskManagerAgent:
         self.delta_client = delta_client
         self.sentiment_agent = AISentimentAgent()
 
+    @staticmethod
+    def is_trading_day() -> tuple[bool, str]:
+        """Mon-Fri gate (UTC). Weekends are blocked for ALL exchange trades.
+        Controlled by TRADING_DAYS_ONLY_WEEKDAYS env (default: enabled)."""
+        import os as _os
+        from datetime import datetime as _dt, timezone as _tz
+        if _os.getenv("TRADING_DAYS_ONLY_WEEKDAYS", "true").strip().lower() in ("0", "false", "no", "off"):
+            return True, "weekday_gate_disabled"
+        wd = _dt.now(_tz.utc).weekday()  # 0=Mon .. 6=Sun
+        if wd >= 5:
+            return False, "weekend_market_closed (Sat/Sun)"
+        return True, "weekday"
+
     def evaluate(self, signals: list[dict], execution_halted: bool = False) -> list[dict]:
         approvals = []
+        trading_day, day_reason = self.is_trading_day()
         cached_portfolio = self._portfolio_usdt()
         for signal in signals:
+            if not trading_day:
+                approvals.append(risk_reject(signal, f"trading_day_gate: {day_reason}"))
+                continue
             approvals.append(self._evaluate_one(signal, execution_halted, cached_portfolio_usdt=cached_portfolio))
-        self.audit.write("RiskManager", {"count": len(approvals), "approvals": approvals})
+        self.audit.write("RiskManager", {"count": len(approvals), "approvals": approvals, "trading_day": trading_day})
         return approvals
 
     def _evaluate_one(self, signal: dict, execution_halted: bool, cached_portfolio_usdt: float = None) -> dict:

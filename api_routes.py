@@ -15,10 +15,10 @@ from database import (
     get_affiliate_analytics, get_sales_analytics,
     track_affiliate_click, record_sale, get_db,
     is_ip_banned, ban_ip, unban_ip, get_all_banned_ips,
-    admin_create_user, admin_record_profit_update, admin_record_manual_payment,
-    admin_get_all_payments, update_user_subscription, set_user_permission_override,
-    get_saas_dashboard_metrics, get_all_users_saas_management
+    save_generated_article, get_generated_articles, track_article_event,
+    get_article_analytics
 )
+from article_studio import article_studio, TOPICS as ARTICLE_TOPICS
 from email_service import send_welcome_email, send_password_reset_email, send_inquiry_confirmation, send_login_alert_email
 from coinswitch_client import CoinSwitchClient
 from delta_client import DeltaClient
@@ -39,7 +39,7 @@ def load_json_safe(filepath, default=None):
 def get_bearer_user():
     auth_header = request.headers.get("Authorization", "")
     if not auth_header.startswith("Bearer "):
-        token = request.cookies.get("auth_token", "") or request.cookies.get("tsm_token", "")
+        token = request.cookies.get("auth_token", "")
     else:
         token = auth_header.split(" ")[1]
     
@@ -47,16 +47,11 @@ def get_bearer_user():
         return None
     
     payload = verify_jwt_token(token)
-    if payload and payload.get("user_id"):
-        return get_user_by_id(payload.get("user_id"))
-        
-    # Also support tsm_ token format or master admin token for superadmin access
-    if token.startswith("tsm_") or token == "tsm_master_admin_session_valid":
-        admin_user = get_user_by_email("admin@thesmartmag.com")
-        if admin_user:
-            return admin_user
+    if not payload:
+        return None
     
-    return None
+    user = get_user_by_id(payload.get("user_id"))
+    return user
 
 def user_required(f):
     @wraps(f)
@@ -77,17 +72,6 @@ def superadmin_required(f):
             return jsonify({"status": "error", "message": "Admin authentication required."}), 401
         if user.get("role") != "superadmin":
             return jsonify({"status": "error", "message": "Access restricted to Super Admin only."}), 403
-        return f(user, *args, **kwargs)
-    return decorated
-
-def admin_or_superadmin_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        user = get_bearer_user()
-        if not user:
-            return jsonify({"status": "error", "message": "Admin authentication required."}), 401
-        if user.get("role") not in ("admin", "superadmin"):
-            return jsonify({"status": "error", "message": "Access restricted to Admin only."}), 403
         return f(user, *args, **kwargs)
     return decorated
 
@@ -320,13 +304,13 @@ def admin_login():
     user, error = authenticate_user(email, password)
     if error:
         return jsonify({"status": "error", "message": error}), 401
-    if user.get("role") not in ("superadmin", "admin"):
-        return jsonify({"status": "error", "message": "Unauthorized. Administrative account required."}), 403
+    if user.get("role") != "superadmin":
+        return jsonify({"status": "error", "message": "Unauthorized. Super Admin account required."}), 403
         
     token = create_jwt_token({"user_id": user["id"], "email": user["email"], "role": user["role"]})
     return jsonify({
         "status": "success",
-        "message": f"Administrative session established for {user.get('role')}.",
+        "message": "Super Admin authenticated successfully.",
         "token": token,
         "user": user
     })
@@ -1050,7 +1034,8 @@ def admin_manual_trade(admin_user):
 @api_bp.route("/api/track/affiliate-click", methods=["POST"])
 def track_click():
     data = request.get_json() or {}
-    code = data.get("code", "").strip() or request.args.get("code", "").strip()
+    code = (data.get("code", "").strip() or data.get("partner_code", "").strip()
+            or request.args.get("code", "").strip() or request.args.get("partner_code", "").strip())
     
     ip = request.headers.get("CF-Connecting-IP") or request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or request.remote_addr or "127.0.0.1"
     country = request.headers.get("CF-IPCountry", "US")
@@ -1083,6 +1068,78 @@ def get_live_news():
         "news": news_list,
         "last_updated": news_core.last_scan_time
     })
+
+# ── 6b. AI ARTICLE STUDIO: TOPIC-TARGETED ARTICLES + FULL FUNNEL TRACKING ────
+@api_bp.route("/api/articles/feed", methods=["GET"])
+def get_articles_feed():
+    """Public newsstand feed: AI-generated topic articles (persisted) + latest wires."""
+    topic = (request.args.get("topic") or "all").strip().lower()
+    limit = min(int(request.args.get("limit", 24) or 24), 50)
+    articles = get_generated_articles(limit=limit, topic=topic)
+    return jsonify({
+        "status": "success",
+        "total": len(articles),
+        "topics": {k: v.get("label", k) for k, v in ARTICLE_TOPICS.items()},
+        "articles": articles
+    })
+
+
+@api_bp.route("/api/articles/generate", methods=["POST"])
+def generate_new_article():
+    """Generate a fresh audience-targeted article for a topic and persist it."""
+    data = request.get_json(silent=True) or {}
+    topic = (data.get("topic") or "markets").strip().lower()
+    use_ai = bool(data.get("use_ai", True))
+    try:
+        article = article_studio.generate_article(topic=topic, use_ai=use_ai)
+        save_generated_article(article)
+        return jsonify({"status": "success", "article": article})
+    except Exception as exc:
+        return jsonify({"status": "error", "message": str(exc)}), 500
+
+
+@api_bp.route("/api/articles/<article_id>", methods=["GET"])
+def get_single_article(article_id):
+    articles = get_generated_articles(limit=200)
+    for a in articles:
+        if a.get("id") == article_id:
+            return jsonify({"status": "success", "article": a})
+    return jsonify({"status": "error", "message": "Article not found"}), 404
+
+
+@api_bp.route("/api/track/article-event", methods=["POST"])
+def track_article_funnel_event():
+    """Record article funnel events: view / read_complete / cta_click / share."""
+    data = request.get_json(silent=True) or {}
+    article_id = (data.get("article_id") or "").strip()
+    event_type = (data.get("event_type") or "view").strip().lower()
+    ip = request.headers.get("CF-Connecting-IP") or request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or request.remote_addr or "127.0.0.1"
+    country = request.headers.get("CF-IPCountry", "US")
+    referrer = data.get("referrer", "") or request.referrer or ""
+    ua = request.headers.get("User-Agent", "")
+    try:
+        dwell_ms = int(data.get("dwell_ms", 0) or 0)
+    except (TypeError, ValueError):
+        dwell_ms = 0
+    ok = track_article_event(
+        article_id, event_type,
+        topic=(data.get("topic") or "").strip(),
+        partner_code=(data.get("partner_code") or "").strip(),
+        ip=ip, referrer=referrer, user_agent=ua, country=country,
+        dwell_ms=dwell_ms
+    )
+    # Also count CTA clicks in the main affiliate ledger
+    if ok and event_type == "cta_click" and data.get("partner_code"):
+        track_affiliate_click(data.get("partner_code"), ip, referrer, ua, country)
+    return jsonify({"status": "success" if ok else "ignored", "recorded": ok})
+
+
+@api_bp.route("/api/admin/article-analytics", methods=["GET"])
+@superadmin_required
+def admin_article_analytics(admin_user):
+    """Admin: content funnel + top topics + affiliate partner performance."""
+    return jsonify({"status": "success", "analytics": get_article_analytics()})
+
 
 @api_bp.route("/api/news/calendar", methods=["GET"])
 def get_economic_calendar():
@@ -1766,95 +1823,6 @@ def admin_unban_ip(admin_user):
             "status": "success",
             "message": f"IP {target_ip} has been removed from the blacklist."
         })
-@api_bp.route("/api/admin/users/create", methods=["POST"])
-@superadmin_required
-def admin_create_new_user(admin_user):
-    data = request.get_json(silent=True) or {}
-    email = data.get("email", "").strip()
-    password = data.get("password", "")
-    name = data.get("name", "").strip()
-    role = data.get("role", "trader").strip()
-    plan_name = data.get("plan_name", "free").strip()
-    services = data.get("services", {})
-    
-    if not email or "@" not in email:
-        return jsonify({"status": "error", "message": "Valid email address required."}), 400
-    if not password or len(password) < 6:
-        return jsonify({"status": "error", "message": "Password must be at least 6 characters."}), 400
-        
-    profile, err = admin_create_user(email=email, password=password, name=name, role=role, plan_name=plan_name, services=services)
-    if err:
-        return jsonify({"status": "error", "message": err}), 400
-    return jsonify({"status": "success", "message": f"User {email} created successfully.", "user": profile})
-
-@api_bp.route("/api/admin/user/<int:user_id>/update-profit", methods=["POST"])
-@admin_or_superadmin_required
-def admin_update_user_profit(admin_user, user_id):
-    data = request.get_json(silent=True) or {}
-    symbol = data.get("symbol", "BTC/USDT").strip()
-    try:
-        realized_pnl = float(data.get("realized_pnl", 0.0))
-    except (ValueError, TypeError):
-        return jsonify({"status": "error", "message": "Invalid profit amount."}), 400
-    exchange = data.get("exchange", "coinswitch")
-    direction = data.get("direction", "long")
-    notes = data.get("notes", "Admin profit adjustment")
-    
-    res = admin_record_profit_update(user_id=user_id, symbol=symbol, realized_pnl=realized_pnl, exchange=exchange, direction=direction, notes=notes)
-    return jsonify({"status": "success", "message": f"Profit of ${realized_pnl:.2f} logged for User #{user_id}", "data": res})
-
-@api_bp.route("/api/admin/user/<int:user_id>/subscription", methods=["POST"])
-@superadmin_required
-def admin_manage_user_subscription(admin_user, user_id):
-    data = request.get_json(silent=True) or {}
-    plan_id = data.get("plan_id", "pro")
-    billing_interval = data.get("billing_interval", "monthly")
-    status = data.get("status", "active")
-    duration_days = int(data.get("duration_days", 30))
-    amount = float(data.get("amount", 0.0))
-    payment_method = data.get("payment_method", "")
-    
-    now = int(time.time())
-    expires_at = now + (duration_days * 86400) if billing_interval != "lifetime" else now + (10 * 365 * 86400)
-    
-    update_user_subscription(user_id=user_id, plan_id=plan_id, billing_interval=billing_interval, expires_at=expires_at, status=status)
-    
-    if amount > 0:
-        admin_record_manual_payment(user_id=user_id, amount=amount, payment_method=payment_method or "manual", plan_id=plan_id)
-        
-    return jsonify({"status": "success", "message": f"Subscription updated to {plan_id.upper()} for User #{user_id}", "expires_at": expires_at})
-
-@api_bp.route("/api/admin/saas/payments", methods=["GET"])
-@superadmin_required
-def admin_list_payments(admin_user):
-    payments = admin_get_all_payments()
-    return jsonify({"status": "success", "payments": payments, "count": len(payments)})
-
-@api_bp.route("/api/admin/user/<int:user_id>/api-keys", methods=["POST"])
-@admin_or_superadmin_required
-def admin_update_user_keys(admin_user, user_id):
-    data = request.get_json(silent=True) or {}
-    cs_key = data.get("cs_api_key", "").strip()
-    cs_sec = data.get("cs_api_secret", "").strip()
-    delta_key = data.get("delta_api_key", "").strip()
-    delta_sec = data.get("delta_api_secret", "").strip()
-    
-    save_user_api_keys(user_id, cs_key, cs_sec, delta_key, delta_sec)
-    return jsonify({"status": "success", "message": f"API keys updated for User #{user_id}"})
-
-@api_bp.route("/api/admin/user/<int:user_id>/details", methods=["GET"])
-@admin_or_superadmin_required
-def admin_get_user_details(admin_user, user_id):
-    crm = get_user_crm_profile(user_id)
-    if not crm:
-        return jsonify({"status": "error", "message": "User not found."}), 404
-    keys = get_user_api_keys(user_id)
-    masked_keys = {
-        "has_coinswitch": bool(keys.get("cs_api_key")),
-        "cs_key_masked": (keys.get("cs_api_key", "")[:6] + "...") if keys.get("cs_api_key") else "",
-        "has_delta": bool(keys.get("delta_api_key")),
-        "delta_key_masked": (keys.get("delta_api_key", "")[:6] + "...") if keys.get("delta_api_key") else "",
-    }
-    return jsonify({"status": "success", "user": crm, "api_keys": masked_keys})
+    return jsonify({"status": "error", "message": "Failed to unban IP"}), 400
 
 print("api_routes.py Multi-Market Trade Suggestions, SaaS Subscription & User Persistence integration complete!")

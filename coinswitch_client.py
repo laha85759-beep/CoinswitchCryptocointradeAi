@@ -154,6 +154,15 @@ class CoinSwitchClient:
         exchange: str = "c2c2",
     ) -> list:
         """Historical OHLCV candles with dynamic exchange conversion."""
+        # Defensive coercion: callers may pass "5m"-style strings or str limits
+        try:
+            interval_minutes = int(str(interval_minutes).rstrip("m"))
+        except (TypeError, ValueError):
+            interval_minutes = 5
+        try:
+            limit = int(limit)
+        except (TypeError, ValueError):
+            limit = 100
         end = int(time.time() * 1000)
         start = end - (limit * interval_minutes * 60 * 1000)
         

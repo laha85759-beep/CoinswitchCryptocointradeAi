@@ -245,7 +245,7 @@ function formatLocalizedDateTime(timestamp) {
 // ── 3. Tab & View Navigation ──────────────────────────────────────────────
 function handleHashRouting() {
   const hash = window.location.hash.replace("#", "").toLowerCase().trim();
-  if (["terminal", "rwa", "partners", "india", "news", "chart", "trades", "admin"].includes(hash)) {
+  if (["overview", "terminal", "rwa", "partners", "india", "news", "chart", "trades", "admin", "trader"].includes(hash)) {
     switchView(hash, false);
   }
 }
@@ -254,6 +254,24 @@ function switchView(viewName, updateHash = true) {
   currentView = viewName;
   if (updateHash && window.location.hash !== `#${viewName}`) {
     history.replaceState(null, null, `#${viewName}`);
+  }
+
+  // Per-view SEO: unique document title + description for each section (search & social)
+  const VIEW_SEO = {
+    overview: { t: "TheSmartMag Quant Terminal — AI Trading Platform, Pricing & Partner Deals", d: "Institutional AI trading for beginners & pros. Live signals, Capital Survival risk mode, transparent pricing from $19/mo and verified prop-firm partner deals." },
+    terminal: { t: "Live AI Trading Terminal — Real-Time Neural Consensus | TheSmartMag", d: "Watch the multi-model AI Super Brain scan 250+ markets in real time with live positions, PnL and Capital Survival risk telemetry." },
+    india:    { t: "Indian F&O Options Intelligence — Nifty, Bank Nifty, Sensex PCR Radar | TheSmartMag", d: "Live NSE/BSE option chains, PCR, max pain and AI strike playbooks for Nifty 50, Bank Nifty and Sensex intraday traders." },
+    news:     { t: "Live Market News, Economic Calendar & Macro Catalysts | TheSmartMag", d: "Breaking financial wires, ForexFactory economic calendar with AI sentiment scoring, pre-catalyst early warnings and topic-targeted market briefings." },
+    chart:    { t: "Pro TradingView Chart — Multi-Symbol Terminal | TheSmartMag", d: "Professional multi-timeframe charting across crypto, forex, commodities and Indian indices with live position sync." },
+    rwa:      { t: "RWA & Altcoin Matrix — Real-World Asset Watchlist | TheSmartMag", d: "Institutional watchlist of tokenized real-world assets and high-beta altcoins with volume and orderbook tracking." },
+    partners: { t: "Verified Prop Firms & Broker Deals — Exclusive Discounts | TheSmartMag", d: "Hand-verified prop firms and broker partners: Atlas Funded, Funded Trader Markets, Delta India, CoinSwitch Pro with exclusive promo codes." },
+    trades:   { t: "AI Trade Signals — Live Multi-Market Setups | TheSmartMag", d: "Real-time AI consensus trade suggestions with exact entry zones, targets and stop-losses across crypto, forex, commodities and Indian markets." }
+  };
+  const seo = VIEW_SEO[viewName];
+  if (seo) {
+    document.title = seo.t;
+    const md = document.querySelector('meta[name="description"]');
+    if (md) md.setAttribute("content", seo.d);
   }
   
   document.querySelectorAll(".tsm-tab, .nc-nav-tab, .tsm-dock-item, .tsm-drawer-item, .tsm-dropdown-item").forEach(tab => {
@@ -274,11 +292,15 @@ function switchView(viewName, updateHash = true) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  if (viewName === "chart") {
+  if (viewName === "overview") {
+    initOverviewView();
+  } else if (viewName === "chart") {
     initTradingViewWidget("tradingview_widget_fullscreen", currentTvSymbol, currentTvTimeframe);
     updateProChartPositionBanner();
   } else if (viewName === "news") {
     fetchNewsData();
+    buildNewsstandShell();
+    fetchNewsstandArticles(currentStandTopic).catch(() => renderNewsstand());
   } else if (viewName === "india") {
     fetchIndianMarketData();
   } else if (viewName === "trades" || viewName === "signals") {
@@ -293,29 +315,7 @@ function switchView(viewName, updateHash = true) {
 }
 
 function toggleAdminView() {
-  if (currentUser) {
-    if (currentUser.role === "admin") {
-      window.location.href = "/admin";
-      return;
-    } else {
-      window.location.href = "/superadmin";
-      return;
-    }
-  }
-  const token = getAdminAuthToken();
-  if (token) {
-    try {
-      const parts = token.split('.');
-      if (parts.length === 3) {
-        const payload = JSON.parse(atob(parts[1]));
-        if (payload.role === "admin") {
-          window.location.href = "/admin";
-          return;
-        }
-      }
-    } catch (e) {}
-  }
-  window.location.href = "/superadmin";
+  switchView("admin");
 }
 
 // ── 4. TradingView Pro Chart & Live Position Integration ──────────────────
@@ -1140,13 +1140,9 @@ function updateUserUI(user, settings, exConnections) {
     }
     if (authLockNotice) authLockNotice.style.display = "none";
 
-    // STRICT ROLE CHECK: Reveal Admin controls to authenticated superadmin or admin
-    if (user.role === "superadmin" || user.role === "admin") {
-      if (adminNavBtn) {
-        adminNavBtn.style.display = "flex";
-        const btnTxt = document.getElementById("adminNavBtnText");
-        if (btnTxt) btnTxt.textContent = user.role === "superadmin" ? "SUPER ADMIN" : "ADMIN";
-      }
+    // STRICT ROLE CHECK: Only reveal Super Admin controls to authenticated superadmin
+    if (user.role === "superadmin") {
+      if (adminNavBtn) adminNavBtn.style.display = "flex";
       if (superAdminTab) superAdminTab.style.display = "flex";
       if (dockAdminBtn) dockAdminBtn.style.display = "flex";
     } else {
@@ -2713,8 +2709,51 @@ async function fetchAdminOverviewKPIs() {
     if (document.getElementById("kpi-aff-clicks-overview")) {
       document.getElementById("kpi-aff-clicks-overview").textContent = Number(data.affiliate_clicks_total || 0).toLocaleString();
     }
+
+    // AI Article content funnel panel
+    fetchAdminArticleAnalytics();
   } catch (err) {
     console.debug("Admin overview KPIs error:", err);
+  }
+}
+
+async function fetchAdminArticleAnalytics() {
+  try {
+    const res = await fetch("/api/admin/article-analytics", {
+      headers: { "Authorization": `Bearer ${adminToken}` }
+    });
+    if (!res.ok) return;
+    const body = await res.json();
+    const a = body.analytics || {};
+
+    const set = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
+    };
+    set("kpi-art-views", Number(a.views_24h || 0).toLocaleString());
+    set("kpi-art-reads", Number(a.reads_24h || 0).toLocaleString());
+    set("kpi-art-ctas", Number(a.cta_clicks_24h || 0).toLocaleString());
+    set("kpi-art-total", Number(a.articles_published || 0).toLocaleString());
+    set("kpi-art-dwell", `Avg dwell: ${a.avg_dwell_seconds || 0}s`);
+
+    const views = Number(a.views_24h || 0);
+    const ctas = Number(a.cta_clicks_24h || 0);
+    set("kpi-art-ctr", `CTR: ${views > 0 ? ((ctas / views) * 100).toFixed(1) : "0"}%`);
+
+    const partnersEl = document.getElementById("kpi-art-partners");
+    if (partnersEl) {
+      partnersEl.innerHTML = (a.top_partners || []).length
+        ? (a.top_partners || []).map(p => `<div>• <strong class="gold-text">${escapeHtml(p.partner_code)}</strong> — ${p.clicks} clicks</div>`).join("")
+        : "No CTA clicks recorded yet.";
+    }
+    const topicsEl = document.getElementById("kpi-art-topics");
+    if (topicsEl) {
+      topicsEl.innerHTML = (a.by_topic || []).length
+        ? (a.by_topic || []).map(t => `<div>• <strong class="cyan-text">${escapeHtml(t.topic || "n/a")}</strong> — ${t.views} views • ${t.clicks || 0} clicks</div>`).join("")
+        : "No topic traffic recorded yet.";
+    }
+  } catch (err) {
+    console.debug("Article analytics error:", err);
   }
 }
 
@@ -4078,7 +4117,8 @@ function switchCrmTab(tabId, btn) {
 function trackAffiliateClick(partnerCode, targetUrl) {
   if (!partnerCode) return;
   try {
-    const payload = JSON.stringify({ partner_code: partnerCode });
+    // NOTE: backend reads `code` (kept for compatibility) — send both keys.
+    const payload = JSON.stringify({ code: partnerCode, partner_code: partnerCode, referrer: document.referrer || "" });
     if (navigator.sendBeacon) {
       const blob = new Blob([payload], { type: 'application/json' });
       navigator.sendBeacon('/api/track/affiliate-click', blob);
@@ -4096,23 +4136,27 @@ function trackAffiliateClick(partnerCode, targetUrl) {
 }
 
 function initAffiliateClickListeners() {
-  document.querySelectorAll('.tsm-partner-card a, .tsm-partner-pill').forEach(link => {
-    link.addEventListener('click', () => {
-      const card = link.closest('.tsm-partner-card');
-      let code = "";
+  // Delegate globally so dynamically-rendered partner links (article CTAs,
+  // overview band, prop cards) are all tracked without re-binding.
+  document.addEventListener("click", (e) => {
+    const link = e.target.closest && e.target.closest("a[target='_blank'], a[href*='affiliates'], a[href*='ref='], a[href*='afmc='], a[data-aff]");
+    if (!link) return;
+    let code = link.getAttribute("data-aff") || "";
+    if (!code) {
+      const card = link.closest(".tsm-partner-card");
       if (card) {
-        const strong = card.querySelector('.tsm-partner-code strong');
+        const strong = card.querySelector(".tsm-partner-code strong");
         if (strong) code = strong.textContent.trim();
         else {
-          const title = card.querySelector('.tsm-partner-title');
-          if (title) code = title.textContent.trim().toLowerCase().replace(/\s+/g, '_');
+          const title = card.querySelector(".tsm-partner-title");
+          if (title) code = title.textContent.trim().toLowerCase().replace(/\s+/g, "_");
         }
       } else {
-        code = link.textContent.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+        code = (link.textContent || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 40);
       }
-      if (code) trackAffiliateClick(code, link.href);
-    });
-  });
+    }
+    if (code) trackAffiliateClick(code, link.href);
+  }, true);
 }
 
 // ── 12e. Global Command Palette (Ctrl+K) ────────────────────────────────────
@@ -7263,7 +7307,7 @@ function renderMultiMarketSignals() {
                 <button class="btn-signal-exec" onclick="executeSignalTrade('${s.symbol}', '${s.direction}', '${s.current_price}', '${s.stop_loss}', '${s.target_1}', '${s.broker}')" title="Execute Trade">
                   ⚡ EXECUTE
                 </button>
-                <a href="https://t.me/FOREXINDIAN_BOT" target="_blank" class="btn-signal-telegram" title="Join Telegram Channel" style="text-decoration:none;">
+                <a href="https://t.me/FOREXINDIAN_BOT" target="_blank" rel="noopener" class="btn-signal-telegram" title="Telegram Alerts" style="text-decoration:none;">
                   🤖 TELEGRAM
                 </a>
               </div>
@@ -7418,7 +7462,6 @@ window.exportAuditTradesCSV = exportAuditTradesCSV;
 document.addEventListener("DOMContentLoaded", () => {
   setTimeout(() => {
     fetchMultiMarketSignals();
-    initVideoTour();
   }, 1200);
 });
 
@@ -7820,3 +7863,231 @@ window.simulateFreeTradeDemo = simulateFreeTradeDemo;
 
 
 
+
+// ═════════════════════════════════════════════════════════════════════════════
+// PLATFORM OVERVIEW VIEW (LANDING PAGE LOGIC)
+// ═════════════════════════════════════════════════════════════════════════════
+function initOverviewView() {
+  // Copyright year
+  const yearEl = document.getElementById("footerYear");
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+  // Billing toggle state mirrors the SaaS upgrade modal
+  const interval = window.currentSaasBillingInterval || "monthly";
+  setSaasBillingInterval(interval);
+
+  const mBtn = document.getElementById("ovTglMonthly");
+  const yBtn = document.getElementById("ovTglYearly");
+  if (mBtn && yBtn) {
+    mBtn.classList.toggle("active", interval !== "yearly");
+    yBtn.classList.toggle("active", interval === "yearly");
+  }
+
+  // Live BTC price on the multi-screen sync mockup
+  fetch("/api/market/ticker-bar")
+    .then(r => (r.ok ? r.json() : null))
+    .then(d => {
+      if (!d || !d.tickers) return;
+      const btc = (d.tickers || []).find(t => (t.symbol || "").toUpperCase().includes("BTC"));
+      const el = document.getElementById("ovSyncPrice");
+      if (btc && el) el.textContent = Number(btc.price || btc.last_price || 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
+    })
+    .catch(() => {});
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// NEW TRADER ONBOARDING PATH (Overview page → guided first steps)
+// ═════════════════════════════════════════════════════════════════════════════
+function startNewTraderOnboarding() {
+  const steps = [
+    { view: "terminal", msg: "Step 1/4 — Watch the live AI terminal & neural consensus in action." },
+    { view: "chart",    msg: "Step 2/4 — Study price action on the Pro TradingView chart." },
+    { view: "trades",   msg: "Step 3/4 — Review current AI trade setups with entry/TP/SL levels." },
+    { view: "overview", msg: "Step 4/4 — When ready, pick a plan or connect your exchange API keys. Start small!" }
+  ];
+  let i = 0;
+  const advance = () => {
+    if (i >= steps.length) return;
+    const st = steps[i++];
+    switchView(st.view);
+    if (typeof showFloatingToast === "function") showFloatingToast("🎓 " + st.msg, "cyan");
+    if (i < steps.length) setTimeout(advance, 9000);
+  };
+  advance();
+}
+window.startNewTraderOnboarding = startNewTraderOnboarding;
+
+// ═════════════════════════════════════════════════════════════════════════════
+// AI ARTICLE NEWSSTAND (TOPIC-TARGETED ARTICLES + AFFILIATE CTAs + TRACKING)
+// ═════════════════════════════════════════════════════════════════════════════
+const NEWSSTAND_TOPICS = [
+  { id: "all",     label: "🌐 ALL TOPICS" },
+  { id: "crypto",  label: "🪙 CRYPTO" },
+  { id: "india",   label: "🇮🇳 INDIA F&O" },
+  { id: "forex",   label: "💱 FOREX & MACRO" },
+  { id: "prop",    label: "🏆 PROP FIRMS" },
+  { id: "markets", label: "🌍 GLOBAL MARKETS" },
+];
+let currentStandTopic = "all";
+let cachedArticles = [];
+const _articleViewTimers = new Map();
+
+function buildNewsstandShell() {
+  const host = document.getElementById("newsstandSection");
+  if (!host || host.dataset.built) return;
+  host.dataset.built = "1";
+  host.innerHTML = `
+    <div class="tsm-panel-header" style="flex-wrap:wrap; gap:10px;">
+      <div>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <div class="tsm-panel-title">🗞 AI ARTICLE NEWSSTAND • TOPIC-TARGETED MARKET INTEL</div>
+          <span class="tsm-badge-pill green" id="standCountBadge">0 ARTICLES</span>
+        </div>
+        <div style="font-size:11px; color:var(--text-dim); margin-top:2px;">
+          Fresh AI-generated briefings matched to your trading interests — each with an actionable partner deal.
+        </div>
+      </div>
+      <button class="tsm-btn-cta green" onclick="generateNewsstandArticle()" id="standGenBtn" style="padding:7px 16px; font-size:11px;">✨ GENERATE NEW ARTICLE</button>
+    </div>
+    <div class="news-filter-bar" id="standTopicBar" style="margin:12px 0;"></div>
+    <div class="stand-grid" id="standGrid"><div class="empty-state text-center" style="padding:24px; grid-column:1/-1;">Loading the newsstand…</div></div>
+  `;
+  const bar = document.getElementById("standTopicBar");
+  if (bar) {
+    bar.innerHTML = NEWSSTAND_TOPICS.map(t =>
+      `<button class="news-filter-btn${t.id === currentStandTopic ? " active" : ""}" onclick="filterNewsstand('${t.id}', this)">${t.label}</button>`
+    ).join("");
+  }
+}
+
+function filterNewsstand(topic, btn) {
+  currentStandTopic = topic;
+  document.querySelectorAll("#standTopicBar .news-filter-btn").forEach(b => b.classList.remove("active"));
+  if (btn) btn.classList.add("active");
+  renderNewsstand();
+}
+
+async function fetchNewsstandArticles(topic) {
+  const res = await fetch(`/api/articles/feed?topic=${encodeURIComponent(topic)}&limit=12`);
+  if (!res.ok) throw new Error("feed " + res.status);
+  const data = await res.json();
+  cachedArticles = data.articles || [];
+  const badge = document.getElementById("standCountBadge");
+  if (badge) badge.textContent = `${cachedArticles.length} ARTICLES`;
+  renderNewsstand();
+}
+
+function renderNewsstand() {
+  const grid = document.getElementById("standGrid");
+  if (!grid) return;
+  if (!cachedArticles.length) {
+    grid.innerHTML = `<div class="empty-state text-center" style="padding:24px; grid-column:1/-1;">
+      No articles yet for this topic. Hit <strong>✨ Generate New Article</strong> to create your first briefing.
+    </div>`;
+    return;
+  }
+  grid.innerHTML = cachedArticles.map(a => {
+    const sent = (a.sentiment || "NEUTRAL").toUpperCase();
+    const sentCls = sent.includes("BULL") ? "stand-sent-bull" : sent.includes("BEAR") ? "stand-sent-bear" : "stand-sent-neutral";
+    const mins = a.reading_minutes || 2;
+    return `
+    <article class="stand-card" data-article-id="${a.id}" data-topic="${a.topic || ""}">
+      <div class="stand-card-top">
+        <span class="stand-topic-pill">${(a.topic_label || a.topic || "MARKETS").toUpperCase()}</span>
+        <span class="${sentCls}">${sent}</span>
+      </div>
+      <h3 class="stand-title">${escapeHtml(a.title || "")}</h3>
+      <p class="stand-sum">${escapeHtml(a.summary || "")}</p>
+      <ul class="stand-takeaways">${(a.takeaways || []).slice(0, 3).map(t => `<li>${escapeHtml(t)}</li>`).join("")}</ul>
+      <div class="stand-meta">
+        <span>⏱ ${mins} min read</span>
+        <span>🧠 ${(a.model || "quant").toUpperCase()}</span>
+        <span>${new Date((a.published_at || 0) * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+      </div>
+      <div class="stand-actions">
+        <button class="tsm-btn-secondary" onclick="openArticleReader('${a.id}')">📖 Read Article</button>
+        ${a.affiliate_url ? `<a class="tsm-btn-cta gold" href="${a.affiliate_url}" target="_blank" rel="noopener sponsored" data-aff="${a.affiliate_partner || ""}" onclick="trackArticleCta('${a.id}')">${escapeHtml(a.cta_text || "View Partner Deal")} ➜</a>` : ""}
+      </div>
+    </article>`;
+  }).join("");
+}
+
+async function generateNewsstandArticle() {
+  const btn = document.getElementById("standGenBtn");
+  if (btn) { btn.disabled = true; btn.textContent = "🧠 GENERATING…"; }
+  try {
+    const res = await fetch("/api/articles/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topic: currentStandTopic === "all" ? "markets" : currentStandTopic, use_ai: true })
+    });
+    const data = await res.json();
+    if (data.status === "success" && data.article) {
+      await fetchNewsstandArticles(currentStandTopic);
+      if (typeof showFloatingToast === "function") showFloatingToast("✨ Fresh article generated for you!", "green");
+      openArticleReader(data.article.id);
+    } else {
+      if (typeof showFloatingToast === "function") showFloatingToast("Article generation failed — try again.", "red");
+    }
+  } catch (err) {
+    if (typeof showFloatingToast === "function") showFloatingToast("Article generation error.", "red");
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "✨ GENERATE NEW ARTICLE"; }
+  }
+}
+
+function openArticleReader(articleId) {
+  const a = cachedArticles.find(x => x.id === articleId);
+  if (!a) return;
+  trackArticleEvent(articleId, "view", a.topic || "");
+
+  // Dwell-time tracking for read-depth analytics
+  const startedAt = Date.now();
+  if (_articleViewTimers.has(articleId)) clearTimeout(_articleViewTimers.get(articleId));
+  _articleViewTimers.set(articleId, setTimeout(() => {
+    trackArticleEvent(articleId, "read_complete", a.topic || "", Date.now() - startedAt);
+  }, Math.min(30000, Math.max(4000, (a.reading_minutes || 2) * 60 * 1000 * 0.35))));
+
+  const modal = document.createElement("div");
+  modal.className = "stand-reader-overlay";
+  modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+  const bodyHtml = (a.body || "").split(/\n+/).map(p => `<p>${p.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</p>`).join("");
+  modal.innerHTML = `
+    <div class="stand-reader">
+      <div class="stand-reader-head">
+        <span class="stand-topic-pill">${(a.topic_label || a.topic || "MARKETS").toUpperCase()}</span>
+        <button class="stand-reader-close" onclick="this.closest('.stand-reader-overlay').remove()">✕</button>
+      </div>
+      <h2>${escapeHtml(a.title || "")}</h2>
+      <div class="stand-meta" style="margin-bottom:14px;">
+        <span>⏱ ${a.reading_minutes || 2} min read</span><span>🧠 ${(a.model || "quant").toUpperCase()}</span>
+        <span>🛡️ Educational content — not financial advice</span>
+      </div>
+      <div class="stand-reader-body">${bodyHtml}</div>
+      ${(a.takeaways || []).length ? `<div class="stand-tk-box"><strong>🎯 Key takeaways</strong><ul>${a.takeaways.map(t => `<li>${escapeHtml(t)}</li>`).join("")}</ul></div>` : ""}
+      ${a.affiliate_url ? `<a class="tsm-btn-cta gold" style="display:inline-flex; margin-top:6px;" href="${a.affiliate_url}" target="_blank" rel="noopener sponsored" data-aff="${a.affiliate_partner || ""}" onclick="trackArticleCta('${a.id}')">${escapeHtml(a.cta_text || "View Partner Deal")} ➜</a>` : ""}
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function trackArticleEvent(articleId, eventType, topic, dwellMs) {
+  try {
+    const payload = JSON.stringify({ article_id: articleId, event_type: eventType, topic: topic || "", dwell_ms: dwellMs || 0 });
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon("/api/track/article-event", new Blob([payload], { type: "application/json" }));
+    } else {
+      fetch("/api/track/article-event", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload, keepalive: true });
+    }
+  } catch (e) { /* silent */ }
+}
+
+function trackArticleCta(articleId) {
+  const a = cachedArticles.find(x => x.id === articleId);
+  trackArticleEvent(articleId, "cta_click", a ? (a.topic || "") : "");
+}
+
+window.filterNewsstand = filterNewsstand;
+window.generateNewsstandArticle = generateNewsstandArticle;
+window.openArticleReader = openArticleReader;
+window.trackArticleCta = trackArticleCta;
+window.initOverviewView = initOverviewView;

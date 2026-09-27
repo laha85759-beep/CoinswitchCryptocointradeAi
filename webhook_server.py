@@ -201,7 +201,7 @@ def security_firewall_and_visitor_logging():
 
 try:
     from news_agent_core import news_core
-    news_core.start_background_loop(interval_seconds=90)
+    news_core.start_background_loop(interval_seconds=60)  # 60s scans for fastest breaking-news dispatch
     log.info("🚀 News & Macro Catalyst 24/7 Agent initialized with Webhook Server")
 except Exception as _ne_err:
     log.warning(f"News Agent initialization notice: {_ne_err}")
@@ -254,24 +254,6 @@ def serve_dashboard():
     response.headers["Expires"] = "0"
     return response
 
-@app.route("/superadmin", methods=["GET"])
-@app.route("/superadmin/", methods=["GET"])
-def serve_superadmin():
-    response = send_from_directory(os.path.dirname(os.path.abspath(__file__)), "superadmin.html")
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    response.headers["Pragma"] = "no-cache"
-    response.headers["Expires"] = "0"
-    return response
-
-@app.route("/admin", methods=["GET"])
-@app.route("/admin/", methods=["GET"])
-def serve_admin():
-    response = send_from_directory(os.path.dirname(os.path.abspath(__file__)), "admin.html")
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    response.headers["Pragma"] = "no-cache"
-    response.headers["Expires"] = "0"
-    return response
-
 @app.route("/robots.txt", methods=["GET"])
 def serve_robots():
     response = send_from_directory(os.path.dirname(os.path.abspath(__file__)), "robots.txt")
@@ -289,6 +271,22 @@ def serve_sitemap():
 @app.route("/sitemap", methods=["GET"])
 def serve_sitemap_alias():
     return serve_sitemap()
+
+@app.route("/ads.txt", methods=["GET"])
+def serve_ads_txt():
+    """Google AdSense authorization file (required for ad serving & policy review)."""
+    response = send_from_directory(os.path.dirname(os.path.abspath(__file__)), "ads.txt")
+    response.mimetype = "text/plain"
+    response.headers["Cache-Control"] = "public, max-age=86400"
+    return response
+
+@app.route("/manifest.json", methods=["GET"])
+def serve_manifest():
+    """PWA manifest — enables mobile install & search-engine mobile-app signals."""
+    response = send_from_directory(os.path.dirname(os.path.abspath(__file__)), "manifest.json")
+    response.mimetype = "application/manifest+json"
+    response.headers["Cache-Control"] = "public, max-age=3600"
+    return response
 
 @app.route("/<path:filename>", methods=["GET"])
 def serve_static(filename):
@@ -1765,8 +1763,6 @@ def _verify_admin_token(token: str) -> bool:
 @app.route("/api/admin/login", methods=["POST"])
 def admin_login():
     try:
-        from security import create_jwt_token
-        from database import authenticate_user, get_user_by_email
         data = request.json or {}
         username = str(data.get("username", "")).strip().lower()
         password = str(data.get("password", "")).strip()
@@ -1774,36 +1770,19 @@ def admin_login():
         configured_user = str(CONFIG.get("admin_username", "admin@thesmartmag.com")).strip().lower()
         configured_pass = str(CONFIG.get("admin_password", "SmartMag@Quant2026!")).strip()
 
-        user_obj = None
-        role = "superadmin"
-
         if (username == configured_user or username == "thesmartmag" or username == "admin") and password == configured_pass:
-            admin_user = get_user_by_email("admin@thesmartmag.com")
-            if admin_user:
-                user_obj = admin_user
-                role = admin_user.get("role", "superadmin")
-            else:
-                user_obj = {"id": 1, "email": configured_user, "role": "superadmin", "name": "Super Admin"}
-        else:
-            db_user, db_err = authenticate_user(username, password)
-            if not db_err and db_user and db_user.get("role") in ("superadmin", "admin"):
-                user_obj = db_user
-                role = db_user.get("role")
-
-        if user_obj:
-            jwt_tok = create_jwt_token({"user_id": user_obj["id"], "email": user_obj["email"], "role": role})
-            legacy_tok = _generate_admin_token(user_obj["email"])
-            log.info("Admin login successful for %s (role: %s)", username, role)
-            resp = jsonify({
+            token = _generate_admin_token(configured_user)
+            log.info("Admin login successful for %s", username)
+            return jsonify({
                 "status": "success",
-                "message": f"Administrative session established ({role})",
-                "token": jwt_tok,
-                "legacy_token": legacy_tok,
-                "user": user_obj
-            })
-            resp.set_cookie("auth_token", jwt_tok, max_age=86400 * 7, httponly=False, samesite="Lax")
-            resp.set_cookie("tsm_token", legacy_tok, max_age=86400 * 7, httponly=False, samesite="Lax")
-            return resp, 200
+                "message": "Authentication successful",
+                "token": token,
+                "user": {
+                    "username": configured_user,
+                    "brand": CONFIG.get("brand_name", "TheSmartMag Quant Terminal"),
+                    "role": "Super Admin"
+                }
+            }), 200
         else:
             log.warning("Failed admin login attempt for user: %s", username)
             return jsonify({"status": "error", "message": "Invalid username or password"}), 401

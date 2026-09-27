@@ -192,6 +192,10 @@ CONFIG = {
     "short_selling_enabled": _bool_env("SHORT_SELLING_ENABLED", True),
     "short_exchanges": ["delta"],
 
+    # ── Trading week gate: ALL exchange trades Monday-Friday only (UTC) ────────
+    # Weekend signals are still scanned & broadcast, but NO orders are placed.
+    "trading_days_only_weekdays": _bool_env("TRADING_DAYS_ONLY_WEEKDAYS", True),
+
     # ── NVIDIA Multi-Model AI Super Brain Layer ─────────────────────────────────
     "nvidia_key_glm_5_3":        os.getenv("NVIDIA_KEY_GLM_5_3",        "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"),
     "nvidia_model_glm_5_3":      os.getenv("NVIDIA_MODEL_GLM_5_3",      "z-ai/glm-5.3"),

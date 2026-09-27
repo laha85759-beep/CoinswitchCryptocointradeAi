@@ -2158,86 +2158,197 @@ def get_all_banned_ips():
     except Exception:
         return []
 
-def admin_create_user(email: str, password: str, name: str = "", role: str = "trader", plan_name: str = "free", services: dict = None) -> tuple[dict | None, str | None]:
-    """Super Admin creates a user with customized role, plan, and initial permissions."""
-    user, err = create_user(email=email, password=password, name=name, role=role)
-    if not user:
-        return None, err
-    user_id = user["id"]
-    now = int(time.time())
-    
-    # Update plan if specified
-    if plan_name and plan_name != "free":
-        update_user_subscription(user_id, plan_id=plan_name, billing_interval="lifetime" if plan_name == "enterprise" else "monthly")
-        
-    # Update permissions if specified
-    if services and isinstance(services, dict):
-        for s_name, s_enabled in services.items():
-            set_user_permission_override(user_id, s_name, bool(s_enabled))
-            
-    # Auto-backup
-    _backup_users_to_disk()
-    return get_user_crm_profile(user_id), None
+# ═════════════════════════════════════════════════════════════════════════════
+# AI ARTICLES CACHE & CONTENT/CONVERSION TRACKING (Growth Engine)
+# ═════════════════════════════════════════════════════════════════════════════
+def _ensure_article_tables():
+    """Lazily create article content & tracking tables (idempotent)."""
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS ai_articles (
+            id TEXT PRIMARY KEY,
+            topic TEXT NOT NULL,
+            title TEXT NOT NULL,
+            summary TEXT,
+            body TEXT,
+            takeaways TEXT,
+            sentiment TEXT DEFAULT "NEUTRAL",
+            reading_minutes REAL DEFAULT 2.0,
+            affiliate_partner TEXT,
+            affiliate_url TEXT,
+            cta_text TEXT,
+            source_refs TEXT,
+            model TEXT DEFAULT "template-quant",
+            published_at INTEGER NOT NULL
+        )
+        ''')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_ai_articles_topic ON ai_articles(topic)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_ai_articles_pub ON ai_articles(published_at)')
 
-def admin_record_profit_update(user_id: int, symbol: str, realized_pnl: float, exchange: str = "coinswitch", direction: str = "long", notes: str = "") -> dict:
-    """Admin logs/updates user profit/PnL."""
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS article_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            article_id TEXT NOT NULL,
+            event_type TEXT NOT NULL,          -- "view" | "read_complete" | "cta_click" | "share"
+            topic TEXT DEFAULT "",
+            partner_code TEXT DEFAULT "",      -- affiliate partner attached to the CTA (if any)
+            ip_address TEXT,
+            referrer TEXT,
+            user_agent TEXT,
+            country TEXT DEFAULT "US",
+            dwell_ms INTEGER DEFAULT 0,
+            created_at INTEGER NOT NULL
+        )
+        ''')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_article_events_article ON article_events(article_id)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_article_events_type ON article_events(event_type)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_article_events_time ON article_events(created_at)')
+        conn.commit()
+    except Exception:
+        pass
+    finally:
+        conn.close()
+
+
+def save_generated_article(article: dict) -> bool:
+    """Persist a generated/curated article for the public newsstand."""
+    _ensure_article_tables()
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute('''
+        INSERT OR REPLACE INTO ai_articles
+        (id, topic, title, summary, body, takeaways, sentiment, reading_minutes,
+         affiliate_partner, affiliate_url, cta_text, source_refs, model, published_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            article.get("id"), article.get("topic", "markets"), article.get("title", ""),
+            article.get("summary", ""), article.get("body", ""),
+            json.dumps(article.get("takeaways", [])),
+            article.get("sentiment", "NEUTRAL"),
+            article.get("reading_minutes", 2.0),
+            article.get("affiliate_partner", ""), article.get("affiliate_url", ""),
+            article.get("cta_text", ""),
+            json.dumps(article.get("source_refs", [])),
+            article.get("model", "template-quant"),
+            article.get("published_at", int(time.time()))
+        ))
+        conn.commit()
+        conn.close()
+        return True
+    except Exception:
+        return False
+
+
+def get_generated_articles(limit: int = 24, topic: str = "") -> list:
+    _ensure_article_tables()
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        if topic and topic != "all":
+            cursor.execute(
+                "SELECT * FROM ai_articles WHERE topic = ? ORDER BY published_at DESC LIMIT ?",
+                (topic, limit))
+        else:
+            cursor.execute("SELECT * FROM ai_articles ORDER BY published_at DESC LIMIT ?", (limit,))
+        rows = []
+        for r in cursor.fetchall():
+            d = dict(r)
+            for k in ("takeaways", "source_refs"):
+                try:
+                    d[k] = json.loads(d.get(k) or "[]")
+                except Exception:
+                    d[k] = []
+            rows.append(d)
+        conn.close()
+        return rows
+    except Exception:
+        return []
+
+
+def track_article_event(article_id: str, event_type: str, topic: str = "", partner_code: str = "",
+                        ip: str = "", referrer: str = "", user_agent: str = "", country: str = "US",
+                        dwell_ms: int = 0) -> bool:
+    """Record a funnel event on an article: view / read_complete / cta_click / share."""
+    _ensure_article_tables()
+    if not article_id or event_type not in ("view", "read_complete", "cta_click", "share"):
+        return False
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute('''
+        INSERT INTO article_events
+        (article_id, event_type, topic, partner_code, ip_address, referrer, user_agent, country, dwell_ms, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (article_id, event_type, topic or "", partner_code or "", ip or "", referrer or "",
+              user_agent or "", country or "US", int(dwell_ms or 0), int(time.time())))
+        conn.commit()
+        conn.close()
+        return True
+    except Exception:
+        return False
+
+
+def get_article_analytics() -> dict:
+    """Aggregate funnel + per-topic + per-partner analytics for the admin dashboard."""
+    _ensure_article_tables()
     conn = get_db()
     cursor = conn.cursor()
     now = int(time.time())
-    
-    cursor.execute('''
-        INSERT INTO user_trades (user_id, exchange, symbol, direction, entry_price, qty, status, exit_price, realized_pnl, opened_at, closed_at)
-        VALUES (?, ?, ?, ?, 100.0, 1.0, 'closed', 100.0, ?, ?, ?)
-    ''', (user_id, exchange, symbol.upper(), direction.lower(), float(realized_pnl), now - 3600, now))
-    trade_id = cursor.lastrowid
-    
-    # Also log into journal
-    cursor.execute('''
-        INSERT INTO trade_journal_entries (user_id, trade_id, symbol, direction, entry_price, exit_price, pnl, setup_tag, notes, trade_date, created_at)
-        VALUES (?, ?, ?, ?, 100.0, 100.0, ?, 'Manual Profit Adjustment', ?, date('now'), ?)
-    ''', (user_id, trade_id, symbol.upper(), direction.lower(), float(realized_pnl), notes or "Admin profit update", now))
-    
-    conn.commit()
-    conn.close()
-    return {"trade_id": trade_id, "user_id": user_id, "realized_pnl": realized_pnl, "symbol": symbol}
+    last_24h = now - 86400
+    out = {
+        "events_24h": 0, "views_24h": 0, "cta_clicks_24h": 0, "reads_24h": 0,
+        "avg_dwell_seconds": 0.0, "articles_published": 0,
+        "by_topic": [], "top_partners": [], "top_articles": [],
+    }
+    try:
+        cursor.execute("SELECT COUNT(*) FROM article_events WHERE created_at >= ?", (last_24h,))
+        out["events_24h"] = cursor.fetchone()[0] or 0
+        cursor.execute("SELECT COUNT(*) FROM article_events WHERE created_at >= ? AND event_type = 'view'", (last_24h,))
+        out["views_24h"] = cursor.fetchone()[0] or 0
+        cursor.execute("SELECT COUNT(*) FROM article_events WHERE created_at >= ? AND event_type = 'read_complete'", (last_24h,))
+        out["reads_24h"] = cursor.fetchone()[0] or 0
+        cursor.execute("SELECT COUNT(*) FROM article_events WHERE created_at >= ? AND event_type = 'cta_click'", (last_24h,))
+        out["cta_clicks_24h"] = cursor.fetchone()[0] or 0
 
-def admin_record_manual_payment(user_id: int, amount: float, payment_method: str = "crypto_usdt", plan_id: str = "pro", tx_hash: str = "") -> dict:
-    """Super Admin records a manual payment (USDT, Cash, Bank Transfer, Stripe, Rise)."""
-    conn = get_db()
-    cursor = conn.cursor()
-    now = int(time.time())
-    
-    cursor.execute('''
-        INSERT INTO payments (user_id, amount, currency, stripe_payment_id, stripe_session_id, plan_or_addon_id, status, payout_account, created_at)
-        VALUES (?, ?, 'USD', ?, ?, ?, 'succeeded', 'Manual Settlement (SuperAdmin)', ?)
-    ''', (user_id, float(amount), f"manual_{now}", tx_hash or f"tx_{now}", plan_id, now))
-    payment_id = cursor.lastrowid
-    
-    # Also insert into sales_transactions
-    cursor.execute('''
-        INSERT INTO sales_transactions (user_id, amount_usd, plan_name, payment_method, status, tx_hash, created_at)
-        VALUES (?, ?, ?, ?, 'completed', ?, ?)
-    ''', (user_id, float(amount), plan_id, payment_method, tx_hash or f"tx_{now}", now))
-    
-    conn.commit()
-    conn.close()
-    return {"payment_id": payment_id, "user_id": user_id, "amount": amount, "plan_id": plan_id}
+        cursor.execute("SELECT COALESCE(AVG(dwell_ms), 0.0) FROM article_events WHERE event_type = 'read_complete' AND created_at >= ?", (last_24h,))
+        out["avg_dwell_seconds"] = round((cursor.fetchone()[0] or 0.0) / 1000.0, 1)
 
-def admin_get_all_payments(limit: int = 150) -> list[dict]:
-    """Super Admin retrieves all SaaS payments and manual payment transactions."""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute('''
-        SELECT p.id, p.user_id, u.email, u.name, p.amount, p.currency, p.plan_or_addon_id as plan_id,
-               p.stripe_payment_id, p.payout_account, p.status, p.created_at
-        FROM payments p
-        LEFT JOIN users u ON p.user_id = u.id
-        ORDER BY p.created_at DESC LIMIT ?
-    ''', (limit,))
-    rows = [dict(r) for r in cursor.fetchall()]
-    conn.close()
-    return rows
+        cursor.execute("SELECT COUNT(*) FROM ai_articles")
+        out["articles_published"] = cursor.fetchone()[0] or 0
+
+        cursor.execute('''
+        SELECT topic, COUNT(*) AS views,
+               SUM(CASE WHEN event_type = 'cta_click' THEN 1 ELSE 0 END) AS clicks
+        FROM article_events WHERE event_type IN ('view', 'cta_click') AND created_at >= ?
+        GROUP BY topic ORDER BY views DESC LIMIT 8
+        ''', (last_24h,))
+        out["by_topic"] = [dict(r) for r in cursor.fetchall()]
+
+        cursor.execute('''
+        SELECT partner_code, COUNT(*) AS clicks FROM article_events
+        WHERE event_type = 'cta_click' AND partner_code != '' AND created_at >= ?
+        GROUP BY partner_code ORDER BY clicks DESC LIMIT 8
+        ''', (last_24h,))
+        out["top_partners"] = [dict(r) for r in cursor.fetchall()]
+
+        cursor.execute('''
+        SELECT a.id, a.title, a.topic, COUNT(e.id) AS views
+        FROM ai_articles a LEFT JOIN article_events e
+          ON e.article_id = a.id AND e.event_type = 'view' AND e.created_at >= ?
+        GROUP BY a.id ORDER BY views DESC LIMIT 8
+        ''', (last_24h,))
+        out["top_articles"] = [dict(r) for r in cursor.fetchall()]
+    except Exception:
+        pass
+    finally:
+        conn.close()
+    return out
+
 
 # Initialize on import
 init_db()
-load_banned_ips_cache()
+load_banned_ips_cache()
+_ensure_article_tables()

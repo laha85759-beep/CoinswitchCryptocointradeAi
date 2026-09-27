@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
   <!-- Primary SEO Metadata (Ranked for Google Top Tier) -->
   <title>TheSmartMag Quant Terminal • Autonomous Multi-Exchange AI & Indian F&O Trading Engine</title>
@@ -35,9 +35,6 @@
   <meta name="twitter:title" content="TheSmartMag Quant Terminal • Autonomous Multi-Exchange AI Trading Engine" />
   <meta name="twitter:description" content="Dual-Exchange Autonomous Execution across CoinSwitch Pro & Delta India with Live Indian Options Intelligence & Macro Catalysts." />
   <meta name="twitter:image" content="https://trade.thesmartmag.com/figures/overview.png" />
-
-  <!-- Google AdSense Official Script (Responsive Monetization) -->
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9842183857291044" crossorigin="anonymous"></script>
 
   <!-- Schema.org JSON-LD Structured Data for Google Rich Indexing & Sitelinks -->
   <script type="application/ld+json">
@@ -113,10 +110,15 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
+  <link rel="icon" type="image/jpeg" href="/logo.jpg" />
+  <link rel="apple-touch-icon" href="/logo.jpg" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=126.0">
+  <link rel="stylesheet" href="styles.css?v=127.2">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -141,29 +143,6 @@
       <span class="ticker-item"><span class="sym-ico">🛢️</span> <strong>WTI CRUDE</strong> $71.45 <span class="green font-mono">▲ +0.85%</span></span>
       <span class="ticker-item"><span class="sym-ico">✕</span> <strong>XRP/USDT</strong> $1.3850 <span class="green font-mono">▲ +1.81%</span></span>
       <span class="ticker-item"><span class="sym-ico">🏛</span> <strong>BSE SENSEX</strong> ₹74,294.96 <span class="red-text font-mono">▼ -0.06%</span></span>
-    </div>
-  </div>
-
-  <!-- ══════════ TOP GOOGLE ADSENSE LEADERBOARD BANNER ══════════ -->
-  <div class="tsm-ad-container tsm-ad-top">
-    <div class="tsm-ad-label">SPONSORED FINANCIAL INTELLIGENCE • GOOGLE ADSENSE</div>
-    <ins class="adsbygoogle"
-         style="display:block"
-         data-ad-client="ca-pub-9842183857291044"
-         data-ad-slot="1029384756"
-         data-ad-format="auto"
-         data-full-width-responsive="true"></ins>
-  </div>
-
-  <!-- ══════════ INTERACTIVE DEMO VISITOR BANNER ══════════ -->
-  <div class="interactive-demo-banner" id="visitorDemoBanner">
-    <div style="display:flex; align-items:center; gap:10px;">
-      <span class="demo-badge">GUEST ACCESS ACTIVE</span>
-      <span>⚡ <strong>Explore All Features Free:</strong> Live TradingView Charts, NVIDIA AI Signals, Indian F&amp;O PCR Scanner &amp; Capital Survival Simulator</span>
-    </div>
-    <div style="display:flex; align-items:center; gap:8px;">
-      <button class="nc-btn-tour" style="padding:4px 10px; font-size:10px;" onclick="openVideoTourModal()">🎥 Watch Video Tour</button>
-      <button class="nc-btn-demo" style="padding:4px 10px; font-size:10px;" onclick="simulateFreeTradeDemo()">🚀 Test Mock Trade ($10,000)</button>
     </div>
   </div>
 
@@ -274,6 +253,9 @@
         <button class="tsm-drawer-item active" data-view="terminal" onclick="switchView('terminal'); toggleMobileNavDrawer();">
           <span class="nc-tab-ico">⚡</span><span>TERMINAL DASHBOARD</span>
         </button>
+        <button class="tsm-drawer-item gold" data-view="overview" onclick="switchView('overview'); toggleMobileNavDrawer();">
+          <span class="nc-tab-ico">🏠</span><span>PLATFORM OVERVIEW</span>
+        </button>
         <button class="tsm-drawer-item gold" data-view="india" onclick="switchView('india'); toggleMobileNavDrawer();">
           <span class="nc-tab-ico">🇮🇳</span><span>INDIA EQUITIES &amp; F&amp;O</span>
         </button>
@@ -295,7 +277,7 @@
         <button class="tsm-drawer-item green" id="drawerTraderTab" data-view="trader" onclick="switchView('trader'); toggleMobileNavDrawer();" style="display:none;">
           <span class="nc-tab-ico">👤</span><span>TRADER COCKPIT</span>
         </button>
-        <button class="tsm-drawer-item magenta" id="drawerAdminTab" data-view="admin" onclick="toggleAdminView(); toggleMobileNavDrawer();">
+        <button class="tsm-drawer-item magenta" id="drawerAdminTab" data-view="admin" onclick="switchView('admin'); toggleMobileNavDrawer();">
           <span class="nc-tab-ico">⚙</span><span>SUPER ADMIN PORTAL</span>
         </button>
       </div>
@@ -371,6 +353,14 @@
           </div>
         </button>
 
+        <button class="tsm-dock-item gold" data-view="overview" onclick="switchView('overview')" title="Platform Overview — Features, Pricing, Partners &amp; Live Stats">
+          <span class="tsm-dock-icon">🏠</span>
+          <div class="tsm-dock-info">
+            <span class="tsm-dock-title">OVERVIEW</span>
+            <span class="tsm-dock-chip gold">HOME &amp; PLANS</span>
+          </div>
+        </button>
+
         <button class="tsm-dock-item cyan" data-view="demo" onclick="activateFreeDemoExperience()" title="Test All Features with $10,000 Free Simulator">
           <span class="tsm-dock-icon">🧪</span>
           <div class="tsm-dock-info">
@@ -379,7 +369,7 @@
           </div>
         </button>
 
-        <button class="tsm-dock-item magenta" id="dockAdminBtn" data-view="admin" onclick="toggleAdminView()" title="Super Admin Control Portal">
+        <button class="tsm-dock-item magenta" id="dockAdminBtn" data-view="admin" onclick="switchView('admin')" title="Super Admin Control Portal">
           <span class="tsm-dock-icon">⚙</span>
           <div class="tsm-dock-info">
             <span class="tsm-dock-title">SUPER ADMIN</span>
@@ -389,15 +379,189 @@
       </div>
     </div>
 
-    <!-- ══════════ IN-FEED NATIVE GOOGLE ADSENSE BANNER ══════════ -->
-    <div class="tsm-ad-container tsm-ad-infeed">
-      <div class="tsm-ad-label">SPONSORED FINANCIAL MARKET ANALYTICS • GOOGLE ADSENSE</div>
-      <ins class="adsbygoogle"
-           style="display:block"
-           data-ad-client="ca-pub-9842183857291044"
-           data-ad-slot="2938475610"
-           data-ad-format="auto"
-           data-full-width-responsive="true"></ins>
+    <!-- ══════════ VIEW 0: PUBLIC PLATFORM OVERVIEW (LANDING / MARKETING PAGE) ══════════ -->
+    <div id="view-overview" class="nc-view-pane tsm-view-section">
+
+      <!-- HERO: HEADLINE + TRUST STATS STRIP -->
+      <div class="ov-hero">
+        <div class="ov-hero-badge">⚡ INSTITUTIONAL-GRADE AI TRADING • COINSWITCH PRO + DELTA INDIA</div>
+        <h1 class="ov-hero-title">Autonomous AI Quant Terminal<br><span class="ov-grad">Built to Grow Capital Safely</span></h1>
+        <p class="ov-hero-sub">TheSmartMag fuses a multi-model neural ensemble, live Indian F&amp;O intelligence and dual-exchange auto-execution with a Capital Survival risk mandate — so you trade with institutional discipline from day one.</p>
+        <div class="ov-hero-actions">
+          <button class="ov-btn ov-btn-primary" onclick="startNewTraderOnboarding()">🎓 New to Trading? Start Here</button>
+          <button class="ov-btn ov-btn-ghost" onclick="switchView('terminal')">⚡ Enter Live Terminal</button>
+          <button class="ov-btn ov-btn-ghost" onclick="activateFreeDemoExperience()">🧪 Try $10,000 Demo</button>
+          <button class="ov-btn ov-btn-outline" onclick="openSaasUpgradeModal('Full Platform', 'Pro')">★ See Plans</button>
+        </div>
+        <div class="ov-stats-strip">
+          <div class="ov-stat"><div class="ov-stat-num" id="ovStatInstruments">500+</div><div class="ov-stat-lbl">Trading Instruments</div></div>
+          <div class="ov-stat"><div class="ov-stat-num">24/7</div><div class="ov-stat-lbl">Global Market Access</div></div>
+          <div class="ov-stat"><div class="ov-stat-num">&lt; 20ms</div><div class="ov-stat-lbl">Ultra-Fast Execution</div></div>
+          <div class="ov-stat"><div class="ov-stat-num">99.9%</div><div class="ov-stat-lbl">Platform Uptime</div></div>
+          <div class="ov-stat"><div class="ov-stat-num">🛡️</div><div class="ov-stat-lbl">Licensed Technology</div></div>
+        </div>
+      </div>
+
+      <!-- WHO IT'S FOR (AUDIENCE TARGETING) -->
+      <div class="ov-section">
+        <div class="ov-sec-head">
+          <div>
+            <span class="ov-eyebrow">WHO IT'S FOR</span>
+            <h2 class="ov-sec-title">Built for Every Trader</h2>
+            <p class="ov-sec-sub">From your very first trade to running institutional capital — TheSmartMag grows with you.</p>
+          </div>
+        </div>
+        <div class="ov-feature-grid">
+          <div class="ov-feature">
+            <div class="ov-fico green">🎓</div>
+            <h3>New Traders</h3>
+            <p>Start risk-free with the $10,000 demo, plain-English beginner guides on every signal, and a guided 4-step onboarding tour. No experience needed.</p>
+            <button class="ov-btn ov-btn-ghost" style="margin-top:10px; padding:8px 16px; font-size:11px;" onclick="startNewTraderOnboarding()">Start Learning Free ➜</button>
+          </div>
+          <div class="ov-feature">
+            <div class="ov-fico cyan">📊</div>
+            <h3>Active Retail Traders</h3>
+            <p>Live multi-market signals with exact entry/TP/SL levels, Pro charting, journaling and the Capital Survival protocol to protect your account.</p>
+            <button class="ov-btn ov-btn-ghost" style="margin-top:10px; padding:8px 16px; font-size:11px;" onclick="switchView('trades')">See Live Signals ➜</button>
+          </div>
+          <div class="ov-feature">
+            <div class="ov-fico gold">🏆</div>
+            <h3>Experienced &amp; Prop Traders</h3>
+            <p>Institutional SMC/order-flow analytics, direct API execution keys, funding-rate intelligence and exclusive verified prop-firm challenges.</p>
+            <button class="ov-btn ov-btn-ghost" style="margin-top:10px; padding:8px 16px; font-size:11px;" onclick="switchView('partners')">View Prop Deals ➜</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- FEATURE GRID -->
+      <div class="ov-section">
+        <div class="ov-sec-head">
+          <div>
+            <h2 class="ov-sec-title">Everything You Need to Trade</h2>
+            <p class="ov-sec-sub">Professional-grade tools, institutional risk controls and automated AI strategies designed for modern traders.</p>
+          </div>
+          <button class="ov-btn ov-btn-outline" onclick="switchView('terminal')">Explore All Features ➜</button>
+        </div>
+        <div class="ov-feature-grid">
+          <div class="ov-feature"><div class="ov-fico cyan">📈</div><h3>Advanced Charts</h3><p>Professional charting with 100+ technical indicators, multi-timeframe analysis and live depth.</p></div>
+          <div class="ov-feature"><div class="ov-fico gold">⚡</div><h3>Trading Terminal</h3><p>Fast, reliable, intuitive multi-exchange order execution across Delta India &amp; CoinSwitch.</p></div>
+          <div class="ov-feature"><div class="ov-fico green">🤖</div><h3>Automated Trading</h3><p>Run autonomous strategies with volume-surge filters and NVIDIA-class neural intelligence.</p></div>
+          <div class="ov-feature"><div class="ov-fico purple">🇮🇳</div><h3>Indian F&amp;O Radar</h3><p>Live Nifty / Bank Nifty / Sensex option chains, PCR, max pain and AI strike playbooks.</p></div>
+          <div class="ov-feature"><div class="ov-fico cyan">🛡️</div><h3>Capital Survival Mode</h3><p>0.25–0.5% risk per trade, 1:3 minimum R:R, instant break-even trailing lock and daily halt.</p></div>
+          <div class="ov-feature"><div class="ov-fico gold">📰</div><h3>News &amp; Macro Catalysts</h3><p>Economic calendar, breaking wires with AI sentiment and instant Telegram signal broadcasts.</p></div>
+        </div>
+      </div>
+
+      <!-- DEVICE / SYNC PANEL -->
+      <div class="ov-section">
+        <div class="ov-sync-panel">
+          <div class="ov-sync-left">
+            <h2 class="ov-sec-title">Trade Anytime,<br>Anywhere</h2>
+            <p class="ov-sec-sub">A seamless, ultra-responsive experience across all your devices with synchronized orders and positions.</p>
+            <div class="ov-hero-actions" style="justify-content:flex-start;">
+              <button class="ov-btn ov-btn-primary" onclick="openSaasUpgradeModal('Full Platform', 'Pro')">🚀 Start Trading Free</button>
+              <button class="ov-btn ov-btn-ghost" onclick="openAuthModal('login')">🔑 Sign In</button>
+            </div>
+          </div>
+          <div class="ov-sync-visual">
+            <div class="ov-sync-screen">
+              <div class="ov-sync-head"><span>BTC/USDT 15m • THE SMARTMAG TERMINAL</span><span class="green font-mono">LIVE ● <span id="ovSyncPrice">SYNCING…</span></span></div>
+              <div class="ov-sync-body">🖥 MULTI-SCREEN CLOUD SYNC ACTIVE</div>
+            </div>
+            <ul class="ov-sync-list">
+              <li>🔄 Real-time sync across devices</li>
+              <li>📱 Full functionality on mobile</li>
+              <li>💻 Works on any desktop browser</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- ASSET CLASS CARDS -->
+      <div class="ov-section">
+        <div class="ov-asset-grid">
+          <a class="ov-asset" href="#chart" onclick="switchView('chart')"><div class="ov-asset-ico">💱</div><h3>Forex</h3><p>Major, minor &amp; exotic pairs</p><span class="ov-asset-arrow">➜</span></a>
+          <a class="ov-asset" href="#india" onclick="switchView('india')"><div class="ov-asset-ico">🇮🇳</div><h3>Stocks</h3><p>US &amp; Indian BSE/NSE equities</p><span class="ov-asset-arrow">➜</span></a>
+          <a class="ov-asset" href="#chart" onclick="switchView('chart')"><div class="ov-asset-ico">₿</div><h3>Crypto</h3><p>Trade BTC, ETH and 300+ coins</p><span class="ov-asset-arrow">➜</span></a>
+          <a class="ov-asset" href="#chart" onclick="switchView('chart')"><div class="ov-asset-ico">🥇</div><h3>Commodities</h3><p>Gold, Oil, Silver &amp; more</p><span class="ov-asset-arrow">➜</span></a>
+          <a class="ov-asset" href="#india" onclick="switchView('india')"><div class="ov-asset-ico">🏆</div><h3>Indices</h3><p>NIFTY, SENSEX, NAS100 &amp; US500</p><span class="ov-asset-arrow">➜</span></a>
+        </div>
+      </div>
+
+      <!-- PRICING -->
+      <div class="ov-section" id="ovPricing">
+        <div class="ov-sec-head">
+          <div>
+            <span class="ov-eyebrow">PRICING</span>
+            <h2 class="ov-sec-title">Choose a Plan That Fits You</h2>
+            <p class="ov-sec-sub">Flexible plans for every type of trader. Upgrade or cancel anytime.</p>
+          </div>
+          <div class="ov-billing-toggle">
+            <button class="ov-toggle-btn active" id="ovTglMonthly" onclick="setSaasBillingInterval('monthly')">Monthly</button>
+            <button class="ov-toggle-btn" id="ovTglYearly" onclick="setSaasBillingInterval('yearly')">Yearly <span class="ov-save-pill">Save 20%</span></button>
+          </div>
+        </div>
+        <div class="ov-pricing-grid">
+          <div class="ov-plan">
+            <h3>Starter</h3><div class="ov-plan-for">For beginners &amp; learners</div>
+            <div class="ov-price"><span class="saas-plan-price" data-monthly="$19" data-yearly="$190">$19</span><span class="saas-plan-unit ov-unit">/month</span></div>
+            <ul class="ov-plan-list">
+              <li>✅ Basic TradingView charts</li><li>✅ Real-time market data</li>
+              <li>✅ Limited AI signals (5/day)</li><li>✅ Economic calendar &amp; news</li><li>✅ Community access</li>
+            </ul>
+            <button class="ov-btn ov-plan-btn" onclick="handleCheckoutPlan('starter')">Get Started</button>
+          </div>
+          <div class="ov-plan ov-plan-pop">
+            <span class="ov-pop-pill">MOST POPULAR</span>
+            <h3>Pro</h3><div class="ov-plan-for">For active day traders</div>
+            <div class="ov-price"><span class="saas-plan-price" data-monthly="$49" data-yearly="$490">$49</span><span class="saas-plan-unit ov-unit">/month</span></div>
+            <ul class="ov-plan-list">
+              <li>✅ Real-time high-speed data</li><li>✅ 100+ advanced indicators</li>
+              <li>✅ Unlimited AI signals &amp; bots</li><li>✅ Jarvis Voice Assistant</li><li>✅ Priority support</li>
+            </ul>
+            <button class="ov-btn ov-btn-primary ov-plan-btn" onclick="handleCheckoutPlan('pro')">Get Started</button>
+          </div>
+          <div class="ov-plan">
+            <h3>Elite</h3><div class="ov-plan-for">For professional traders</div>
+            <div class="ov-price"><span class="saas-plan-price" data-monthly="$99" data-yearly="$990">$99</span><span class="saas-plan-unit ov-unit">/month</span></div>
+            <ul class="ov-plan-list">
+              <li>✅ Everything in Pro</li><li>✅ Institutional analytics</li>
+              <li>✅ Direct API execution keys</li><li>✅ Custom volume &amp; ML alerts</li><li>✅ Dedicated manager</li>
+            </ul>
+            <button class="ov-btn ov-plan-btn" onclick="handleCheckoutPlan('elite')">Get Started</button>
+          </div>
+          <div class="ov-plan">
+            <h3>Enterprise</h3><div class="ov-plan-for">For institutions &amp; prop teams</div>
+            <div class="ov-price"><span class="ov-price-custom">Custom</span></div>
+            <ul class="ov-plan-list">
+              <li>✅ White-label portal</li><li>✅ Multi-account sub-API desk</li>
+              <li>✅ Dedicated quant engineer</li><li>✅ Custom strategies</li><li>✅ 99.99% SLA</li>
+            </ul>
+            <button class="ov-btn ov-plan-btn" onclick="handleContactEnterprise()">Contact Sales</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- AFFILIATE / PARTNER CTA BAND -->
+      <div class="ov-section">
+        <div class="ov-partner-band">
+          <div class="ov-sec-head" style="margin-bottom:14px;">
+            <div>
+              <span class="ov-eyebrow">VERIFIED PARTNERS</span>
+              <h2 class="ov-sec-title" style="font-size:22px;">Prop Firms &amp; Broker Exclusive Deals</h2>
+              <p class="ov-sec-sub">Hand-verified partners our quant desk actually trades with. Every click supports the platform.</p>
+            </div>
+            <button class="ov-btn ov-btn-outline" onclick="switchView('partners')">View All Partners ➜</button>
+          </div>
+          <div class="ov-partner-grid">
+            <a class="ov-partner-pill" href="https://fundedtradermarkets.com/ref/arnab" target="_blank" rel="noopener sponsored" data-aff="ftm_prop">🏆 Funded Trader Markets <em>$100k accounts</em></a>
+            <a class="ov-partner-pill" href="https://coinswitch.co/pro/signup?code=PmstphH" target="_blank" rel="noopener sponsored" data-aff="coinswitch_pro">🏛 CoinSwitch Pro <em>Signup bonus</em></a>
+            <a class="ov-partner-pill" href="https://www.delta.exchange/?code=YXQSZA" target="_blank" rel="noopener sponsored" data-aff="delta_india">⚡ Delta India <em>10% off fees</em></a>
+            <a class="ov-partner-pill" href="https://affiliates.atlasfunded.com/Tracking/click/?affid=12275&campaign=11320&product_id=1&t_type=Register&t_lang=EN" target="_blank" rel="noopener sponsored" data-aff="atlas_funded">🚀 Atlas Funded <em>20% off</em></a>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- ══════════ VIEW 1: SUPERBRAIN NEURAL DASHBOARD ══════════ -->
@@ -954,6 +1118,9 @@
           </div>
         </div>
 
+        <!-- ══════════ AI ARTICLE NEWSSTAND (TOPIC-TARGETED ARTICLES + AFFILIATE CTAs) ══════════ -->
+        <div class="tsm-panel" style="margin:16px 0;" id="newsstandSection"></div>
+
         <!-- Filter Bar -->
         <div class="news-filter-bar">
           <span style="font-family:var(--font-mono); font-size:10px; color:var(--text-dim); margin-right:6px;">FILTERS:</span>
@@ -1439,72 +1606,6 @@
           <div class="tsm-card-title">COVERED ASSET CLASSES</div>
           <div class="tsm-card-val font-mono text-neon-cyan">4 MARKETS</div>
           <div class="tsm-card-sub">Forex • Commodity • Crypto • India</div>
-        </div>
-      </div>
-
-      <!-- Telegram Bot & Channel Official Integration Card -->
-      <div class="tsm-panel" style="background:linear-gradient(135deg, rgba(6,14,28,0.95), rgba(15,28,52,0.95)); border:1.5px solid rgba(0,240,144,0.4); box-shadow:0 0 30px rgba(0,240,144,0.12); margin-bottom:14px; padding:16px 20px; border-radius:10px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
-          <div style="display:flex; align-items:center; gap:16px; flex:1; min-width:280px;">
-            <div style="width:68px; height:68px; border-radius:50%; background:linear-gradient(135deg, #00d4ff, #00f090); padding:3px; flex-shrink:0; box-shadow:0 0 16px rgba(0,240,144,0.35);">
-              <div style="width:100%; height:100%; border-radius:50%; background:#060e1c; display:flex; align-items:center; justify-content:center; font-size:30px;">
-                🤖
-              </div>
-            </div>
-            <div>
-              <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:4px;">
-                <span class="tsm-badge-pill green">⚡ OFFICIAL BOT &amp; CHANNEL</span>
-                <span class="tsm-badge-pill cyan">@FOREXINDIAN_BOT</span>
-                <span class="tsm-badge-pill gold">LiveForexSignalsAI_bot</span>
-                <span class="tsm-badge-pill purple">🔐 USER LOGIN REQUIRED</span>
-              </div>
-              <h3 style="font-size:16px; font-weight:800; color:#ffffff; margin:0 0 4px 0; letter-spacing:0.5px;">
-                Forex AI News &amp; Multi-Market Signals Telegram Network
-              </h3>
-              <p style="font-size:11.5px; color:var(--text-dim); margin:0; line-height:1.4;">
-                Receive instant algorithmic trade notifications, macro news alerts, and entry/exit triggers directly on Telegram. To activate <strong>automated trade routing, webhook copiers, and private exchange API execution</strong>, user registration &amp; Google login is required.
-              </p>
-            </div>
-          </div>
-
-          <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px; flex-shrink:0;">
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-              <a href="https://t.me/FOREXINDIAN_BOT" target="_blank" class="tsm-btn-cta green" style="text-decoration:none; padding:8px 14px; font-size:11px; display:inline-flex; align-items:center; gap:6px;">
-                <span>📱 JOIN @FOREXINDIAN_BOT</span>
-              </a>
-              <a href="https://t.me/LiveForexSignalsAI_bot" target="_blank" class="tsm-btn-cta cyan" style="text-decoration:none; padding:8px 14px; font-size:11px; display:inline-flex; align-items:center; gap:6px;">
-                <span>🤖 LAUNCH BOT</span>
-              </a>
-              <button class="tsm-btn-cta gold" onclick="openAuthModal('register')" style="padding:8px 14px; font-size:11px; display:inline-flex; align-items:center; gap:6px;">
-                <span>🔐 REGISTER / LOGIN</span>
-              </button>
-            </div>
-            <div style="font-size:10px; color:var(--neon-green); font-family:var(--font-mono); display:flex; align-items:center; gap:6px;">
-              <span style="width:6px; height:6px; border-radius:50%; background:var(--neon-green); display:inline-block; animation:tsm-pulse 1.5s infinite;"></span>
-              24/7 Multi-Market Neural Broadcaster Active • Verified Safe
-            </div>
-          </div>
-      <!-- AI Signals Upgrade Callout Banner -->
-      <div class="tsm-panel" style="margin-bottom:14px; background:linear-gradient(135deg, rgba(255,215,0,0.12), rgba(0,240,144,0.08)); border-color:rgba(255,215,0,0.4); box-shadow:0 0 25px rgba(255,215,0,0.15);">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
-          <div>
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-              <span class="tsm-badge-pill gold">⭐ PRO &amp; ELITE AI TRADING ENGINE</span>
-              <span class="tsm-badge-pill green">94.8% VERIFIED WIN RATE</span>
-              <span class="tsm-badge-pill cyan">REAL-TIME TELEGRAM &amp; WEBHOOKS</span>
-            </div>
-            <div style="font-family:var(--font-orb); font-size:15px; font-weight:800; color:#fff; margin-bottom:3px;">
-              Unlock Daily Real-Time AI Trading Signals with Exact Entry, TP1, TP2 &amp; Stop Loss
-            </div>
-            <div style="font-size:11.5px; color:var(--text-sec); max-width:850px; line-height:1.4;">
-              Free and unauthenticated accounts view sample previews only. To receive instant 24/7 algorithmic triggers, exact price ranges, and automated copy-trading execution across Gold, Crude, Crypto, Forex, and Indian Indices, an active <strong>Pro ($49/mo)</strong> or <strong>Elite ($99/mo)</strong> subscription is required.
-            </div>
-          </div>
-          <div style="display:flex; gap:10px; flex-shrink:0;">
-            <button class="tsm-btn-cta gold" onclick="openSaasUpgradeModal('AI Signals', 'Pro')" style="padding:10px 18px; font-size:12px; font-weight:800; box-shadow:0 0 15px rgba(255,215,0,0.3);">
-              ⚡ UPGRADE TO PRO ($49/MO)
-            </button>
-          </div>
         </div>
       </div>
 
@@ -2297,6 +2398,46 @@
             </div>
           </div>
 
+          <!-- AI Article Content Funnel & Affiliate Performance -->
+          <div class="tsm-panel" style="margin-top:14px;">
+            <div class="tsm-panel-header">
+              <div class="tsm-panel-title">🗞 AI ARTICLE CONTENT FUNNEL &amp; AFFILIATE PERFORMANCE (24H)</div>
+              <span class="tsm-badge-pill green">REAL TRACKING</span>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px; margin-top:10px;">
+              <div class="admin-kpi-card" style="padding:10px 14px;">
+                <div class="admin-kpi-tag cyan">ARTICLE VIEWS</div>
+                <div class="admin-kpi-num cyan" id="kpi-art-views" style="font-size:18px;">0</div>
+                <div class="admin-kpi-sub">Last 24 hours</div>
+              </div>
+              <div class="admin-kpi-card" style="padding:10px 14px;">
+                <div class="admin-kpi-tag green">COMPLETED READS</div>
+                <div class="admin-kpi-num green" id="kpi-art-reads" style="font-size:18px;">0</div>
+                <div class="admin-kpi-sub" id="kpi-art-dwell">Avg dwell: 0s</div>
+              </div>
+              <div class="admin-kpi-card" style="padding:10px 14px;">
+                <div class="admin-kpi-tag gold">ARTICLE CTA CLICKS</div>
+                <div class="admin-kpi-num gold" id="kpi-art-ctas" style="font-size:18px;">0</div>
+                <div class="admin-kpi-sub" id="kpi-art-ctr">CTR: 0%</div>
+              </div>
+              <div class="admin-kpi-card" style="padding:10px 14px;">
+                <div class="admin-kpi-tag purple">ARTICLES PUBLISHED</div>
+                <div class="admin-kpi-num purple" id="kpi-art-total" style="font-size:18px;">0</div>
+                <div class="admin-kpi-sub">All-time in DB</div>
+              </div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px;" class="tsm-admin-funnel-cols">
+              <div style="background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.07); border-radius:8px; padding:12px;">
+                <div style="font-size:10px; letter-spacing:1px; color:var(--neon-gold); font-family:var(--font-mono); margin-bottom:8px;">🏆 TOP AFFILIATE PARTNERS (CTA CLICKS 24H)</div>
+                <div id="kpi-art-partners" style="font-size:11px; color:var(--text-sec); line-height:1.8;">No CTA clicks recorded yet.</div>
+              </div>
+              <div style="background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.07); border-radius:8px; padding:12px;">
+                <div style="font-size:10px; letter-spacing:1px; color:var(--neon-cyan); font-family:var(--font-mono); margin-bottom:8px;">📊 TOPIC PERFORMANCE (VIEWS • CLICKS 24H)</div>
+                <div id="kpi-art-topics" style="font-size:11px; color:var(--text-sec); line-height:1.8;">No topic traffic recorded yet.</div>
+              </div>
+            </div>
+          </div>
+
           <!-- Server Health & Core Controls Split -->
           <div class="tsm-split-row" style="margin-top:16px;">
             <div class="tsm-panel">
@@ -3044,6 +3185,23 @@
   <footer class="nc-footer tsm-footer">
     <div class="tsm-footer-left"><span><strong>TheSmartMag Quant AI Terminal</strong> • Official Platform of <a href="https://thesmartmag.com" target="_blank">thesmartmag.com</a></span><div class="tsm-footer-sub">AI Tech Innovations, Quant Trading, Prop Firms &amp; Global Alpha Architecture</div></div>
     <div class="tsm-footer-right"><span>Dual-Exchange Engine: CoinSwitch Pro &amp; Delta Exchange India</span></div>
+    <!-- Compliance & trust strip (required for AdSense policy + trader transparency) -->
+    <div class="tsm-footer-compliance">
+      <div class="tsm-footer-links">
+        <a href="#overview" onclick="switchView('overview')">Overview &amp; Pricing</a> •
+        <a href="#trades" onclick="switchView('trades')">AI Signals</a> •
+        <a href="#partners" onclick="switchView('partners')">Partner Deals</a> •
+        <a href="#news" onclick="switchView('news')">Market News</a> •
+        <a href="https://thesmartmag.com" target="_blank" rel="noopener">About</a>
+      </div>
+      <div class="tsm-risk-disclaimer">
+        <strong>⚠️ Risk Warning:</strong> Trading cryptocurrencies, derivatives, forex and commodities carries a high level of risk and may not be suitable for all investors. Past performance is not indicative of future results. All content, signals and tools on this platform are for <strong>educational and informational purposes only</strong> and do not constitute financial advice. Always do your own research and never trade money you cannot afford to lose.
+      </div>
+      <div class="tsm-affiliate-disclosure">
+        <strong>Affiliate Disclosure:</strong> Some partner links on this platform are affiliate/referral links. We may earn a commission at no extra cost to you. Ad placements are served by Google AdSense.
+      </div>
+      <div class="tsm-footer-copy">© <span id="footerYear">2026</span> TheSmartMag • All rights reserved • <a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener">Google Ad Policies</a></div>
+    </div>
   </footer>
 
   
@@ -3948,17 +4106,6 @@
     </div>
   </div>
 
-  <!-- ══════════ BOTTOM BILLBOARD GOOGLE ADSENSE SLOT ══════════ -->
-  <div class="tsm-ad-container tsm-ad-billboard">
-    <div class="tsm-ad-label">SPONSORED FINANCIAL INTELLIGENCE • GOOGLE ADSENSE BILLBOARD</div>
-    <ins class="adsbygoogle"
-         style="display:block"
-         data-ad-client="ca-pub-9842183857291044"
-         data-ad-slot="3847561029"
-         data-ad-format="auto"
-         data-full-width-responsive="true"></ins>
-  </div>
-
   <!-- Firebase Official Web SDK Integration for Google Sign-in & Authentication -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
@@ -4013,6 +4160,6 @@
     }
   </script>
 
-  <script src="app.js?v=126.0"></script>
+  <script src="app.js?v=127.2"></script>
 </body>
 </html>

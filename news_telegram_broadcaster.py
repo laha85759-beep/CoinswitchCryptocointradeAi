@@ -8,12 +8,47 @@ Isolated from CoinSwitch / Delta crypto trade execution bot.
 from __future__ import annotations
 
 import os
+import json
 import logging
 import requests
 import time
 from typing import Optional, Dict, Any, List
 
 log = logging.getLogger("news_telegram")
+
+# ── Persistent broadcast dedupe ledger (survives gunicorn worker restarts) ────
+# gunicorn --max-requests restarts workers constantly; an in-memory "seen" set
+# would be wiped and cause duplicate Telegram messages. This file-backed ledger
+# prevents ANY message with the same content hash from repeating within the TTL.
+_DEDUPE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "telegram_sent_log.json")
+_DEDUPE_TTL_HOURS = 24
+_DEDUPE_MAX_ENTRIES = 2000
+
+
+def _load_sent_log() -> Dict[str, float]:
+    try:
+        if os.path.exists(_DEDUPE_FILE):
+            with open(_DEDUPE_FILE, "r", encoding="utf-8") as f:
+                raw = json.load(f)
+            cutoff = time.time() - _DEDUPE_TTL_HOURS * 3600
+            return {k: v for k, v in raw.items() if isinstance(v, (int, float)) and v >= cutoff}
+    except Exception:
+        pass
+    return {}
+
+
+def _save_sent_log(log_data: Dict[str, float]) -> None:
+    try:
+        if len(log_data) > _DEDUPE_MAX_ENTRIES:
+            # Keep the most recent entries only
+            kept = dict(sorted(log_data.items(), key=lambda kv: kv[1], reverse=True)[:_DEDUPE_MAX_ENTRIES])
+            log_data = kept
+        tmp = _DEDUPE_FILE + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(log_data, f)
+        os.replace(tmp, _DEDUPE_FILE)
+    except Exception:
+        pass
 
 # Environment variable keys specifically for News & Forex Channel (@ForexIndian_bot / LiveForexSignalsAI_bot)
 NEWS_BOT_TOKEN = (
@@ -40,13 +75,37 @@ class NewsTelegramBroadcaster:
         self.bot_token = bot_token or NEWS_BOT_TOKEN
         self.chat_id = chat_id or NEWS_CHAT_ID
         self.is_active = bool(self.bot_token and self.chat_id)
+        self._sent_log = _load_sent_log()
         if self.is_active:
-            log.info(f"✅ News & Forex Telegram Broadcaster initialized for channel: {self.chat_id}")
+            log.info(f"✅ News & Forex Telegram Broadcaster initialized for channel: {self.chat_id} (dedupe ledger: {len(self._sent_log)} entries)")
         else:
             log.info("ℹ️ News Telegram Broadcaster in standby (Set NEWS_BOT_TOKEN & NEWS_CHAT_ID to activate)")
 
-    def send_message(self, text: str, parse_mode: str = "HTML") -> bool:
+    # ── Dedupe helpers ──────────────────────────────────────────────────────
+    def _content_key(self, text: str) -> str:
+        """Stable hash of the message content (whitespace-normalized)."""
+        import hashlib
+        import re as _re
+        normalized = _re.sub(r"\s+", " ", text).strip().lower()
+        return hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:32]
+
+    def _is_duplicate(self, key: str) -> bool:
+        ts = self._sent_log.get(key)
+        if ts and (time.time() - ts) < _DEDUPE_TTL_HOURS * 3600:
+            return True
+        return False
+
+    def _mark_sent(self, key: str) -> None:
+        self._sent_log[key] = time.time()
+        _save_sent_log(self._sent_log)
+
+    def send_message(self, text: str, parse_mode: str = "HTML", dedupe: bool = True) -> bool:
+        """Send a Telegram message; identical content is skipped within the dedupe TTL."""
         if not self.is_active:
+            return False
+        key = self._content_key(text)
+        if dedupe and self._is_duplicate(key):
+            log.info("⏭️ Duplicate Telegram message suppressed (dedupe ledger hit)")
             return False
         try:
             url = f"https://api.telegram.org/bot{self.bot_token}/sendMessage"
@@ -59,7 +118,18 @@ class NewsTelegramBroadcaster:
             res = requests.post(url, json=payload, timeout=10)
             if res.status_code == 200:
                 log.info("📢 News Telegram message dispatched successfully")
+                if dedupe:
+                    self._mark_sent(key)
                 return True
+            elif res.status_code == 429:
+                # Rate limited — read Telegram's retry_after so the caller can back off
+                try:
+                    retry_after = float(res.json().get("parameters", {}).get("retry_after", 2))
+                except Exception:
+                    retry_after = 2.0
+                log.warning(f"Telegram rate limit hit — retry_after {retry_after}s")
+                time.sleep(min(retry_after, 5.0))
+                return False
             else:
                 log.warning(f"Telegram News API response {res.status_code}: {res.text}")
                 return False
