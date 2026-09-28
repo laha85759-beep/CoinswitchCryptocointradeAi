@@ -422,14 +422,11 @@ def get_terminal_data():
             except Exception as exc:
                 log.warning("Delta balance query notice: %s", exc)
 
-        if delta_usdt <= 0:
-            delta_usdt = 5.863
-            
+        # NO fake fallback balances — always display REAL exchange equity so the
+        # terminal reflects truth (empty wallet = 0.00, never a made-up number).
         inr_in_usdt = cs_portfolio_inr / 88.0 if cs_portfolio_inr > 0 else 0.0
         # REAL total capital — sum of Delta balance and CoinSwitch portfolio
         total_real_capital = round(cs_usdt + inr_in_usdt + delta_usdt, 2)
-        if total_real_capital <= 0:
-            total_real_capital = 8.26
 
         # ── Fetch ALL Tickers Once (Massive speedup)
         cs_tickers = {}

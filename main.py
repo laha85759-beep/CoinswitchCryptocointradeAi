@@ -406,9 +406,13 @@ def run() -> None:
     log.info("=" * 60)
 
     # ── Validate credentials ──────────────────────────────────────────────────
+    # NOTE: Never sys.exit() here — run() is invoked from long-lived daemon loops
+    # (webhook_server thread + run_continuous_daemon). SystemExit is not caught by
+    # their `except Exception` handlers, so it would silently kill the whole
+    # trading worker on a transient env-var glitch. Return instead and retry next cycle.
     if not CONFIG["api_key"] or not CONFIG["api_secret"]:
-        log.error("CoinSwitch API credentials missing. Check GitHub Secrets / .env")
-        sys.exit(1)
+        log.error("CoinSwitch API credentials missing — cycle SKIPPED (monitoring paused). Check GitHub Secrets / .env. Retrying next cycle.")
+        return
     if not CONFIG["delta_api_key"] or not CONFIG["delta_api_secret"]:
         log.warning("Delta Exchange API credentials not set — Delta trades will be SKIPPED")
 
@@ -647,6 +651,25 @@ def run() -> None:
     elif now_weekday in (5, 6) and CONFIG.get("weekend_trading_disabled", True):
         _send_weekend_pause_notice(notifier)
         log.info("Weekend trade blackout ACTIVE (UTC Day %s). Position monitoring and trailing SL remain 100%% active 24/7.", now_weekday)
+
+    # ── No-trade heartbeat: always explain WHY a cycle placed zero trades ────
+    if not approved:
+        reason_counts: dict[str, int] = {}
+        for r in rejected:
+            k = str(r.get("reason", "unknown"))
+            reason_counts[k] = reason_counts.get(k, 0) + 1
+        if circuit_breaker.is_halted():
+            halt_reason = "circuit_breaker_halted"
+        elif now_weekday in (5, 6) and CONFIG.get("weekend_trading_disabled", True):
+            halt_reason = "weekend_blackout"
+        elif reason_counts:
+            halt_reason = "risk_rejects: " + ", ".join(
+                f"{k} x{v}" for k, v in sorted(reason_counts.items(), key=lambda x: -x[1])[:4]
+            )
+        else:
+            halt_reason = "no_signals_met_quality_gates"
+        log.warning("[NO_TRADE_HEARTBEAT] Cycle found %s signals but placed 0 trades — %s",
+                    len(signals), halt_reason)
 
     # ── Step 4 & 5: Risk + Dual Execution ────────────────────────────────────
     log.info("Step 4/5 — Risk evaluation")
