@@ -652,25 +652,6 @@ def run() -> None:
         _send_weekend_pause_notice(notifier)
         log.info("Weekend trade blackout ACTIVE (UTC Day %s). Position monitoring and trailing SL remain 100%% active 24/7.", now_weekday)
 
-    # ── No-trade heartbeat: always explain WHY a cycle placed zero trades ────
-    if not approved:
-        reason_counts: dict[str, int] = {}
-        for r in rejected:
-            k = str(r.get("reason", "unknown"))
-            reason_counts[k] = reason_counts.get(k, 0) + 1
-        if circuit_breaker.is_halted():
-            halt_reason = "circuit_breaker_halted"
-        elif now_weekday in (5, 6) and CONFIG.get("weekend_trading_disabled", True):
-            halt_reason = "weekend_blackout"
-        elif reason_counts:
-            halt_reason = "risk_rejects: " + ", ".join(
-                f"{k} x{v}" for k, v in sorted(reason_counts.items(), key=lambda x: -x[1])[:4]
-            )
-        else:
-            halt_reason = "no_signals_met_quality_gates"
-        log.warning("[NO_TRADE_HEARTBEAT] Cycle found %s signals but placed 0 trades — %s",
-                    len(signals), halt_reason)
-
     # ── Step 4 & 5: Risk + Dual Execution ────────────────────────────────────
     log.info("Step 4/5 — Risk evaluation")
     _original_atf = _agents.OPEN_TRADES_FILE
@@ -690,6 +671,21 @@ def run() -> None:
         reject_reasons[k] = reject_reasons.get(k, 0) + 1
     for reason, count in sorted(reject_reasons.items(), key=lambda x: -x[1])[:5]:
         log.info("  Reject: %s × %s", reason, count)
+
+    # ── No-trade heartbeat: always explain WHY a cycle placed zero trades ────
+    if not approved:
+        if circuit_breaker.is_halted():
+            halt_reason = "circuit_breaker_halted"
+        elif now_weekday in (5, 6) and CONFIG.get("weekend_trading_disabled", True):
+            halt_reason = "weekend_blackout"
+        elif reject_reasons:
+            halt_reason = "risk_rejects: " + ", ".join(
+                f"{k} x{v}" for k, v in sorted(reject_reasons.items(), key=lambda x: -x[1])[:4]
+            )
+        else:
+            halt_reason = "no_signals_met_quality_gates"
+        log.warning("[NO_TRADE_HEARTBEAT] Cycle found %s signals but placed 0 trades — %s",
+                    len(signals), halt_reason)
 
     log.info("Step 5/5 — Execute on CoinSwitch + Delta India")
     results = dual_executor.execute(approved)
