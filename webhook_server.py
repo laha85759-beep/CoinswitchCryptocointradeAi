@@ -41,18 +41,27 @@ except ImportError as _atlas_err:
 
 import sys
 import gc
-# Tune Garbage Collection to maintain ultra-low memory footprint on 512MB RAM
+# Tune Garbage Collection for ultra-low memory footprint on 512MB RAM (Render starter tier)
 gc.set_threshold(700, 10, 5)
 
+# Cap glibc malloc arenas: multi-arena heaps fragment memory on 512MB containers and
+# are the #1 cause of the "exceeded its memory limit -> automatic restart" loop on Render.
+try:
+    import ctypes
+    _libc = ctypes.CDLL("libc.so.6")
+    _libc.mallopt(-8, 2)   # M_ARENA_MAX = 2 (glibc mallopt param -8)
+except Exception:
+    pass
+
 log = logging.getLogger(__name__)
+# Single rotating file handler (5MB x 2) instead of three unbounded log files.
+from logging.handlers import RotatingFileHandler
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler("daemon.log", mode="a", encoding="utf-8"),
-        logging.FileHandler("bot.log", mode="a", encoding="utf-8"),
-        logging.FileHandler("trading.log", mode="a", encoding="utf-8"),
+        RotatingFileHandler("bot.log", mode="a", maxBytes=5_000_000, backupCount=1, encoding="utf-8"),
     ],
 )
 
@@ -171,7 +180,14 @@ def security_firewall_and_visitor_logging():
                 timestamps = [t for t in timestamps if now - t < 60.0]
                 timestamps.append(now)
                 _IP_REQ_WINDOW[ip] = timestamps
-                
+                # Bound the map itself: 20k spoofed-IP floods used to grow it without limit
+                # and OOM the 512MB instance. Evict expired/oldest entries beyond the cap.
+                if len(_IP_REQ_WINDOW) > 20000:
+                    for k in [k for k, v in _IP_REQ_WINDOW.items() if not v or now - v[-1] >= 60.0][:10000]:
+                        _IP_REQ_WINDOW.pop(k, None)
+                    while len(_IP_REQ_WINDOW) > 20000:
+                        _IP_REQ_WINDOW.pop(next(iter(_IP_REQ_WINDOW)), None)
+
                 if len(timestamps) > MAX_REQS_PER_MINUTE:
                     reason = f"DDoS / Scraper flood detected: {len(timestamps)} requests within 60s"
                     log.error(f"🚨 [INSTANT IP BAN] Rate limit flood from {ip}: {reason}")
@@ -201,7 +217,7 @@ def security_firewall_and_visitor_logging():
 
 try:
     from news_agent_core import news_core
-    news_core.start_background_loop(interval_seconds=90)
+    news_core.start_background_loop(interval_seconds=300)  # 5-min scans: fresh enough, 5x lighter on RAM/CPU
     log.info("🚀 News & Macro Catalyst 24/7 Agent initialized with Webhook Server")
 except Exception as _ne_err:
     log.warning(f"News Agent initialization notice: {_ne_err}")
@@ -254,22 +270,42 @@ def serve_dashboard():
     response.headers["Expires"] = "0"
     return response
 
-@app.route("/superadmin", methods=["GET"])
-@app.route("/superadmin/", methods=["GET"])
-def serve_superadmin():
-    response = send_from_directory(os.path.dirname(os.path.abspath(__file__)), "superadmin.html")
+# ── REAL PAGE ROUTES ──────────────────────────────────────────────────────────
+# Every former hash tab (#news, #chart, #rwa, #partners, #trades, #blog ...) is now a
+# standalone page URL. Each URL serves the same SPA shell; the client router reads
+# window.location.pathname and renders ONLY that page's specific functionality.
+# NOTE: /admin and /superadmin are dedicated portal pages served further below
+PAGE_ROUTES = ("overview", "terminal", "india", "news", "chart", "rwa",
+               "partners", "trades", "signals", "trader", "blog")
+
+def _serve_page():
+    response = send_from_directory(os.path.dirname(os.path.abspath(__file__)), "index.html")
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
     return response
 
+for _page in PAGE_ROUTES:
+    app.add_url_rule(f"/{_page}", endpoint=f"serve_page_{_page}", view_func=_serve_page, methods=["GET"])
+
+@app.route("/favicon.ico", methods=["GET"])
+def serve_favicon():
+    response = send_from_directory(os.path.dirname(os.path.abspath(__file__)), "logo.jpg")
+    response.headers["Cache-Control"] = "public, max-age=86400"
+    return response
+
+@app.route("/superadmin", methods=["GET"])
+@app.route("/superadmin/", methods=["GET"])
+def serve_superadmin_portal():
+    response = send_from_directory(os.path.dirname(os.path.abspath(__file__)), "superadmin.html")
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return response
+
 @app.route("/admin", methods=["GET"])
 @app.route("/admin/", methods=["GET"])
-def serve_admin():
+def serve_admin_portal():
     response = send_from_directory(os.path.dirname(os.path.abspath(__file__)), "admin.html")
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    response.headers["Pragma"] = "no-cache"
-    response.headers["Expires"] = "0"
     return response
 
 @app.route("/robots.txt", methods=["GET"])
@@ -289,6 +325,22 @@ def serve_sitemap():
 @app.route("/sitemap", methods=["GET"])
 def serve_sitemap_alias():
     return serve_sitemap()
+
+@app.route("/ads.txt", methods=["GET"])
+def serve_ads_txt():
+    """Google AdSense authorization file (required for ad serving & policy review)."""
+    response = send_from_directory(os.path.dirname(os.path.abspath(__file__)), "ads.txt")
+    response.mimetype = "text/plain"
+    response.headers["Cache-Control"] = "public, max-age=86400"
+    return response
+
+@app.route("/manifest.json", methods=["GET"])
+def serve_manifest():
+    """PWA manifest — enables mobile install & search-engine mobile-app signals."""
+    response = send_from_directory(os.path.dirname(os.path.abspath(__file__)), "manifest.json")
+    response.mimetype = "application/manifest+json"
+    response.headers["Cache-Control"] = "public, max-age=3600"
+    return response
 
 @app.route("/<path:filename>", methods=["GET"])
 def serve_static(filename):
@@ -616,15 +668,21 @@ def get_terminal_data():
         total_real_capital = round(cs_usdt + (cs_inr / 88.0) + delta_usdt, 2)
 
         # Load last 30 execution log entries from agent_audit.jsonl
+        # MEMORY FIX: the audit file grows forever; reading the WHOLE file into a list on
+        # every 4s dashboard poll (one per open browser tab) was a major OOM driver on Render.
+        # Only the last ~200KB of the file is ever needed -> seek to the tail instead.
         execution_log = []
         audit_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "agent_audit.jsonl")
         if os.path.exists(audit_path):
             try:
                 lines = []
-                with open(audit_path, "r") as f:
-                    for line in f:
-                        lines.append(line.strip())
-                for line in lines[-30:]:
+                with open(audit_path, "rb") as f:
+                    f.seek(0, 2)
+                    _fsize = f.tell()
+                    f.seek(max(0, _fsize - 200_000))
+                    raw = f.read().decode("utf-8", errors="replace")
+                    lines = [ln.strip() for ln in raw.splitlines() if ln.strip()][-30:]
+                for line in lines:
                     try:
                         entry = json.loads(line)
                         agent = entry.get("agent", "Unknown")
@@ -1766,8 +1824,6 @@ def _verify_admin_token(token: str) -> bool:
 @app.route("/api/admin/login", methods=["POST"])
 def admin_login():
     try:
-        from security import create_jwt_token
-        from database import authenticate_user, get_user_by_email
         data = request.json or {}
         username = str(data.get("username", "")).strip().lower()
         password = str(data.get("password", "")).strip()
@@ -1775,36 +1831,19 @@ def admin_login():
         configured_user = str(CONFIG.get("admin_username", "admin@thesmartmag.com")).strip().lower()
         configured_pass = str(CONFIG.get("admin_password", "SmartMag@Quant2026!")).strip()
 
-        user_obj = None
-        role = "superadmin"
-
         if (username == configured_user or username == "thesmartmag" or username == "admin") and password == configured_pass:
-            admin_user = get_user_by_email("admin@thesmartmag.com")
-            if admin_user:
-                user_obj = admin_user
-                role = admin_user.get("role", "superadmin")
-            else:
-                user_obj = {"id": 1, "email": configured_user, "role": "superadmin", "name": "Super Admin"}
-        else:
-            db_user, db_err = authenticate_user(username, password)
-            if not db_err and db_user and db_user.get("role") in ("superadmin", "admin"):
-                user_obj = db_user
-                role = db_user.get("role")
-
-        if user_obj:
-            jwt_tok = create_jwt_token({"user_id": user_obj["id"], "email": user_obj["email"], "role": role})
-            legacy_tok = _generate_admin_token(user_obj["email"])
-            log.info("Admin login successful for %s (role: %s)", username, role)
-            resp = jsonify({
+            token = _generate_admin_token(configured_user)
+            log.info("Admin login successful for %s", username)
+            return jsonify({
                 "status": "success",
-                "message": f"Administrative session established ({role})",
-                "token": jwt_tok,
-                "legacy_token": legacy_tok,
-                "user": user_obj
-            })
-            resp.set_cookie("auth_token", jwt_tok, max_age=86400 * 7, httponly=False, samesite="Lax")
-            resp.set_cookie("tsm_token", legacy_tok, max_age=86400 * 7, httponly=False, samesite="Lax")
-            return resp, 200
+                "message": "Authentication successful",
+                "token": token,
+                "user": {
+                    "username": configured_user,
+                    "brand": CONFIG.get("brand_name", "TheSmartMag Quant Terminal"),
+                    "role": "Super Admin"
+                }
+            }), 200
         else:
             log.warning("Failed admin login attempt for user: %s", username)
             return jsonify({"status": "error", "message": "Invalid username or password"}), 401

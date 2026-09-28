@@ -2,13 +2,8 @@
 # Crawl-rate and indexing configuration for search engines
 User-agent: Googlebot
 Allow: /
-Allow: /#terminal
-Allow: /#india
-Allow: /#news
-Allow: /#chart
-Allow: /#rwa
-Allow: /#partners
-Allow: /#trades
+Allow: /ads.txt
+Allow: /manifest.json
 Disallow: /api/admin/
 Disallow: /api/user/
 Disallow: /api/trade/

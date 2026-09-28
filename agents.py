@@ -1,12 +1,13 @@
 """
-Multi-agent pump/dump pipeline for CoinSwitch.
-Strategy: Momentum scalping with adaptive trailing stop for small capital.
+Multi-agent quality trade pipeline for CoinSwitch + Delta.
+Strategy v4: high-conviction swing momentum — quality over quantity.
 
-Key improvements over v1:
-  - Signal requires 3/4 conditions (not 4/4) — fires on real moves
-  - Confidence formula tuned to realistic 0.40–0.75 range
-  - Tighter slippage check tolerates GitHub Actions 15-min scheduling lag
-  - Detailed Telegram notifications with P&L context
+Quality mandate:
+  - Tradeable signal requires 3/4 conditions AND an aligned 4h trend
+  - Volume must confirm (>= 1.8x rolling average) or the setup is rejected
+  - 85%+ minimum confidence and 1:4 minimum Reward-to-Risk ratio
+  - Max 3 concurrent positions; 2 entries/hour; 12% take-profit horizon
+  - Adaptive trailing stop arms at ~1R (+3%) and rides multi-day expansions
 """
 
 from __future__ import annotations
@@ -344,17 +345,12 @@ class SignalDetectorAgent:
             dump_count = sum(bool(x) for x in dump_conditions)
 
             signal = "normal"
-            # Relaxed pump/dump detection:
-            #   3/4 conditions (any trend) → pump/dump
-            #   2/4 conditions + aligned 4h trend → pump/dump
-            #   2/4 conditions (no trend) → watch
-            if pump_count >= 3:
+            # QUALITY GATE (v4): a tradeable pump/dump now requires 3/4 conditions AND an
+            # aligned 4h trend. The old 2/4 shortcut produced low-quality scalps; removing it
+            # trades less often but with a far better average profit per trade.
+            if pump_count >= 3 and trend_up:
                 signal = "pump"
-            elif pump_count >= 2 and trend_up:
-                signal = "pump"
-            elif dump_count >= 3:
-                signal = "dump"
-            elif dump_count >= 2 and trend_down:
+            elif dump_count >= 3 and trend_down:
                 signal = "dump"
             elif max(pump_count, dump_count) >= self.cfg["watch_condition_count"]:
                 signal = "watch"
@@ -389,12 +385,29 @@ class RiskManagerAgent:
         self.delta_client = delta_client
         self.sentiment_agent = AISentimentAgent()
 
+    @staticmethod
+    def is_trading_day() -> tuple[bool, str]:
+        """Mon-Fri gate (UTC). Weekends are blocked for ALL exchange trades.
+        Controlled by TRADING_DAYS_ONLY_WEEKDAYS env (default: enabled)."""
+        import os as _os
+        from datetime import datetime as _dt, timezone as _tz
+        if _os.getenv("TRADING_DAYS_ONLY_WEEKDAYS", "true").strip().lower() in ("0", "false", "no", "off"):
+            return True, "weekday_gate_disabled"
+        wd = _dt.now(_tz.utc).weekday()  # 0=Mon .. 6=Sun
+        if wd >= 5:
+            return False, "weekend_market_closed (Sat/Sun)"
+        return True, "weekday"
+
     def evaluate(self, signals: list[dict], execution_halted: bool = False) -> list[dict]:
         approvals = []
+        trading_day, day_reason = self.is_trading_day()
         cached_portfolio = self._portfolio_usdt()
         for signal in signals:
+            if not trading_day:
+                approvals.append(risk_reject(signal, f"trading_day_gate: {day_reason}"))
+                continue
             approvals.append(self._evaluate_one(signal, execution_halted, cached_portfolio_usdt=cached_portfolio))
-        self.audit.write("RiskManager", {"count": len(approvals), "approvals": approvals})
+        self.audit.write("RiskManager", {"count": len(approvals), "approvals": approvals, "trading_day": trading_day})
         return approvals
 
     def _evaluate_one(self, signal: dict, execution_halted: bool, cached_portfolio_usdt: float = None) -> dict:
@@ -431,6 +444,14 @@ class RiskManagerAgent:
         if atr_pct <= 0: atr_pct = 0.1
         if atr_pct > 5.0:
             return risk_reject(signal, f"atr_{atr_pct:.2f}pct_too_volatile")
+
+        # VOLUME CONFIRMATION GATE: a quality entry needs real participation.
+        # Signal volume must be >= volume_confirmation_min x its rolling average,
+        # otherwise the move is noise and gets rejected regardless of price action.
+        vol_ratio = float(supporting.get("volume_ratio", 0) or 0)
+        vol_conf_min = float(self.cfg.get("volume_confirmation_min", 1.8))
+        if 0 < vol_ratio < vol_conf_min:
+            return risk_reject(signal, f"volume_confirmation_{vol_ratio:.2f}x_below_{vol_conf_min}x")
 
         # AI Sentiment Filter
         sentiment = self.sentiment_agent.get_market_sentiment()

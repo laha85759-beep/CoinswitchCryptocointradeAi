@@ -494,15 +494,21 @@ def run() -> None:
             log.warning("CryptoNewsIntelligenceAgent notice: %s", c_news_exc)
 
     # ── Step 2.6: Quick Scalping Agent Execution ──────────────────────────────
-    try:
-        from scalp_agent import QuickScalpAgent
-        scalp_agent = QuickScalpAgent(CONFIG, cs_client, delta_client, notifier, audit)
-        symbols_to_scalp = [d["symbol"] for d in market_data if not d.get("error")]
-        scalp_trades = scalp_agent.scan_and_execute_scalps(symbols_to_scalp)
-        if scalp_trades:
-            log.info("QuickScalpAgent: Executed %s quick scalp trades", len(scalp_trades))
-    except Exception as scalp_exc:
-        log.warning("QuickScalpAgent notice: %s", scalp_exc)
+    # Quality Trade Mandate v4: scalping is DISABLED by default. It traded ~1% targets
+    # with 0.05% stops and oversized lots, bleeding fees and spread on market noise.
+    # Capital is now concentrated into 1:4 R:R multi-hour swings. ENABLE_SCALPING=true restores it.
+    if CONFIG.get("enable_scalping", False):
+        try:
+            from scalp_agent import QuickScalpAgent
+            scalp_agent = QuickScalpAgent(CONFIG, cs_client, delta_client, notifier, audit)
+            symbols_to_scalp = [d["symbol"] for d in market_data if not d.get("error")]
+            scalp_trades = scalp_agent.scan_and_execute_scalps(symbols_to_scalp)
+            if scalp_trades:
+                log.info("QuickScalpAgent: Executed %s quick scalp trades", len(scalp_trades))
+        except Exception as scalp_exc:
+            log.warning("QuickScalpAgent notice: %s", scalp_exc)
+    else:
+        log.info("Scalp agent disabled by Quality Trade Mandate — capital reserved for swing setups")
 
     # ── Step 2.7: US Stocks Monthly Earnings Trading Agent ────────────────────
     try:

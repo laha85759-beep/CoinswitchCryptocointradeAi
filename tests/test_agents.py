@@ -60,8 +60,15 @@ class AgentSafetyTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.old_cwd = os.getcwd()
         os.chdir(self.tmp.name)
+        # Unit tests exercise risk logic, not the calendar gate — disable weekday gate
+        self._old_gate = os.environ.get("TRADING_DAYS_ONLY_WEEKDAYS")
+        os.environ["TRADING_DAYS_ONLY_WEEKDAYS"] = "false"
 
     def tearDown(self):
+        if self._old_gate is None:
+            os.environ.pop("TRADING_DAYS_ONLY_WEEKDAYS", None)
+        else:
+            os.environ["TRADING_DAYS_ONLY_WEEKDAYS"] = self._old_gate
         os.chdir(self.old_cwd)
         self.tmp.cleanup()
 
@@ -110,6 +117,22 @@ class AgentSafetyTests(unittest.TestCase):
         result = risk.evaluate([low_rr_signal])[0]
         self.assertFalse(result["approved"])
         self.assertIn("capital_survival_rr_ratio", result["reason"])
+
+    def test_weekend_trading_gate_blocks_trades(self):
+        """With the weekday gate ON, weekend days must reject every trade."""
+        os.environ["TRADING_DAYS_ONLY_WEEKDAYS"] = "true"
+        try:
+            risk = RiskManagerAgent(base_config(), FakeClient(), AuditLogger())
+            trading_day, reason = risk.is_trading_day()
+            result = risk.evaluate([signal()])[0]
+            if not trading_day:  # Saturday/Sunday
+                self.assertFalse(result["approved"])
+                self.assertIn("trading_day_gate", result["reason"])
+            else:  # Monday-Friday: gate passes through
+                self.assertEqual(reason, "weekday")
+                self.assertTrue(result["approved"])
+        finally:
+            os.environ["TRADING_DAYS_ONLY_WEEKDAYS"] = "false"
 
 
 if __name__ == "__main__":

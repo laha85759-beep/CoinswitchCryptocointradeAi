@@ -1,0 +1,20 @@
+{
+  "name": "TheSmartMag Quant Terminal — AI Trading",
+  "short_name": "TheSmartMag",
+  "description": "Institutional-grade AI quantitative trading terminal: dual-exchange auto-execution, Indian F&O intelligence, live multi-market signals and Capital Survival risk mode.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020812",
+  "theme_color": "#020812",
+  "orientation": "any",
+  "icons": [
+    { "src": "/logo.jpg", "sizes": "192x192", "type": "image/jpeg", "purpose": "any" },
+    { "src": "/logo.jpg", "sizes": "512x512", "type": "image/jpeg", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Live Terminal", "url": "/#terminal" },
+    { "name": "AI Signals", "url": "/#trades" },
+    { "name": "Indian F&O", "url": "/#india" },
+    { "name": "Overview & Pricing", "url": "/#overview" }
+  ]
+}

@@ -164,21 +164,24 @@ CONFIG = {
 
     # ── Risk manager limits & Capital Survival Protocol ───────────────────────
     "capital_survival_mode":    _bool_env("CAPITAL_SURVIVAL_MODE",      True),  # Last Money Protocol: Capital preservation above all else
-    "risk_per_trade_pct":       _float_env("RISK_PER_TRADE_PCT",         0.5),  # 0.25% - 0.5% max risk per trade
-    "max_position_pct":         _float_env("MAX_POSITION_PCT",          15.0),  # Max 15% capital per trade
-    "max_open_trades":          _int_env("MAX_OPEN_TRADES",               10),  # Allow up to 10 concurrent positions across exchanges
-    "max_total_exposure_pct":   _float_env("MAX_TOTAL_EXPOSURE_PCT",    25.0),  # Max 25% total margin exposed
-    "max_trades_per_hour":      _int_env("MAX_TRADES_PER_HOUR",          4),
-    "min_confidence":           _float_env("MIN_CONFIDENCE",             0.80), # Strict high-conviction momentum, volume surge & AI consensus filter
-    "min_rr_ratio":             _float_env("MIN_RR_RATIO",               3.0),  # Minimum 1:3 Reward-to-Risk ratio (prefer 1:4+)
-    "stop_loss_pct":            _float_env("STOP_LOSS_PCT",              1.5),  # Max 1.5% Precision Invalidation Stop Loss
-    "take_profit_pct":          _float_env("TAKE_PROFIT_PCT",           10.0),  # Extended 10.0% TP to capture full multi-hour momentum expansion
-    "trail_activation_pct":     _float_env("TRAIL_ACTIVATION_PCT",       1.5),  # Activates trailing stop only after solid +1.5% move (gives breathing room)
+    # QUALITY TRADE MANDATE: fewer positions, more conviction, bigger average win.
+    # Capital is concentrated into the best 3 setups instead of scattered across 10 scalps.
+    "risk_per_trade_pct":       _float_env("RISK_PER_TRADE_PCT",         1.0),  # 1% risk per high-conviction trade
+    "max_position_pct":         _float_env("MAX_POSITION_PCT",          25.0),  # Up to 25% capital in the single best setup
+    "max_open_trades":          _int_env("MAX_OPEN_TRADES",               3),   # Quality over quantity: max 3 concurrent positions
+    "max_total_exposure_pct":   _float_env("MAX_TOTAL_EXPOSURE_PCT",    60.0),  # 60% max deployed (concentrated book)
+    "max_trades_per_hour":      _int_env("MAX_TRADES_PER_HOUR",           2),   # At most 2 entries/hour — patience is the edge
+    "min_confidence":           _float_env("MIN_CONFIDENCE",             0.85), # Only 85%+ conviction setups pass
+    "min_rr_ratio":             _float_env("MIN_RR_RATIO",               4.0),  # Minimum 1:4 Reward-to-Risk (institutional standard)
+    "stop_loss_pct":            _float_env("STOP_LOSS_PCT",              2.5),  # 2.5% structural swing invalidation (no noise stop-outs)
+    "take_profit_pct":          _float_env("TAKE_PROFIT_PCT",           12.0),  # 12% TP to ride full multi-day momentum expansion
+    "trail_activation_pct":     _float_env("TRAIL_ACTIVATION_PCT",       3.0),  # Trail arms at +3% (~1R) so winners breathe
     "small_account_leverage":   _int_env("SMALL_ACCOUNT_LEVERAGE",        5),   # Max 5x leverage in Capital Survival Mode
     "scalp_lot_multiplier":     _float_env("SCALP_LOT_MULTIPLIER",       1.0),
-    "daily_max_drawdown_pct":   _float_env("DAILY_MAX_DRAWDOWN_PCT",     1.5),  # Strict 1.5% max daily drawdown ceiling
-    "weekly_max_drawdown_pct":  _float_env("WEEKLY_MAX_DRAWDOWN_PCT",    3.0),  # Strict 3.0% weekly drawdown limit
-    "min_liquidity_usd":        _float_env("MIN_LIQUIDITY_USD",      50_000.0), # Only liquid, established pairs
+    "volume_confirmation_min":  _float_env("VOLUME_CONFIRMATION_MIN",    1.8),  # Signal volume must be >= 1.8x its 20-bar average
+    "daily_max_drawdown_pct":   _float_env("DAILY_MAX_DRAWDOWN_PCT",     2.0),  # 2% daily circuit breaker
+    "weekly_max_drawdown_pct":  _float_env("WEEKLY_MAX_DRAWDOWN_PCT",    4.0),  # 4% weekly circuit breaker
+    "min_liquidity_usd":        _float_env("MIN_LIQUIDITY_USD",     250_000.0), # Only deep, liquid, established pairs
     "min_order_usdt":           _float_env("MIN_ORDER_USDT",             0.05),
     "risk_order_type":          os.getenv("RISK_ORDER_TYPE",           "market"),
 
@@ -195,6 +198,10 @@ CONFIG = {
     # ── Short Selling ─────────────────────────────────────────────────────────
     "short_selling_enabled": _bool_env("SHORT_SELLING_ENABLED", True),
     "short_exchanges": ["delta"],
+
+    # ── Trading week gate: ALL exchange trades Monday-Friday only (UTC) ────────
+    # Weekend signals are still scanned & broadcast, but NO orders are placed.
+    "trading_days_only_weekdays": _bool_env("TRADING_DAYS_ONLY_WEEKDAYS", True),
 
     # ── NVIDIA Multi-Model AI Super Brain Layer ─────────────────────────────────
     "nvidia_key_glm_5_3":        os.getenv("NVIDIA_KEY_GLM_5_3",        "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"),
