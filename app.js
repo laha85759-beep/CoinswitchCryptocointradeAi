@@ -475,24 +475,12 @@ function switchView(viewName, updateHash = true) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  // Landing marketing blocks (stats, features, pricing, community, footer) live in a
-  // dedicated pane so they appear ONLY on the landing page — never on /news, /chart, etc.
-  const landingExtra = document.getElementById("view-landing-extra");
-  if (landingExtra) {
-    landingExtra.style.display = (viewName === "landing") ? "flex" : "none";
-  }
-
   if (viewName === "rwa") {
     if (typeof fetchRealData === "function" && lastCachedTickers === null) fetchRealData();
   } else if (viewName === "partners") {
     initOverviewView();
   } else if (viewName === "landing") {
-    if (typeof initHeroCandleChart === "function") {
-      setTimeout(initHeroCandleChart, 50);
-    }
-    if (typeof loadRealCandlesForHero === "function") {
-      loadRealCandlesForHero(heroActiveSym || "BTC/USDT", heroActiveTf || "15m");
-    }
+    // Landing renders the full marketing + hero panels by default (no JS toggle needed)
   } else if (viewName === "overview") {
     initOverviewView();
   } else if (viewName === "chart") {
