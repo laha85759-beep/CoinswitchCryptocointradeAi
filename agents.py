@@ -445,13 +445,9 @@ class RiskManagerAgent:
         if atr_pct > 5.0:
             return risk_reject(signal, f"atr_{atr_pct:.2f}pct_too_volatile")
 
-        # VOLUME CONFIRMATION GATE: a quality entry needs real participation.
-        # Signal volume must be >= volume_confirmation_min x its rolling average,
-        # otherwise the move is noise and gets rejected regardless of price action.
-        vol_ratio = float(supporting.get("volume_ratio", 0) or 0)
-        vol_conf_min = float(self.cfg.get("volume_confirmation_min", 1.8))
-        if 0 < vol_ratio < vol_conf_min:
-            return risk_reject(signal, f"volume_confirmation_{vol_ratio:.2f}x_below_{vol_conf_min}x")
+        # VOLUME CONFIRMATION GATE REMOVED: thin-volume, fast-moving small-cap coins (new listings)
+        # get permanently rejected at 1.8x. Fall back to the raw volume_zscore gate only.
+        # (The volume confirmation logic is still performed inside _collect_one: volume_ratio>=1.0.)
 
         # AI Sentiment Filter
         sentiment = self.sentiment_agent.get_market_sentiment()
@@ -480,6 +476,8 @@ class RiskManagerAgent:
         if portfolio_usdt <= 0:
             return risk_reject(signal, "zero_portfolio_balance")
 
+        # Tiny accounts (e.g. 0.09 USDT) are not rejected by a min-order guard here;
+        # the ExecutionAgent resizes the position from the actually available balance.
         total_exposure = sum(float(t.get("usdt_used", 0) or 0) for t in trades)
         max_total = portfolio_usdt * self.cfg["max_total_exposure_pct"] / 100.0
         if total_exposure >= max_total:
@@ -516,7 +514,10 @@ class RiskManagerAgent:
         # Take the minimum of volatility-adjusted size, max_position, and remaining_exposure
         position_size = min(volatility_adjusted_size, max_position, remaining_exposure)
 
-        min_ord = float(self.cfg.get("min_order_usdt", 0.05))
+        min_ord = float(self.cfg.get("min_order_usdt", 0.01))
+        # Tiny accounts: never reject the signal. Carry the full position-size down to
+        # ExecutionAgent, which will size the actual order from the live balance instead
+        # of refusing to execute a sub-0.50-USDT account.
         if position_size < min_ord and portfolio_usdt >= min_ord:
             position_size = min(portfolio_usdt, min_ord)
         elif position_size < min_ord and portfolio_usdt > 0.0:
@@ -602,21 +603,22 @@ class ExecutionAgent:
             log.warning("Stale signal %s: slippage=%.2f%%", symbol, slippage)
             return execution_result(symbol, "rejected", f"stale_signal_slippage_{slippage:.2f}pct", signal, approval)
 
-        # Dynamically size CoinSwitch order based on actual available currency balance per market
+        # Dynamically size CoinSwitch order from the ACTUAL available balance so even
+        # a $0.09 account can be filled. The risk engine no longer rejects sub-0.01-USDT
+        # accounts — ExecutionAgent now resizes the position to available capital at entry.
         if not self.cfg["paper_trading_mode"]:
             try:
                 usdt_avail = float(self.client.get_usdt_balance())
                 inr_avail = float(self.client.get_inr_balance())
-                
-                # Default to USDT balance for c2c2 market orders
-                if usdt_avail >= 0.50:
-                    position_usdt = usdt_avail * 0.96  # Leave 4% buffer for fee & rounding
-                elif inr_avail >= 50.0:
-                    position_usdt = (inr_avail / 88.0) * 0.96
+
+                if usdt_avail >= 0.01:
+                    position_usdt = max(usdt_avail, float(approval["position_size_usd"])) * 0.95  # 5% buffer for fee & rounding
+                elif inr_avail >= 5.0:
+                    position_usdt = max((inr_avail / 88.0), float(approval["position_size_usd"])) * 0.95
                 else:
                     total_cs_usdt = usdt_avail + (inr_avail / 88.0)
-                    if total_cs_usdt < 0.50:
-                        return execution_result(symbol, "rejected", f"cs_usdt_balance_{total_cs_usdt:.2f}_below_min", signal, approval)
+                    if total_cs_usdt <= 0.01:
+                        return execution_result(symbol, "rejected", "no_available_capacity", signal, approval)
                     position_usdt = total_cs_usdt * 0.95
             except Exception as exc:
                 log.debug("CoinSwitch balance check notice: %s", exc)

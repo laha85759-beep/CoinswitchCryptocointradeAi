@@ -171,18 +171,18 @@ CONFIG = {
     "max_open_trades":          _int_env("MAX_OPEN_TRADES",               3),   # Quality over quantity: max 3 concurrent positions
     "max_total_exposure_pct":   _float_env("MAX_TOTAL_EXPOSURE_PCT",    60.0),  # 60% max deployed (concentrated book)
     "max_trades_per_hour":      _int_env("MAX_TRADES_PER_HOUR",           2),   # At most 2 entries/hour — patience is the edge
-    "min_confidence":           _float_env("MIN_CONFIDENCE",             0.85), # Only 85%+ conviction setups pass
-    "min_rr_ratio":             _float_env("MIN_RR_RATIO",               4.0),  # Minimum 1:4 Reward-to-Risk (institutional standard)
+    "min_confidence":           _float_env("MIN_CONFIDENCE",             0.70), # Reduce from 0.85→0.70 so tiny accounts still get signals
+    "min_rr_ratio":             _float_env("MIN_RR_RATIO",               3.0),  # Minimum 1:3 Reward-to-Risk (relaxed from 1:4)
     "stop_loss_pct":            _float_env("STOP_LOSS_PCT",              2.5),  # 2.5% structural swing invalidation (no noise stop-outs)
     "take_profit_pct":          _float_env("TAKE_PROFIT_PCT",           12.0),  # 12% TP to ride full multi-day momentum expansion
     "trail_activation_pct":     _float_env("TRAIL_ACTIVATION_PCT",       3.0),  # Trail arms at +3% (~1R) so winners breathe
     "small_account_leverage":   _int_env("SMALL_ACCOUNT_LEVERAGE",        5),   # Max 5x leverage in Capital Survival Mode
     "scalp_lot_multiplier":     _float_env("SCALP_LOT_MULTIPLIER",       1.0),
-    "volume_confirmation_min":  _float_env("VOLUME_CONFIRMATION_MIN",    1.8),  # Signal volume must be >= 1.8x its 20-bar average
+    "volume_confirmation_min":  _float_env("VOLUME_CONFIRMATION_MIN",    1.2),  # Drop 1.8×→1.2× so thin volume still confirms
     "daily_max_drawdown_pct":   _float_env("DAILY_MAX_DRAWDOWN_PCT",     2.0),  # 2% daily circuit breaker
     "weekly_max_drawdown_pct":  _float_env("WEEKLY_MAX_DRAWDOWN_PCT",    4.0),  # 4% weekly circuit breaker
-    "min_liquidity_usd":        _float_env("MIN_LIQUIDITY_USD",     250_000.0), # Only deep, liquid, established pairs
-    "min_order_usdt":           _float_env("MIN_ORDER_USDT",             0.05),
+    "min_liquidity_usd":        _float_env("MIN_LIQUIDITY_USD",       2_000.0), # Relax 250k→$2k so mid-cap new listings qualify
+    "min_order_usdt":           _float_env("MIN_ORDER_USDT",             0.01),
     "risk_order_type":          os.getenv("RISK_ORDER_TYPE",           "market"),
 
     # ── Weekend Trading Blackout (Monday to Friday Live Trade Execution Only) ──
