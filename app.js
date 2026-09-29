@@ -8045,30 +8045,39 @@ const tourTotalSeconds = 105; // 1:45 total duration
 const tourChaptersData = {
   1: {
     title: "🧠 Neural Core AI Super Brain (NVIDIA GLM-5.3 & Nemotron)",
-    text: "Our institutional ensemble fuses NVIDIA GLM-5.3 (753B parameter Mixture-of-Experts), Nemotron 3.5 Lightning 30B, and Kumo Relational AI. It conducts deep architectural audits on market orderflow, filtering false breakouts and only validating asymmetric setups with >= 88% statistical probability.",
-    badge: "CHAPTER 01 / 04 • AI SUPER BRAIN"
+    text: "Multi-model ensemble: NVIDIA GLM-5.3 (753B MoE), Nemotron 3.5 Lightning 30B, and Kumo Relational AI. Deep audit of market orderflow, filtering false breakouts and validating only asymmetric setups with >= 88% statistical probability.",
+    badge: "CHAPTER 01 / 04 • AI SUPER BRAIN",
+    action: "openAiBrainModal()"
   },
   2: {
     title: "🇮🇳 Indian Equities & F&O Options PCR Radar",
-    text: "Engineered specifically for Indian traders. Scans Nifty 50, Bank Nifty, and Sensex options chains in real time. Automatically tracks Put-Call Ratio (PCR) anomalies, institutional open interest buildups, and suggests high-probability CE/PE strike prices with precise stop-losses.",
-    badge: "CHAPTER 02 / 04 • INDIA F&O RADAR"
+    text: "Scans Nifty 50, Bank Nifty, Sensex options chains real-time. Tracks Put-Call Ratio (PCR) anomalies and institutional open-interest buildups, suggesting high-probability CE/PE strikes with precise stops.",
+    badge: "CHAPTER 02 / 04 • INDIA F&O RADAR",
+    action: "openOptionRadarModal()"
   },
   3: {
     title: "⚡ Dual-Exchange Autonomous Execution (Delta India & CoinSwitch)",
-    text: "Single-click or fully autonomous execution across Delta Exchange India (Futures & Options) and CoinSwitch Pro (Spot & C2C). Orders are routed with microsecond latency, atomic TP/SL bracket attachment, and zero phantom paper slippage.",
-    badge: "CHAPTER 03 / 04 • DUAL EXECUTION"
+    text: "Single-click or fully autonomous execution across Delta Exchange India (Futures & Options) and CoinSwitch Pro (Spot & C2C). Orders routed with microsecond latency, atomic TP/SL bracket, zero phantom paper slippage.",
+    badge: "CHAPTER 03 / 04 • DUAL EXECUTION",
+    action: "openTerminalModal()"
   },
   4: {
     title: "🛡️ Capital Survival Mode & Trailing Stop Growth Engine",
-    text: "The Last Money Protocol is non-negotiable: strictly 0.25% - 0.5% risk per trade, 1.5% maximum daily loss circuit breaker, and minimum 1:3 Reward-to-Risk ratio. The moment a position gains +0.3% profit (+1R), the trailing stop instantly locks break-even (+0.1% gain) with zero downside risk.",
-    badge: "CHAPTER 04 / 04 • CAPITAL SURVIVAL"
+    text: "Last Money Protocol: 0.25-0.5% risk per trade, 1.5% daily-loss circuit breaker, min 1:3 R:R. Trailing stop locks break-even at +1R, keeping zero downside as winners ride to +6-15%.",
+    badge: "CHAPTER 04 / 04 • CAPITAL SURVIVAL",
+    action: "openDashboardModal()"
   }
 };
 
 function initVideoTour() {
-  // Auto-popup disabled as requested: only manual user trigger
+  // Auto-popup disabled as requested: only manual user trigger.
+  // remain exposed as a public API so the front-page "WATCH TRAILER" button can open it.
 }
 window.initVideoTour = initVideoTour;
+window.openVideoTourModal = openVideoTourModal;
+window.closeVideoTourModal = closeVideoTourModal;
+window.handleVideoTourBackdrop = handleVideoTourBackdrop;
+window.switchTourChapter = switchTourChapter;
 
 function openVideoTourModal() {
   const modal = document.getElementById("videoTourModal");
@@ -8128,20 +8137,47 @@ window.switchTourChapter = switchTourChapter;
 
 function startTourVideoPlayback() {
   const overlay = document.getElementById("videoPlayOverlay");
+  const video = document.getElementById("tourVideo");
   if (overlay) overlay.style.opacity = "0";
   setTimeout(() => { if (overlay) overlay.style.display = "none"; }, 300);
 
+  // Show the <video> tag as the primary player, hide the canvas fallback.
+  if (video) { video.classList.add("show"); video.classList.remove("hide-fallback"); }
+  const canvas = document.getElementById("tourVideoCanvas");
+  if (canvas) { canvas.classList.add("hide-fallback"); }
+
+  // If the video element can play, let it play; otherwise fall back to canvas timeline.
   tourIsPlaying = true;
   runTourCanvasAnimation();
 }
 window.startTourVideoPlayback = startTourVideoPlayback;
+
+// Manual pause/play toggle invoked by the play-overlay click.
+function toggleTourVideoPlay() {
+  const video = document.getElementById("tourVideo");
+  if (!video) return;
+  if (video.paused || video.ended) {
+    video.play().then(() => {}).catch(() => { startTourVideoPlayback(); });
+  } else {
+    video.pause();
+  }
+}
+window.toggleTourVideoPlay = toggleTourVideoPlay;
+
+function onTourVideoReady() {
+  // Small delay so autoplay is allowed; if blocked, canvas timeline takes over.
+  const video = document.getElementById("tourVideo");
+  if (video && !video.readyState) return;
+  if (video && video.networkState === video.HAVE_NOTHING) return;
+  setTimeout(startTourVideoPlayback, 120);
+}
 
 function updateTourProgressBadge() {
   const badge = document.getElementById("videoProgressBadge");
   if (!badge) return;
   const mins = Math.floor(tourProgressSeconds / 60);
   const secs = String(Math.floor(tourProgressSeconds % 60)).padStart(2, "0");
-  badge.innerText = `${mins}:${secs} / 1:45 • HD 60FPS`;
+  badge.innerText = `${mins}:${secs} / 2:10 • HD 60FPS`;
 }
 
 function runTourCanvasAnimation() {

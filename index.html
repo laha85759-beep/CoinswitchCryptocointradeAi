@@ -778,12 +778,24 @@
             <p>Advanced Capital Survival mode, strict stop losses, and automatic profit lock-in mechanisms.</p>
           </div>
           <div class="tsm-feature-card">
-            <div class="tsm-feature-icon gold">🌐</div>
-            <h3>Multi-Asset Access</h3>
-            <p>Trade Forex, Stocks, Crypto, Commodities, and BSE/NSE Momentum Equities from one unified portal.</p>
-          </div>
+            <div class="tsm-feature-icon gold">🌐</div>          <h3>Multi-Asset Access</h3>
+          <p>Trade Forex, Stocks, Crypto, Commodities, and BSE/NSE Momentum Equities from one unified portal.</p>
         </div>
-      </section>
+      </div>
+    </section>
+
+      <!-- TOUR CTA -->
+      <div style="text-align:center; padding:18px 20px; margin: 4px 0 20px 0; background:rgba(255,255,255,0.02); border:1px solid rgba(0,240,144,0.10); border-radius:8px;">
+        <div style="font-size:11px; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase;">\r
+          📽️ WATCH THE QUANT TRADE TOUR
+        </div>
+        <button class="tsm-btn-primary" style="font-size:13px; padding:8px 18px; background:linear-gradient(135deg, var(--neon-cyan), var(--neon-green)); color:#0b1329; font-weight:800;" onclick="openVideoTourModal()">
+          ▶ PLAY 60-SECOND TRAILER
+        </button>
+        <div style="font-size:11px; color:var(--text-dim); margin-top:6px;">
+          See how Capital Survival Mode, Dual-Exchange Execution, and AI Signals work – then start trading.
+        </div>
+      </div>
 
       <!-- Multi-Device Showcase ("Trade Anytime, Anywhere") -->
       <section class="tsm-devices-section" id="devicesSection">
@@ -5300,24 +5312,28 @@
         <button class="video-tour-close" onclick="closeVideoTourModal()" title="Close Tour">✕</button>
       </div>
 
-      <!-- High-Definition Cyber Video Visualizer Player with Canvas Scene Renderer -->
+      <!-- High-Definition Cyber Video Visualizer Player -->
       <div class="video-screen-container" id="tourVideoScreen">
+        <video id="tourVideo" class="tour-video" muted poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='860' height='380'%3E%3Crect fill='%23020712' width='860' height='380'/%3E%3Ctext x='40' y='200' font-family='monospace' font-size='14' fill='%2300f090' opacity='0.6'%3E▶ WATCH THE QUANT TRADE TOUR%3C/text%3E%3C/svg%3E" onloadedmetadata="onTourVideoReady()">
+          <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
         <canvas id="tourVideoCanvas" width="860" height="380"></canvas>
         <div class="cyber-scanlines" style="position:absolute;"></div>
-        <div class="video-play-overlay" id="videoPlayOverlay" onclick="startTourVideoPlayback()">
+        <div class="video-play-overlay" id="videoPlayOverlay" onclick="toggleTourVideoPlay()">
           <div class="video-play-btn">
-            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <svg viewBox="0 0 24 24" id="tourPlayIcon"><path d="M8 5v14l11-7z"/></svg>
           </div>
-          <div style="text-align:center;">
+          <div id="tourPlayLabel" style="text-align:center;">
             <div style="font-family:var(--font-orb); font-size:15px; font-weight:800; color:#fff; text-shadow:0 0 15px var(--neon-cyan);">
-              WATCH 60-SECOND QUANT TERMINAL TOUR
+              WATCH TRAILER
             </div>
             <div style="font-size:11.5px; color:var(--neon-green); font-family:var(--font-mono); margin-top:4px;">
-              CLICK TO PLAY • SEE HOW OUR AI GROWS YOUR CAPITAL SAFELY
+              PLAY THE QUANT TRADE TOUR
             </div>
           </div>
         </div>
-        <div class="video-duration-badge" id="videoProgressBadge">0:00 / 1:45 • HD 60FPS</div>
+        <div class="video-duration-badge" id="videoProgressBadge">0:00 / 2:10 • HD 60FPS</div>
       </div>
 
       <!-- Chapter Tabs -->
