@@ -188,7 +188,7 @@ class ForexFactoryNewsAgent:
                         "reason": f"forex_factory_catalyst:{title[:30]}_{currency}",
                         "supporting_data": {
                             "price": price,
-                            "volume_24h": 0.0,
+                            "volume_24h": 500_000_000.0,
                             "atr_pct": 1.5,
                             "volume_ratio": 2.5,
                             "change_5m": 1.5 if signal_type == "pump" else -1.5,
@@ -228,6 +228,7 @@ class ForexFactoryNewsAgent:
                     "reason": f"volatility_surge:5m_{surge['change_pct']}%_vol_{surge['vol_ratio']}x",
                     "supporting_data": {
                         "price": surge["price"],
+                        "volume_24h": 500_000_000.0,
                         "volume_ratio": surge["vol_ratio"],
                         "change_5m": surge["change_pct"],
                     }

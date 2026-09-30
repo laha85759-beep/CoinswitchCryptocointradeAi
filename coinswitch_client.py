@@ -16,7 +16,7 @@ from cryptography.hazmat.primitives.asymmetric import ed25519
 log = logging.getLogger(__name__)
 
 BASE_URL = "https://coinswitch.co"
-EXCHANGE_USDT = "c2c1"
+EXCHANGE_USDT = "c2c2"
 
 
 class CoinSwitchClient:
@@ -345,8 +345,10 @@ class CoinSwitchClient:
                 return data.get("data", {})
             except requests.HTTPError as exc:
                 last_exc = exc
-                if exc.response is not None and exc.response.status_code == 422:
-                    log.warning(f"CoinSwitch order on {ex} failed for {symbol} (HTTP 422), trying fallback...")
+                status_code = getattr(exc.response, "status_code", 0)
+                if status_code in (400, 422, 423):
+                    resp_txt = getattr(exc.response, "text", "")[:200]
+                    log.warning(f"CoinSwitch order on {ex} failed for {symbol} (HTTP {status_code}: {resp_txt}), trying fallback exchange...")
                     continue
                 raise
         if last_exc:

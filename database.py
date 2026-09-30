@@ -705,11 +705,69 @@ The breakthrough occurred when I shifted my focus entirely away from 'doubling s
 #### My 3 Golden Rules for Passing Evaluations:
 1. **Never risk more than 0.5% per trade**: It gives you 10 consecutive losses before hitting a daily limit.
 2. **Trade during High Liquidity Sessions**: London and New York overlaps only. Skip the low-volume chop.
-3. **Use Automated Trailing Stops**: Once a position reaches +1.5%, lock breakeven stop loss. Let runners capture 1:4 to 1:6 R:R profits.""",
+3. **Use Automated Trailing Stops**: Once a position reaches +1.5%, lock breakeven stop loss. Let runners capture 1:4 to 1:6 R:R profits.
+
+#### Recommended Funded Challenges:
+Get started with official discounts on institutional prop firm challenges:
+- **[Atlas Funded ($100K Account Challenge)](https://trade.thesmartmag.com/api/affiliate/track?broker=atlas&target=https%3A%2F%2Fwww.atlasfunded.com%2F)** — No time limit, raw spreads, fast payouts.
+- **[AquaFunded Prop Firm Evaluation](https://trade.thesmartmag.com/api/affiliate/track?broker=aquafunded&target=https%3A%2F%2Faquafunded.com%2F)** — Instant funded accounts with 90% profit split.""",
             "Karthik • Lead Quant",
             json.dumps(["Prop Firm", "Funded Trader", "Personal Journey", "Atlas Funded"]),
             "https://trade.thesmartmag.com/figures/overview.png",
             "Passed 2 Challenges",
+            1
+        ),
+        (
+            "Delta Exchange India Trading Guide: Save 10% On All F&O & Futures Fees",
+            "delta-exchange-india-fee-rebate-options-guide",
+            "Guide",
+            "How Indian crypto traders legally trade BTC and ETH perpetual futures and options with INR deposit/withdrawals and 10% lifetime fee rebate.",
+            """### Why Indian Traders Are Migrating to Delta Exchange India
+With Indian regulatory compliance and TDS reporting requirements, trading crypto futures on offshore exchanges has become increasingly risky. **Delta Exchange India** offers a fully compliant solution:
+
+- Direct **INR UPI / IMPS deposit and withdrawals** within minutes.
+- SEBI/FIU-compliant tax documentation and effortless reporting.
+- High-liquidity Bitcoin & Ethereum Options and Perpetual Futures contracts.
+
+#### How to Activate 10% Lifetime Brokerage Discount
+Trading fees eat up to 30% of a day trader's profits over a month. By using the official partner link below, you automatically unlock an exclusive **10% fee rebate on all trades**:
+
+👉 **[Sign up on Delta Exchange India (10% Fee Discount Link)](https://www.delta.exchange/?code=YXQSZA)** (Referral Code: `YXQSZA`)
+
+#### Algorithmic Trading with Delta Exchange India
+Our platform connects directly to Delta Exchange India via secure API keys. You can automate:
+1. Smart trailing stop losses.
+2. Volatility surge news breakouts.
+3. Automated Monday-to-Friday institutional trade execution with zero weekend risk.""",
+            "TheSmartMag Research",
+            json.dumps(["Delta Exchange", "India Crypto", "Fee Rebate", "Futures & Options"]),
+            "https://trade.thesmartmag.com/figures/overview.png",
+            "10% Fee Rebate",
+            1
+        ),
+        (
+            "Algo Trading 101: Why 95% of Manual Traders Lose Money & How Automation Solves It",
+            "algo-trading-101-why-retail-loses-money",
+            "Strategy",
+            "Eliminate greed, fear, and hesitation. Learn how algorithmic quant engines execute strictly by the math with hard stops and trailing profit locks.",
+            """### The Psychological Trap of Discretionary Trading
+The human brain is hardwired for survival, which is the exact opposite of what profitable trading requires:
+- When a trade is in loss, retail traders hope it comes back and remove their stop loss.
+- When a trade is in profit, retail traders get scared and close it immediately for pennies.
+
+The result is a disastrous asymmetric return: **tiny winners and massive catastrophic losers**.
+
+#### The Quantitative Edge
+An automated trading system does not feel fear, greed, or exhaustion. It strictly enforces:
+- **Precision Position Sizing**: Every trade is sized based on account volatility and exact dollar risk.
+- **Atomic Stop-Losses**: Exchange-registered invalidation levels that trigger even if your internet goes down.
+- **Breakeven Trailing**: As soon as a trade gains momentum (+1.5%), the stop is moved to entry or trailing profit.
+
+Ready to automate your trading workflow? Connect your exchange keys or prop account in **TheSmartMag Terminal** and execute with institutional precision.""",
+            "Quant Desk",
+            json.dumps(["Algo Trading", "Trading Psychology", "Risk Management", "Automation"]),
+            "https://trade.thesmartmag.com/figures/overview.png",
+            "Systematic Edge",
             1
         )
     ]
