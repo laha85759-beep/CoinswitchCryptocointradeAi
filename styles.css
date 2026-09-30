@@ -515,28 +515,32 @@ body.neural-core-os {
 /* ─── COCKPIT GRID (3 COLUMNS LIKE APPROVED IMAGE) ───────────────────────── */
 .nc-cockpit-grid {
   display: grid;
-  grid-template-columns: 240px 1fr 340px;
-  gap: 20px;
+  grid-template-columns: 210px minmax(320px, 1fr) 330px;
+  gap: 16px;
   align-items: center;
-  min-height: 480px;
+  min-height: 460px;
   position: relative;
+  width: 100%;
 }
 
 /* ─── LEFT COLUMN: HONEYCOMB HEXAGONAL CARDS ─────────────────────────────── */
+.nc-cockpit-grid .nc-hex-cluster,
 .nc-hex-cluster {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
   position: relative;
   z-index: 5;
+  width: 100% !important;
 }
 
 .nc-hex-card {
   position: relative;
+  width: 100% !important;
   background: linear-gradient(135deg, rgba(8, 22, 42, 0.9), rgba(4, 12, 26, 0.95));
   border: 1.5px solid var(--border-neon);
   border-radius: 12px;
-  padding: 14px 18px;
+  padding: 12px 16px;
   transition: all 0.3s ease;
   backdrop-filter: blur(14px);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), inset 0 0 15px rgba(0, 240, 144, 0.05);

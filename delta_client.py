@@ -187,10 +187,16 @@ class DeltaClient:
 
     def get_product_info(self, symbol: str) -> dict | None:
         self._build_product_cache()
-        delta_sym = symbol.replace("/", "").upper()
+        base = symbol.split("/")[0].upper()
+        delta_sym = f"{base}USD"
+        for key, product in self._product_cache.items():
+            if key == delta_sym or key == delta_sym + "T" or key == symbol.upper().replace("/", ""):
+                if product.get("contract_type") == "perpetual_futures":
+                    return product
+        # Fallback to direct key
         p = self._product_cache.get(delta_sym)
         if p is None:
-            p = self._product_cache.get(delta_sym.replace("USDT", "USD"))
+            p = self._product_cache.get(symbol.replace("/", "").upper())
         return p
 
     # ── Market data ──────────────────────────────────────────────────────────
@@ -272,9 +278,24 @@ class DeltaClient:
     def get_balances(self) -> list[dict]:
         try:
             data = self._request("GET", "/v2/wallet/balances")
-            return data.get("result", [])
+            res = data.get("result", [])
+            if not res and isinstance(data, dict):
+                log.info("Delta /v2/wallet/balances response: %s", data)
+                # Check for alternative response keys (e.g. data or balances or wallet)
+                res = data.get("data", []) or data.get("balances", []) or data.get("wallets", [])
+            # Also check user balances endpoint if /v2/wallet/balances is empty
+            if not res:
+                try:
+                    user_data = self._request("GET", "/v2/user/balances")
+                    if isinstance(user_data, dict):
+                        res = user_data.get("result", []) or user_data.get("data", [])
+                        if res:
+                            log.info("Delta /v2/user/balances returned: %s", res)
+                except Exception:
+                    pass
+            return res if isinstance(res, list) else []
         except Exception as exc:
-            log.debug("Delta wallet balance fetch notice: %s", exc)
+            log.warning("Delta wallet balance fetch error: %s", exc)
             return []
 
     def get_usdt_balance(self) -> float:
@@ -296,9 +317,12 @@ class DeltaClient:
                 if asset_sym in ("USDT", "USD") or asset_id in ("5", "14"):
                     if val > usdt_bal:
                         usdt_bal = val
-                elif asset_sym in ("INR", "RS"):
+                elif asset_sym in ("INR", "RS", "INRD") or "INR" in asset_sym or asset_id in ("1", "100"):
                     if val > inr_bal:
                         inr_bal = val
+                elif val > 0 and inr_bal == 0 and usdt_bal == 0:
+                    # Generic asset fallback: if only 1 asset balance present in India account, check value
+                    inr_bal = val
 
             if usdt_bal > 0:
                 return usdt_bal
