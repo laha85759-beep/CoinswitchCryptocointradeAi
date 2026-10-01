@@ -90,6 +90,9 @@ class NewsTelegramBroadcaster:
         return hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:32]
 
     def _is_duplicate(self, key: str) -> bool:
+        # Reload latest ledger from disk in case another worker/thread wrote to it
+        fresh_log = _load_sent_log()
+        self._sent_log.update(fresh_log)
         ts = self._sent_log.get(key)
         if ts and (time.time() - ts) < _DEDUPE_TTL_HOURS * 3600:
             return True

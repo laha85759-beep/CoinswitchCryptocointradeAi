@@ -195,16 +195,20 @@ class CryptoNewsIntelligenceAgent:
 
             # Extract assets
             assets = self.extract_assets(title, item.get("summary", ""))
-            asset_tags = " ".join([f"#{a}" for a in assets]) if assets else "#CRYPTO #MARKET"
-            coins_display = ", ".join(assets) if assets else "BROAD CRYPTO MARKET"
-            primary_asset = assets[0] if assets else "CRYPTO"
+            if not assets:
+                # User mandate: Do not broadcast generic broad market news without specific coin on radar
+                continue
+
+            asset_tags = " ".join([f"#{a}" for a in assets])
+            coins_display = ", ".join(assets)
+            primary_asset = assets[0]
 
             # Analyze Sentiment & Bias
             analysis = self.analyze_sentiment_and_impact(title, item.get("summary", ""))
 
-            # ONLY broadcast important news: high-impact catalysts or specific coins with clear Long/Short sentiment
-            is_important = analysis.get("is_high_impact") or (len(assets) > 0 and analysis.get("bias") in ("LONG", "SHORT"))
-            if not is_important:
+            # ONLY broadcast high-conviction news: specific coins with clear Long/Short directional bias or high-impact catalyst
+            is_actionable = analysis.get("bias") in ("LONG", "SHORT") or analysis.get("is_high_impact")
+            if not is_actionable:
                 continue
 
             # Format Telegram Message showing all detected coins

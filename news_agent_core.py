@@ -12,6 +12,7 @@ import logging
 import threading
 import requests
 import xml.etree.ElementTree as ET
+import hashlib
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any, Optional
 
@@ -305,8 +306,9 @@ class NewsAgentCore:
                             desc = re.sub(r"<[^>]+>", "", desc).strip()
                         pub_date = item.findtext("pubDate") or ""
                         if title:
+                            title_hash = hashlib.md5(title.strip().lower().encode("utf-8")).hexdigest()[:16]
                             articles.append({
-                                "id": f"in_{abs(hash(title))}",
+                                "id": f"in_{title_hash}",
                                 "title": title,
                                 "summary": desc[:280] if desc else title,
                                 "source": source,
@@ -369,8 +371,9 @@ class NewsAgentCore:
                             
                         pub_date = item.findtext("pubDate") or ""
                         if title:
+                            title_hash = hashlib.md5(title.strip().lower().encode("utf-8")).hexdigest()[:16]
                             articles.append({
-                                "id": f"rss_{abs(hash(title))}",
+                                "id": f"rss_{title_hash}",
                                 "title": title,
                                 "summary": desc[:280] if desc else title,
                                 "source": source,
@@ -610,12 +613,21 @@ class NewsAgentCore:
         
         # 1. Broadcast fresh breaking news to dedicated News Telegram channel (@ForexIndian_bot)
         #    Persistent ledger: ids survive worker restarts → no duplicate alerts.
+        #    RULE: Only broadcast when a specific tradeable asset is on radar (e.g. BTC, ETH, SOL, NIFTY, XAU)
+        #    with high conviction impact (>= 75). Suppress generic "MARKET / CATALYST" filler.
         if news and news_broadcaster.is_active:
             for item in news[:8]:
-                if item["id"] not in self.seen_news_ids and item.get("impact_score", 0) >= 60:
+                assets = item.get("affected_assets", [])
+                has_concrete_asset = bool(assets and any(a not in ("MARKET / CATALYST", "MARKET", "CATALYST") for a in assets))
+                is_high_impact = item.get("impact_score", 0) >= 75
+                
+                if item["id"] not in self.seen_news_ids and has_concrete_asset and is_high_impact:
                     self._mark_news_seen(item["id"])
                     news_broadcaster.broadcast_breaking_news(item, item.get("ai_takeaway"))
                     time.sleep(1)
+                elif item["id"] not in self.seen_news_ids:
+                    # Mark seen even if skipped so we don't re-evaluate repeatedly
+                    self._mark_news_seen(item["id"])
 
         # 2. Early-warning alerts for high-impact calendar events BEFORE they hit the tape
         self._broadcast_upcoming_event_warnings(cal)
