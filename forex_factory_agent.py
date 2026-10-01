@@ -12,8 +12,10 @@ Forex Factory Economic News & High-Impact Volatility AI Agent
    - Enforces Stop-Loss (-2.0%) and High-Yield Take-Profit (+15.0%) with breakeven trailing stop
 """
 
+import json
 import logging
 import time
+from pathlib import Path
 import requests
 import xml.etree.ElementTree as ET
 from typing import Any, Dict, List, Optional
@@ -26,6 +28,8 @@ from agents import AuditLogger, RiskManagerAgent
 from notifier import TelegramNotifier
 
 log = logging.getLogger(__name__)
+
+PROCESSED_NEWS_FILE = Path(__file__).parent / "processed_news_events.json"
 
 
 class ForexFactoryNewsAgent:
@@ -50,6 +54,13 @@ class ForexFactoryNewsAgent:
         else:
             self.executor = None
             self.risk_manager = None
+
+        self.processed_events = set()
+        if PROCESSED_NEWS_FILE.exists():
+            try:
+                self.processed_events = set(json.loads(PROCESSED_NEWS_FILE.read_text(encoding="utf-8")))
+            except Exception as e:
+                log.debug("Error loading processed news events: %s", e)
 
     def fetch_forex_factory_news(self) -> List[Dict[str, Any]]:
         """Fetch latest economic calendar news events from redundant endpoints."""
@@ -149,6 +160,10 @@ class ForexFactoryNewsAgent:
             currency = str(event.get("country", event.get("currency", "USD"))).upper()
             impact = str(event.get("impact", "high")).lower()
 
+            event_key = f"{title}_{event.get('date', '')}"
+            if event_key in self.processed_events:
+                continue
+
             is_usd = currency in ("USD", "US")
             is_high_impact = impact in ("high", "red") or any(kw in title for kw in high_impact_keywords)
 
@@ -173,6 +188,7 @@ class ForexFactoryNewsAgent:
                     pass
 
                 target_symbols = ["BTC/USDT", "ETH/USDT", "SOL/USDT", "POPCAT/USDT"]
+                event_filled = False
                 for symbol in target_symbols:
                     price = 0.0
                     try:
@@ -201,23 +217,47 @@ class ForexFactoryNewsAgent:
                         results = self.executor.execute([approval])
                         executed_trades.extend(results)
 
-                        if self.notifier:
-                            self.notifier.send(
-                                f"📰 *HIGH-IMPACT NEWS CATALYST TRADE*\n"
-                                f"═════════════════════════\n"
-                                f"📍 *Event*: `{title[:40]}`\n"
-                                f"🎯 *Asset*: `{symbol}` ({direction.upper()})\n"
-                                f"💵 *Entry*: `${price}`\n"
-                                f"🛡️ *SL*: `-2.0%` | 🎯 *TP*: `+15.0%` (+150% ROE)\n"
-                                f"⚡ *Breakeven Trail*: `+0.3%`"
-                            )
-                        time.sleep(1)
-                        break
+                        # Only notify if an order was actually filled on either exchange
+                        is_filled = any(
+                            r.get("coinswitch", {}).get("status") == "filled" or
+                            r.get("delta", {}).get("status") == "filled"
+                            for r in results
+                        )
+
+                        if is_filled:
+                            event_filled = True
+                            if self.notifier:
+                                self.notifier.send(
+                                    f"📰 *HIGH-IMPACT NEWS CATALYST TRADE FILLED*\n"
+                                    f"═════════════════════════\n"
+                                    f"📍 *Event*: `{title[:40]}`\n"
+                                    f"🎯 *Asset*: `{symbol}` ({direction.upper()})\n"
+                                    f"💵 *Entry*: `${price}`\n"
+                                    f"🛡️ *SL*: `-2.0%` | 🎯 *TP*: `+15.0%` (+150% ROE)\n"
+                                    f"⚡ *Breakeven Trail*: `+0.3%`"
+                                )
+                            time.sleep(1)
+                            break
+
+                # Mark this news event as processed so it is never repeated every minute
+                self.processed_events.add(event_key)
+                try:
+                    # Keep latest 500 events
+                    trimmed = list(self.processed_events)[-500:]
+                    PROCESSED_NEWS_FILE.write_text(json.dumps(trimmed, indent=2), encoding="utf-8")
+                except Exception as save_err:
+                    log.debug("Failed saving processed news events: %s", save_err)
+
+                if event_filled:
+                    break
 
         # 2. Check Real-Time Volatility Surges on Major Pairs
         for sym in ["BTC/USDT", "ETH/USDT", "SOL/USDT", "POPCAT/USDT"]:
             surge = self.detect_volatility_surge(sym)
             if surge:
+                surge_key = f"SURGE_{sym}_{int(time.time() // 300)}"  # 5-minute deduplication window per symbol
+                if surge_key in self.processed_events:
+                    continue
                 log.info("⚡ Real-Time Volatility Surge Detected on %s: %s %s%% (Vol: %sx)",
                          sym, surge["direction"].upper(), surge["change_pct"], surge["vol_ratio"])
                 sig = {
@@ -237,9 +277,15 @@ class ForexFactoryNewsAgent:
                 if appr.get("approved"):
                     results = self.executor.execute([appr])
                     executed_trades.extend(results)
-                    if self.notifier:
+                    self.processed_events.add(surge_key)
+                    is_filled = any(
+                        r.get("coinswitch", {}).get("status") == "filled" or
+                        r.get("delta", {}).get("status") == "filled"
+                        for r in results
+                    )
+                    if is_filled and self.notifier:
                         self.notifier.send(
-                            f"⚡ *REAL-TIME NEWS VOLATILITY SURGE*\n"
+                            f"⚡ *REAL-TIME NEWS VOLATILITY SURGE FILLED*\n"
                             f"═════════════════════════\n"
                             f"🚀 *Asset*: `{sym}`\n"
                             f"📈 *Direction*: `{surge['direction'].upper()}`\n"

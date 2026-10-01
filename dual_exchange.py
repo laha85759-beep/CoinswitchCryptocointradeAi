@@ -170,8 +170,43 @@ class DualExecutionAgent:
 
     def _execute_coinswitch(self, approval: dict) -> dict:
         """Execute on CoinSwitch using original logic, saving to CS-specific file."""
-        if approval.get("direction") == "short":
-            return {"status": "skipped", "reason": "coinswitch_spot_no_short", "symbol": approval["symbol"]}
+        symbol = approval["symbol"]
+        direction = approval.get("direction", "long")
+
+        if direction == "short":
+            # CoinSwitch is a spot exchange (no naked margin shorting without holdings).
+            # If we hold this asset (from an earlier buy or in portfolio), execute a SPOT SELL order to close/take profit.
+            cs_trades = load_json(CS_TRADES_FILE, [])
+            held_trade = next((t for t in cs_trades if t.get("symbol") == symbol), None)
+            coin = symbol.split("/")[0]
+            coin_bal = 0.0
+            try:
+                coin_bal = float(self.cs_client.get_coin_balance(coin) or 0.0)
+            except Exception:
+                pass
+
+            if held_trade or coin_bal > 0:
+                sell_qty = float(held_trade.get("qty", 0)) if held_trade else coin_bal
+                if sell_qty > 0:
+                    log.info("CoinSwitch SPOT SELL (profit/exit) triggered for %s (qty=%.6f)", symbol, sell_qty)
+                    try:
+                        order = self.cs_client.place_order(symbol, "sell", "MARKET", sell_qty, exchange="c2c2")
+                        # Remove from CS_TRADES_FILE if present
+                        new_trades = [t for t in cs_trades if t.get("symbol") != symbol]
+                        save_json(CS_TRADES_FILE, new_trades)
+                        return {
+                            "status": "filled",
+                            "reason": "coinswitch_spot_sold_holding",
+                            "symbol": symbol,
+                            "order_id": str(order.get("order_id") or order.get("id") or ""),
+                            "filled_qty": sell_qty,
+                            "exchange": "coinswitch"
+                        }
+                    except Exception as exc:
+                        log.error("CoinSwitch spot sell failed for %s: %s", symbol, exc)
+                        return {"status": "error", "reason": f"cs_spot_sell_failed:{exc}", "symbol": symbol}
+
+            return {"status": "skipped", "reason": "coinswitch_spot_no_short_capacity", "symbol": symbol}
             
         import agents as _agents
         original_file = _agents.OPEN_TRADES_FILE

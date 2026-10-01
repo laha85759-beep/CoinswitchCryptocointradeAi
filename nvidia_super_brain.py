@@ -58,6 +58,7 @@ class NvidiaSuperBrainEngine:
         self.key_parse_ocr = cfg.get("nvidia_key_parse_ocr", "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")
         self.key_ultra_550b = cfg.get("nvidia_key_ultra_550b", "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")
         self.key_riva_translate = cfg.get("nvidia_key_riva_translate", "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")
+        self._eval_cache: Dict[str, tuple[float, Dict[str, Any]]] = {}
 
     # ── 0. GLM-5.3 Super Brain (Master Capital Survival & High Probability Sizing) ────
 
@@ -394,6 +395,18 @@ class NvidiaSuperBrainEngine:
         change_5m = float(base_signal.get("supporting_data", {}).get("change_5m", 0.0) or 0.0)
         vol_ratio = float(base_signal.get("supporting_data", {}).get("volume_ratio", 1.0) or 1.0)
 
+        # Token-Saving Cache: Check 300s TTL cache for same symbol & direction
+        cache_key = f"{symbol}_{direction}"
+        now_ts = time.time()
+        if cache_key in self._eval_cache:
+            cached_time, cached_res = self._eval_cache[cache_key]
+            if now_ts - cached_time < 300.0:
+                log.info("⚡ [SUPER BRAIN CACHE HIT] Reusing high-conviction decision for %s (age %.1fs, saved AI tokens)", symbol, now_ts - cached_time)
+                # Update current live price in cached result
+                res_copy = dict(cached_res)
+                res_copy["price"] = price
+                return res_copy
+
         # 1. Model 1: GLM-5.3 Super Brain (Master Capital Survival & Risk Sizing)
         glm_res = self.reason_glm_5_3(symbol, market_item, direction)
         glm_score = float(glm_res.get("confidence", 0.88))
@@ -466,4 +479,6 @@ class NvidiaSuperBrainEngine:
             log.info("🛡️ [CAPITAL SURVIVAL FILTERED] %s %s rejected | Score: %.3f (Req: %.2f) | R:R: 1:%.1f (Req: >=3.0) | Veto: %s",
                      symbol, direction, final_score, min_threshold, rr_ratio, is_vetoed)
 
+        # Store in cache with current timestamp
+        self._eval_cache[cache_key] = (now_ts, result)
         return result
