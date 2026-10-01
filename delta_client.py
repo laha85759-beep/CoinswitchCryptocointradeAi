@@ -47,8 +47,8 @@ class DeltaClient:
     """
 
     def __init__(self, api_key: str, api_secret: str, rate_limit_delay: float = 0.5):
-        self.api_key = api_key
-        self.api_secret = api_secret
+        self.api_key = (api_key or "").strip()
+        self.api_secret = (api_secret or "").strip()
         self.session = requests.Session()
         self.session.trust_env = False
         
@@ -124,8 +124,8 @@ class DeltaClient:
         except requests.HTTPError as http_err:
             resp_detail = getattr(resp, "text", "")[:300]
             if resp.status_code in (401, 403):
-                log.debug("Delta auth notice (%s) on %s %s: %s", resp.status_code, method, endpoint, resp_detail)
-                return {"success": False, "error": "unauthorized", "result": []}
+                log.warning("Delta auth notice (HTTP %s) on %s %s: %s", resp.status_code, method, endpoint, resp_detail)
+                return {"success": False, "error": f"unauthorized_http_{resp.status_code}: {resp_detail}", "result": []}
             log.error("HTTP %s on %s %s: %s", resp.status_code, method, endpoint, resp_detail)
             raise RuntimeError(f"HTTP {resp.status_code} on {method} {endpoint}: {resp_detail}") from http_err
         except Exception as exc:
@@ -283,16 +283,6 @@ class DeltaClient:
                 log.info("Delta /v2/wallet/balances response: %s", data)
                 # Check for alternative response keys (e.g. data or balances or wallet)
                 res = data.get("data", []) or data.get("balances", []) or data.get("wallets", [])
-            # Also check user balances endpoint if /v2/wallet/balances is empty
-            if not res:
-                try:
-                    user_data = self._request("GET", "/v2/user/balances")
-                    if isinstance(user_data, dict):
-                        res = user_data.get("result", []) or user_data.get("data", [])
-                        if res:
-                            log.info("Delta /v2/user/balances returned: %s", res)
-                except Exception:
-                    pass
             return res if isinstance(res, list) else []
         except Exception as exc:
             log.warning("Delta wallet balance fetch error: %s", exc)
