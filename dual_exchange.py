@@ -36,12 +36,14 @@ from agents import (
 )
 from coinswitch_client import CoinSwitchClient
 from delta_client import DeltaClient
+from myfundedperps_client import MyFundedPerpsClient
 from notifier import TelegramNotifier
 
 log = logging.getLogger(__name__)
 
 CS_TRADES_FILE    = Path("open_trades_cs.json")
 DELTA_TRADES_FILE = Path("open_trades_delta.json")
+MFP_TRADES_FILE   = Path("open_trades_mfp.json")
 
 
 class DualExecutionAgent:
@@ -60,18 +62,31 @@ class DualExecutionAgent:
         delta_client: DeltaClient,
         notifier: TelegramNotifier,
         audit: AuditLogger,
+        mfp_client: Optional[MyFundedPerpsClient] = None,
     ):
         self.cfg = cfg
         self.cs_client = cs_client
         self.delta_client = delta_client
         self.notifier = notifier
         self.audit = audit
+        self.mfp_client = mfp_client
+        if self.mfp_client is None and cfg.get("mfp_enabled"):
+            try:
+                self.mfp_client = MyFundedPerpsClient(
+                    cfg.get("mfp_api_key", ""),
+                    cfg.get("mfp_account_id"),
+                    daily_loss_limit_usd=cfg.get("mfp_daily_loss_limit_usd", 75.0),
+                    total_loss_limit_usd=cfg.get("mfp_total_loss_limit_usd", 75.0),
+                )
+            except Exception as mfp_init_exc:
+                log.warning("MFP client init notice: %s", mfp_init_exc)
+
         # Patch the file paths for each exchange
         self._cs_executor = ExecutionAgent(cfg, cs_client, audit)
         self._cs_executor._trades_file = CS_TRADES_FILE
 
     def execute(self, approvals: list[dict]) -> list[dict]:
-        """Execute all approved trades on both exchanges."""
+        """Execute all approved trades on CoinSwitch, Delta, and MyFundedPerpetuals."""
         if self.cfg.get("weekend_trading_disabled", True):
             now_utc = datetime.now(timezone.utc)
             if now_utc.weekday() in (5, 6):
@@ -91,14 +106,16 @@ class DualExecutionAgent:
 
             cs_result = self._execute_coinswitch(approval)
             delta_result = self._execute_delta(approval)
+            mfp_result = self._execute_mfp(approval)
             combined = {
                 "symbol": symbol,
                 "coinswitch": cs_result,
                 "delta": delta_result,
+                "mfp": mfp_result,
                 "timestamp": utc_iso(),
             }
             all_results.append(combined)
-            self._notify_dual_entry(approval, cs_result, delta_result)
+            self._notify_dual_entry(approval, cs_result, delta_result, mfp_result)
 
         self.audit.write("DualExecutionAgent", {"count": len(all_results), "results": all_results})
         return all_results
@@ -107,7 +124,7 @@ class DualExecutionAgent:
         """
         If a new signal arrives for an existing asset in the OPPOSITE direction
         (e.g., existing Long and new signal is Short/Sell from PP SuperTrend):
-        Immediately close the existing trade on both exchanges before entering the new trade!
+        Immediately close the existing trade on all exchanges before entering the new trade!
         """
         # 1. CoinSwitch position flip check
         cs_trades = load_json(CS_TRADES_FILE, [])
@@ -165,6 +182,37 @@ class DualExecutionAgent:
                 f"🔄 *POSITION REVERSAL FLIP (Delta India)* `{symbol}`\n"
                 f"SuperTrend reversal detected! Closed existing position to enter new `{new_direction.upper()}` trade."
             )
+
+        # 3. MyFundedPerpetuals position flip check
+        if self.mfp_client and self.mfp_client.is_active:
+            mfp_trades = load_json(MFP_TRADES_FILE, [])
+            new_mfp_trades = []
+            mfp_closed_any = False
+            for trade in mfp_trades:
+                if trade.get("symbol") == symbol or trade.get("symbol") == symbol.replace("/USDT", ""):
+                    existing_dir = trade.get("direction", "long")
+                    if existing_dir != new_direction:
+                        log.info("SUPER TREND REVERSAL (MFP) for %s: Closing %s to open %s", symbol, existing_dir, new_direction)
+                        try:
+                            clean_sym = symbol.replace("/USDT", "").replace("USDT", "")
+                            close_side = "sell" if existing_dir == "long" else "buy"
+                            qty = float(trade.get("qty", 0))
+                            if qty > 0 and not trade.get("paper"):
+                                self.mfp_client.place_order(clean_sym, close_side, qty, leverage=5)
+                        except Exception as exc:
+                            log.warning("Failed to close MFP position for %s: %s", symbol, exc)
+                        mfp_closed_any = True
+                    else:
+                        new_mfp_trades.append(trade)
+                else:
+                    new_mfp_trades.append(trade)
+
+            if mfp_closed_any:
+                save_json(MFP_TRADES_FILE, new_mfp_trades)
+                self.notifier.send(
+                    f"🔄 *POSITION REVERSAL FLIP (MyFundedPerpetuals)* `{symbol}`\n"
+                    f"SuperTrend reversal detected! Closed existing position to enter new `{new_direction.upper()}` trade."
+                )
 
     # ── CoinSwitch execution ─────────────────────────────────────────────────
 
@@ -456,24 +504,168 @@ class DualExecutionAgent:
         trades.append(trade)
         save_json(DELTA_TRADES_FILE, trades)
 
+    # ── MyFundedPerpetuals (MFP) Prop Firm execution ─────────────────────────
+
+    def _execute_mfp(self, approval: dict) -> dict:
+        """
+        Executes approved trade on MyFundedPerpetuals with strict $75 daily & total loss limits.
+        Trades run strictly Monday to Friday. Sized appropriately for $2500 challenge account.
+        """
+        if not self.mfp_client or not self.mfp_client.is_active:
+            return {"status": "skipped", "reason": "mfp_not_configured_or_disabled", "symbol": approval["symbol"]}
+
+        # Check weekday policy: Monday to Friday only
+        now_utc = datetime.now(timezone.utc)
+        if now_utc.weekday() in (5, 6) or (now_utc.weekday() == 4 and now_utc.hour >= 21):
+            return {"status": "skipped", "reason": "mfp_weekend_blackout_active", "symbol": approval["symbol"]}
+
+        # Check $75 loss limit guardrails before entering
+        risk_check = self.mfp_client.check_risk_guardrails()
+        if not risk_check.get("safe_to_trade"):
+            log.warning("MFP order blocked by risk guardrails: %s", risk_check.get("reason"))
+            return {"status": "rejected", "reason": risk_check.get("reason"), "symbol": approval["symbol"]}
+
+        raw_sym = approval["symbol"]
+        clean_sym = raw_sym.replace("/USDT", "").replace("USDT", "").upper()
+        direction = approval.get("direction", "long")
+        side = "buy" if direction == "long" else "sell"
+
+        # Check if already open on MFP
+        mfp_trades = load_json(MFP_TRADES_FILE, [])
+        if any(t.get("symbol") in (raw_sym, clean_sym) for t in mfp_trades):
+            return {"status": "skipped", "reason": "mfp_symbol_already_open", "symbol": raw_sym}
+
+        try:
+            current_price = float(self.mfp_client.get_ticker_price(clean_sym))
+            if current_price <= 0:
+                current_price = float(self.delta_client.get_ticker_price(raw_sym))
+        except Exception as exc:
+            log.warning("MFP price fetch failed for %s: %s", raw_sym, exc)
+            return {"status": "error", "reason": f"mfp_price_fetch_error:{exc}", "symbol": raw_sym}
+
+        if current_price <= 0:
+            return {"status": "skipped", "reason": "not_tradable_on_mfp", "symbol": raw_sym}
+
+        # Size calculation for $2,500 Challenge Account:
+        # Conservative risk: ~$15-$25 risk per trade, position notional $150 - $250 with 5x leverage
+        target_notional_usd = min(250.0, max(150.0, float(approval.get("position_size_usd", 20.0)) * 7.5))
+        qty = target_notional_usd / current_price
+
+        # Check market spec for size decimals
+        markets = self.mfp_client.get_markets()
+        m_info = markets.get(clean_sym, {})
+        if not m_info:
+            return {"status": "skipped", "reason": f"market_not_in_mfp_catalog:{clean_sym}", "symbol": raw_sym}
+
+        decimals = int(m_info.get("size_decimals", 3) or 3)
+        qty = round(qty, decimals)
+        if qty <= 0:
+            qty = round(10 ** (-decimals), decimals)
+
+        stop_loss_pct = float(approval.get("stop_loss_pct", self.cfg.get("stop_loss_pct", 1.5)))
+        take_profit_pct = float(approval.get("take_profit_pct", self.cfg.get("take_profit_pct", 4.5)))
+
+        if direction == "long":
+            calc_sl = round(current_price * (1 - stop_loss_pct / 100.0), 4 if current_price > 1 else 6)
+            calc_tp = round(current_price * (1 + take_profit_pct / 100.0), 4 if current_price > 1 else 6)
+        else:
+            calc_sl = round(current_price * (1 + stop_loss_pct / 100.0), 4 if current_price > 1 else 6)
+            calc_tp = round(current_price * (1 - take_profit_pct / 100.0), 4 if current_price > 1 else 6)
+
+        try:
+            order_res = self.mfp_client.place_order(
+                symbol=clean_sym,
+                side=side,
+                size=qty,
+                leverage=5,
+                order_type="market",
+                take_profit_price=calc_tp,
+                stop_loss_price=calc_sl,
+                expected_price=current_price,
+            )
+            status = order_res.get("status")
+            if status in ("filled", "open"):
+                fill_price = float(order_res.get("fill_price") or current_price)
+                filled_size = float(order_res.get("filled_size") or qty)
+                result = {
+                    "status": "filled",
+                    "reason": "mfp_live_order_placed",
+                    "symbol": raw_sym,
+                    "order_id": str(order_res.get("order_id", "")),
+                    "filled_price": fill_price,
+                    "filled_qty": filled_size,
+                    "exchange": "mfp",
+                    "leverage": 5,
+                    "target_notional": round(filled_size * fill_price, 2),
+                }
+                self._record_mfp_trade(approval, result, fill_price, filled_size, calc_sl, calc_tp)
+                return result
+            else:
+                return {
+                    "status": "error",
+                    "reason": order_res.get("reason", "order_failed"),
+                    "symbol": raw_sym,
+                }
+        except Exception as exc:
+            log.error("MFP live execution failed for %s: %s", raw_sym, exc)
+            return {"status": "error", "reason": f"mfp_exec_exc:{exc}", "symbol": raw_sym}
+
+    def _record_mfp_trade(
+        self, approval: dict, result: dict, price: float, qty: float, hard_sl: float, take_profit: float
+    ) -> None:
+        raw_sym = approval["symbol"]
+        direction = approval.get("direction", "long")
+        trade = {
+            "symbol": raw_sym,
+            "coin": raw_sym.split("/")[0],
+            "qty": qty,
+            "entry_price": price,
+            "peak_price": price,
+            "trough_price": price,
+            "direction": direction,
+            "hard_sl": hard_sl,
+            "take_profit": take_profit,
+            "trail_active": False,
+            "trailing_stop": None,
+            "order_id": result.get("order_id", ""),
+            "opened_at": utc_iso(),
+            "usdt_used": round(qty * price, 2),
+            "score": round(approval.get("signal", {}).get("confidence", 0.8) * 100, 2),
+            "highest_profit_pct": 0.0,
+            "paper": False,
+            "exchange": "mfp",
+            "leverage": 5,
+        }
+        trades = load_json(MFP_TRADES_FILE, [])
+        trades.append(trade)
+        save_json(MFP_TRADES_FILE, trades)
+        log.info("MFP trade recorded for %s: size=%s entry=%s SL=%s TP=%s", raw_sym, qty, price, hard_sl, take_profit)
+
     def _notify_dual_entry(
-        self, approval: dict, cs_result: dict, delta_result: dict
+        self, approval: dict, cs_result: dict, delta_result: dict, mfp_result: Optional[dict] = None
     ) -> None:
         symbol = approval["symbol"]
         cs_status = cs_result.get("status", "?")
         delta_status = delta_result.get("status", "?")
+        mfp_res = mfp_result or {}
+        mfp_status = mfp_res.get("status", "off")
 
-        # Do NOT send Telegram alert if both exchanges failed, skipped, or rejected the order
-        if cs_status != "filled" and delta_status != "filled":
-            log.info("Dual trade for %s not filled on either exchange (CS: %s, Delta: %s). Suppressing notification.", symbol, cs_status, delta_status)
+        # Do NOT send Telegram alert if all exchanges failed, skipped, or rejected the order
+        if cs_status != "filled" and delta_status != "filled" and mfp_status != "filled":
+            log.info("Trade for %s not filled on any exchange (CS: %s, Delta: %s, MFP: %s). Suppressing notification.",
+                     symbol, cs_status, delta_status, mfp_status)
             return
 
-        price = delta_result.get("filled_price") or cs_result.get("filled_price", 0)
+        price = (
+            delta_result.get("filled_price")
+            or mfp_res.get("filled_price")
+            or cs_result.get("filled_price", 0)
+        )
         size = approval["position_size_usd"]
-        mode = "📄 PAPER" if self.cfg["paper_trading_mode"] else "🔴 LIVE"
 
         cs_icon = "✅" if cs_status == "filled" else "❌"
         delta_icon = "✅" if delta_status == "filled" else "❌"
+        mfp_icon = "✅" if mfp_status == "filled" else ("⏸️" if mfp_status in ("skipped", "off") else "❌")
 
         direction_str = str(approval.get("direction", "long")).upper()
         dir_icon = "🟢 LONG" if direction_str == "LONG" else "🔴 SHORT"
@@ -481,9 +673,9 @@ class DualExecutionAgent:
         sl_val = round(price * 0.985, 4) if direction_str == "LONG" else round(price * 1.015, 4)
         tp_val = round(price * 1.048, 4) if direction_str == "LONG" else round(price * 0.952, 4)
 
-        lev_used = delta_result.get("leverage", 12)
+        lev_used = delta_result.get("leverage", 10)
         self.notifier.send(
-            f"⚡ *OPUS 4.7 • DUAL TRADE SIGNAL EXECUTED*\n"
+            f"⚡ *OPUS 4.7 • MULTI-EXCHANGE TRADE EXECUTED*\n"
             f"═════════════════════════\n"
             f"📍 *Asset Pair*: `{symbol}`\n"
             f"📈 *Direction*: `{dir_icon}`\n"
@@ -493,6 +685,7 @@ class DualExecutionAgent:
             f"─────────────────────────\n"
             f"🏛️ *CoinSwitch Pro*: {cs_icon} `{cs_status.upper()}`\n"
             f"⚡ *Delta Exchange India*: {delta_icon} `{delta_status.upper()} ({lev_used}x Leverage)`\n"
+            f"🎯 *MyFundedPerpetuals*: {mfp_icon} `{mfp_status.upper()} (5x • $75 Loss Cap)`\n"
             f"─────────────────────────\n"
             f"🛑 *Hard Server SL*: `-${self.cfg['stop_loss_pct']}%` (`${sl_val}`)\n"
             f"🎯 *Take Profit*: `+{self.cfg['take_profit_pct']}%` (`${tp_val}`)\n"
@@ -503,8 +696,10 @@ class DualExecutionAgent:
 
 class DualMonitorAgent:
     """
-    Monitors open positions on BOTH exchanges each cycle.
-    Checks CS trades file and Delta trades file separately.
+    Monitors open positions on ALL exchanges each cycle:
+    1. CoinSwitch Pro
+    2. Delta Exchange India
+    3. MyFundedPerpetuals (MFP) Prop Firm
     """
 
     def __init__(
@@ -514,12 +709,24 @@ class DualMonitorAgent:
         delta_client: DeltaClient,
         notifier: TelegramNotifier,
         audit: AuditLogger,
+        mfp_client: Optional[MyFundedPerpsClient] = None,
     ):
         self.cfg = cfg
         self.cs_client = cs_client
         self.delta_client = delta_client
         self.notifier = notifier
         self.audit = audit
+        self.mfp_client = mfp_client
+        if self.mfp_client is None and cfg.get("mfp_enabled"):
+            try:
+                self.mfp_client = MyFundedPerpsClient(
+                    cfg.get("mfp_api_key", ""),
+                    cfg.get("mfp_account_id"),
+                    daily_loss_limit_usd=cfg.get("mfp_daily_loss_limit_usd", 75.0),
+                    total_loss_limit_usd=cfg.get("mfp_total_loss_limit_usd", 75.0),
+                )
+            except Exception as mfp_init_exc:
+                log.warning("MFP monitor client init notice: %s", mfp_init_exc)
 
     def monitor(self) -> dict:
         import agents as _agents
@@ -729,6 +936,149 @@ class DualMonitorAgent:
             save_json(DELTA_TRADES_FILE, remaining)
             total_open += len(remaining)
 
+        # ── Monitor MyFundedPerpetuals positions ─────────────────────────────
+        if self.mfp_client and self.mfp_client.is_active:
+            mfp_trades = load_json(MFP_TRADES_FILE, [])
+
+            # Sync live positions from MFP REST API
+            try:
+                live_mfp_positions = self.mfp_client.list_positions()
+                tracked_mfp_syms = {t["symbol"] for t in mfp_trades}
+                live_mfp_syms = set()
+
+                for pos in live_mfp_positions:
+                    p_size = float(pos.get("size", 0.0) or 0.0)
+                    if abs(p_size) > 0:
+                        m_id = str(pos.get("market_id", "")).upper()
+                        # Market ID format is typically e.g. "binance|BTCUSDT" or "hyperliquid|SOLUSDC"
+                        raw_sym = m_id.split("|")[-1] if "|" in m_id else m_id
+                        clean_sym = raw_sym.replace("USDT", "").replace("USDC", "").replace("/USDT", "")
+                        std_sym = f"{clean_sym}/USDT"
+                        live_mfp_syms.add(std_sym)
+                        live_mfp_syms.add(clean_sym)
+
+                        if std_sym not in tracked_mfp_syms and clean_sym not in tracked_mfp_syms:
+                            entry_p = float(pos.get("entry_price", 0.0) or 0.0)
+                            direction = "long" if p_size > 0 else "short"
+                            sl_p = round(entry_p * 0.985 if direction == "long" else entry_p * 1.015, 4)
+                            tp_p = round(entry_p * 1.045 if direction == "long" else entry_p * 0.955, 4)
+                            synced_t = {
+                                "symbol": std_sym,
+                                "coin": clean_sym,
+                                "direction": direction,
+                                "entry_price": entry_p,
+                                "qty": abs(p_size),
+                                "hard_sl": sl_p,
+                                "take_profit": tp_p,
+                                "peak_price": entry_p,
+                                "trough_price": entry_p,
+                                "highest_profit_pct": 0.0,
+                                "trail_active": False,
+                                "order_id": str(pos.get("position_id") or "mfp_synced"),
+                                "exchange": "mfp",
+                                "opened_at": utc_iso(),
+                                "usdt_used": round(abs(p_size) * entry_p, 2),
+                                "leverage": 5,
+                            }
+                            mfp_trades.append(synced_t)
+                            tracked_mfp_syms.add(std_sym)
+                            log.info("DualMonitor: Synced live MFP position for %s (size=%s entry=%s)", std_sym, p_size, entry_p)
+
+                # Clear ghost trades
+                valid_mfp = []
+                for t in mfp_trades:
+                    sym = t.get("symbol", "")
+                    clean = sym.replace("/USDT", "").replace("USDT", "")
+                    if sym not in live_mfp_syms and clean not in live_mfp_syms:
+                        log.info("DualMonitor: Cleared MFP ghost trade for %s (closed natively on MFP)", sym)
+                        continue
+                    valid_mfp.append(t)
+                mfp_trades = valid_mfp
+                save_json(MFP_TRADES_FILE, mfp_trades)
+
+            except Exception as mfp_sync_exc:
+                log.debug("MFP live position sync notice: %s", mfp_sync_exc)
+
+            # Monitor active MFP trades
+            if mfp_trades:
+                remaining_mfp = []
+                now_utc = datetime.now(timezone.utc)
+                is_mfp_weekend_flatten = (
+                    (now_utc.weekday() == 4 and now_utc.hour >= 21) or (now_utc.weekday() in (5, 6))
+                )
+
+                for trade in mfp_trades:
+                    try:
+                        clean_sym = trade["symbol"].replace("/USDT", "").replace("USDT", "")
+                        current = float(self.mfp_client.get_ticker_price(clean_sym))
+                        if current <= 0:
+                            current = float(self.delta_client.get_ticker_price(trade["symbol"]))
+                        if current <= 0:
+                            remaining_mfp.append(trade)
+                            continue
+
+                        direction = trade.get("direction", "long")
+                        entry_p = float(trade["entry_price"])
+                        if direction == "long":
+                            pnl_pct = pct_change(current, entry_p)
+                            if current > float(trade.get("peak_price", entry_p)):
+                                trade["peak_price"] = current
+                        else:
+                            pnl_pct = -pct_change(current, entry_p)
+                            if current < float(trade.get("trough_price", entry_p)):
+                                trade["trough_price"] = current
+
+                        trade["highest_profit_pct"] = round(
+                            max(float(trade.get("highest_profit_pct", 0)), pnl_pct), 4
+                        )
+
+                        # Trailing stop activation
+                        if not trade.get("trail_active") and pnl_pct >= float(self.cfg.get("trail_activation_pct", 1.5)):
+                            trade["trail_active"] = True
+                            log.info("MFP trail ACTIVATED for %s at +%.2f%% profit", trade["symbol"], pnl_pct)
+
+                        if trade.get("trail_active"):
+                            trail_distance_pct = 1.0 if pnl_pct < 4.0 else (0.8 if pnl_pct < 8.0 else 0.5)
+                            if direction == "long":
+                                new_stop = round(float(trade["peak_price"]) * (1 - trail_distance_pct / 100.0), 4)
+                                if pnl_pct >= 1.5:
+                                    new_stop = max(new_stop, round(entry_p * 1.002, 4))
+                                trade["trailing_stop"] = max(float(trade.get("trailing_stop") or 0), new_stop)
+                            else:
+                                new_stop = round(float(trade["trough_price"]) * (1 + trail_distance_pct / 100.0), 4)
+                                if pnl_pct >= 1.5:
+                                    new_stop = min(new_stop, round(entry_p * 0.998, 4))
+                                trade["trailing_stop"] = min(float(trade.get("trailing_stop") or float('inf')), new_stop)
+
+                        active_stop = float(trade.get("trailing_stop") or trade["hard_sl"])
+                        reason = None
+
+                        if is_mfp_weekend_flatten:
+                            reason = "weekend_protection"
+                        elif direction == "long":
+                            if current <= active_stop:
+                                reason = "trailing_stop" if trade.get("trail_active") else "stop_loss"
+                            elif current >= float(trade.get("take_profit", math.inf)):
+                                reason = "take_profit"
+                        else:
+                            if current >= active_stop:
+                                reason = "trailing_stop" if trade.get("trail_active") else "stop_loss"
+                            elif current <= float(trade.get("take_profit", -math.inf)):
+                                reason = "take_profit"
+
+                        if reason:
+                            closed_trade = self._close_mfp_trade(trade, current, pnl_pct, reason)
+                            total_closed.append(closed_trade)
+                        else:
+                            remaining_mfp.append(trade)
+
+                    except Exception as m_exc:
+                        log.warning("MFP monitor error for %s: %s", trade.get("symbol"), m_exc)
+                        remaining_mfp.append(trade)
+
+                save_json(MFP_TRADES_FILE, remaining_mfp)
+                total_open += len(remaining_mfp)
+
         report = {
             "open_positions": total_open,
             "closed": total_closed,
@@ -824,3 +1174,84 @@ class DualMonitorAgent:
             "pnl_pct": round(pnl_pct, 4),
             "pnl_usdt": pnl_usdt,
         }
+
+    def _close_mfp_trade(
+        self, trade: dict, current: float, pnl_pct: float, reason: str
+    ) -> dict:
+        usdt_used = float(trade.get("usdt_used") or (float(trade.get("qty", 1.0)) * float(trade.get("entry_price", 1.0))))
+        pnl_usdt = round(usdt_used * pnl_pct / 100.0, 2)
+
+        if not trade.get("paper") and self.mfp_client and self.mfp_client.is_active:
+            direction = trade.get("direction", "long")
+            side = "sell" if direction == "long" else "buy"
+            clean_sym = trade["symbol"].replace("/USDT", "").replace("USDT", "")
+            try:
+                self.mfp_client.place_order(
+                    clean_sym, side, float(trade["qty"]), leverage=5, order_type="market"
+                )
+            except Exception as exc:
+                log.error("MFP exit order failed for %s: %s", trade["symbol"], exc)
+
+        today = utc_now().date().isoformat()
+        pnl = load_json(DAILY_PNL_FILE, {})
+        pnl.setdefault(today, {"realized_pnl_usdt": 0.0, "closed_trades": 0})
+        pnl[today]["realized_pnl_usdt"] = round(
+            float(pnl[today]["realized_pnl_usdt"]) + pnl_usdt, 2
+        )
+        pnl[today]["closed_trades"] = int(pnl[today]["closed_trades"]) + 1
+        save_json(DAILY_PNL_FILE, pnl)
+
+        icon = "🎉 PROFIT" if pnl_pct >= 0 else "🛡️ CAP LOSS"
+        pnl_sign = "+" if pnl_usdt >= 0 else ""
+        reason_label = {
+            "take_profit": "🎯 TAKE PROFIT (+4.5%)",
+            "trailing_stop": "📈 TRAILING STOP HIT",
+            "stop_loss": "🛑 HARD STOP LOSS (-1.5%)",
+            "weekend_protection": "🛡️ WEEKEND AUTO-FLATTEN (FRI CLOSE)",
+        }.get(reason, reason.upper())
+
+        # Append to closed_trades.json for UI history
+        closed_file = "closed_trades.json"
+        closed_history = load_json(closed_file, [])
+        closed_record = {
+            "symbol": trade["symbol"],
+            "exchange": "mfp",
+            "direction": trade.get("direction", "long"),
+            "entry_price": float(trade["entry_price"]),
+            "exit_price": float(current),
+            "qty": float(trade.get("qty", 0)),
+            "pnl_usdt": pnl_usdt,
+            "pnl_pct": round(pnl_pct, 2),
+            "reason": reason_label,
+            "closed_at": utc_now().isoformat() + "Z",
+        }
+        closed_history.append(closed_record)
+        save_json(closed_file, closed_history)
+
+        self.notifier.send(
+            f"{'🟢' if pnl_pct >= 0 else '🔴'} *OPUS 4.7 • MFP POSITION CLOSED ({icon})*\n"
+            f"═════════════════════════\n"
+            f"📍 *Asset Pair*: `{trade['symbol']}`\n"
+            f"🎯 *Exit Trigger*: `{reason_label}`\n"
+            f"📈 *Direction*: `{trade.get('direction', 'LONG').upper()}`\n"
+            f"💵 *Entry*: `${trade['entry_price']}` ➔ *Exit*: `${current}`\n"
+            f"💰 *Realized Net P&L*: `{pnl_pct:+.2f}%` (`{pnl_sign}${abs(pnl_usdt):.2f} USDT`)\n"
+            f"─────────────────────────\n"
+            f"⚡ *Exchange*: `MyFundedPerpetuals ($75 Guard)`\n"
+            f"🕒 *Timestamp*: `{utc_iso()}`\n"
+            f"═════════════════════════"
+        )
+        log.info(
+            "MFP CLOSED %s | reason=%s | pnl=%.2f%% | pnl_usdt=%.2f",
+            trade["symbol"], reason, pnl_pct, pnl_usdt,
+        )
+        return {
+            "symbol": trade["symbol"],
+            "exchange": "mfp",
+            "reason": reason,
+            "entry": trade["entry_price"],
+            "exit": current,
+            "pnl_pct": round(pnl_pct, 4),
+            "pnl_usdt": pnl_usdt,
+        }
+

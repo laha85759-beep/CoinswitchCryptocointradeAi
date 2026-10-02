@@ -20,6 +20,7 @@ from flask import Flask, request, jsonify
 
 from coinswitch_client import CoinSwitchClient
 from delta_client import DeltaClient
+from myfundedperps_client import MyFundedPerpsClient
 from config import CONFIG
 from dual_exchange import DualExecutionAgent
 from agents import AuditLogger, RiskManagerAgent
@@ -224,10 +225,22 @@ except Exception as _ne_err:
 
 cs_client = CoinSwitchClient(CONFIG["api_key"], CONFIG["api_secret"])
 delta_client = DeltaClient(CONFIG["delta_api_key"], CONFIG["delta_api_secret"])
+mfp_client = None
+if CONFIG.get("mfp_enabled"):
+    try:
+        mfp_client = MyFundedPerpsClient(
+            CONFIG.get("mfp_api_key", ""),
+            CONFIG.get("mfp_account_id"),
+            daily_loss_limit_usd=CONFIG.get("mfp_daily_loss_limit_usd", 75.0),
+            total_loss_limit_usd=CONFIG.get("mfp_total_loss_limit_usd", 75.0),
+        )
+    except Exception as mfp_init_exc:
+        logging.getLogger(__name__).warning("MFP client init notice: %s", mfp_init_exc)
+
 notifier = TelegramNotifier(CONFIG.get("telegram_bot_token", ""), CONFIG.get("telegram_chat_id", ""))
 audit = AuditLogger(CONFIG.get("log_file", "trading.log"))
 
-dual_executor = DualExecutionAgent(CONFIG, cs_client, delta_client, notifier, audit)
+dual_executor = DualExecutionAgent(CONFIG, cs_client, delta_client, notifier, audit, mfp_client=mfp_client)
 
 # ── Thread-safe API caching to prevent Render OOM/SIGKILL crashes ──
 import threading
@@ -422,11 +435,21 @@ def get_terminal_data():
             except Exception as exc:
                 log.warning("Delta balance query notice: %s", exc)
 
+        mfp_usd = 0.0
+        mfp_loss_room = 75.0
+        if mfp_client is not None and mfp_client.is_active:
+            try:
+                mfp_risk = mfp_client.check_risk_guardrails()
+                mfp_usd = float(mfp_risk.get("equity", 0.0) or 0.0)
+                mfp_loss_room = float(mfp_risk.get("daily_loss_remaining", 75.0) or 75.0)
+            except Exception as mfp_err:
+                log.warning("MFP balance query notice: %s", mfp_err)
+
         # NO fake fallback balances — always display REAL exchange equity so the
         # terminal reflects truth (empty wallet = 0.00, never a made-up number).
         inr_in_usdt = cs_portfolio_inr / 88.0 if cs_portfolio_inr > 0 else 0.0
-        # REAL total capital — sum of Delta balance and CoinSwitch portfolio
-        total_real_capital = round(cs_usdt + inr_in_usdt + delta_usdt, 2)
+        # REAL total capital — sum of Delta balance, CoinSwitch portfolio, and MFP balance
+        total_real_capital = round(cs_usdt + inr_in_usdt + delta_usdt + mfp_usd, 2)
 
         # ── Fetch ALL Tickers Once (Massive speedup)
         cs_tickers = {}
@@ -484,6 +507,40 @@ def get_terminal_data():
         # Load Real Open & Closed Trades
         open_cs = load_json_safe("open_trades_cs.json", [])
         open_delta = load_json_safe("open_trades_delta.json", [])
+        open_mfp = load_json_safe("open_trades_mfp.json", [])
+
+        # Fetch LIVE Real Positions directly from MFP API if available
+        if mfp_client is not None and mfp_client.is_active:
+            try:
+                mfp_pos_list = mfp_client.list_positions()
+                parsed_mfp = []
+                for p in mfp_pos_list:
+                    sz = float(p.get("size", 0.0) or 0.0)
+                    if abs(sz) > 0:
+                        m_id = str(p.get("market_id", "")).upper()
+                        raw_sym = m_id.split("|")[-1] if "|" in m_id else m_id
+                        clean_sym = raw_sym.replace("USDT", "").replace("USDC", "").replace("/USDT", "")
+                        entry_p = float(p.get("entry_price", 0.0) or 0.0)
+                        unrealized = float(p.get("unrealized_pnl", 0.0) or 0.0)
+                        is_long = sz > 0
+                        parsed_mfp.append({
+                            "symbol": f"{clean_sym}/USDT",
+                            "direction": "long" if is_long else "short",
+                            "qty": abs(sz),
+                            "quantity": abs(sz),
+                            "entry_price": entry_p,
+                            "mark_price": round(entry_p + (unrealized / sz) if sz != 0 else entry_p, 4),
+                            "hard_sl": round(entry_p * 0.985 if is_long else entry_p * 1.015, 4),
+                            "take_profit": round(entry_p * 1.045 if is_long else entry_p * 0.955, 4),
+                            "unrealized_pnl": round(unrealized, 2),
+                            "margin_used": round(abs(sz) * entry_p / 5.0, 2),
+                            "exchange": "mfp",
+                            "paper": False,
+                        })
+                if parsed_mfp:
+                    open_mfp = parsed_mfp
+            except Exception as m_pos_err:
+                log.warning("Failed to fetch live MFP positions: %s", m_pos_err)
         
         # Fetch LIVE Real Positions directly from Delta Exchange India API
         if delta_client is not None:
@@ -1040,6 +1097,9 @@ def get_terminal_data():
                 "cs_usdt": round(cs_usdt, 4),
                 "cs_inr": round(cs_inr, 2),
                 "delta_usdt": round(delta_usdt, 2),
+                "mfp_usdt": round(mfp_usd, 2),
+                "mfp_equity": round(mfp_usd, 2),
+                "mfp_loss_room": round(mfp_loss_room, 2),
                 "total_capital_usdt": round(total_real_capital, 2),
             },
             "earned_yield": {
@@ -1050,9 +1110,11 @@ def get_terminal_data():
             "open_positions": {
                 "coinswitch": open_cs,
                 "delta": open_delta,
+                "mfp": open_mfp,
                 "cs_count": len(open_cs),
                 "delta_count": len(open_delta),
-                "total_count": len(open_cs) + len(open_delta)
+                "mfp_count": len(open_mfp),
+                "total_count": len(open_cs) + len(open_delta) + len(open_mfp)
             },
             "open_orders": open_orders,
             "performance": {

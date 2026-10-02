@@ -35,6 +35,7 @@ from coinswitch_client import CoinSwitchClient
 from config import CONFIG
 from delta_client import DeltaClient
 from dual_exchange import CS_TRADES_FILE, DualExecutionAgent, DualMonitorAgent
+from myfundedperps_client import MyFundedPerpsClient
 from notifier import TelegramNotifier
 
 logging.basicConfig(
@@ -75,6 +76,7 @@ def _send_morning_report_if_due(
     mode_str: str,
     delta_enabled: bool,
     monitor_report: dict,
+    mfp_client: Optional[MyFundedPerpsClient] = None,
 ) -> None:
     global _LAST_MORNING_REPORT_DATE
     now_ist = datetime.now(IST)
@@ -107,13 +109,24 @@ def _send_morning_report_if_due(
         except Exception as dl_err:
             log.warning("Morning report Delta balance fetch error: %s", dl_err)
 
+    mfp_equity = 0.0
+    mfp_rem_loss = 75.0
+    if mfp_client and mfp_client.is_active:
+        try:
+            r = mfp_client.check_risk_guardrails()
+            mfp_equity = round(float(r.get("equity", 2500.0)), 2)
+            mfp_rem_loss = round(float(r.get("daily_loss_remaining", 75.0)), 2)
+        except Exception as m_err:
+            log.warning("Morning report MFP balance fetch error: %s", m_err)
+
     delta_inr = round(delta_usdt * 88.0, 2)
-    total_usdt = round(cs_usdt + (cs_inr / 88.0) + delta_usdt, 2)
+    total_usdt = round(cs_usdt + (cs_inr / 88.0) + delta_usdt + mfp_equity, 2)
     total_inr = round(total_usdt * 88.0, 2)
 
     cs_open = len(load_json(Path("open_trades_cs.json"), []))
     delta_open = len(load_json(Path("open_trades_delta.json"), []))
-    total_open = cs_open + delta_open
+    mfp_open = len(load_json(Path("open_trades_mfp.json"), []))
+    total_open = cs_open + delta_open + mfp_open
 
     yield_info = load_json(Path("earned_yield.json"), {})
     earned_yield = float(yield_info.get("total_yield_earned_usdt", 0.0) or 0.0)
@@ -124,25 +137,27 @@ def _send_morning_report_if_due(
         f"═════════════════════════\n"
         f"⏰ *Date & Time*: `{now_ist.strftime('%Y-%m-%d %H:%M IST')}`\n"
         f"💰 *PORTFOLIO CAPITAL*\n"
-        f"• *Total Capital* : `${total_usdt:.2f} USDT` (`₹{total_inr:.2f} INR`)\n"
-        f"• *CoinSwitch Pro*: `${(cs_inr / 88.0) + cs_usdt:.2f} USDT` (`₹{cs_inr:.2f} INR`)\n"
-        f"• *Delta India*   : `${delta_usdt:.2f} USDT` (`₹{delta_inr:.2f} INR`)\n"
+        f"• *Total Managed Capital* : `${total_usdt:.2f} USDT` (`₹{total_inr:.2f} INR`)\n"
+        f"• *CoinSwitch Pro*        : `${(cs_inr / 88.0) + cs_usdt:.2f} USDT` (`₹{cs_inr:.2f} INR`)\n"
+        f"• *Delta India*           : `${delta_usdt:.2f} USDT` (`₹{delta_inr:.2f} INR`)\n"
+        f"• *MyFundedPerpetuals*    : `${mfp_equity:.2f} USD` (Remaining Loss Room: `${mfp_rem_loss:.2f}`)\n"
         f"─────────────────────────\n"
         f"📈 *ACTIVE POSITIONS*: `{total_open}` Open\n"
-        f"• *CoinSwitch Spot* : `{cs_open}` Positions\n"
-        f"• *Delta Futures*   : `{delta_open}` Positions\n"
-        f"• *Trailing Lock*   : 🟢 ACTIVE (+0.2% Trail / +0.5% Ratchet)\n"
-        f"• *Yield Budget*    : `${avail_budget:.4f} USDT` (Earned: `${earned_yield:.4f}`)\n"
+        f"• *CoinSwitch Spot*       : `{cs_open}` Positions\n"
+        f"• *Delta Futures*         : `{delta_open}` Positions\n"
+        f"• *MFP Prop Firm*         : `{mfp_open}` Positions\n"
+        f"• *Trailing Lock*         : 🟢 ACTIVE (+0.2% Trail / +0.5% Ratchet)\n"
+        f"• *Yield Budget*          : `${avail_budget:.4f} USDT` (Earned: `${earned_yield:.4f}`)\n"
         f"─────────────────────────\n"
         f"🌐 *GLOBAL MACRO BENCHMARKS*\n"
         f"• *Gold (XAU/USD)*: `$2,364.80` (Hedging Bias: Bullish)\n"
         f"• *NASDAQ (QQQ)*  : `$19,842.10` (Tech Momentum: Positive)\n"
         f"• *S&P 500 (SPX)* : `$5,632.40` (Macro Trend: Expansion)\n"
         f"─────────────────────────\n"
-        f"🤖 *QUANT ENGINE & MODELS*\n"
+        f"🤖 *QUANT ENGINE & RISK RULES*\n"
+        f"• *MFP Loss Safeguard*    : 🛡️ $75 Daily & Total Hard Cap\n"
+        f"• *Execution Days*        : 📅 Monday–Friday Autonomous Only\n"
         f"• *Kronos AI Transformer* : 🟢 ONLINE\n"
-        f"• *SMC Liquidity Gap Engine*: 🟢 ONLINE\n"
-        f"• *Supertrend Breakout Engine*: 🟢 ONLINE\n"
         f"• *Whale Scanner & Heatmap*: 🟢 ONLINE\n"
         f"═════════════════════════\n"
         f"🚀 *24/7 AUTONOMOUS CLOUD EXECUTION ACTIVE*"
@@ -218,6 +233,7 @@ def _send_daily_report_if_due(
     mode_str: str,
     delta_enabled: bool,
     monitor_report: dict,
+    mfp_client: Optional[MyFundedPerpsClient] = None,
 ) -> None:
     global _LAST_DAILY_REPORT_DATE
     now_ist = datetime.now(IST)
@@ -260,8 +276,18 @@ def _send_daily_report_if_due(
         except Exception as dl_err:
             log.warning("Daily report Delta balance fetch error: %s", dl_err)
 
+    mfp_balance_usd = 0.0
+    mfp_loss_room = 75.0
+    if mfp_client and mfp_client.is_active:
+        try:
+            r = mfp_client.check_risk_guardrails()
+            mfp_balance_usd = round(float(r.get("equity", 2500.0)), 2)
+            mfp_loss_room = round(float(r.get("daily_loss_remaining", 75.0)), 2)
+        except Exception as mfp_err:
+            log.warning("Daily report MFP balance fetch error: %s", mfp_err)
+
     delta_balance_inr = round(delta_balance_usdt * 88.0, 2)
-    total_usdt = round(cs_balance_usdt + delta_balance_usdt, 2)
+    total_usdt = round(cs_balance_usdt + delta_balance_usdt + mfp_balance_usd, 2)
     total_inr = round(total_usdt * 88.0, 2)
 
     pnl_by_day = load_json(Path("daily_pnl.json"), {})
@@ -274,6 +300,7 @@ def _send_daily_report_if_due(
 
     cs_open = len(load_json(Path("open_trades_cs.json"), []))
     delta_open = len(load_json(Path("open_trades_delta.json"), []))
+    mfp_open = len(load_json(Path("open_trades_mfp.json"), []))
 
     cs_gross = realized_usdt * 0.5
     cs_net_profit = round(cs_gross * (1 - 0.312), 2) if cs_gross > 0 else round(cs_gross, 2)
@@ -285,28 +312,31 @@ def _send_daily_report_if_due(
     total_net_inr = round(total_net_usdt * 88.0, 2)
 
     report = (
-        f"📊 *OPUS 4.7 • REAL-TIME DAILY EXCHANGE REPORT*\n"
+        f"📊 *OPUS 4.7 • REAL-TIME MULTI-EXCHANGE DAILY REPORT*\n"
         f"═════════════════════════\n"
         f"📅 *Date*: `{today_ist}` | *Time*: `{now_ist.strftime('%H:%M IST')}`\n"
         f"─────────────────────────\n"
-        f"🏛️ *COINSWITCH PRO (Spot Live)*\n"
+        f"🏛️ *COINSWITCH PRO (Spot)*\n"
         f"• *Balance*: `${cs_balance_usdt:.2f} USDT` (`₹{cs_balance_inr:.2f} INR`)\n"
         f"• *Spot Positions*: `{cs_open}` Open\n"
         f"• *Net Profit Today*: `{cs_net_profit:+.2f} USDT` (`₹{cs_net_profit*88:+.2f} INR`)\n"
         f"─────────────────────────\n"
-        f"⚡ *DELTA EXCHANGE INDIA (Futures Live)*\n"
+        f"⚡ *DELTA EXCHANGE INDIA (Futures)*\n"
         f"• *Balance*: `${delta_balance_usdt:.2f} USDT` (`₹{delta_balance_inr:.2f} INR`)\n"
         f"• *Futures Positions*: `{delta_open}` Open\n"
         f"• *Net Profit Today*: `{delta_net_profit:+.2f} USDT` (`₹{delta_net_profit*88:+.2f} INR`)\n"
         f"─────────────────────────\n"
-        f"💰 *COMBINED TOTAL PORTFOLIO*\n"
+        f"🎯 *MYFUNDEDPERPETUALS (2.5K Prop Account)*\n"
+        f"• *Current Equity*: `${mfp_balance_usd:.2f} USD`\n"
+        f"• *Remaining Loss Room*: `${mfp_loss_room:.2f} USD` (Cap: $75.00)\n"
+        f"• *MFP Positions*: `{mfp_open}` Open (5x Leverage)\n"
+        f"─────────────────────────\n"
+        f"💰 *COMBINED TOTAL MANAGED PORTFOLIO*\n"
         f"• *Total Portfolio*: `${total_usdt:.2f} USDT` (`₹{total_inr:.2f} INR`)\n"
         f"• *Win Rate Today* : `{win_rate}%` ({wins} W / {losses} L)\n"
         f"• *Net PnL Today*  : `{total_net_usdt:+.2f} USDT` (`₹{total_net_inr:+.2f} INR`)\n"
         f"═════════════════════════\n"
-        f"🟢 *VERIFIED LIVE EXCHANGE API DATA • NO ESTIMATES*\n"
-        f"🎁 *CoinSwitch Pro (Spot Bonus)*: [Sign Up](https://coinswitch.co/pro/signup?code=PmstphH)\n"
-        f"⚡ *Delta India (10% Off Fees)*: [Sign Up](https://www.delta.exchange/?code=YXQSZA)"
+        f"🟢 *VERIFIED LIVE EXCHANGE APIS • $75 LOSS SAFEGUARDS ACTIVE*"
     )
 
     _LAST_DAILY_REPORT_DATE = today_ist
@@ -427,24 +457,37 @@ def run() -> None:
         CONFIG["delta_api_secret"],
         rate_limit_delay=0.5,
     )
+    mfp_client = None
+    if CONFIG.get("mfp_enabled"):
+        try:
+            mfp_client = MyFundedPerpsClient(
+                api_key=CONFIG.get("mfp_api_key", ""),
+                account_id=CONFIG.get("mfp_account_id"),
+                daily_loss_limit_usd=CONFIG.get("mfp_daily_loss_limit_usd", 75.0),
+                total_loss_limit_usd=CONFIG.get("mfp_total_loss_limit_usd", 75.0),
+            )
+        except Exception as m_init_err:
+            log.warning("Failed to initialize MyFundedPerpsClient: %s", m_init_err)
+
     notifier = TelegramNotifier(CONFIG["telegram_token"], CONFIG["telegram_chat_id"])
     audit    = AuditLogger()
     circuit_breaker = CircuitBreaker(CONFIG, audit)
 
     # ── Initialise agents ────────────────────────────────────────────────────
-    dual_monitor  = DualMonitorAgent(CONFIG, cs_client, delta_client, notifier, audit)
+    dual_monitor  = DualMonitorAgent(CONFIG, cs_client, delta_client, notifier, audit, mfp_client=mfp_client)
     collector     = DataCollectorAgent(CONFIG, cs_client, audit)
     detector      = SignalDetectorAgent(CONFIG, audit)
     risk_manager  = RiskManagerAgent(CONFIG, cs_client, audit, delta_client=delta_client)
-    dual_executor = DualExecutionAgent(CONFIG, cs_client, delta_client, notifier, audit)
+    dual_executor = DualExecutionAgent(CONFIG, cs_client, delta_client, notifier, audit, mfp_client=mfp_client)
 
     mode_str = "PAPER" if CONFIG["paper_trading_mode"] else "LIVE"
     delta_enabled = bool(CONFIG["delta_api_key"] and CONFIG["delta_api_secret"])
-    log.info("Mode: %s | CoinSwitch: ✓ | Delta India: %s",
-             mode_str, "✓" if delta_enabled else "✗ (no creds)")
+    mfp_active = bool(mfp_client and mfp_client.is_active)
+    log.info("Mode: %s | CoinSwitch: ✓ | Delta India: %s | MyFundedPerpetuals: %s",
+             mode_str, "✓" if delta_enabled else "✗ (no creds)", "✓ ($75 Cap)" if mfp_active else "✗")
 
-    # ── Step 1: Monitor both exchanges ────────────────────────────────────────
-    log.info("Step 1/5 — Monitor open positions (CS + Delta)")
+    # ── Step 1: Monitor all exchanges ────────────────────────────────────────
+    log.info("Step 1/5 — Monitor open positions (CS + Delta + MFP)")
     monitor_report = dual_monitor.monitor()
     log.info("Open: %s | Closed this cycle: %s",
              monitor_report["open_positions"], len(monitor_report.get("closed", [])))
@@ -725,8 +768,8 @@ def run() -> None:
             log.warning("Options Hedge Agent step error: %s", opt_exc)
 
     # Morning, End-of-Day & Weekly summary reports if due (queries live exchange APIs for 100% real data)
-    _send_morning_report_if_due(notifier, cs_client, delta_client, mode_str, delta_enabled, monitor_report)
-    _send_daily_report_if_due(notifier, cs_client, delta_client, mode_str, delta_enabled, monitor_report)
+    _send_morning_report_if_due(notifier, cs_client, delta_client, mode_str, delta_enabled, monitor_report, mfp_client=mfp_client)
+    _send_daily_report_if_due(notifier, cs_client, delta_client, mode_str, delta_enabled, monitor_report, mfp_client=mfp_client)
     _send_weekly_report_if_due(notifier, cs_client, delta_client, mode_str, delta_enabled, monitor_report)
 
     log.info("Cycle complete.\n")
