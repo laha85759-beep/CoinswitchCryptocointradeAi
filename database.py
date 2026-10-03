@@ -474,6 +474,7 @@ def init_db():
         ("1tgf", "Blue Guardian", "Prop Firm", "15%", "https://blueguardian.com/?afmc=1tgf"),
         ("GGG34QEO", "Fundex Prop", "Prop Firm", "15%", "https://prop.fundex.gg/rc/GGG34QEO"),
         ("ALPROP", "CK Capital UK", "Prop Firm", "10%", "https://app.ckcapital.co.uk/signup/ALPROP/"),
+        ("PERPS2026", "MyFundedPerpetuals (MFP)", "Crypto Perpetuals Prop Firm", "20% OFF", "https://myfundedperpetuals.com/@FUTURES2026"),
         ("PmstphH", "CoinSwitch Pro", "Crypto Spot", "30% TDS Rebate", "https://coinswitch.co/pro/signup?code=PmstphH"),
         ("YXQSZA", "Delta Exchange India", "Crypto Derivatives", "10% Fee Rebate", "https://www.delta.exchange/?code=YXQSZA"),
         ("50START", "Pocket Option", "Digital Contracts", "50% Match", "https://v4.lands-po.com/en/land/001-QT-02?utm_campaign=865170&utm_source=affiliate&utm_medium=sr&a=5zrdNdJrvFxqJO&al=1794767&ac=smart-link&cid=979105&code=50START")

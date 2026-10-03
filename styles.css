@@ -2588,6 +2588,29 @@ body.neural-core-os {
   box-shadow: 0 0 15px rgba(255, 0, 170, 0.25);
 }
 
+.floating-coin-badge.live-trade-badge {
+  border-color: rgba(0, 240, 144, 0.8) !important;
+  background: rgba(0, 30, 20, 0.92) !important;
+  box-shadow: 0 0 20px rgba(0, 240, 144, 0.5), inset 0 0 10px rgba(0, 240, 144, 0.2) !important;
+  animation: live-pulse-badge 2s infinite ease-in-out;
+}
+@keyframes live-pulse-badge {
+  0%, 100% { border-color: rgba(0, 240, 144, 0.8); box-shadow: 0 0 15px rgba(0, 240, 144, 0.4); }
+  50% { border-color: rgba(0, 212, 255, 1); box-shadow: 0 0 25px rgba(0, 212, 255, 0.7); }
+}
+
+.floating-coin-badge.pump-badge {
+  border-color: rgba(0, 255, 136, 0.8) !important;
+  background: rgba(4, 25, 14, 0.92) !important;
+  box-shadow: 0 0 18px rgba(0, 255, 136, 0.45) !important;
+}
+
+.floating-coin-badge.dump-badge {
+  border-color: rgba(255, 51, 102, 0.8) !important;
+  background: rgba(30, 6, 12, 0.92) !important;
+  box-shadow: 0 0 18px rgba(255, 51, 102, 0.45) !important;
+}
+
 .coin-badge-icon {
   font-size: 13px;
   filter: drop-shadow(0 0 5px currentColor);
@@ -4027,13 +4050,97 @@ body.neural-core-os {
   color: var(--neon-gold);
 }
 
+.cal-live-timestamp {
+  font-size: 10px;
+  color: var(--neon-cyan);
+  background: rgba(0, 212, 255, 0.08);
+  border: 1px solid rgba(0, 212, 255, 0.25);
+  border-radius: 4px;
+  padding: 3px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.cal-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--neon-green);
+  box-shadow: 0 0 6px var(--neon-green);
+  animation: pulse-glow 1.5s infinite;
+  display: inline-block;
+}
+.cal-refresh-btn {
+  background: rgba(0, 240, 144, 0.1);
+  border: 1px solid rgba(0, 240, 144, 0.35);
+  color: var(--neon-green);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  padding: 3px 9px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.cal-refresh-btn:hover {
+  background: rgba(0, 240, 144, 0.25);
+  box-shadow: 0 0 10px rgba(0, 240, 144, 0.3);
+}
+
 .cal-inputs-row {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.cal-picker-group, .cal-search-group {
+.cal-range-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 6px;
+  padding: 4px 10px;
+  flex: 1.4;
+  min-width: 320px;
+}
+
+.cal-date-subgroup {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+}
+
+.cal-range-label {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 700;
+  color: var(--neon-cyan);
+  letter-spacing: 0.5px;
+}
+
+.cal-range-arrow {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.cal-date-range-input {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 4px;
+  color: #fff !important;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  outline: none;
+  width: 100%;
+  padding: 3px 6px;
+}
+.cal-date-range-input:focus {
+  border-color: var(--neon-cyan) !important;
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+}
+
+.cal-search-group {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -4041,17 +4148,16 @@ body.neural-core-os {
   border: 1px solid rgba(0, 212, 255, 0.3);
   border-radius: 6px;
   padding: 2px 8px;
+  flex: 1;
+  min-width: 220px;
 }
-
-.cal-picker-group { flex: 1; min-width: 200px; }
-.cal-search-group { flex: 2; min-width: 240px; }
 
 .cal-input-icon {
   font-size: 12px;
   opacity: 0.8;
 }
 
-.cal-date-input, .cal-search-box {
+.cal-search-box {
   background: transparent !important;
   border: none !important;
   color: #fff !important;
@@ -4063,14 +4169,21 @@ body.neural-core-os {
 }
 
 .cal-clear-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
+  background: rgba(255, 51, 102, 0.12);
+  border: 1px solid rgba(255, 51, 102, 0.3);
+  color: var(--neon-pink);
+  border-radius: 4px;
   cursor: pointer;
-  font-size: 11px;
-  padding: 2px 4px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  padding: 3px 7px;
+  white-space: nowrap;
+  transition: all 0.2s;
 }
-.cal-clear-btn:hover { color: var(--neon-pink); }
+.cal-clear-btn:hover {
+  background: rgba(255, 51, 102, 0.25);
+  box-shadow: 0 0 8px rgba(255, 51, 102, 0.4);
+}
 
 .cal-status-pill {
   font-family: var(--font-mono);

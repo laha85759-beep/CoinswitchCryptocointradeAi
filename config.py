@@ -59,8 +59,8 @@ CONFIG = {
     "delta_api_secret": os.getenv("DELTA_API_SECRET", ""),
 
     # ── MyFundedPerpetuals (MFP) Prop Firm credentials & Risk Rules ─────────
-    "mfp_api_key":              os.getenv("MFP_API_KEY", "fp_live_c84ba656d6cc8f3c599eff415e82bbc0312be65aee506b47521f986f418d9ca6"),
-    "mfp_account_id":           os.getenv("MFP_ACCOUNT_ID", "jh790a9nfyevvb5jfkqt37e4sd8fh1rm"),
+    "mfp_api_key":              os.getenv("MFP_API_KEY", "fp_live_ae7eca1c3265bee4d9f357d91115b871e9b1c192af119552882c46b5a67dd1f5"),
+    "mfp_account_id":           os.getenv("MFP_ACCOUNT_ID", "jh71h9rm4gkgrva57hkvawc6y18fjhkq"),
     "mfp_daily_loss_limit_usd": _float_env("MFP_DAILY_LOSS_LIMIT_USD", 75.0),
     "mfp_total_loss_limit_usd": _float_env("MFP_TOTAL_LOSS_LIMIT_USD", 75.0),
     "mfp_enabled":              _bool_env("MFP_ENABLED", True),

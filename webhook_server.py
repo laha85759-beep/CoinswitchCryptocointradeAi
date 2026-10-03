@@ -1541,6 +1541,7 @@ def handle_ai_chat():
                 f"🏆 **Top Funded Prop Firms (Up to $200k Capital):**\n"
                 f"• **Atlas Funded** (20% Off): Code `12275` → [Get Funded](https://affiliates.atlasfunded.com/Tracking/click/?affid=12275&campaign=11320&product_id=1&t_type=Register&t_lang=EN)\n"
                 f"• **AquaFunded** (90% Profit Split): Code `6e9` → [Claim Pass](https://www.aquafunded.com/?afmc=6e9)\n"
+                f"• **MyFundedPerpetuals** (Crypto Perps 20% Off): Code `FUTURES2026` → [Get Funded](https://myfundedperpetuals.com/@FUTURES2026)\n"
                 f"• **MyFundedFutures** (Futures Eval): Code `FUTURES2026` → [Trade Futures](https://mffu.com/f/85f1f73f30)\n"
                 f"• **Blue Guardian** (Protection Tools): Code `1tgf` → [Join Guardian](https://blueguardian.com/?afmc=1tgf)\n"
                 f"• **Fundex Prop** (Scaling): Code `GGG34QEO` → [Start Challenge](https://prop.fundex.gg/rc/GGG34QEO)\n"

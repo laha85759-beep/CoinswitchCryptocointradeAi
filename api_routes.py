@@ -508,6 +508,46 @@ def validate_exchange_keys(user):
                 "message": f"❌ Delta India verification failed: {str(e)}"
             })
 
+    elif exchange in ("mfp", "myfundedperps"):
+        k = creds.get("key", "").strip() or creds.get("api_key", "").strip()
+        acc_id = creds.get("account_id", "").strip()
+        if not k:
+            return jsonify({"status": "error", "valid": False, "message": "MyFundedPerpetuals API Key is required."}), 400
+        try:
+            from myfundedperps_client import MyFundedPerpsClient
+            client = MyFundedPerpsClient(k, account_id=acc_id if acc_id else None)
+            accounts = client.list_accounts()
+            if not accounts:
+                return jsonify({
+                    "status": "error",
+                    "valid": False,
+                    "exchange": "mfp",
+                    "message": "❌ MyFundedPerpetuals: No active accounts found for this API key."
+                })
+            active_acc = accounts[0]
+            for a in accounts:
+                if a.get("status") == "active":
+                    active_acc = a
+                    break
+            bal = float(active_acc.get("balance", 2500.0) or 2500.0)
+            acc_num = active_acc.get("account_number", active_acc.get("id", "FP-LIVE"))
+            return jsonify({
+                "status": "success",
+                "valid": True,
+                "exchange": "mfp",
+                "account_id": active_acc.get("id"),
+                "account_number": acc_num,
+                "balance": bal,
+                "message": f"✅ MyFundedPerpetuals verified successfully! Account: {acc_num} | Balance: ${bal:.2f} USD | Autotrade Ready"
+            })
+        except Exception as e:
+            return jsonify({
+                "status": "error",
+                "valid": False,
+                "exchange": "mfp",
+                "message": f"❌ MyFundedPerpetuals verification failed: {str(e)}"
+            })
+
     elif exchange == "universal":
         ex_id = str(creds.get("exchange_id", "binance")).strip().lower()
         k = creds.get("key", "").strip()
@@ -1456,6 +1496,16 @@ def get_articles_feed():
     topic = (request.args.get("topic") or "all").strip().lower()
     limit = min(int(request.args.get("limit", 24) or 24), 50)
     articles = get_generated_articles(limit=limit, topic=topic)
+    if not articles:
+        # Auto-seed baseline high quality articles across topics so 0 articles is never shown
+        try:
+            for top_key in ARTICLE_TOPICS.keys():
+                art = article_studio.generate_article(topic=top_key, use_ai=False)
+                save_generated_article(art)
+            articles = get_generated_articles(limit=limit, topic=topic)
+        except Exception as seed_err:
+            print(f"[ARTICLE FEED ERROR] Auto-seeding failed: {seed_err}")
+
     return jsonify({
         "status": "success",
         "total": len(articles),

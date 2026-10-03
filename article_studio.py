@@ -35,6 +35,7 @@ TOPICS: Dict[str, Dict[str, Any]] = {
         "partners": [
             {"code": "coinswitch_pro", "name": "CoinSwitch Pro", "url": "https://coinswitch.co/pro/signup?code=PmstphH", "cta": "Open a CoinSwitch Pro account & claim your signup bonus"},
             {"code": "delta_india", "name": "Delta Exchange India", "url": "https://www.delta.exchange/?code=YXQSZA", "cta": "Trade crypto futures on Delta India — 10% off fees"},
+            {"code": "mfp", "name": "MyFundedPerpetuals", "url": "https://myfundedperpetuals.com/@FUTURES2026", "cta": "Trade crypto perps with up to $200k funding — 20% off with code FUTURES2026"},
         ],
     },
     "india": {
@@ -57,6 +58,7 @@ TOPICS: Dict[str, Dict[str, Any]] = {
         "label": "Prop Firms & Funded Challenges",
         "audience": "funded-challenge aspirants and scalpers",
         "partners": [
+            {"code": "mfp", "name": "MyFundedPerpetuals", "url": "https://myfundedperpetuals.com/@FUTURES2026", "cta": "Get funded on crypto perps with MyFundedPerpetuals — 20% off challenge"},
             {"code": "atlas_funded", "name": "Atlas Funded", "url": "https://affiliates.atlasfunded.com/Tracking/click/?affid=12275&campaign=11320&product_id=1&t_type=Register&t_lang=EN", "cta": "Start your Atlas Funded evaluation — 20% off"},
             {"code": "aquafunded", "name": "AquaFunded", "url": "https://www.aquafunded.com/?afmc=6e9", "cta": "Claim AquaFunded 90% payout challenge (promo: 6e9)"},
         ],

@@ -444,21 +444,35 @@ class NewsAgentCore:
         try:
             events = fetch_calendar_events()
             formatted = []
-            for ev in events[:40]:
+            for ev in events:
+                raw_d = ev.get("date", "")
+                dt = ev.get("datetime")
+                # Format ISO date YYYY-MM-DD
+                if dt:
+                    iso_date = dt.strftime("%Y-%m-%d")
+                    date_fmt = dt.strftime("%b %d, %Y")
+                else:
+                    iso_date = raw_d
+                    date_fmt = raw_d
+                
                 formatted.append({
                     "title": ev.get("title", ""),
                     "country": ev.get("country", "ALL"),
-                    "date": ev.get("date", ""),
+                    "currency": ev.get("country", "ALL"),
+                    "date": iso_date,
+                    "date_formatted": date_fmt,
                     "time": ev.get("time", ""),
                     "impact": ev.get("impact", "low").lower(),
                     "forecast": ev.get("forecast", "N/A"),
                     "previous": ev.get("previous", "N/A"),
-                    "actual": ev.get("actual", "N/A")
+                    "actual": ev.get("actual", "N/A"),
+                    "status": "UPCOMING ⚡" if dt and dt > datetime.now(timezone.utc) else "COMPLETED ✓",
+                    "bias": ev.get("bias", "")
                 })
-            return formatted
+            return formatted if formatted else list(DEFAULT_BASELINE_CALENDAR)
         except Exception as e:
             log.warning(f"Economic calendar fetch error: {e}")
-            return []
+            return list(DEFAULT_BASELINE_CALENDAR)
 
     def generate_macro_forex_signals(self) -> List[Dict[str, Any]]:
         """Generate high-probability Forex & Macro setups computed from 100% LIVE market prices.

@@ -2936,15 +2936,23 @@ async function fetchRealData() {
           ? userData.open_positions.delta
           : (data.open_positions && Array.isArray(data.open_positions.delta) ? data.open_positions.delta : []));
 
+    const mfpTrades = isNonSuperadminUser
+      ? (userData && userData.open_positions && Array.isArray(userData.open_positions.mfp) ? userData.open_positions.mfp : [])
+      : ((userData && userData.open_positions && Array.isArray(userData.open_positions.mfp) && userData.open_positions.mfp.length > 0)
+          ? userData.open_positions.mfp
+          : (data.open_positions && Array.isArray(data.open_positions.mfp) ? data.open_positions.mfp : []));
+
     const positions = {
       coinswitch: csTrades,
       delta: deltaTrades,
-      total_count: csTrades.length + deltaTrades.length
+      mfp: mfpTrades,
+      total_count: csTrades.length + deltaTrades.length + mfpTrades.length
     };
     if (positions) {
       const csCount = (positions.coinswitch || []).length;
       const deltaCount = (positions.delta || []).length;
-      const totalCount = positions.total_count !== undefined ? positions.total_count : (csCount + deltaCount);
+      const mfpCount = (positions.mfp || []).length;
+      const totalCount = positions.total_count !== undefined ? positions.total_count : (csCount + deltaCount + mfpCount);
 
       const posTag = document.getElementById("positions-tag");
       if (posTag) posTag.textContent = `${totalCount} OPEN`;
@@ -2960,6 +2968,7 @@ async function fetchRealData() {
 
       renderPositionsTable(positions);
       renderProChartLiveTrades(positions, data.tickers || {}, userData);
+      update3DGlobeCoins(positions, data.advanced && data.advanced.signals_feed);
     }
 
     if (userData) {
@@ -2990,10 +2999,12 @@ function renderPositionsTable(posData) {
 
   const validCs = (posData.coinswitch || []).filter(p => p && p.symbol && (Number(p.entry_price || p.price || p.avg_entry_price || p.mark_price || 0) > 0 || Math.abs(Number(p.qty || p.size || 0)) > 0));
   const validDelta = (posData.delta || []).filter(p => p && p.symbol && (Number(p.entry_price || p.price || p.avg_entry_price || p.mark_price || 0) > 0 || Math.abs(Number(p.qty || p.size || 0)) > 0));
+  const validMfp = (posData.mfp || []).filter(p => p && p.symbol && (Number(p.entry_price || p.price || p.avg_entry_price || p.mark_price || 0) > 0 || Math.abs(Number(p.qty || p.size || 0)) > 0));
 
   const allPositions = [
     ...validCs.map(p => ({...p, exchange: "CoinSwitch (Spot)"})),
-    ...validDelta.map(p => ({...p, exchange: "Delta (Futures)"}))
+    ...validDelta.map(p => ({...p, exchange: "Delta (Futures)"})),
+    ...validMfp.map(p => ({...p, exchange: "MyFundedPerpetuals (Prop 5x)"}))
   ];
 
   if (badge) {
@@ -4901,6 +4912,7 @@ async function fetchNewsData() {
       if (events.length > 0) {
         const calCount = document.getElementById("news-cal-count");
         if (calCount) calCount.textContent = `${events.length} EVENTS`;
+        updateCalendarTimestamp(cData.last_updated ? cData.last_updated * 1000 : Date.now());
         renderEconomicCalendar(events);
       }
     }
@@ -4977,8 +4989,53 @@ function renderNewsFeed() {
 let cachedCalendarEvents = [];
 let currentCalFilter = 'all';
 let currentCalDatePreset = 'all';
-let currentCalCustomDate = '';
+let currentCalStartDate = '';
+let currentCalEndDate = '';
 let currentCalSearchQuery = '';
+let lastCalendarUpdateTime = null;
+
+function normalizeEventDate(dStr) {
+  if (!dStr) return '';
+  dStr = String(dStr).trim();
+  // If format is MM-DD-YYYY
+  const m1 = dStr.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if (m1) return `${m1[3]}-${m1[1]}-${m1[2]}`;
+  // If format is YYYY-MM-DD
+  const m2 = dStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m2) return `${m2[1]}-${m2[2]}-${m2[3]}`;
+  return dStr;
+}
+
+function updateCalendarTimestamp(ts) {
+  const timeEl = document.getElementById("cal-update-time");
+  if (!timeEl) return;
+  const d = ts ? new Date(ts) : new Date();
+  lastCalendarUpdateTime = d;
+  const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  timeEl.textContent = `${timeStr} (UTC+5:30)`;
+}
+
+async function refreshEconomicCalendar(force = false) {
+  try {
+    const refreshBtn = document.querySelector(".cal-refresh-btn");
+    if (refreshBtn) refreshBtn.textContent = "⏳ Syncing...";
+    const res = await fetch("/api/news/calendar");
+    if (res.ok) {
+      const data = await res.json();
+      const events = data.events || data.calendar || [];
+      if (events.length > 0) {
+        cachedCalendarEvents = events;
+        updateCalendarTimestamp(data.last_updated ? data.last_updated * 1000 : Date.now());
+        renderEconomicCalendar(events);
+      }
+    }
+    if (refreshBtn) refreshBtn.textContent = "🔄 Refresh";
+  } catch (err) {
+    console.debug("Calendar refresh error:", err);
+    const refreshBtn = document.querySelector(".cal-refresh-btn");
+    if (refreshBtn) refreshBtn.textContent = "🔄 Refresh";
+  }
+}
 
 function filterCalendarEvents(filterType, btn) {
   currentCalFilter = filterType;
@@ -4998,9 +5055,13 @@ function filterCalendarEvents(filterType, btn) {
 
 function filterCalendarByDatePreset(preset, btn) {
   currentCalDatePreset = preset;
-  currentCalCustomDate = '';
-  const dateInput = document.getElementById("calDateSelector");
-  if (dateInput) dateInput.value = '';
+  currentCalStartDate = '';
+  currentCalEndDate = '';
+  
+  const startInp = document.getElementById("calStartDate");
+  const endInp = document.getElementById("calEndDate");
+  if (startInp) startInp.value = '';
+  if (endInp) endInp.value = '';
 
   const parent = btn?.parentElement;
   if (parent) {
@@ -5008,34 +5069,52 @@ function filterCalendarByDatePreset(preset, btn) {
   }
   if (btn) btn.classList.add("active");
 
+  const today = new Date();
+  const formatIso = d => d.toISOString().split("T")[0];
+  const formatShort = d => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
   const badge = document.getElementById("cal-selected-date-badge");
   if (badge) {
-    const titles = {
-      'all': '📅 ALL DATES',
-      'today': '⚡ TODAY: SEP 18',
-      'tomorrow': '📅 TOMORROW: SEP 19',
-      'this_week': '🗓️ THIS WEEK',
-      'next_week': '🗓️ NEXT WEEK'
-    };
-    badge.textContent = titles[preset] || '📅 SELECTED DATES';
+    if (preset === 'all') {
+      badge.textContent = '📅 ALL DATES';
+    } else if (preset === 'today') {
+      badge.textContent = `⚡ TODAY: ${formatShort(today).toUpperCase()}`;
+    } else if (preset === 'tomorrow') {
+      const tmrw = new Date(today);
+      tmrw.setDate(today.getDate() + 1);
+      badge.textContent = `📅 TOMORROW: ${formatShort(tmrw).toUpperCase()}`;
+    } else if (preset === 'this_week') {
+      badge.textContent = '🗓️ THIS WEEK';
+    } else if (preset === 'next_week') {
+      badge.textContent = '🗓️ NEXT WEEK';
+    }
   }
 
   renderEconomicCalendar(cachedCalendarEvents);
 }
 
-function filterCalendarByCustomDate(dateVal) {
-  if (!dateVal) {
+function onCalendarDateRangeChange() {
+  const startInp = document.getElementById("calStartDate");
+  const endInp = document.getElementById("calEndDate");
+  currentCalStartDate = startInp ? startInp.value : '';
+  currentCalEndDate = endInp ? endInp.value : '';
+
+  if (currentCalStartDate || currentCalEndDate) {
+    currentCalDatePreset = 'custom_range';
+    document.querySelectorAll(".cal-date-btn").forEach(b => b.classList.remove("active"));
+    const badge = document.getElementById("cal-selected-date-badge");
+    if (badge) {
+      if (currentCalStartDate && currentCalEndDate) {
+        badge.textContent = `📅 ${currentCalStartDate} TO ${currentCalEndDate}`;
+      } else if (currentCalStartDate) {
+        badge.textContent = `📅 FROM: ${currentCalStartDate}`;
+      } else {
+        badge.textContent = `📅 UNTIL: ${currentCalEndDate}`;
+      }
+    }
+  } else {
     clearCalendarDateFilter();
     return;
-  }
-  currentCalCustomDate = dateVal;
-  currentCalDatePreset = 'custom';
-
-  document.querySelectorAll(".cal-date-btn").forEach(b => b.classList.remove("active"));
-
-  const badge = document.getElementById("cal-selected-date-badge");
-  if (badge) {
-    badge.textContent = `📅 DATE: ${dateVal}`;
   }
 
   renderEconomicCalendar(cachedCalendarEvents);
@@ -5047,13 +5126,16 @@ function filterCalendarBySearch(query) {
 }
 
 function clearCalendarDateFilter() {
-  currentCalCustomDate = '';
+  currentCalStartDate = '';
+  currentCalEndDate = '';
   currentCalDatePreset = 'all';
-  const dateInput = document.getElementById("calDateSelector");
-  if (dateInput) dateInput.value = '';
+  const startInp = document.getElementById("calStartDate");
+  const endInp = document.getElementById("calEndDate");
+  if (startInp) startInp.value = '';
+  if (endInp) endInp.value = '';
 
   document.querySelectorAll(".cal-date-btn").forEach(b => {
-    if (b.textContent.includes('ALL')) b.classList.add("active");
+    if (b.id === 'cal-btn-all' || b.textContent.includes('ALL')) b.classList.add("active");
     else b.classList.remove("active");
   });
 
@@ -5073,17 +5155,71 @@ function renderEconomicCalendar(events) {
 
   let list = cachedCalendarEvents || [];
 
-  // 1. Date Filter
+  // Helper date generators for dynamic comparison
+  const now = new Date();
+  const formatIso = d => d.toISOString().split("T")[0];
+  const todayStr = formatIso(now);
+  
+  const tmrw = new Date(now);
+  tmrw.setDate(now.getDate() + 1);
+  const tomorrowStr = formatIso(tmrw);
+
+  // Compute this week (Mon-Sun or Sun-Sat)
+  const currentDay = now.getDay(); // 0 is Sunday
+  const diffToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+  const mondayThisWeek = new Date(now);
+  mondayThisWeek.setDate(now.getDate() + diffToMonday);
+  const sundayThisWeek = new Date(mondayThisWeek);
+  sundayThisWeek.setDate(mondayThisWeek.getDate() + 6);
+  const thisWeekStart = formatIso(mondayThisWeek);
+  const thisWeekEnd = formatIso(sundayThisWeek);
+
+  // Compute next week
+  const mondayNextWeek = new Date(mondayThisWeek);
+  mondayNextWeek.setDate(mondayThisWeek.getDate() + 7);
+  const sundayNextWeek = new Date(mondayNextWeek);
+  sundayNextWeek.setDate(mondayNextWeek.getDate() + 6);
+  const nextWeekStart = formatIso(mondayNextWeek);
+  const nextWeekEnd = formatIso(sundayNextWeek);
+
+  // 1. Dynamic Date Filtering
   if (currentCalDatePreset === 'today') {
-    list = list.filter(e => e.date === '2026-09-18' || (e.time && e.time.includes('18:30')));
+    list = list.filter(e => {
+      const d = normalizeEventDate(e.date);
+      return d === todayStr;
+    });
   } else if (currentCalDatePreset === 'tomorrow') {
-    list = list.filter(e => e.date === '2026-09-19');
+    list = list.filter(e => {
+      const d = normalizeEventDate(e.date);
+      return d === tomorrowStr;
+    });
   } else if (currentCalDatePreset === 'this_week') {
-    list = list.filter(e => ['2026-09-18', '2026-09-19', '2026-09-20', '2026-09-21'].includes(e.date));
+    list = list.filter(e => {
+      const d = normalizeEventDate(e.date);
+      return d >= thisWeekStart && d <= thisWeekEnd;
+    });
   } else if (currentCalDatePreset === 'next_week') {
-    list = list.filter(e => ['2026-09-22', '2026-09-23', '2026-09-24', '2026-09-25'].includes(e.date));
-  } else if (currentCalDatePreset === 'custom' && currentCalCustomDate) {
-    list = list.filter(e => e.date === currentCalCustomDate);
+    list = list.filter(e => {
+      const d = normalizeEventDate(e.date);
+      return d >= nextWeekStart && d <= nextWeekEnd;
+    });
+  } else if (currentCalDatePreset === 'custom_range') {
+    if (currentCalStartDate && currentCalEndDate) {
+      list = list.filter(e => {
+        const d = normalizeEventDate(e.date);
+        return d >= currentCalStartDate && d <= currentCalEndDate;
+      });
+    } else if (currentCalStartDate) {
+      list = list.filter(e => {
+        const d = normalizeEventDate(e.date);
+        return d >= currentCalStartDate;
+      });
+    } else if (currentCalEndDate) {
+      list = list.filter(e => {
+        const d = normalizeEventDate(e.date);
+        return d <= currentCalEndDate;
+      });
+    }
   }
 
   // 2. Impact / Country Filter
@@ -6280,25 +6416,7 @@ function initAgent3dCore() {
   scene3d.add(particles3d);
 
   // 5. Render 3D Floating Indicative Coin Badges with Dual Spot & Futures Display
-  const overlay = document.getElementById("floatingNodesOverlay");
-  if (overlay) {
-    overlay.innerHTML = floatingNodes.map(node => `
-      <div class="floating-coin-badge ${node.colorClass}" id="fnode-badge-${node.id}" onclick="handleFloatingNodeClick('${node.symbol}')" title="Click for live ${node.symbol} Spot & Futures telemetry">
-        <span class="coin-badge-icon">${node.icon}</span>
-        <div class="coin-badge-dual">
-          <div class="coin-badge-line">
-            <span class="coin-badge-name">${node.name}</span>
-            <span class="coin-badge-price" id="${node.spotId}">${node.defaultSpot}</span>
-          </div>
-          <div class="coin-badge-line">
-            <span class="lbl">FUT:</span>
-            <span class="val fut" id="${node.futId}">${node.defaultFut}</span>
-            <span class="coin-badge-basis" id="${node.basisId}">${node.defaultBasis}</span>
-          </div>
-        </div>
-      </div>
-    `).join("");
-  }
+  render3DGlobeBadges();
 
   // Animation Loop with Real-Time Screen Projection for Badges
   let clock = new THREE.Clock();
@@ -6367,6 +6485,102 @@ function initAgent3dCore() {
     camera3d.updateProjectionMatrix();
     renderer3d.setSize(w, h);
   });
+}
+
+function render3DGlobeBadges() {
+  const overlay = document.getElementById("floatingNodesOverlay");
+  if (!overlay) return;
+  overlay.innerHTML = floatingNodes.map(node => `
+    <div class="floating-coin-badge ${node.colorClass || ''}" id="fnode-badge-${node.id}" onclick="handleFloatingNodeClick('${node.symbol}')" title="Click for live ${node.symbol} Spot & Futures telemetry">
+      <span class="coin-badge-icon">${node.icon || '🪙'}</span>
+      <div class="coin-badge-dual">
+        <div class="coin-badge-line">
+          <span class="coin-badge-name">${node.name}</span>
+          <span class="coin-badge-price" id="${node.spotId}">${node.defaultSpot || '--'}</span>
+        </div>
+        <div class="coin-badge-line">
+          <span class="lbl">${node.tag || 'FUT'}:</span>
+          <span class="val ${node.colorClass ? 'fut' : ''}" id="${node.futId}">${node.defaultFut || '--'}</span>
+          <span class="coin-badge-basis" id="${node.basisId}">${node.defaultBasis || ''}</span>
+        </div>
+      </div>
+    </div>
+  `).join("");
+}
+
+function update3DGlobeCoins(positions, signalsFeed) {
+  let needsReRender = false;
+  const existingIds = new Set(floatingNodes.map(n => n.id));
+
+  // 1. Process Live Open Positions (CoinSwitch, Delta, MFP)
+  const allOpen = [
+    ...(positions.coinswitch || []).map(p => ({...p, ex: "CS"})),
+    ...(positions.delta || []).map(p => ({...p, ex: "DELTA"})),
+    ...(positions.mfp || []).map(p => ({...p, ex: "MFP"}))
+  ];
+
+  allOpen.forEach((pos, i) => {
+    const sym = pos.symbol || "";
+    const cleanSym = sym.replace("/", "").replace("USDT", "").toLowerCase();
+    const nodeId = `live-${cleanSym}`;
+    if (!existingIds.has(nodeId) && floatingNodes.length < 12) {
+      const entryP = Number(pos.entry_price || pos.price || 0);
+      floatingNodes.push({
+        id: nodeId,
+        symbol: sym,
+        name: sym.split("/")[0] || sym,
+        icon: "⚡",
+        spotId: `fnode-spot-${nodeId}`,
+        futId: `fnode-fut-${nodeId}`,
+        basisId: `fnode-basis-${nodeId}`,
+        defaultSpot: `$${entryP.toFixed(2)}`,
+        defaultFut: (pos.direction || 'LONG').toUpperCase(),
+        defaultBasis: `[LIVE ${pos.ex}]`,
+        tag: "TRADE",
+        colorClass: "live-trade-badge",
+        theta: Math.random() * Math.PI * 2,
+        phi: (Math.random() - 0.5) * 0.8,
+        radius: 4.3 + Math.random() * 0.5
+      });
+      existingIds.add(nodeId);
+      needsReRender = true;
+    }
+  });
+
+  // 2. Process AI Pump / Dump Discovery Signals
+  if (Array.isArray(signalsFeed)) {
+    signalsFeed.slice(0, 4).forEach((sig, i) => {
+      const sym = sig.symbol || "";
+      const isPump = (sig.action || sig.signal || sig.direction || '').toLowerCase().includes("buy") || (sig.type || '').toLowerCase().includes("pump");
+      const cleanSym = sym.replace("/", "").replace("USDT", "").toLowerCase();
+      const nodeId = `ai-${cleanSym}`;
+      if (!existingIds.has(nodeId) && floatingNodes.length < 12) {
+        floatingNodes.push({
+          id: nodeId,
+          symbol: sym,
+          name: sym.split("/")[0] || sym,
+          icon: isPump ? "🚀" : "🔻",
+          spotId: `fnode-spot-${nodeId}`,
+          futId: `fnode-fut-${nodeId}`,
+          basisId: `fnode-basis-${nodeId}`,
+          defaultSpot: sig.price ? `$${Number(sig.price).toFixed(2)}` : 'SCAN',
+          defaultFut: isPump ? "PUMP" : "DUMP",
+          defaultBasis: `${sig.confidence || 88}% AI`,
+          tag: "AGENT",
+          colorClass: isPump ? "pump-badge" : "dump-badge",
+          theta: Math.random() * Math.PI * 2,
+          phi: (Math.random() - 0.5) * 0.8,
+          radius: 4.4 + Math.random() * 0.4
+        });
+        existingIds.add(nodeId);
+        needsReRender = true;
+      }
+    });
+  }
+
+  if (needsReRender) {
+    render3DGlobeBadges();
+  }
 }
 
 function handleFloatingNodeClick(symbol) {

@@ -1937,27 +1937,39 @@
               <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                 <div class="tsm-panel-title">🏛 ECONOMIC CALENDAR • GLOBAL CATALYSTS</div>
                 <span class="tsm-badge-pill admin font-mono" id="cal-selected-date-badge">📅 ALL DATES</span>
+                <span class="cal-live-timestamp font-mono" id="cal-live-timestamp">⏱ <span class="cal-live-dot"></span> LIVE DATA: <strong id="cal-update-time">Just now</strong></span>
               </div>
-              <span class="tsm-badge-gold" id="cal-filter-label">ALL RELEASES</span>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <button class="cal-refresh-btn" onclick="refreshEconomicCalendar(true)" title="Force Refresh Real Calendar Data">🔄 Refresh</button>
+                <span class="tsm-badge-gold" id="cal-filter-label">ALL RELEASES</span>
+              </div>
             </div>
             
             <!-- Interactive Date Picker & Search Toolbar -->
             <div class="cal-toolbar-wrap">
               <!-- Quick Date Presets -->
-              <div class="cal-preset-bar">
-                <button class="cal-date-btn active" onclick="filterCalendarByDatePreset('all', this)">📅 ALL DATES</button>
-                <button class="cal-date-btn gold" onclick="filterCalendarByDatePreset('today', this)">⚡ TODAY (18TH)</button>
-                <button class="cal-date-btn" onclick="filterCalendarByDatePreset('tomorrow', this)">📅 TOMORROW (19TH)</button>
-                <button class="cal-date-btn" onclick="filterCalendarByDatePreset('this_week', this)">🗓️ THIS WEEK</button>
-                <button class="cal-date-btn" onclick="filterCalendarByDatePreset('next_week', this)">🗓️ NEXT WEEK</button>
+              <div class="cal-preset-bar" id="cal-preset-container">
+                <button class="cal-date-btn active" id="cal-btn-all" onclick="filterCalendarByDatePreset('all', this)">📅 ALL DATES</button>
+                <button class="cal-date-btn gold" id="cal-btn-today" onclick="filterCalendarByDatePreset('today', this)">⚡ TODAY</button>
+                <button class="cal-date-btn" id="cal-btn-tomorrow" onclick="filterCalendarByDatePreset('tomorrow', this)">📅 TOMORROW</button>
+                <button class="cal-date-btn" id="cal-btn-this-week" onclick="filterCalendarByDatePreset('this_week', this)">🗓️ THIS WEEK</button>
+                <button class="cal-date-btn" id="cal-btn-next-week" onclick="filterCalendarByDatePreset('next_week', this)">🗓️ NEXT WEEK</button>
               </div>
 
-              <!-- Custom Date Picker + Live Event Search -->
+              <!-- Custom Date Range Picker + Live Event Search -->
               <div class="cal-inputs-row">
-                <div class="cal-picker-group">
-                  <span class="cal-input-icon">📅</span>
-                  <input type="date" id="calDateSelector" class="tsm-input cal-date-input" title="Select Specific Calendar Date" onchange="filterCalendarByCustomDate(this.value)" />
-                  <button class="cal-clear-btn" onclick="clearCalendarDateFilter()" title="Reset Date Filter">✕</button>
+                <!-- Date Range Selector (From & To) -->
+                <div class="cal-range-group">
+                  <div class="cal-date-subgroup">
+                    <span class="cal-range-label">FROM</span>
+                    <input type="date" id="calStartDate" class="tsm-input cal-date-range-input" title="Start Date" onchange="onCalendarDateRangeChange()" />
+                  </div>
+                  <span class="cal-range-arrow">➔</span>
+                  <div class="cal-date-subgroup">
+                    <span class="cal-range-label">TO</span>
+                    <input type="date" id="calEndDate" class="tsm-input cal-date-range-input" title="End Date" onchange="onCalendarDateRangeChange()" />
+                  </div>
+                  <button class="cal-clear-btn" onclick="clearCalendarDateFilter()" title="Reset Date Filter">✕ Clear</button>
                 </div>
                 <div class="cal-search-group">
                   <span class="cal-input-icon">🔍</span>
@@ -2054,6 +2066,11 @@
             <div class="tsm-partner-head"><span class="tsm-partner-title">MyFundedFutures (MFFU)</span><span class="tsm-partner-badge purple">FUTURES ELITE 📈</span></div>
             <div class="tsm-partner-body"><p>Institutional CME/Crypto futures prop trading on Tradovate &amp; NinjaTrader with zero activation fees.</p><div class="tsm-partner-code">✨ Promo Code: <strong>FUTURES2026</strong></div></div>
             <a href="https://mffu.com/f/85f1f73f30" target="_blank" class="tsm-btn-cta gold">START FUTURES EVAL ➔</a>
+          </div>
+          <div class="tsm-partner-card">
+            <div class="tsm-partner-head"><span class="tsm-partner-title">MyFundedPerpetuals (MFP)</span><span class="tsm-partner-badge gold">CRYPTO PERPS 20% OFF 🔥</span></div>
+            <div class="tsm-partner-body"><p>Direct crypto perpetuals prop firm with up to $200,000 funding, raw spreads, and automated API trading enabled.</p><div class="tsm-partner-code">✨ Promo Code: <strong>FUTURES2026</strong></div></div>
+            <a href="https://myfundedperpetuals.com/@FUTURES2026" target="_blank" class="tsm-btn-cta gold">JOIN MYFUNDEDPERPS ➔</a>
           </div>
           <div class="tsm-partner-card">
             <div class="tsm-partner-head"><span class="tsm-partner-title">Blue Guardian</span><span class="tsm-partner-badge cyan">GUARDIAN EDGE 🛡</span></div>
