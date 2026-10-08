@@ -132,21 +132,31 @@
   ]
   </script>
 
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
-  <link rel="icon" type="image/jpeg" href="/logo.jpg" />
-  <link rel="apple-touch-icon" href="/logo.jpg" />
+  <!-- Favicon & Site Icons (Multi-Resolution) -->
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/logo-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/logo.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/logo-192.png" />
   <link rel="manifest" href="/manifest.json" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+  <!-- Performance & Speed Optimization (Preconnects & Font Display Swap) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=128.0">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
+  <link rel="preload" href="/styles.css?v=128.5" as="style" />
+  <link rel="preload" href="/logo.png" as="image" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=128.5" />
+  
+  <!-- Deferred External Heavy Libraries for Faster First Contentful Paint -->
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="https://s3.tradingview.com/tv.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body class="neural-core-os theme-thesmartmag">
 
@@ -179,9 +189,10 @@
 
   <!-- TOP MASTER NAVIGATION BAR (THE SMARTMAG TRADE INSTITUTIONAL HEADER) -->
   <header class="nc-top-header tsm-trade-header">
-    <!-- BRAND LOGO WITH THREE GOLDEN BARS -->
+    <!-- BRAND LOGO WITH EMBLEM & THREE GOLDEN BARS -->
     <div class="nc-hdr-left" style="display:flex; align-items:center; gap:24px;">
       <a href="javascript:void(0)" onclick="goPage('landing')" class="tsm-trade-logo" title="TheSmartMag Trade • Institutional Multi-Asset Platform">
+        <img src="/logo.png" alt="TheSmartMag Trade Logo" class="tsm-nav-logo-img" width="38" height="38" style="border-radius:50%; box-shadow:0 0 14px rgba(0,240,144,0.35); border:1px solid rgba(0,240,144,0.6);" />
         <span class="tsm-bars-icon"><span></span><span></span><span></span></span>
         <span class="tsm-trade-brand-text"><strong>TheSmartMag</strong> <span>Trade</span></span>
       </a>
@@ -1259,10 +1270,10 @@
           <div class="tsm-table-wrap">
             <table class="tsm-table">
               <thead id="openTradesThead">
-                <tr id="openTradesHeaderRow"><th>EXCHANGE</th><th>SYMBOL</th><th>TYPE</th><th>ENTRY</th><th>RUNNING P&amp;L</th><th>STOP LOSS</th><th>TAKE PROFIT</th><th>TRAILING STATUS</th></tr>
+                <tr id="openTradesHeaderRow"><th>EXCHANGE</th><th>SYMBOL</th><th>STRATEGY</th><th>TYPE</th><th>ENTRY</th><th>RUNNING P&amp;L</th><th>STOP LOSS</th><th>TAKE PROFIT</th><th>TRAILING STATUS</th></tr>
               </thead>
               <tbody id="open-trades-tbody">
-                <tr><td colspan="8" class="text-center empty-state">Active scan in progress...</td></tr>
+                <tr><td colspan="9" class="text-center empty-state">Active scan in progress...</td></tr>
               </tbody>
             </table>
           </div>
@@ -2347,6 +2358,7 @@
               <tr>
                 <th>EXCHANGE</th>
                 <th>SYMBOL</th>
+                <th>STRATEGY</th>
                 <th>SIDE</th>
                 <th>ENTRY PRICE</th>
                 <th>MARK PRICE</th>
@@ -2360,7 +2372,7 @@
             </thead>
             <tbody id="proChartLiveTradesTbody">
               <tr>
-                <td colspan="11" class="text-center empty-state">
+                <td colspan="12" class="text-center empty-state">
                   No active open positions. When the algorithmic engine executes a trade on CoinSwitch or Delta India, it will appear here with live tick-by-tick mark prices and one-click chart synchronization.
                 </td>
               </tr>
@@ -5557,6 +5569,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=20260926-1100"></script>
+  <script src="app.js?v=20261009-0100"></script>
 </body>
 </html>

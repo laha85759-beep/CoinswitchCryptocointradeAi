@@ -1,1 +1,98 @@
-[]
+[
+  {
+    "closed_at": "2026-10-08T15:40:32.465378+00:00Z",
+    "direction": "long",
+    "entry_price": 0.08707,
+    "exchange": "delta",
+    "exit_price": 0.08323,
+    "pnl_pct": -4.41,
+    "pnl_usdt": -0.08,
+    "qty": 1.0,
+    "reason": "\ud83d\uded1 HARD STOP LOSS (-1.5%)",
+    "symbol": "DOGE/USDT"
+  },
+  {
+    "closed_at": "2026-10-08T15:40:34.494377+00:00Z",
+    "direction": "long",
+    "entry_price": 1.3997,
+    "exchange": "delta",
+    "exit_price": 1.3555,
+    "pnl_pct": -3.16,
+    "pnl_usdt": -0.01,
+    "qty": 1.0,
+    "reason": "\ud83d\uded1 HARD STOP LOSS (-1.5%)",
+    "symbol": "XRP/USDT"
+  },
+  {
+    "closed_at": "2026-10-08T15:40:36.528192+00:00Z",
+    "direction": "long",
+    "entry_price": 0.2206,
+    "exchange": "delta",
+    "exit_price": 0.2083,
+    "pnl_pct": -5.58,
+    "pnl_usdt": -0.06,
+    "qty": 18.0,
+    "reason": "\ud83d\uded1 HARD STOP LOSS (-1.5%)",
+    "symbol": "WIF/USDT"
+  },
+  {
+    "closed_at": "2026-10-08T16:06:13.267409+00:00Z",
+    "direction": "long",
+    "entry_price": 0.05979,
+    "exchange": "delta",
+    "exit_price": 0.05833,
+    "pnl_pct": -2.44,
+    "pnl_usdt": -0.0,
+    "qty": 1.0,
+    "reason": "\ud83d\uded1 HARD STOP LOSS (-1.5%)",
+    "symbol": "STRK/USDT"
+  },
+  {
+    "closed_at": "2026-10-08T16:06:15.586146+00:00Z",
+    "direction": "long",
+    "entry_price": 0.00485,
+    "exchange": "delta",
+    "exit_price": 0.00479,
+    "pnl_pct": -1.24,
+    "pnl_usdt": -0.0,
+    "qty": 1.0,
+    "reason": "\ud83d\uded1 HARD STOP LOSS (-1.5%)",
+    "symbol": "SKL/USDT"
+  },
+  {
+    "closed_at": "2026-10-08T16:17:43.059714+00:00Z",
+    "direction": "short",
+    "entry_price": 0.04124,
+    "exchange": "delta",
+    "exit_price": 0.04222,
+    "pnl_pct": -2.38,
+    "pnl_usdt": -0.0,
+    "qty": 1.0,
+    "reason": "\ud83d\uded1 HARD STOP LOSS (-1.5%)",
+    "symbol": "AIN/USDT"
+  },
+  {
+    "closed_at": "2026-10-08T17:03:46.984921+00:00Z",
+    "direction": "long",
+    "entry_price": 0.14845,
+    "exchange": "delta",
+    "exit_price": 0.1457,
+    "pnl_pct": -1.85,
+    "pnl_usdt": -0.01,
+    "qty": 2.0,
+    "reason": "\ud83d\uded1 HARD STOP LOSS (-1.5%)",
+    "symbol": "FARTCOIN/USDT"
+  },
+  {
+    "closed_at": "2026-10-08T17:13:57.608748+00:00Z",
+    "direction": "long",
+    "entry_price": 0.01592,
+    "exchange": "delta",
+    "exit_price": 0.01567,
+    "pnl_pct": -1.57,
+    "pnl_usdt": -0.0,
+    "qty": 2.0,
+    "reason": "\ud83d\uded1 HARD STOP LOSS (-1.5%)",
+    "symbol": "GOAT/USDT"
+  }
+]

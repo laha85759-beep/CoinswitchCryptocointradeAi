@@ -369,6 +369,39 @@ class CoinSwitchClient:
     ) -> list:
         data = self._request(
             "GET", "/trade/api/v2/orders",
-            params={"open": "true", "exchanges": exchange},
+            params={"open": "true", "exchange": exchange},
         )
         return data.get("data", {}).get("orders", [])
+
+    def get_open_orders_all(self) -> list:
+        """Fetch open orders from both CoinSwitch exchanges (c2c1 + c2c2) combined."""
+        orders = []
+        for ex in ("c2c1", "c2c2"):
+            try:
+                orders.extend(self.get_open_orders(ex))
+            except Exception as e:
+                log.warning("get_open_orders failed for %s: %s", ex, e)
+        return orders
+
+    def place_order_with_sl_tp(
+        self,
+        symbol: str,
+        side: str,
+        order_type: str,
+        quantity: float,
+        price: float = None,
+        stop_loss_price: float = None,
+        take_profit_price: float = None,
+        exchange: str = EXCHANGE_USDT,
+    ) -> dict:
+        """
+        Place an order on CoinSwitch with software-managed SL and TP metadata.
+        CoinSwitch spot does NOT support server-side TP/SL bracket orders,
+        so SL/TP are returned in the result dict and must be managed by the monitor loop.
+        """
+        order = self.place_order(symbol, side, order_type, quantity, price, exchange)
+        # Attach SL/TP metadata for the caller to persist and manage
+        order["stop_loss_price"] = stop_loss_price
+        order["take_profit_price"] = take_profit_price
+        order["sl_tp_managed"] = "software"  # indicates software-managed (not server-side)
+        return order

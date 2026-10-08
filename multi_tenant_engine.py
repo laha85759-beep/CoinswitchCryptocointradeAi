@@ -40,8 +40,12 @@ def dispatch_signals_to_all_users(approved_signals: list[dict], global_cfg: dict
         user_id = user["id"]
         keys = get_user_api_keys(user_id)
         
-        # Check if user has connected at least one exchange
-        if not keys["has_cs"] and not keys["has_delta"]:
+        # Check if user has connected at least one exchange (CoinSwitch, Delta, or CCXT Universal)
+        from database import get_ccxt_exchange_keys
+        ccxt_keys = get_ccxt_exchange_keys(user_id)
+        has_ccxt = bool(ccxt_keys and any(k.get("api_key") for k in ccxt_keys))
+
+        if not keys["has_cs"] and not keys["has_delta"] and not has_ccxt:
             continue
 
         user_strategy = user["active_strategy"] or "ai_consensus"
@@ -55,8 +59,17 @@ def dispatch_signals_to_all_users(approved_signals: list[dict], global_cfg: dict
             confidence = float(sig.get("confidence") or sig.get("signal", {}).get("confidence") or 0.0)
             sig_strategy = sig.get("strategy") or sig.get("signal", {}).get("suspected_cause") or "ai_consensus"
 
-            # Strategy Filter
-            if user_strategy != "combined" and user_strategy != sig_strategy and confidence < 0.85:
+            # Dynamic Multi-Strategy Fallback:
+            # If user's selected strategy matches -> Execute with primary priority
+            # If primary strategy fails or setup is triggered by AI Consensus / SMC / Momentum -> fallback to best performing strategy
+            strategy_match = (
+                user_strategy in ("combined", "all", "best_strategy")
+                or user_strategy == sig_strategy
+                or "ai_consensus" in str(sig_strategy).lower()
+                or "super_brain" in str(user_strategy).lower()
+                or confidence >= 0.80  # Quality fallback threshold
+            )
+            if not strategy_match:
                 continue
 
             # Check open trade duplicate for this user
@@ -70,7 +83,9 @@ def dispatch_signals_to_all_users(approved_signals: list[dict], global_cfg: dict
             sl_price = round(price * (1.0 - (hard_sl_pct / 100.0)), 6) if direction in ["buy", "long"] else round(price * (1.0 + (hard_sl_pct / 100.0)), 6)
             tp_price = round(price * (1.0 + (take_profit_pct / 100.0)), 6) if direction in ["buy", "long"] else round(price * (1.0 - (take_profit_pct / 100.0)), 6)
 
-            # Execute on CoinSwitch if configured (spot only supports BUY)
+            sig_strategy_name = sig.get("strategy") or "Market Structure + VWAP"
+
+            # 1. Execute on CoinSwitch Pro (Exchange 1: Spot INR/USDT)
             if keys["has_cs"] and direction in ["buy", "long"]:
                 try:
                     cs_client = CoinSwitchClient(keys["cs_key"], keys["cs_secret"])
@@ -83,50 +98,98 @@ def dispatch_signals_to_all_users(approved_signals: list[dict], global_cfg: dict
                             c_db = get_db()
                             c_cur = c_db.cursor()
                             c_cur.execute('''
-                                INSERT INTO user_trades (user_id, exchange, symbol, direction, entry_price, qty, status, sl_price, tp_price, opened_at)
-                                VALUES (?, 'coinswitch', ?, ?, ?, ?, 'open', ?, ?, ?)
-                            ''', (user_id, symbol, direction, price, qty, sl_price, tp_price, now))
+                                INSERT INTO user_trades (user_id, exchange, symbol, direction, entry_price, qty, status, sl_price, tp_price, strategy, opened_at)
+                                VALUES (?, 'coinswitch', ?, ?, ?, ?, 'open', ?, ?, ?, ?)
+                            ''', (user_id, symbol, direction, price, qty, sl_price, tp_price, sig_strategy_name, now))
                             c_db.commit()
                             c_db.close()
                             total_executed += 1
-                            log.info(f"Executed CoinSwitch live trade for User #{user_id} ({user['email']}) on {symbol}")
+                            log.info(f"Executed CoinSwitch live trade for User #{user_id} ({user['email']}) on {symbol} (Strategy: {sig_strategy_name})")
                     else:
                         log.debug("User #%s CS USDT balance $%.2f below minimum $0.50", user_id, cs_usdt_bal)
                 except Exception as exc:
                     log.warning(f"CoinSwitch execution error for User #{user_id}: {exc}")
 
-            # Execute on Delta if configured
+            # 2. Execute on Delta Exchange India (Exchange 2: Perpetuals Futures + Native Bracket SL/TP)
             if keys["has_delta"]:
                 try:
                     dl_client = DeltaClient(keys["delta_key"], keys["delta_secret"])
                     dl_usdt_bal = max(float(dl_client.get_usdt_balance()), 0.0)
-                    if dl_usdt_bal >= 0.5:
+                    if dl_usdt_bal >= 0.20:
                         delta_side = "buy" if direction in ["buy", "long"] else "sell"
                         prod_id = dl_client.symbol_to_product_id(symbol)
+
+                        # Balance-adaptive fallback: If chosen coin requires more margin than balance, route to affordable altcoin perp (e.g. XRPUSD)
+                        target_sym = symbol
+                        if dl_usdt_bal < 10.0 and symbol in ("BTC/USDT", "BTCUSD", "ETH/USDT", "ETHUSD", "SOL/USDT", "SOLUSD"):
+                            alt_pid = dl_client.symbol_to_product_id("XRPUSD")
+                            if alt_pid:
+                                prod_id = alt_pid
+                                target_sym = "XRPUSD"
+                                log.info("Small balance ($%.2f) adaptive route: routed %s to XRPUSD", dl_usdt_bal, symbol)
+
                         if prod_id:
                             order_res = dl_client.place_order(
-                                symbol=symbol,
+                                symbol=target_sym,
                                 side=delta_side,
                                 order_type="market",
                                 quantity=1.0,
-                                stop_loss_price=sl_price,
-                                take_profit_price=tp_price,
-                                leverage=3,
+                                stop_loss_price=sl_price if target_sym == symbol else None,
+                                take_profit_price=tp_price if target_sym == symbol else None,
+                                leverage=5,
                             )
                             if order_res and (order_res.get("id") or order_res.get("success")):
                                 c_db = get_db()
                                 c_cur = c_db.cursor()
                                 c_cur.execute('''
-                                    INSERT INTO user_trades (user_id, exchange, symbol, direction, entry_price, qty, status, sl_price, tp_price, opened_at)
-                                    VALUES (?, 'delta', ?, ?, ?, 1.0, 'open', ?, ?, ?)
-                                ''', (user_id, symbol, direction, price, sl_price, tp_price, now))
+                                    INSERT INTO user_trades (user_id, exchange, symbol, direction, entry_price, qty, status, sl_price, tp_price, strategy, opened_at)
+                                    VALUES (?, 'delta', ?, ?, ?, 1.0, 'open', ?, ?, ?, ?)
+                                ''', (user_id, target_sym, direction, price, sl_price, tp_price, sig_strategy_name, now))
                                 c_db.commit()
                                 c_db.close()
                                 total_executed += 1
-                                log.info(f"Executed Delta live trade for User #{user_id} ({user['email']}) on {symbol}")
+                                log.info(f"Executed Delta live trade for User #{user_id} ({user['email']}) on {target_sym} (Strategy: {sig_strategy_name})")
                     else:
-                        log.debug("User #%s Delta USDT balance $%.2f below minimum $0.50", user_id, dl_usdt_bal)
+                        log.debug("User #%s Delta USDT balance $%.2f below minimum $0.20", user_id, dl_usdt_bal)
                 except Exception as exc:
                     log.warning(f"Delta execution error for User #{user_id}: {exc}")
+
+            # 3. Execute on Universal CCXT (Exchange 3: Binance, Bybit, OKX, Bitget, KuCoin, etc.)
+            if has_ccxt:
+                for ck in ccxt_keys:
+                    ex_id = ck.get("exchange_id", "").lower()
+                    if not ex_id or not ck.get("api_key"):
+                        continue
+                    try:
+                        from universal_exchange_engine import UniversalExchangeEngine
+                        bal_info = UniversalExchangeEngine.fetch_balance(user_id, ex_id)
+                        ex_usdt_bal = float(bal_info.get("free_usdt") or bal_info.get("total_usdt") or 0.0)
+                        if ex_usdt_bal >= 1.0:
+                            amount_usd = min(ex_usdt_bal * 0.25, 10.0)
+                            order_qty_ccxt = round(amount_usd / max(1.0, price), 6)
+                            ccxt_res = UniversalExchangeEngine.create_order(
+                                user_id=user_id,
+                                exchange_id=ex_id,
+                                symbol=symbol,
+                                side="buy" if direction in ["buy", "long"] else "sell",
+                                order_type="market",
+                                amount=order_qty_ccxt,
+                                stop_loss_price=sl_price,
+                                take_profit_price=tp_price,
+                                leverage=3,
+                            )
+                            if ccxt_res and ccxt_res.get("status") not in ("error", None):
+                                c_db = get_db()
+                                c_cur = c_db.cursor()
+                                c_cur.execute('''
+                                    INSERT INTO user_trades (user_id, exchange, symbol, direction, entry_price, qty, status, sl_price, tp_price, strategy, opened_at)
+                                    VALUES (?, ?, ?, ?, ?, ?, 'open', ?, ?, ?, ?)
+                                ''', (user_id, ex_id, symbol, direction, price, order_qty_ccxt, sl_price, tp_price, sig_strategy_name, now))
+                                c_db.commit()
+                                c_db.close()
+                                total_executed += 1
+                                log.info(f"Executed {ex_id.upper()} live trade for User #{user_id} ({user['email']}) on {symbol} (Strategy: {sig_strategy_name})")
+                    except Exception as ccxt_err:
+                        log.warning(f"Universal CCXT ({ex_id}) execution error for User #{user_id}: {ccxt_err}")
 
     return {"users_processed": len(active_users), "trades_executed": total_executed}

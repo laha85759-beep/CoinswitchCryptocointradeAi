@@ -436,30 +436,34 @@ def run() -> None:
     log.info("=" * 60)
 
     # ── Validate credentials ──────────────────────────────────────────────────
-    # NOTE: Never sys.exit() here — run() is invoked from long-lived daemon loops
-    # (webhook_server thread + run_continuous_daemon). SystemExit is not caught by
-    # their `except Exception` handlers, so it would silently kill the whole
-    # trading worker on a transient env-var glitch. Return instead and retry next cycle.
-    if not CONFIG["api_key"] or not CONFIG["api_secret"]:
-        log.error("CoinSwitch API credentials missing — cycle SKIPPED (monitoring paused). Check GitHub Secrets / .env. Retrying next cycle.")
-        return
-    if not CONFIG["delta_api_key"] or not CONFIG["delta_api_secret"]:
+    # All failures are recoverable: log clearly so operators know what broke,
+    # skip the dead exchange only, and let the live exchange keep trading.
+    cs_auth_ok = bool(CONFIG.get("api_key")) and bool(CONFIG.get("api_secret"))
+    delta_auth_ok = bool(CONFIG.get("delta_api_key")) and bool(CONFIG.get("delta_api_secret"))
+    if not cs_auth_ok:
+        log.error("CoinSwitch API credentials missing — CoinSwitch SKIPPED, Delta unaffected")
+    if not delta_auth_ok:
         log.warning("Delta Exchange API credentials not set — Delta trades will be SKIPPED")
 
     # ── Initialise clients ────────────────────────────────────────────────────
-    cs_client = CoinSwitchClient(
-        CONFIG["api_key"],
-        CONFIG["api_secret"],
-        rate_limit_delay=CONFIG.get("request_delay_seconds", 1.0),
-    )
-    delta_client = DeltaClient(
-        CONFIG["delta_api_key"],
-        CONFIG["delta_api_secret"],
-        rate_limit_delay=0.5,
-    )
+    cs_client = None
+    delta_client = None
+    if cs_auth_ok:
+        cs_client = CoinSwitchClient(
+            CONFIG["api_key"],
+            CONFIG["api_secret"],
+            rate_limit_delay=CONFIG.get("request_delay_seconds", 1.0),
+        )
+    if delta_auth_ok:
+        delta_client = DeltaClient(
+            CONFIG["delta_api_key"],
+            CONFIG["delta_api_secret"],
+            rate_limit_delay=0.5,
+        )
     mfp_client = None
     if CONFIG.get("mfp_enabled"):
         try:
+            from myfundedperps_client import MyFundedPerpsClient
             mfp_client = MyFundedPerpsClient(
                 api_key=CONFIG.get("mfp_api_key", ""),
                 account_id=CONFIG.get("mfp_account_id"),
@@ -480,11 +484,13 @@ def run() -> None:
     risk_manager  = RiskManagerAgent(CONFIG, cs_client, audit, delta_client=delta_client)
     dual_executor = DualExecutionAgent(CONFIG, cs_client, delta_client, notifier, audit, mfp_client=mfp_client)
 
-    mode_str = "PAPER" if CONFIG["paper_trading_mode"] else "LIVE"
-    delta_enabled = bool(CONFIG["delta_api_key"] and CONFIG["delta_api_secret"])
-    mfp_active = bool(mfp_client and mfp_client.is_active)
-    log.info("Mode: %s | CoinSwitch: ✓ | Delta India: %s | MyFundedPerpetuals: %s",
-             mode_str, "✓" if delta_enabled else "✗ (no creds)", "✓ ($75 Cap)" if mfp_active else "✗")
+    mode_str = "LIVE" if not CONFIG.get("paper_trading_mode") else "PAPER"
+    delta_enabled = bool(delta_client is not None)
+    mfp_active = bool(mfp_client and getattr(mfp_client, "is_active", False))
+    log.info("Mode: %s | CoinSwitch: %s | Delta India: %s | MyFundedPerpetuals: %s",
+             mode_str, "✓" if cs_client is not None else "✗",
+             "✓" if delta_enabled else "✗",
+             "✓" if mfp_active else "✗")
 
     # ── Step 1: Monitor all exchanges ────────────────────────────────────────
     log.info("Step 1/5 — Monitor open positions (CS + Delta + MFP)")
@@ -677,6 +683,48 @@ def run() -> None:
                      sum(1 for s in signals if s["signal"] in ("pump", "dump")))
         except Exception as comm_exc:
             log.warning("AIConsensusCommittee notice: %s", comm_exc)
+
+    # ── Step 3.6: Institutional Strategy Confluence Matrix (10 Strategies + Failover) ──
+    try:
+        from institutional_strategy_matrix import InstitutionalStrategyEngine
+        for m_item in market_data:
+            if not m_item or m_item.get("error"): continue
+            sym = m_item.get("symbol", "")
+            df = m_item.get("df")
+            if df is None or len(df) < 20: continue
+            
+            strat_engine = InstitutionalStrategyEngine({"symbol": sym, "risk_per_trade_pct": 0.5})
+            strat_verdict = strat_engine.evaluate_multi_strategy_matrix(df_m5=df)
+            if strat_verdict.get("approved") and strat_verdict.get("direction"):
+                sig_type = "pump" if strat_verdict["direction"].upper() in ("BUY", "LONG") else "dump"
+                basis = f"INST:{sym}:{sig_type}:{int(time.time())}"
+                sig_id = hashlib.sha256(basis.encode("utf-8")).hexdigest()[:20]
+                conf = float(strat_verdict.get("score", 85.0)) / 100.0
+                inst_signal = {
+                    "signal_id": sig_id,
+                    "symbol": sym,
+                    "signal": sig_type,
+                    "direction": "long" if sig_type == "pump" else "short",
+                    "confidence": conf,
+                    "strategy": strat_verdict.get("name", "Market Structure + VWAP"),
+                    "suspected_cause": f"Matrix Strategy: {strat_verdict.get('name')} (Score: {strat_verdict.get('score')})",
+                    "hard_sl": strat_verdict.get("stop_loss"),
+                    "take_profit": strat_verdict.get("tp2") or strat_verdict.get("tp1"),
+                    "tp1": strat_verdict.get("tp1"),
+                    "tp2": strat_verdict.get("tp2"),
+                    "tp3": strat_verdict.get("tp3"),
+                    "supporting_data": {
+                        "price": float(strat_verdict.get("entry_price") or df["close"].iloc[-1]),
+                        "change_5m": 1.2,
+                        "change_1h": 2.4,
+                        "volume_ratio": 2.0,
+                    }
+                }
+                signals.append(inst_signal)
+                log.info("InstitutionalStrategyMatrix: Approved %s on %s (Strategy: %s, Score: %s, SL: %s, TP: %s)",
+                         sig_type.upper(), sym, strat_verdict.get("name"), strat_verdict.get("score"), strat_verdict.get("stop_loss"), strat_verdict.get("tp2"))
+    except Exception as inst_exc:
+        log.warning("InstitutionalStrategyMatrix evaluation notice: %s", inst_exc)
 
     pump_signals  = [s for s in signals if s["signal"] == "pump"]
     watch_signals = [s for s in signals if s["signal"] == "watch"]

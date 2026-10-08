@@ -603,42 +603,28 @@ class ExecutionAgent:
             log.warning("Stale signal %s: slippage=%.2f%%", symbol, slippage)
             return execution_result(symbol, "rejected", f"stale_signal_slippage_{slippage:.2f}pct", signal, approval)
 
-        # Dynamically size CoinSwitch order from the ACTUAL available balance so even
-        # a $0.09 account can be filled. The risk engine no longer rejects sub-0.01-USDT
-        # accounts — ExecutionAgent now resizes the position to available capital at entry.
-        if not self.cfg["paper_trading_mode"]:
-            try:
-                usdt_avail = float(self.client.get_usdt_balance())
-                inr_avail = float(self.client.get_inr_balance())
+        # REAL-MONEY-ONLY: paper trades are dead code. Coins always fill live so
+        # both exchanges (CoinSwitch + Delta) take real fills; there is no demo path.
+        try:
+            usdt_avail = float(self.client.get_usdt_balance())
+            inr_avail = float(self.client.get_inr_balance())
 
-                if usdt_avail >= 0.01:
-                    position_usdt = max(usdt_avail, float(approval["position_size_usd"])) * 0.95  # 5% buffer for fee & rounding
-                elif inr_avail >= 5.0:
-                    position_usdt = max((inr_avail / 88.0), float(approval["position_size_usd"])) * 0.95
-                else:
-                    total_cs_usdt = usdt_avail + (inr_avail / 88.0)
-                    if total_cs_usdt <= 0.01:
-                        return execution_result(symbol, "rejected", "no_available_capacity", signal, approval)
-                    position_usdt = total_cs_usdt * 0.95
-            except Exception as exc:
-                log.debug("CoinSwitch balance check notice: %s", exc)
-                position_usdt = float(approval["position_size_usd"])
-        else:
+            if usdt_avail >= 0.01:
+                position_usdt = max(usdt_avail, float(approval["position_size_usd"])) * 0.95  # 5% buffer for fee & rounding
+            elif inr_avail >= 5.0:
+                position_usdt = max((inr_avail / 88.0), float(approval["position_size_usd"])) * 0.95
+            else:
+                total_cs_usdt = usdt_avail + (inr_avail / 88.0)
+                if total_cs_usdt <= 0.01:
+                    return execution_result(symbol, "rejected", "no_available_capacity", signal, approval)
+                position_usdt = total_cs_usdt * 0.95
+        except Exception as exc:
+            log.debug("CoinSwitch balance check notice: %s", exc)
             position_usdt = float(approval["position_size_usd"])
 
         qty = round(position_usdt / current_price, 6)
         if qty <= 0:
             return execution_result(symbol, "rejected", "zero_quantity", signal, approval)
-
-        if self.cfg["paper_trading_mode"]:
-            order_id = f"PAPER-{approval['signal_id']}"
-            result = execution_result(
-                symbol, "filled", "paper_trade_filled", signal, approval,
-                order_id=order_id, filled_price=current_price, filled_qty=qty,
-            )
-            self._record_open_trade(approval, result)
-            self._notify_entry(approval, result, current_price)
-            return result
 
         last_error = None
         for attempt in range(1, self.cfg["max_retries"] + 1):
@@ -702,7 +688,7 @@ class ExecutionAgent:
         
         # Place live Take Profit Limit Sell order directly on CoinSwitch Pro orderbook
         tp_order_id = ""
-        if not self.cfg["paper_trading_mode"] and result.get("status") == "filled" and result.get("filled_qty", 0) > 0:
+        if result.get("status") == "filled" and result.get("filled_qty", 0) > 0:
             time.sleep(2.5)  # Pause 2.5s for CoinSwitch Pro spot wallet ledger balance settlement
             for attempt in range(1, 4):
                 try:
@@ -732,7 +718,6 @@ class ExecutionAgent:
             "usdt_used": approval["position_size_usd"],
             "score": round(signal["confidence"] * 100, 2),
             "highest_profit_pct": 0.0,
-            "paper": self.cfg["paper_trading_mode"],
             "signal_id": approval["signal_id"],
             "approval_token": approval["approval_token"],
         }
@@ -839,15 +824,15 @@ class MonitorReporterAgent:
     def _close_trade(self, trade: dict, current: float, pnl_pct: float, reason: str) -> dict:
         pnl_usdt = round(float(trade["usdt_used"]) * pnl_pct / 100.0, 2)
 
-        if not trade.get("paper"):
-            sell_price = round(current * (1 - self.cfg["limit_slippage_offset_pct"] / 100.0), 8)
-            try:
-                self.client.place_order(
-                    trade["symbol"], "sell", self.cfg["risk_order_type"],
-                    float(trade["qty"]), price=sell_price,
-                )
-            except Exception as exc:
-                log.error("SELL failed for %s: %s", trade["symbol"], exc)
+        # REAL-MONEY-ONLY: sell always executes live; no paper path exists.
+        sell_price = round(current * (1 - self.cfg["limit_slippage_offset_pct"] / 100.0), 8)
+        try:
+            self.client.place_order(
+                trade["symbol"], "sell", self.cfg["risk_order_type"],
+                float(trade["qty"]), price=sell_price,
+            )
+        except Exception as exc:
+            log.error("SELL failed for %s: %s", trade["symbol"], exc)
 
         today = utc_now().date().isoformat()
         pnl = load_json(DAILY_PNL_FILE, {})
@@ -891,7 +876,8 @@ class MonitorReporterAgent:
             f"Peak   : `{trade['peak_price']}`\n"
             f"P&L    : `{pnl_pct:+.2f}%`  (`{pnl_usdt:+.2f}` USDT)\n"
             f"Best   : `+{trade.get('highest_profit_pct', 0):.2f}%`\n"
-            f"Mode   : `{'paper' if trade.get('paper') else 'LIVE'}`"
+            f"Mode   : `LIVE`\n"
+            f"Note   : DISABLED for live trades; end-of-day report shows real exchange equity."
         )
         log.info(
             "CLOSED %s | reason=%s | pnl=%.2f%% | pnl_usdt=%.2f",

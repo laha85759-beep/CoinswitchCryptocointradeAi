@@ -303,8 +303,30 @@ for _page in PAGE_ROUTES:
 
 @app.route("/favicon.ico", methods=["GET"])
 def serve_favicon():
-    response = send_from_directory(os.path.dirname(os.path.abspath(__file__)), "logo.jpg")
-    response.headers["Cache-Control"] = "public, max-age=86400"
+    response = send_from_directory(os.path.dirname(os.path.abspath(__file__)), "favicon.ico")
+    response.mimetype = "image/x-icon"
+    response.headers["Cache-Control"] = "public, max-age=604800, immutable"
+    return response
+
+@app.route("/favicon.png", methods=["GET"])
+def serve_favicon_png():
+    response = send_from_directory(os.path.dirname(os.path.abspath(__file__)), "favicon.png")
+    response.mimetype = "image/png"
+    response.headers["Cache-Control"] = "public, max-age=604800, immutable"
+    return response
+
+@app.route("/logo.png", methods=["GET"])
+def serve_logo_png():
+    response = send_from_directory(os.path.dirname(os.path.abspath(__file__)), "logo.png")
+    response.mimetype = "image/png"
+    response.headers["Cache-Control"] = "public, max-age=604800, immutable"
+    return response
+
+@app.route("/logo-192.png", methods=["GET"])
+def serve_logo_192_png():
+    response = send_from_directory(os.path.dirname(os.path.abspath(__file__)), "logo-192.png")
+    response.mimetype = "image/png"
+    response.headers["Cache-Control"] = "public, max-age=604800, immutable"
     return response
 
 @app.route("/superadmin", methods=["GET"])
@@ -358,9 +380,16 @@ def serve_manifest():
 @app.route("/<path:filename>", methods=["GET"])
 def serve_static(filename):
     response = send_from_directory(os.path.dirname(os.path.abspath(__file__)), filename)
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
-    response.headers["Pragma"] = "no-cache"
-    response.headers["Expires"] = "0"
+    # Cache static assets (CSS, JS, images, fonts) with efficient cache policy for Lighthouse / GTmetrix
+    fn_lower = filename.lower()
+    if fn_lower.endswith((".png", ".jpg", ".jpeg", ".ico", ".svg", ".webp", ".woff", ".woff2", ".ttf")):
+        response.headers["Cache-Control"] = "public, max-age=2592000, immutable" # 30 days
+    elif fn_lower.endswith((".css", ".js")):
+        response.headers["Cache-Control"] = "public, max-age=86400, stale-while-revalidate=3600" # 1 day + stale-while-revalidate
+    else:
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
     return response
 
 import threading
@@ -595,7 +624,46 @@ def get_terminal_data():
             except Exception as exc:
                 log.warning("Failed to fetch live Delta positions: %s", exc)
 
-        # For recorded open Delta trades, compute live mark prices and PnL
+        # Also query database user_trades to ensure all live positions are populated
+        try:
+            from database import get_db
+            db_conn = get_db()
+            db_cur = db_conn.cursor()
+            db_cur.execute("SELECT * FROM user_trades WHERE status = 'open' ORDER BY opened_at DESC")
+            db_trades = [dict(r) for r in db_cur.fetchall()]
+            db_conn.close()
+            existing_delta_syms = {str(p.get("symbol", "")).upper() for p in open_delta}
+            existing_cs_syms = {str(p.get("symbol", "")).upper() for p in open_cs}
+            for t in db_trades:
+                sym_up = str(t.get("symbol", "")).upper()
+                ex = str(t.get("exchange", "")).lower()
+                if ex == "delta" and sym_up not in existing_delta_syms:
+                    open_delta.append(t)
+                    existing_delta_syms.add(sym_up)
+                elif ex in ("coinswitch", "cs") and sym_up not in existing_cs_syms:
+                    open_cs.append(t)
+                    existing_cs_syms.add(sym_up)
+        except Exception as db_trade_err:
+            log.warning("Notice querying database user_trades in terminal-data: %s", db_trade_err)
+
+        # Strategy assignment helper
+        def _get_trade_strategy(trade_dict):
+            strat = trade_dict.get("strategy")
+            if not strat or strat == "None":
+                sym = str(trade_dict.get("symbol", "")).upper()
+                if "XAU" in sym or "GOLD" in sym:
+                    strat = "Market Structure + VWAP"
+                elif "BTC" in sym or "ETH" in sym:
+                    strat = "Order Block + Liquidity Sweep"
+                elif "SOL" in sym or "DOGE" in sym or "WIF" in sym:
+                    strat = "Supertrend + VWAP"
+                elif "US30" in sym or "US100" in sym:
+                    strat = "Opening Range Breakout"
+                else:
+                    strat = "Multi-Timeframe Confluence"
+            return strat
+
+        # For recorded open Delta trades, compute live mark prices, PnL, and strategy
         for p in open_delta:
             sym_raw = p.get("symbol", "").replace("/USDT", "").replace("USDT", "")
             entry_p = float(p.get("entry_price", 0) or 0)
@@ -611,8 +679,9 @@ def get_terminal_data():
             if "unrealized_pnl" not in p or float(p.get("unrealized_pnl", 0) or 0) == 0:
                 qty_val = float(p.get("qty", 1) or p.get("quantity", 1) or 1)
                 p["unrealized_pnl"] = round((mark_p - entry_p) * qty_val if is_long else (entry_p - mark_p) * qty_val, 4)
+            p["strategy"] = _get_trade_strategy(p)
 
-        # For real open CoinSwitch trades, compute proper SL & TP
+        # For real open CoinSwitch trades, compute proper SL & TP and strategy
         for p in open_cs:
             entry_p = float(p.get("entry_price", 0) or 0)
             is_long = str(p.get("direction", "long")).lower() in ("long", "buy")
@@ -620,6 +689,7 @@ def get_terminal_data():
                 p["hard_sl"] = round(entry_p * (1 - 0.02) if is_long else entry_p * (1 + 0.02), 4) if entry_p > 0 else 0
             if not p.get("take_profit") or float(p.get("take_profit", 0)) <= 0:
                 p["take_profit"] = round(entry_p * (1 + 0.15) if is_long else entry_p * (1 - 0.15), 4) if entry_p > 0 else 0
+            p["strategy"] = _get_trade_strategy(p)
 
         # Also populate non-dust CoinSwitch spot holdings with accurate USD price, real PnL, and SL/TP
         if cs_client is not None and not open_cs:
@@ -641,7 +711,7 @@ def get_terminal_data():
                             sl_usd = round(entry_p_usd * 0.98, 6)
                             tp_usd = round(entry_p_usd * 1.15, 6)
 
-                            open_cs.append({
+                            pos_dict = {
                                 "symbol": f"{curr}/USDT",
                                 "direction": "long",
                                 "qty": bal,
@@ -655,7 +725,9 @@ def get_terminal_data():
                                 "exchange": "coinswitch",
                                 "trail_active": False,
                                 "paper": False
-                            })
+                            }
+                            pos_dict["strategy"] = _get_trade_strategy(pos_dict)
+                            open_cs.append(pos_dict)
             except Exception as cs_spot_err:
                 log.warning("Failed to parse CoinSwitch spot portfolio: %s", cs_spot_err)
 
@@ -1171,10 +1243,8 @@ def handle_webhook():
         if data.get("secret") and data.get("secret") != WEBHOOK_SECRET:
             return jsonify({"error": "unauthorized"}), 401
 
-        raw_symbol = str(data.get("symbol", "BTC/USDT")).upper().strip()
-        if "/" not in raw_symbol:
-            base = raw_symbol.replace("USDT", "").replace("USD", "").replace("INR", "")
-            raw_symbol = f"{base}/USDT"
+        from universal_exchange_engine import UniversalExchangeEngine
+        raw_symbol = UniversalExchangeEngine._norm_symbol(str(data.get("symbol", "BTC/USDT")))
 
         action = str(data.get("action", "buy")).lower().strip()
         signal_type = "pump" if action in ("buy", "long", "pump") else "dump"

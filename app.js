@@ -1019,6 +1019,7 @@ function renderProChartLiveTrades(posData, tickers, userData) {
     const markP = Number(pos.mark_price || pos.current_price || entryP);
     const qty = Number(pos.qty || pos.quantity || 1.0);
     const margin = Number(pos.margin_used || (entryP * qty) || 0);
+    const strategyName = pos.strategy || "Market Structure + VWAP";
 
     let pnl = pos.unrealized_pnl !== undefined && pos.unrealized_pnl !== null && Number(pos.unrealized_pnl) !== 0
       ? Number(pos.unrealized_pnl)
@@ -1052,6 +1053,7 @@ function renderProChartLiveTrades(posData, tickers, userData) {
       <tr>
         <td><span class="live-tag">${pos.exchange}</span></td>
         <td><strong>${sym}</strong></td>
+        <td><span class="tsm-strat-tag" style="background:rgba(0,240,255,0.08); border:1px solid rgba(0,240,255,0.25); color:var(--neon-cyan); padding:2px 7px; border-radius:4px; font-size:10px; font-weight:600; white-space:nowrap; display:inline-block;">🎯 ${strategyName}</span></td>
         <td><span class="${isLong ? 'green-text' : 'red-text'} font-mono font-bold">${dir}</span></td>
         <td>${fmtPrice(entryP)}</td>
         <td><strong>${fmtPrice(markP)}</strong></td>
@@ -2924,17 +2926,22 @@ async function fetchRealData() {
       }
     }
 
-    const csTrades = isNonSuperadminUser
-      ? (userData && userData.open_positions && Array.isArray(userData.open_positions.coinswitch) ? userData.open_positions.coinswitch : [])
-      : ((userData && userData.open_positions && Array.isArray(userData.open_positions.coinswitch) && userData.open_positions.coinswitch.length > 0)
-          ? userData.open_positions.coinswitch
-          : (data.open_positions && Array.isArray(data.open_positions.coinswitch) ? data.open_positions.coinswitch : []));
+    // Select positions: If user is logged in and has open_positions, use them
+    let csTrades = [];
+    let deltaTrades = [];
 
-    const deltaTrades = isNonSuperadminUser
-      ? (userData && userData.open_positions && Array.isArray(userData.open_positions.delta) ? userData.open_positions.delta : [])
-      : ((userData && userData.open_positions && Array.isArray(userData.open_positions.delta) && userData.open_positions.delta.length > 0)
-          ? userData.open_positions.delta
-          : (data.open_positions && Array.isArray(data.open_positions.delta) ? data.open_positions.delta : []));
+    if (userData && userData.open_positions) {
+      csTrades = Array.isArray(userData.open_positions.coinswitch) ? userData.open_positions.coinswitch : [];
+      deltaTrades = Array.isArray(userData.open_positions.delta) ? userData.open_positions.delta : [];
+      // If superadmin has 0 private trades, allow fallback to fleet positions
+      if (csTrades.length === 0 && deltaTrades.length === 0 && currentUser && currentUser.role === "superadmin") {
+        csTrades = (data.open_positions && Array.isArray(data.open_positions.coinswitch)) ? data.open_positions.coinswitch : [];
+        deltaTrades = (data.open_positions && Array.isArray(data.open_positions.delta)) ? data.open_positions.delta : [];
+      }
+    } else if (data.open_positions) {
+      csTrades = Array.isArray(data.open_positions.coinswitch) ? data.open_positions.coinswitch : [];
+      deltaTrades = Array.isArray(data.open_positions.delta) ? data.open_positions.delta : [];
+    }
 
     const mfpTrades = isNonSuperadminUser
       ? (userData && userData.open_positions && Array.isArray(userData.open_positions.mfp) ? userData.open_positions.mfp : [])
@@ -3015,12 +3022,12 @@ function renderPositionsTable(posData) {
 
   if (thead) {
     thead.innerHTML = isUserLoggedIn
-      ? `<tr><th>EXCHANGE</th><th>SYMBOL</th><th>TYPE</th><th>ENTRY</th><th>RUNNING P&amp;L</th><th>STOP LOSS</th><th>TAKE PROFIT</th><th>TRAILING STATUS</th><th>ACTION</th></tr>`
-      : `<tr><th>EXCHANGE</th><th>SYMBOL</th><th>TYPE</th><th>ENTRY</th><th>RUNNING P&amp;L</th><th>STOP LOSS</th><th>TAKE PROFIT</th><th>TRAILING STATUS</th></tr>`;
+      ? `<tr><th>EXCHANGE</th><th>SYMBOL</th><th>STRATEGY</th><th>TYPE</th><th>ENTRY</th><th>RUNNING P&amp;L</th><th>STOP LOSS</th><th>TAKE PROFIT</th><th>TRAILING STATUS</th><th>ACTION</th></tr>`
+      : `<tr><th>EXCHANGE</th><th>SYMBOL</th><th>STRATEGY</th><th>TYPE</th><th>ENTRY</th><th>RUNNING P&amp;L</th><th>STOP LOSS</th><th>TAKE PROFIT</th><th>TRAILING STATUS</th></tr>`;
   }
 
   if (allPositions.length === 0) {
-    const colSpan = isUserLoggedIn ? 9 : 8;
+    const colSpan = isUserLoggedIn ? 10 : 9;
     tbody.innerHTML = `<tr><td colspan="${colSpan}" class="text-center empty-state" style="padding:18px;">No open positions. Autonomous quantum scanner is actively monitoring liquidity blocks for momentum breakout entries.</td></tr>`;
     return;
   }
@@ -3032,6 +3039,7 @@ function renderPositionsTable(posData) {
     const entryP = Number(pos.entry_price || pos.price || 0);
     const markP = Number(pos.mark_price || pos.current_price || entryP);
     const qty = Number(pos.qty || pos.quantity || 1.0);
+    const strategyName = pos.strategy || "Market Structure + VWAP";
 
     // Calculate Running PnL (Unrealized Profit & Loss)
     let pnl = 0.0;
@@ -3075,6 +3083,7 @@ function renderPositionsTable(posData) {
       <tr>
         <td><span class="live-tag">${pos.exchange}</span></td>
         <td><strong>${sym}</strong></td>
+        <td><span class="tsm-strat-tag" style="background:rgba(0,240,255,0.08); border:1px solid rgba(0,240,255,0.25); color:var(--neon-cyan); padding:2px 7px; border-radius:4px; font-size:10px; font-weight:600; white-space:nowrap; display:inline-block;">🎯 ${strategyName}</span></td>
         <td><span class="${isLong ? 'green-text' : 'red-text'} font-mono font-bold">${dir}</span></td>
         <td>${fmtPrice(entryP)}</td>
         <td><strong class="${pnlClass} font-mono">${pnlPrefix}${Math.abs(pnl).toFixed(2)} (${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%)</strong></td>
@@ -3850,7 +3859,12 @@ async function fetchAgentLogs() {
   }
 }
 
-setInterval(fetchAgentLogs, 3000);
+// Low-overhead background log polling (only polls when document is visible)
+setInterval(() => {
+  if (document.visibilityState === "visible") {
+    fetchAgentLogs();
+  }
+}, 10000);
 
 function escapeHtml(str) {
   if (!str) return "";
@@ -8689,8 +8703,14 @@ async function loadRealCandlesForHero(sym, tf = "15m") {
     else if (clean.includes("ETH")) clean = "ETHUSDT";
     else if (clean.includes("SOL")) clean = "SOLUSDT";
 
-    const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${clean}&interval=${tf || '15m'}&limit=38`);
-    if (res.ok) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
+    const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${clean}&interval=${tf || '15m'}&limit=38`, {
+      signal: controller.signal
+    }).catch(() => null);
+    clearTimeout(timeoutId);
+
+    if (res && res.ok) {
       const data = await res.json();
       if (Array.isArray(data) && data.length > 5) {
         heroCandleData = data.map(k => ({

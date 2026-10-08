@@ -173,10 +173,132 @@ class AIConsensusCommittee:
                 smc_score += 0.30
                 bias = "bearish"
 
+        # D. Order Flow Delta & Cumulative Volume Delta (CVD) Analysis
+        order_flow_delta = 0.0
+        cvd_bias = "neutral"
+        absorption_detected = False
+        if len(df) >= 5:
+            # Estimate aggressive buyer vs seller pressure across last 5 candles
+            # Buy volume proxy = volume * (close - low) / (high - low)
+            # Sell volume proxy = volume * (high - close) / (high - low)
+            deltas = []
+            for k in range(-5, 0):
+                rng = max(high[k] - low[k], 1e-6)
+                buy_vol = volume[k] * ((close[k] - low[k]) / rng)
+                sell_vol = volume[k] * ((high[k] - close[k]) / rng)
+                deltas.append(buy_vol - sell_vol)
+
+            net_delta = float(np.sum(deltas))
+            total_vol = float(np.sum(volume[-5:])) or 1.0
+            order_flow_delta = round(net_delta / total_vol, 3)
+
+            # CVD Divergence / Delta Absorption detection:
+            # Price pushed lower but net delta is positive -> Bullish Absorption
+            # Price pushed higher but net delta is negative -> Bearish Absorption
+            price_change_5 = close[-1] - close[-5]
+            if price_change_5 < 0 and order_flow_delta > 0.15:
+                absorption_detected = True
+                cvd_bias = "bullish"
+                smc_score += 0.25
+                if bias == "neutral":
+                    bias = "bullish"
+            elif price_change_5 > 0 and order_flow_delta < -0.15:
+                absorption_detected = True
+                cvd_bias = "bearish"
+                smc_score += 0.25
+                if bias == "neutral":
+                    bias = "bearish"
+            elif order_flow_delta > 0.20:
+                cvd_bias = "bullish"
+                smc_score += 0.15
+            elif order_flow_delta < -0.20:
+                cvd_bias = "bearish"
+                smc_score += 0.15
+
+        orderflow_info = {
+            "net_delta_ratio": order_flow_delta,
+            "cvd_bias": cvd_bias,
+            "absorption_detected": absorption_detected,
+        }
+
+        # E. Liquidity Map (BSL / SSL Pools, Equal Highs EQH, Equal Lows EQL)
+        liquidity_map = {
+            "buy_side_liquidity_pools": [],   # Resting buy-stops above key highs
+            "sell_side_liquidity_pools": [],  # Resting sell-stops below key lows
+            "equal_highs": [],
+            "equal_lows": [],
+            "nearest_bsl": None,
+            "nearest_ssl": None,
+            "liquidity_draw": "neutral",
+            "bsl_distance_pct": 0.0,
+            "ssl_distance_pct": 0.0,
+        }
+
+        if len(df) >= 10:
+            # Map swing pivot highs and lows across lookback
+            eval_window = min(len(df) - 2, 40)
+            highs_win = high[-eval_window:]
+            lows_win = low[-eval_window:]
+            
+            # Detect significant swing highs (local maxima) as Buy-Side Liquidity (BSL)
+            for j in range(2, len(highs_win) - 2):
+                if highs_win[j] >= highs_win[j-1] and highs_win[j] >= highs_win[j-2] and \
+                   highs_win[j] >= highs_win[j+1] and highs_win[j] >= highs_win[j+2]:
+                    pool_price = float(highs_win[j])
+                    if pool_price > curr_close:
+                        liquidity_map["buy_side_liquidity_pools"].append(round(pool_price, 4))
+            
+            # Detect significant swing lows (local minima) as Sell-Side Liquidity (SSL)
+            for j in range(2, len(lows_win) - 2):
+                if lows_win[j] <= lows_win[j-1] and lows_win[j] <= lows_win[j-2] and \
+                   lows_win[j] <= lows_win[j+1] and lows_win[j] <= lows_win[j+2]:
+                    pool_price = float(lows_win[j])
+                    if pool_price < curr_close:
+                        liquidity_map["sell_side_liquidity_pools"].append(round(pool_price, 4))
+
+            # Detect Equal Highs (EQH) - Double/Triple tops where retail stops cluster heavily
+            bsl_pools = sorted(liquidity_map["buy_side_liquidity_pools"])
+            for idx in range(len(bsl_pools) - 1):
+                if abs(bsl_pools[idx] - bsl_pools[idx+1]) / max(bsl_pools[idx], 1e-6) <= 0.002: # within 0.2%
+                    liquidity_map["equal_highs"].append(round((bsl_pools[idx] + bsl_pools[idx+1]) / 2.0, 4))
+
+            # Detect Equal Lows (EQL) - Double/Triple bottoms where stop-losses cluster
+            ssl_pools = sorted(liquidity_map["sell_side_liquidity_pools"])
+            for idx in range(len(ssl_pools) - 1):
+                if abs(ssl_pools[idx] - ssl_pools[idx+1]) / max(ssl_pools[idx], 1e-6) <= 0.002: # within 0.2%
+                    liquidity_map["equal_lows"].append(round((ssl_pools[idx] + ssl_pools[idx+1]) / 2.0, 4))
+
+            # Nearest magnet levels (draw on liquidity)
+            if bsl_pools:
+                nearest_bsl = min(bsl_pools)
+                liquidity_map["nearest_bsl"] = nearest_bsl
+                liquidity_map["bsl_distance_pct"] = round((nearest_bsl - curr_close) / curr_close * 100.0, 2)
+
+            if ssl_pools:
+                nearest_ssl = max(ssl_pools)
+                liquidity_map["nearest_ssl"] = nearest_ssl
+                liquidity_map["ssl_distance_pct"] = round((curr_close - nearest_ssl) / curr_close * 100.0, 2)
+
+            # Determine algorithmic draw on liquidity
+            if liquidity_map["equal_highs"] and (not liquidity_map["equal_lows"] or bias == "bullish"):
+                liquidity_map["liquidity_draw"] = "draw_to_buy_side_liquidity"
+                smc_score += 0.20
+            elif liquidity_map["equal_lows"] and (not liquidity_map["equal_highs"] or bias == "bearish"):
+                liquidity_map["liquidity_draw"] = "draw_to_sell_side_liquidity"
+                smc_score += 0.20
+            elif liquidity_map["nearest_bsl"] and (not liquidity_map["nearest_ssl"] or liquidity_map["bsl_distance_pct"] < liquidity_map["ssl_distance_pct"]):
+                liquidity_map["liquidity_draw"] = "bullish_bsl_target"
+                smc_score += 0.10
+            elif liquidity_map["nearest_ssl"]:
+                liquidity_map["liquidity_draw"] = "bearish_ssl_target"
+                smc_score += 0.10
+
         return {
             "fvg": fvg_info,
             "order_block": ob_info,
             "liquidity_sweep": sweep_info,
+            "order_flow": orderflow_info,
+            "liquidity_map": liquidity_map,
             "smc_score": min(round(smc_score, 3), 1.0),
             "bias": bias,
         }
@@ -228,8 +350,15 @@ class AIConsensusCommittee:
                         (direction == "SELL" and change_5m < 0 and change_1h < 0)
         trend_score = 0.15 if trend_aligned else 0.05
 
+        # 3.2. Order Flow Delta & Institutional CVD Confluence
+        of_info = smc_data.get("order_flow", {})
+        cvd_bias = of_info.get("cvd_bias", "neutral")
+        of_delta = float(of_info.get("net_delta_ratio", 0.0))
+        of_aligned = (direction == "BUY" and cvd_bias == "bullish") or (direction == "SELL" and cvd_bias == "bearish")
+        orderflow_score = 0.15 if of_aligned else (0.20 if of_info.get("absorption_detected") else 0.05)
+
         # 3.5. Smart Gatekeeper Pre-Check: Do not waste NVIDIA API tokens on mathematically non-viable setups
-        tech_score = (base_confidence * 0.35) + (smc_score * 0.20 if smc_aligned else 0.10) + vol_score + trend_score
+        tech_score = (base_confidence * 0.30) + (smc_score * 0.18 if smc_aligned else 0.08) + vol_score + trend_score + orderflow_score
         max_possible_score = tech_score + 0.40  # Max NVIDIA contribution is 0.40
         if max_possible_score < self.min_consensus_score:
             # Rejection without burning NVIDIA API calls
@@ -254,6 +383,10 @@ class AIConsensusCommittee:
             "volume_ratio": vol_ratio,
             "smc_fvg": smc_data.get("fvg"),
             "order_block": smc_data.get("order_block"),
+            "order_flow": of_info,
+            "net_volume_delta": of_delta,
+            "orderflow_absorption": of_info.get("absorption_detected", False),
+            "liquidity_map": smc_data.get("liquidity_map"),
         }
         nvidia_verdict = self.nvidia_engine.evaluate_super_brain_consensus(symbol, signal, nvidia_market_context, df=df)
         nvidia_score = float(nvidia_verdict.get("consensus_score", 0.85))
@@ -279,6 +412,18 @@ class AIConsensusCommittee:
 
         # Capital Survival: Ensure minimum 1:3 Reward-to-Risk ratio (prefer 1:4+)
         take_profit_pct = max(default_tp_pct, round(hard_sl_pct * 3.5, 2))
+
+        # Dynamic Anchor to Liquidity Map target (BSL for BUY, SSL for SELL)
+        liq_m = smc_data.get("liquidity_map", {})
+        if direction == "BUY" and liq_m.get("nearest_bsl"):
+            bsl_target_dist = float(liq_m.get("bsl_distance_pct", 0.0))
+            if bsl_target_dist >= hard_sl_pct * 3.0:
+                take_profit_pct = round(bsl_target_dist, 2)
+        elif direction == "SELL" and liq_m.get("nearest_ssl"):
+            ssl_target_dist = float(liq_m.get("ssl_distance_pct", 0.0))
+            if ssl_target_dist >= hard_sl_pct * 3.0:
+                take_profit_pct = round(ssl_target_dist, 2)
+
         rr_ratio = round(take_profit_pct / hard_sl_pct, 2)
 
         hard_sl = price * (1 - hard_sl_pct / 100.0) if direction == "BUY" else price * (1 + hard_sl_pct / 100.0)

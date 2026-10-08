@@ -84,11 +84,18 @@ def init_db():
         tp_price REAL,
         exit_price REAL,
         realized_pnl REAL DEFAULT 0.0,
+        strategy TEXT DEFAULT "AI Consensus Matrix",
         opened_at INTEGER,
         closed_at INTEGER,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
     ''')
+
+    # Migration for strategy column in user_trades
+    try:
+        cursor.execute("ALTER TABLE user_trades ADD COLUMN strategy TEXT DEFAULT 'AI Consensus Matrix'")
+    except Exception:
+        pass
     
     # 5. User Logs table
     cursor.execute('''
