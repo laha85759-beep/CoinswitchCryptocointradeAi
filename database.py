@@ -796,11 +796,66 @@ Ready to automate your trading workflow? Connect your exchange keys or prop acco
     conn.commit()
     conn.close()
 
-    # Automatically restore users from persistent backup file if any missing
+    # Automatically restore users and user_trades from persistent backup file if any missing
     _restore_users_from_disk()
+    _restore_user_trades_from_disk()
 
 # ── PERSISTENT USER BACKUP & RESTORATION SAFEGUARD ────────────────────────────
 USERS_BACKUP_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "users_backup.json")
+TRADES_BACKUP_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "user_trades_backup.json")
+
+def _backup_user_trades_to_disk():
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM user_trades")
+        rows = [dict(r) for r in cursor.fetchall()]
+        conn.close()
+        with open(TRADES_BACKUP_FILE, "w", encoding="utf-8") as f:
+            json.dump(rows, f, indent=2)
+    except Exception:
+        pass
+
+def _restore_user_trades_from_disk():
+    if not os.path.exists(TRADES_BACKUP_FILE):
+        return
+    try:
+        with open(TRADES_BACKUP_FILE, "r", encoding="utf-8") as f:
+            saved_trades = json.load(f)
+        if not isinstance(saved_trades, list):
+            return
+        conn = get_db()
+        cursor = conn.cursor()
+        for t in saved_trades:
+            # Check by user_id, symbol, exchange, status, opened_at
+            cursor.execute(
+                "SELECT id FROM user_trades WHERE user_id = ? AND symbol = ? AND exchange = ? AND status = ? AND opened_at = ?",
+                (t.get("user_id"), t.get("symbol"), t.get("exchange"), t.get("status"), t.get("opened_at"))
+            )
+            if not cursor.fetchone():
+                cursor.execute('''
+                INSERT INTO user_trades (user_id, exchange, symbol, direction, entry_price, qty, status, sl_price, tp_price, exit_price, realized_pnl, strategy, opened_at, closed_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    t.get("user_id", 1),
+                    t.get("exchange", "delta"),
+                    t.get("symbol", ""),
+                    t.get("direction", "long"),
+                    t.get("entry_price", 0.0),
+                    t.get("qty", 1.0),
+                    t.get("status", "open"),
+                    t.get("sl_price"),
+                    t.get("tp_price"),
+                    t.get("exit_price"),
+                    t.get("realized_pnl", 0.0),
+                    t.get("strategy", "AI Consensus Matrix"),
+                    t.get("opened_at", int(time.time())),
+                    t.get("closed_at")
+                ))
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
 
 def _backup_users_to_disk():
     try:
