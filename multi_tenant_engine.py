@@ -45,7 +45,8 @@ def dispatch_signals_to_all_users(approved_signals: list[dict], global_cfg: dict
         ccxt_keys = get_ccxt_exchange_keys(user_id)
         has_ccxt = bool(ccxt_keys and any(k.get("api_key") for k in ccxt_keys))
 
-        if not keys["has_cs"] and not keys["has_delta"] and not has_ccxt:
+        is_admin_user = (user.get("role") in ("superadmin", "tradeadmin", "admin") or user_id == 1)
+        if not keys["has_cs"] and not keys["has_delta"] and not has_ccxt and not is_admin_user:
             continue
 
         user_strategy = user["active_strategy"] or "ai_consensus"
@@ -128,14 +129,24 @@ def dispatch_signals_to_all_users(approved_signals: list[dict], global_cfg: dict
                                 target_sym = "XRPUSD"
                                 log.info("Small balance ($%.2f) adaptive route: routed %s to XRPUSD", dl_usdt_bal, symbol)
 
+                        target_sl = sl_price
+                        target_tp = tp_price
+                        target_entry_price = price
+                        if target_sym != symbol:
+                            target_curr_price = float(dl_client.get_ticker_price(target_sym) or 0.0)
+                            if target_curr_price > 0:
+                                target_entry_price = target_curr_price
+                                target_sl = round(target_curr_price * (1.0 - (hard_sl_pct / 100.0)), 4) if delta_side == "buy" else round(target_curr_price * (1.0 + (hard_sl_pct / 100.0)), 4)
+                                target_tp = round(target_curr_price * (1.0 + (take_profit_pct / 100.0)), 4) if delta_side == "buy" else round(target_curr_price * (1.0 - (take_profit_pct / 100.0)), 4)
+
                         if prod_id:
                             order_res = dl_client.place_order(
                                 symbol=target_sym,
                                 side=delta_side,
                                 order_type="market",
                                 quantity=1.0,
-                                stop_loss_price=sl_price if target_sym == symbol else None,
-                                take_profit_price=tp_price if target_sym == symbol else None,
+                                stop_loss_price=target_sl,
+                                take_profit_price=target_tp,
                                 leverage=5,
                             )
                             if order_res and (order_res.get("id") or order_res.get("success")):
@@ -144,7 +155,7 @@ def dispatch_signals_to_all_users(approved_signals: list[dict], global_cfg: dict
                                 c_cur.execute('''
                                     INSERT INTO user_trades (user_id, exchange, symbol, direction, entry_price, qty, status, sl_price, tp_price, strategy, opened_at)
                                     VALUES (?, 'delta', ?, ?, ?, 1.0, 'open', ?, ?, ?, ?)
-                                ''', (user_id, target_sym, direction, price, sl_price, tp_price, sig_strategy_name, now))
+                                ''', (user_id, target_sym, direction, target_entry_price, target_sl, target_tp, sig_strategy_name, now))
                                 c_db.commit()
                                 c_db.close()
                                 total_executed += 1
@@ -191,5 +202,57 @@ def dispatch_signals_to_all_users(approved_signals: list[dict], global_cfg: dict
                                 log.info(f"Executed {ex_id.upper()} live trade for User #{user_id} ({user['email']}) on {symbol} (Strategy: {sig_strategy_name})")
                     except Exception as ccxt_err:
                         log.warning(f"Universal CCXT ({ex_id}) execution error for User #{user_id}: {ccxt_err}")
+
+            # 4. Execute on MyFundedPerpetuals (Prop Firm Challenge with strict $75 loss cap)
+            if user.get("role") in ("superadmin", "tradeadmin", "admin") or user_id == 1:
+                try:
+                    from config import CONFIG as _GCFG
+                    if _GCFG.get("mfp_enabled"):
+                        from myfundedperps_client import MyFundedPerpsClient
+                        _mfp = MyFundedPerpsClient(
+                            _GCFG.get("mfp_api_key", ""),
+                            _GCFG.get("mfp_account_id"),
+                            daily_loss_limit_usd=_GCFG.get("mfp_daily_loss_limit_usd", 75.0),
+                            total_loss_limit_usd=_GCFG.get("mfp_total_loss_limit_usd", 75.0),
+                        )
+                        if _mfp.is_active:
+                            clean_sym = symbol.replace("/USDT", "").replace("USDT", "").upper()
+                            mfp_guard = _mfp.check_risk_guardrails()
+                            if mfp_guard.get("safe_to_trade"):
+                                mfp_markets = _mfp.get_markets()
+                                if clean_sym in mfp_markets:
+                                    m_info = mfp_markets[clean_sym]
+                                    mfp_price = float(_mfp.get_ticker_price(clean_sym) or price or 1.0)
+                                    decimals = int(m_info.get("size_decimals", 3) or 3)
+                                    # Target ~$150-$250 notional at 5x leverage
+                                    mfp_size = round(150.0 / max(1.0, mfp_price), decimals)
+                                    if mfp_size <= 0:
+                                        mfp_size = round(10 ** (-decimals), decimals)
+                                    mfp_side = "buy" if direction in ["buy", "long"] else "sell"
+                                    mfp_sl = round(mfp_price * (1.0 - (hard_sl_pct / 100.0)), 4) if mfp_side == "buy" else round(mfp_price * (1.0 + (hard_sl_pct / 100.0)), 4)
+                                    mfp_tp = round(mfp_price * (1.0 + (take_profit_pct / 100.0)), 4) if mfp_side == "buy" else round(mfp_price * (1.0 - (take_profit_pct / 100.0)), 4)
+                                    mfp_res = _mfp.place_order(
+                                        symbol=clean_sym,
+                                        side=mfp_side,
+                                        size=mfp_size,
+                                        leverage=5,
+                                        order_type="market",
+                                        take_profit_price=mfp_tp,
+                                        stop_loss_price=mfp_sl,
+                                        expected_price=mfp_price
+                                    )
+                                    if mfp_res and mfp_res.get("status") in ("filled", "open"):
+                                        c_db = get_db()
+                                        c_cur = c_db.cursor()
+                                        c_cur.execute('''
+                                            INSERT INTO user_trades (user_id, exchange, symbol, direction, entry_price, qty, status, sl_price, tp_price, strategy, opened_at)
+                                            VALUES (?, 'mfp', ?, ?, ?, ?, 'open', ?, ?, ?, ?)
+                                        ''', (user_id, f"{clean_sym}/USDT", direction, mfp_price, mfp_size, mfp_sl, mfp_tp, sig_strategy_name, now))
+                                        c_db.commit()
+                                        c_db.close()
+                                        total_executed += 1
+                                        log.info(f"Executed MyFundedPerpetuals live trade for User #{user_id} on {clean_sym} (Strategy: {sig_strategy_name}, TP: {mfp_tp}, SL: {mfp_sl})")
+                except Exception as mfp_err:
+                    log.warning(f"MyFundedPerpetuals execution error for User #{user_id}: {mfp_err}")
 
     return {"users_processed": len(active_users), "trades_executed": total_executed}

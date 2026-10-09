@@ -481,7 +481,7 @@ def run() -> None:
     dual_monitor  = DualMonitorAgent(CONFIG, cs_client, delta_client, notifier, audit, mfp_client=mfp_client)
     collector     = DataCollectorAgent(CONFIG, cs_client, audit)
     detector      = SignalDetectorAgent(CONFIG, audit)
-    risk_manager  = RiskManagerAgent(CONFIG, cs_client, audit, delta_client=delta_client)
+    risk_manager  = RiskManagerAgent(CONFIG, cs_client, audit, delta_client=delta_client, mfp_client=mfp_client)
     dual_executor = DualExecutionAgent(CONFIG, cs_client, delta_client, notifier, audit, mfp_client=mfp_client)
 
     mode_str = "LIVE" if not CONFIG.get("paper_trading_mode") else "PAPER"

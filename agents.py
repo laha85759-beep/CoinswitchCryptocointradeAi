@@ -378,11 +378,12 @@ class SignalDetectorAgent:
 
 
 class RiskManagerAgent:
-    def __init__(self, cfg: dict, cs_client: Any, audit: AuditLogger, delta_client: Any = None):
+    def __init__(self, cfg: dict, cs_client: Any, audit: AuditLogger, delta_client: Any = None, mfp_client: Any = None):
         self.cfg = cfg
         self.cs_client = cs_client
         self.audit = audit
         self.delta_client = delta_client
+        self.mfp_client = mfp_client
         self.sentiment_agent = AISentimentAgent()
 
     @staticmethod
@@ -564,7 +565,16 @@ class RiskManagerAgent:
             except Exception as exc:
                 log.warning("Delta USDT balance failed: %s", exc)
 
-        total_bal = cs_bal + delta_bal
+        mfp_bal = 0.0
+        if self.mfp_client is not None and getattr(self.mfp_client, "is_active", False):
+            try:
+                mfp_guard = self.mfp_client.check_risk_guardrails()
+                if mfp_guard.get("safe_to_trade"):
+                    mfp_bal = max(float(mfp_guard.get("equity", 0.0) or 0.0), 0.0)
+            except Exception as exc:
+                log.warning("MFP equity check failed in risk manager: %s", exc)
+
+        total_bal = cs_bal + delta_bal + mfp_bal
         if total_bal > 0.0:
             return max(total_bal, 10.0)
         return 0.0
