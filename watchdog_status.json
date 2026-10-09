@@ -1,9 +1,9 @@
 {
   "balances": {
-    "coinswitch_inr": 5.01,
-    "coinswitch_usdt": 0.0766,
+    "coinswitch_inr": 0.0,
+    "coinswitch_usdt": 0.0,
     "delta_usdt": 0.0,
-    "total_usd_value": 0.13
+    "total_usd_value": 0.0
   },
   "checks": {
     "active_positions": {
@@ -11,11 +11,14 @@
       "delta_count": 0,
       "delta_live_engine_count": 0
     },
-    "coinswitch_api": "ONLINE",
+    "coinswitch_api": "ERROR: 401 Client Error: Unauthorized for url: https://coinswitch.co/trade/api/v2/user/portfolio?exchange=c2c2",
     "delta_api": "ONLINE",
     "github_workflow_file": "VALIDATED"
   },
-  "issues_resolved": [],
+  "issues_resolved": [
+    "CoinSwitch API warning: 401 Client Error: Unauthorized for url: https://coinswitch.co/trade/api/v2/user/portfolio?exchange=c2c2",
+    "Cleared closed positions from open_trades_delta.json"
+  ],
   "status": "HEALTHY",
-  "timestamp": "2026-10-06 11:56:22 IST"
+  "timestamp": "2026-10-09 19:17:06 IST"
 }
