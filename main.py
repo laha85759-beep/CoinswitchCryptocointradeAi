@@ -498,6 +498,16 @@ def run() -> None:
     log.info("Open: %s | Closed this cycle: %s",
              monitor_report["open_positions"], len(monitor_report.get("closed", [])))
 
+    # ── Step 1b: Monitor and auto-manage all user trades in database (TP/SL/trailing) ──
+    try:
+        from multi_tenant_engine import monitor_and_manage_all_user_trades
+        user_mgmt_res = monitor_and_manage_all_user_trades(CONFIG)
+        if user_mgmt_res.get("closed_count", 0) > 0:
+            log.info("🎯 Auto-managed user trades: %d closed via TP/SL | %d monitored",
+                     user_mgmt_res.get("closed_count", 0), user_mgmt_res.get("monitored_count", 0))
+    except Exception as u_mgmt_err:
+        log.warning("User trade auto-management error: %s", u_mgmt_err)
+
     # ── Step 2: Collect market data ───────────────────────────────────────────
     log.info("Step 2/5 — Collect market data")
     market_data = collector.collect()
