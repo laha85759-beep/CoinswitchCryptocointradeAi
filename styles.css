@@ -8012,3 +8012,151 @@ input::placeholder, textarea::placeholder {
 .tsm-affiliate-disclosure { font-size: 10px; line-height: 1.5; color: var(--text-muted); }
 .tsm-footer-copy { font-size: 10px; color: var(--text-muted); }
 .tsm-footer-copy a { color: var(--neon-cyan); }
+
+
+/* ==========================================================================
+   AGENT COMPANY TEAM CARDS - WORKFLOW PIPELINE ENHANCEMENT
+   ========================================================================== */
+.nc-wf-track.agent-company-track {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.nc-wf-node.agent-card {
+  position: relative;
+  background: linear-gradient(145deg, rgba(10, 25, 47, 0.75) 0%, rgba(4, 14, 28, 0.9) 100%);
+  border: 1px solid rgba(0, 212, 255, 0.18);
+  border-radius: 12px;
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.nc-wf-node.agent-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(0, 212, 255, 0.5);
+  box-shadow: 0 8px 28px rgba(0, 212, 255, 0.2);
+}
+
+.nc-wf-node.agent-card.active {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 24px rgba(0, 212, 255, 0.35), inset 0 0 16px rgba(0, 212, 255, 0.08);
+  transform: translateY(-4px);
+}
+
+.agent-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.agent-avatar-wrap {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  background: radial-gradient(circle, rgba(0, 212, 255, 0.2) 0%, rgba(2, 6, 18, 0.8) 100%);
+  border: 1.5px solid var(--neon-cyan);
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.3);
+}
+
+.agent-avatar-wrap.atlas { border-color: #00f090; box-shadow: 0 0 12px rgba(0, 240, 144, 0.35); }
+.agent-avatar-wrap.sentinel { border-color: #00d4ff; box-shadow: 0 0 12px rgba(0, 212, 255, 0.35); }
+.agent-avatar-wrap.nemotron { border-color: #a855f7; box-shadow: 0 0 12px rgba(168, 85, 247, 0.35); }
+.agent-avatar-wrap.aegis { border-color: #f59e0b; box-shadow: 0 0 12px rgba(245, 158, 11, 0.35); }
+.agent-avatar-wrap.valkyrie { border-color: #ec4899; box-shadow: 0 0 12px rgba(236, 72, 153, 0.35); }
+
+.agent-status-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #00f090;
+  border: 2px solid #040e1c;
+  box-shadow: 0 0 6px #00f090;
+  animation: pulseDot 1.8s infinite;
+}
+
+.agent-meta {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.agent-char-name {
+  font-family: var(--font-orb);
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.agent-company-role {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--neon-cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.agent-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 8px;
+}
+
+.agent-job-desc {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: #b0c2de;
+  line-height: 1.35;
+}
+
+.agent-duty-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(0, 212, 255, 0.08);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: #7dd3fc;
+  margin-top: 4px;
+}
+
+.agent-duty-pill.live-now {
+  background: rgba(0, 240, 144, 0.1);
+  border-color: rgba(0, 240, 144, 0.35);
+  color: #86efac;
+}
+
+@media (max-width: 1024px) {
+  .nc-wf-track.agent-company-track {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .nc-wf-track.agent-company-track {
+    grid-template-columns: 1fr;
+  }
+}
