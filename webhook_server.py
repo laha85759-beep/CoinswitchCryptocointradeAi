@@ -347,7 +347,7 @@ def serve_admin_portal():
 def serve_robots():
     response = send_from_directory(os.path.dirname(os.path.abspath(__file__)), "robots.txt")
     response.mimetype = "text/plain"
-    response.headers["Cache-Control"] = "public, max-age=86400"
+    response.headers["Cache-Control"] = "public, no-cache, max-age=0, must-revalidate"
     return response
 
 @app.route("/sitemap.xml", methods=["GET"])
@@ -366,7 +366,7 @@ def serve_ads_txt():
     """Google AdSense authorization file (required for ad serving & policy review)."""
     response = send_from_directory(os.path.dirname(os.path.abspath(__file__)), "ads.txt")
     response.mimetype = "text/plain"
-    response.headers["Cache-Control"] = "public, max-age=86400"
+    response.headers["Cache-Control"] = "public, no-cache, max-age=0, must-revalidate"
     return response
 
 @app.route("/manifest.json", methods=["GET"])
@@ -385,7 +385,7 @@ def serve_static(filename):
     if fn_lower.endswith((".png", ".jpg", ".jpeg", ".ico", ".svg", ".webp", ".woff", ".woff2", ".ttf")):
         response.headers["Cache-Control"] = "public, max-age=2592000, immutable" # 30 days
     elif fn_lower.endswith((".css", ".js")):
-        response.headers["Cache-Control"] = "public, max-age=86400, stale-while-revalidate=3600" # 1 day + stale-while-revalidate
+        response.headers["Cache-Control"] = "public, no-cache, max-age=0, must-revalidate, stale-while-revalidate=3600" # 1 day + stale-while-revalidate
     else:
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
         response.headers["Pragma"] = "no-cache"
@@ -791,7 +791,7 @@ def get_terminal_data():
             total_pnl_usdt += float(stats.get("realized_pnl_usdt", 0.0))
             total_trades_count += int(stats.get("closed_trades", 0))
 
-        total_real_capital = round(cs_usdt + (cs_inr / 88.0) + delta_usdt, 2)
+        total_real_capital = round(cs_usdt + (cs_inr / 88.0) + delta_usdt + mfp_usd, 2)
 
         # Load last 30 execution log entries from agent_audit.jsonl
         # MEMORY FIX: the audit file grows forever; reading the WHOLE file into a list on
@@ -1163,6 +1163,8 @@ def get_terminal_data():
 
         payload = {
             "status": "success",
+            "total_capital": round(total_real_capital, 2),
+            "total_capital_usdt": round(total_real_capital, 2),
             "telegram_channel_url": CONFIG.get("telegram_channel_url", "https://t.me/FOREXINDIAN_BOT"),
             "telegram_bot_url": CONFIG.get("telegram_bot_url", "https://t.me/LiveForexSignalsAI_bot"),
             "balances": {

@@ -411,19 +411,8 @@ function handleHashRouting() {
 }
 
 function switchView(viewName, updateHash = true) {
-  // Gate Terminal and Indian F&O tabs for authenticated members only
-  if ((viewName === "terminal" || viewName === "india") && !currentUser && !localStorage.getItem("tsm_user_token") && !localStorage.getItem("tsm_jwt_token")) {
-    if (typeof showModernToast === "function") {
-      showModernToast("🔒 Live Terminal & Indian F&O are exclusive to registered members. Please sign in or register to access.", "info");
-    }
-    if (typeof openAuthModal === "function") {
-      openAuthModal("register");
-    }
-    if (currentView !== "landing") {
-      switchView("landing", false);
-    }
-    return;
-  }
+  // Allow viewing Live Terminal and Indian F&O freely (read-only for guests, trading requires keys)
+  // Non-authenticated users can inspect the live 3D workforce, open positions, and telemetry!
 
   currentView = viewName;
   if (updateHash) {
@@ -1365,10 +1354,10 @@ function updateUserUI(user, settings, exConnections) {
     if (dockAdminBtn) dockAdminBtn.style.display = "none";
     if (dockTraderBtn) dockTraderBtn.style.display = "none";
     if (drawerTraderTab) drawerTraderTab.style.display = "none";
-    if (dockTerminalBtn) dockTerminalBtn.style.display = "none";
-    if (dockIndiaBtn) dockIndiaBtn.style.display = "none";
-    if (drawerTerminalBtn) drawerTerminalBtn.style.display = "none";
-    if (drawerIndiaBtn) drawerIndiaBtn.style.display = "none";
+    if (dockTerminalBtn) dockTerminalBtn.style.display = "flex";
+    if (dockIndiaBtn) dockIndiaBtn.style.display = "flex";
+    if (drawerTerminalBtn) drawerTerminalBtn.style.display = "flex";
+    if (drawerIndiaBtn) drawerIndiaBtn.style.display = "flex";
     if (navSignInBtn) navSignInBtn.style.display = "flex";
     if (navGetStartedBtn) navGetStartedBtn.style.display = "flex";
 
@@ -2826,10 +2815,10 @@ async function fetchRealData() {
     if (!res.ok) return;
     const data = await res.json();
 
-    const isNonSuperadminUser = currentUser && currentUser.role !== "superadmin";
-    const balances = isNonSuperadminUser 
-      ? (userData && userData.balances ? userData.balances : { total_capital_usdt: 0, cs_usdt: 0, cs_inr: 0, delta_usdt: 0 })
-      : (userData && userData.balances ? userData.balances : data.balances);
+    const isNonSuperadminUser = currentUser && currentUser.role !== "superadmin" && userData;
+    const balances = (userData && userData.balances && Object.keys(userData.balances).length > 0)
+      ? userData.balances
+      : (data.balances || { total_capital_usdt: data.total_capital || 0, cs_usdt: 0, cs_inr: 0, delta_usdt: 0 });
 
     if (balances) {
       const totalUsdt = Number(balances.total_capital_usdt || 0).toFixed(2);

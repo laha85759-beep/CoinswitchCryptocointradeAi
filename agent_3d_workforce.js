@@ -194,3 +194,40 @@ if (document.readyState === "loading") {
   setTimeout(init3DAgentWorkforce, 200);
 }
 window.init3DAgentWorkforce = init3DAgentWorkforce;
+
+// Global fallback: if Three.js or WebGL fails, render vibrant glowing holographic neon canvas icons
+function drawFallbackAgentAvatars() {
+  const configs = [
+    { id: 'agent3d-scout-canvas', color: '#00f090', label: 'SCOUT' },
+    { id: 'agent3d-intel-canvas', color: '#00d4ff', label: 'INTEL' },
+    { id: 'agent3d-quant-canvas', color: '#a855f7', label: 'QUANT' },
+    { id: 'agent3d-risk-canvas', color: '#f59e0b', label: 'RISK' },
+    { id: 'agent3d-router-canvas', color: '#ec4899', label: 'ROUTER' }
+  ];
+  configs.forEach(cfg => {
+    const canvas = document.getElementById(cfg.id);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(w / 2, h / 2, 32, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(10, 25, 45, 0.8)';
+    ctx.fill();
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = cfg.color;
+    ctx.shadowColor = cfg.color;
+    ctx.shadowBlur = 12;
+    ctx.stroke();
+    ctx.font = 'bold 10px monospace';
+    ctx.fillStyle = cfg.color;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(cfg.label, w / 2, h / 2);
+    ctx.restore();
+  });
+}
+window.drawFallbackAgentAvatars = drawFallbackAgentAvatars;

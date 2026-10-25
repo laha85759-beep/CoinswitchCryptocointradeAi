@@ -244,10 +244,10 @@
         <button class="tsm-drawer-close-btn" onclick="toggleMobileNavDrawer()">✕</button>
       </div>
       <div class="tsm-drawer-body">
-        <button class="tsm-drawer-item" id="drawerTerminalBtn" data-view="terminal" onclick="goPage('terminal'); toggleMobileNavDrawer();" style="display:none;">
+        <button class="tsm-drawer-item" id="drawerTerminalBtn" data-view="terminal" onclick="goPage('terminal'); toggleMobileNavDrawer();">
           <span class="nc-tab-ico">⚡</span><span>TERMINAL DASHBOARD</span>
         </button>
-        <button class="tsm-drawer-item gold" id="drawerIndiaBtn" data-view="india" onclick="goPage('india'); toggleMobileNavDrawer();" style="display:none;">
+        <button class="tsm-drawer-item gold" id="drawerIndiaBtn" data-view="india" onclick="goPage('india'); toggleMobileNavDrawer();">
           <span class="nc-tab-ico">🇮🇳</span><span>INDIA EQUITIES &amp; F&amp;O</span>
         </button>
         <button class="tsm-drawer-item gold" data-view="overview" onclick="goPage('overview'); toggleMobileNavDrawer();">
@@ -294,7 +294,7 @@
           </div>
         </button>
 
-        <button class="tsm-dock-item" id="dockTerminalBtn" data-view="terminal" onclick="goPage('terminal')" title="Live Master Terminal Cockpit &amp; PnL" style="display:none;">
+        <button class="tsm-dock-item" id="dockTerminalBtn" data-view="terminal" onclick="goPage('terminal')" title="Live Master Terminal Cockpit &amp; PnL">
           <span class="tsm-dock-icon">⚡</span>
           <div class="tsm-dock-info">
             <span class="tsm-dock-title">TERMINAL</span>
@@ -302,7 +302,7 @@
           </div>
         </button>
 
-        <button class="tsm-dock-item gold" id="dockIndiaBtn" data-view="india" onclick="goPage('india')" title="Indian Equities, F&amp;O Chains &amp; Strike Suggestions" style="display:none;">
+        <button class="tsm-dock-item gold" id="dockIndiaBtn" data-view="india" onclick="goPage('india')" title="Indian Equities, F&amp;O Chains &amp; Strike Suggestions">
           <span class="tsm-dock-icon">🇮🇳</span>
           <div class="tsm-dock-info">
             <span class="tsm-dock-title">INDIA F&amp;O</span>
@@ -607,7 +607,7 @@
               <button class="tsm-btn-hero-primary" onclick="openAuthModal('register')">
                 <span>Start Live Trading</span> <span>&rarr;</span>
               </button>
-              <button class="tsm-btn-hero-secondary" onclick="currentUser ? goPage('terminal') : openAuthModal('register')">
+              <button class="tsm-btn-hero-secondary" onclick="goPage('terminal')">
                 <span>▶</span> <span>Explore Live Terminal</span>
               </button>
             </div>
@@ -728,7 +728,7 @@
       </div>
 
     <!-- ══════════ LANDING PAGE (MARKETING CONTENT) ══════════ -->
-    <div id="view-landing" class="nc-view-pane tsm-view-section active">
+    <!-- Merged Marketing Content Container -->
       <!-- Key Stats Row -->
       <div class="tsm-stats-row">
         <div class="tsm-stat-card">
@@ -758,7 +758,7 @@
         <div class="tsm-features-left">
           <h2>Everything<br>You Need to Trade</h2>
           <p>Professional-grade tools, institutional risk controls, and automated trading algorithms designed for modern traders.</p>
-          <button class="tsm-btn-explore" onclick="currentUser ? goPage('terminal') : openAuthModal('register')">
+          <button class="tsm-btn-explore" onclick="goPage('terminal')">
             <span>Explore All Features</span> <span>&rarr;</span>
           </button>
         </div>
@@ -875,7 +875,7 @@
           </div>
           <div class="tsm-asset-card-arrow">&rarr;</div>
         </div>
-        <div class="tsm-asset-card" onclick="currentUser ? goPage('terminal') : openAuthModal('register')">
+        <div class="tsm-asset-card" onclick="goPage('terminal')">
           <div class="tsm-asset-card-icons">₿ Ξ ◎</div>
           <div class="tsm-asset-card-info">
             <h4>Crypto</h4>
@@ -5635,7 +5635,7 @@
     </div>
   </div>
 
-  <script defer src="agent_3d_workforce.js?v=20261026-1"></script>
-  <script src="app.js?v=20261009-0100"></script>
+  <script defer src="agent_3d_workforce.js?v=20261026-live2"></script>
+  <script src="app.js?v=20261026-live2"></script>
 </body>
 </html>
