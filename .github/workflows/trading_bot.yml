@@ -61,6 +61,12 @@ jobs:
           ONEMIN_AI_API_KEY:    ${{ secrets.ONEMIN_AI_API_KEY }}
           PAPER_TRADING_MODE:   'false' # ENFORCE REAL MONEY TRADING ONLY
           WATCHLIST:            ${{ vars.WATCHLIST || '' }}
+        MT5_EC2_HOST: http://13.233.118.122:5005
+        MT5_BRIDGE_SECRET: ck_capital_secret_2026
+        MYFUNDEDPERP_API_KEY: fp_live_f105a13ddb2975f1aa71de07e2236baf6b502dc0efd3a014ed1a558bc3ae66e7
+        MFP_API_KEY: fp_live_f105a13ddb2975f1aa71de07e2236baf6b502dc0efd3a014ed1a558bc3ae66e7
+        MFP_ACCOUNT_ID: jh790a9nfyevvb5jfkqt37e4sd8fh1rm
+        WEEKEND_TRADING_DISABLED: 'false'
         run: |
           cd $GITHUB_WORKSPACE
           python main.py

@@ -40,6 +40,12 @@ jobs:
         TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+        MT5_EC2_HOST: http://13.233.118.122:5005
+        MT5_BRIDGE_SECRET: ck_capital_secret_2026
+        MYFUNDEDPERP_API_KEY: fp_live_f105a13ddb2975f1aa71de07e2236baf6b502dc0efd3a014ed1a558bc3ae66e7
+        MFP_API_KEY: fp_live_f105a13ddb2975f1aa71de07e2236baf6b502dc0efd3a014ed1a558bc3ae66e7
+        MFP_ACCOUNT_ID: jh790a9nfyevvb5jfkqt37e4sd8fh1rm
+        WEEKEND_TRADING_DISABLED: 'false'
       run: |
         python main.py
 
