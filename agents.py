@@ -113,14 +113,14 @@ class DataCollectorAgent:
         self.consol_engine = ConsolidationBreakoutEngine(cfg)
 
     def symbols(self) -> list[str]:
-        # Filter top 15 highest volume/momentum symbols to respect CoinSwitch API rate limits
+        # Scan broad universe of 150+ symbols (Crypto, Memecoins, Altcoins, RWA, AI & Sector leaders)
         try:
-            syms = self.scanner._top_symbols()[:15]
+            syms = self.scanner._top_symbols()[:150]
             if syms:
                 return syms
         except Exception:
             pass
-        return ["BTC/USDT", "ETH/USDT", "SOL/USDT", "DOGE/USDT", "PEPE/USDT", "SHIB/USDT", "RENDER/USDT", "FLOKI/USDT", "BONK/USDT", "AVAX/USDT"]
+        return self.cfg.get("priority_memecoins", ["BTC/USDT", "ETH/USDT", "SOL/USDT", "DOGE/USDT", "PEPE/USDT", "SHIB/USDT", "RENDER/USDT", "FLOKI/USDT", "BONK/USDT", "AVAX/USDT"])
 
     def collect(self) -> list[dict]:
         symbols = self.symbols()

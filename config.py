@@ -81,21 +81,24 @@ CONFIG = {
     "candle_limit":          50,       # 50 candles for 5m indicators
     "min_volume_usdt":       100.0,    # Lower volume filter to catch explosive low-cap memecoins & new listings
     "priority_memecoins": [
+        "BTC/USDT", "ETH/USDT", "SOL/USDT", "XRP/USDT", "ADA/USDT", "BNB/USDT", "AVAX/USDT", "DOT/USDT", "LINK/USDT",
         "PEPE/USDT", "DOGE/USDT", "SHIB/USDT", "WIF/USDT", "BONK/USDT", "FLOKI/USDT",
         "MOODENG/USDT", "PUMP/USDT", "FARTCOIN/USDT", "ZRO/USDT", "SPX/USDT", "POPCAT/USDT",
         "GOAT/USDT", "GRIFFAIN/USDT", "TRUMP/USDT", "VIRTUAL/USDT", "AIXBT/USDT", "HYPE/USDT",
-        "ONDO/USDT", "OM/USDT", "PENDLE/USDT", "LINK/USDT", "AVAX/USDT", "MKR/USDT", "CTC/USDT",
+        "ONDO/USDT", "OM/USDT", "PENDLE/USDT", "MKR/USDT", "CTC/USDT", "AAVE/USDT", "UNI/USDT", "CRV/USDT", "LDO/USDT",
         "CFG/USDT", "GFI/USDT", "MPL/USDT", "CPOOL/USDT", "TRU/USDT", "RIO/USDT", "PROPC/USDT", "IXS/USDT", "XAUT/USDT", "PAXG/USDT",
-        "SOL/USDT", "NEAR/USDT", "SUI/USDT", "APT/USDT", "TIA/USDT", "RENDER/USDT", "FET/USDT",
+        "NEAR/USDT", "SUI/USDT", "APT/USDT", "TIA/USDT", "RENDER/USDT", "FET/USDT", "AR/USDT", "GRASS/USDT",
         "INJ/USDT", "TAO/USDT", "SEI/USDT", "KAS/USDT", "NEIRO/USDT", "BRETT/USDT", "MEW/USDT",
-        "CAT/USDT", "BOME/USDT", "TURBO/USDT", "BABYDOGE/USDT", "MYRO/USDT", "SLERF/USDT"
+        "CAT/USDT", "BOME/USDT", "TURBO/USDT", "BABYDOGE/USDT", "MYRO/USDT", "SLERF/USDT", "ORDER/USDT",
+        "AAPL/USDT", "NVDA/USDT", "TSLA/USDT", "AMD/USDT", "AMZN/USDT", "MSFT/USDT", "COIN/USDT", "MSTR/USDT",
+        "XAU/USDT", "XAG/USDT", "CL/USDT", "SP500/USDT", "QQQ/USDT", "DJI/USDT"
     ],
     "blacklist": ["BTC/INR", "ETH/INR", "USDC/USDT", "BUSD/USDT", "TUSD/USDT", "FDUSD/USDT"],
 
     # ── Legacy scanner thresholds (used by scanner.py SignalEngine) ───────────
     "pump_score_min": 62,
     "dump_score_min": 65,
-    "max_signals":     3,
+    "max_signals":     25,
 
     # ── Capital management ────────────────────────────────────────────────────
     # max_open_trades=2 means max 2 concurrent live positions
