@@ -1,13 +1,12 @@
-#+------------------------------------------------------------------+
-#|                                         SuperBrain_AutoTrade.mq5 |
-#|                        Copyright 2026, TheSmartMag Quant AI Labs |
-#|                                   https://trade.thesmartmag.com  |
-#+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
+//|                                         SuperBrain_AutoTrade.mq5 |
+//|                        Copyright 2026, TheSmartMag Quant AI Labs |
+//|                                   https://trade.thesmartmag.com  |
+//+------------------------------------------------------------------+
 #property copyright   "Copyright 2026, TheSmartMag Quant AI Labs"
 #property link        "https://trade.thesmartmag.com"
 #property version     "2.40"
 #property description "High-Speed Autonomous Execution Bridge for TheSmartMag SuperBrain AI"
-#property description "Polls Cloud AI / Server commands and executes live MT5 orders with hard SL & TP."
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -21,7 +20,7 @@ input string   InpCloudUrl          = "https://coinsai-terminal.onrender.com/api
 input string   InpBridgeSecret      = "ck_capital_secret_2026"; // Secret Key (Matches .env)
 input int      InpPollIntervalSec   = 2;                        // Poll interval in seconds (1-10)
 
-input group "=== Risk Guardian & Prop Firm Rules ==="
+input group "=== Risk Guardian and Prop Firm Rules ==="
 input double   InpMaxDailyLossUSD   = 300.0;                    // Daily loss kill-switch ($300 cap)
 input double   InpMinEquityFloorUSD = 9500.0;                   // Hard drawdown floor ($9,500 for $10K account)
 input double   InpDefaultLots       = 0.01;                     // Default fallback lot size
@@ -36,6 +35,12 @@ CAccountInfo   m_account;
 
 datetime       m_last_poll_time = 0;
 double         m_starting_balance = 0;
+
+void DrawDashboard(string statusText = "ONLINE");
+void SendTelemetryAndFetchCommand();
+void ProcessCommand(const string json);
+void CloseAllPositions();
+void SendAcknowledge(const string cmdId, const string status, const ulong ticket);
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -190,7 +195,6 @@ void ProcessCommand(const string json)
    // Ensure symbol is selected in Market Watch
    if(!SymbolSelect(symbol, true))
      {
-      // Try alternate notation (e.g., BTCUSD -> BTCUSD.pro / BTCUSDT)
       PrintFormat("Symbol %s not available in market watch", symbol);
       return;
      }
