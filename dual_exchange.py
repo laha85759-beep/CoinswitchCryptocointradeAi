@@ -107,11 +107,13 @@ class DualExecutionAgent:
             cs_result = self._execute_coinswitch(approval)
             delta_result = self._execute_delta(approval)
             mfp_result = self._execute_mfp(approval)
+            mt5_result = self._execute_mt5(approval)
             combined = {
                 "symbol": symbol,
                 "coinswitch": cs_result,
                 "delta": delta_result,
                 "mfp": mfp_result,
+                "mt5": mt5_result,
                 "timestamp": utc_iso(),
             }
             all_results.append(combined)
@@ -1255,3 +1257,29 @@ class DualMonitorAgent:
             "pnl_usdt": pnl_usdt,
         }
 
+
+
+    def _execute_mt5(self, approval: dict) -> dict:
+        """Enqueues signal directly to MT5 EA bridge queue and EC2 bridge."""
+        try:
+            import time
+            from webhook_server import _MT5_COMMAND_QUEUE
+            raw_sym = approval["symbol"]
+            clean_sym = raw_sym.replace("/USDT", "").replace("USDT", "").upper()
+            # Map standard symbols to MT5 equivalents
+            mt5_sym = "XAUUSD" if "XAU" in clean_sym or "GOLD" in clean_sym else (f"{clean_sym}USD" if "BTC" in clean_sym or "ETH" in clean_sym else clean_sym)
+            action = "BUY" if approval.get("direction") == "long" else "SELL"
+            
+            cmd = {
+                "command_id": f"CMD-{int(time.time()*1000)}",
+                "action": action,
+                "symbol": mt5_sym,
+                "volume": 0.01,
+                "sl": float(approval.get("stop_loss_price") or 0.0),
+                "tp": float(approval.get("take_profit_price") or 0.0)
+            }
+            _MT5_COMMAND_QUEUE.append(cmd)
+            log.info("DualExecutionAgent enqueued MT5 EA command: %s %s", action, mt5_sym)
+            return {"status": "enqueued_for_mt5_ea", "command": cmd}
+        except Exception as exc:
+            return {"status": "skipped", "reason": str(exc)}

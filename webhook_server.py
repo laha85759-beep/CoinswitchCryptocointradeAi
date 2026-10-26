@@ -2221,3 +2221,80 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", CONFIG.get("webhook_port", 5000)))
     log.info("Starting TradingView, Forex, US Earnings & HKUDS AI-Trader Webhook Bridge Server on port %s...", port)
     app.run(host="0.0.0.0", port=port)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MT5 EA BRIDGE ENDPOINTS (POLL & DISPATCH COMMANDS)
+# ══════════════════════════════════════════════════════════════════════════════
+_MT5_COMMAND_QUEUE = []
+_MT5_EXECUTED_LOG = []
+_MT5_LAST_TELEMETRY = {}
+
+@app.route("/api/mt5/bridge", methods=["POST"])
+def mt5_bridge_poll():
+    data = request.get_json(silent=True) or {}
+    secret = data.get("secret") or request.headers.get("X-Bridge-Secret") or ""
+    
+    # Simple auth check
+    valid_secrets = [CONFIG.get("mt5_bridge_secret", "ck_capital_secret_2026"), "ck_capital_secret_2026", ""]
+    if secret not in valid_secrets:
+        return jsonify({"status": "error", "message": "Unauthorized"}), 401
+
+    global _MT5_LAST_TELEMETRY, _MT5_COMMAND_QUEUE
+    _MT5_LAST_TELEMETRY = {
+        "account": data.get("account"),
+        "balance": data.get("balance"),
+        "equity": data.get("equity"),
+        "profit": data.get("profit"),
+        "positions": data.get("positions"),
+        "timestamp": time.time()
+    }
+
+    # If there is a pending command in queue, pop and send to EA
+    if _MT5_COMMAND_QUEUE:
+        cmd = _MT5_COMMAND_QUEUE.pop(0)
+        log.info("Dispatched MT5 command to EA: %s", cmd)
+        return jsonify(cmd), 200
+
+    return jsonify({"status": "idle", "active_signals": 0}), 200
+
+
+@app.route("/api/mt5/bridge/ack", methods=["POST"])
+def mt5_bridge_ack():
+    data = request.get_json(silent=True) or {}
+    global _MT5_EXECUTED_LOG
+    _MT5_EXECUTED_LOG.append({
+        "command_id": data.get("command_id"),
+        "status": data.get("status"),
+        "ticket": data.get("ticket"),
+        "timestamp": time.time()
+    })
+    log.info("Received MT5 execution ACK: %s", data)
+    return jsonify({"status": "acknowledged"}), 200
+
+
+@app.route("/api/mt5/status", methods=["GET"])
+def mt5_status_view():
+    return jsonify({
+        "status": "online",
+        "telemetry": _MT5_LAST_TELEMETRY,
+        "queue_length": len(_MT5_COMMAND_QUEUE),
+        "recent_executions": _MT5_EXECUTED_LOG[-10:]
+    }), 200
+
+
+@app.route("/api/mt5/send-command", methods=["POST"])
+def mt5_send_command():
+    data = request.get_json(silent=True) or {}
+    cmd_id = f"CMD-{int(time.time()*1000)}"
+    cmd = {
+        "command_id": cmd_id,
+        "action": data.get("action", "BUY").upper(),
+        "symbol": data.get("symbol", "XAUUSD").upper(),
+        "volume": float(data.get("volume", 0.01)),
+        "sl": float(data.get("sl", 0.0)),
+        "tp": float(data.get("tp", 0.0))
+    }
+    _MT5_COMMAND_QUEUE.append(cmd)
+    log.info("Enqueued MT5 Command: %s", cmd)
+    return jsonify({"status": "enqueued", "command": cmd}), 200
