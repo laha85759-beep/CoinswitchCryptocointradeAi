@@ -240,6 +240,20 @@ class DataCollectorAgent:
                 log.debug("Liquidity Gap & Run analysis failed for %s: %s", symbol, exc)
 
             try:
+                from leviathan_engine import LeviathanStrategyEngine
+                lev_engine = LeviathanStrategyEngine()
+                item["leviathan_bos"] = lev_engine.evaluate(df, symbol)
+            except Exception as exc:
+                log.debug("Leviathan BOS analysis failed for %s: %s", symbol, exc)
+
+            try:
+                from crypto_scanner_safety import CryptoScannerSafetyEngine
+                css_engine = CryptoScannerSafetyEngine(self.cfg)
+                item["crypto_scanner"] = css_engine.evaluate_pre_breakout(df, symbol)
+            except Exception as exc:
+                log.debug("Crypto Scanner analysis failed for %s: %s", symbol, exc)
+
+            try:
                 df_1h = self.scanner._ohlcv_1h(symbol, 48)
                 if df_1h is not None and len(df_1h) >= 24:
                     consol = self.consol_engine.detect(df_1h, df)
@@ -305,6 +319,29 @@ class SignalDetectorAgent:
                 sig_type = liq_gap["signal"]
                 confidence = liq_gap.get("confidence", 0.90)
                 reason = liq_gap.get("reason", "liquidity_gap_run_signal")
+                signals.append(self._signal(symbol, sig_type, confidence, reason, item))
+                continue
+
+            # ── 3. Leviathan Trend-Filtered Break of Structure (BOS) Engine ─────
+            leviathan = item.get("leviathan_bos")
+            if leviathan and leviathan.get("active"):
+                sig_type = "pump" if leviathan["direction"] == "long" else "dump"
+                confidence = leviathan.get("confidence", 0.92)
+                reason = leviathan.get("reason", "leviathan_bos_confluence")
+                # Attach exact structural TP and SL
+                item["suggested_sl"] = leviathan.get("sl")
+                item["suggested_tp"] = leviathan.get("tp")
+                signals.append(self._signal(symbol, sig_type, confidence, reason, item))
+                continue
+
+            # ── 4. Crypto-Scanner Confluence Pre-Breakout Engine ────────────────
+            pre_break = item.get("crypto_scanner")
+            if pre_break and pre_break.get("active"):
+                sig_type = "pump"
+                confidence = pre_break.get("confidence", 0.89)
+                reason = pre_break.get("reason", "crypto_scanner_pre_breakout")
+                item["suggested_sl"] = pre_break.get("sl")
+                item["suggested_tp"] = pre_break.get("tp")
                 signals.append(self._signal(symbol, sig_type, confidence, reason, item))
                 continue
 
