@@ -1263,10 +1263,11 @@ class DualMonitorAgent:
         """Enqueues signal directly to MT5 EA bridge queue and EC2 bridge."""
         try:
             import time
+            import json
+            import urllib.request
             from webhook_server import _MT5_COMMAND_QUEUE
             raw_sym = approval["symbol"]
             clean_sym = raw_sym.replace("/USDT", "").replace("USDT", "").upper()
-            # Map standard symbols to MT5 equivalents
             mt5_sym = "XAUUSD" if "XAU" in clean_sym or "GOLD" in clean_sym else (f"{clean_sym}USD" if "BTC" in clean_sym or "ETH" in clean_sym else clean_sym)
             action = "BUY" if approval.get("direction") == "long" else "SELL"
             
@@ -1278,8 +1279,25 @@ class DualMonitorAgent:
                 "sl": float(approval.get("stop_loss_price") or 0.0),
                 "tp": float(approval.get("take_profit_price") or 0.0)
             }
+            # 1. Enqueue to Render MT5 EA WebRequest bridge (Used by SuperBrain_AutoTrade.ex5)
             _MT5_COMMAND_QUEUE.append(cmd)
             log.info("DualExecutionAgent enqueued MT5 EA command: %s %s", action, mt5_sym)
+
+            # 2. Also forward to AWS EC2 MT5 Bridge if configured
+            ec2_ip = self.cfg.get("mt5_ec2_ip", "13.233.118.122")
+            ec2_port = self.cfg.get("mt5_ec2_port", 5005)
+            try:
+                ec2_url = f"http://{ec2_ip}:{ec2_port}/trade"
+                req = urllib.request.Request(
+                    ec2_url,
+                    data=json.dumps(cmd).encode('utf-8'),
+                    headers={"Content-Type": "application/json", "X-Bridge-Secret": "CK_CAPITAL_SUPERBRAIN_2026_SECRET_KEY_PROD"}
+                )
+                with urllib.request.urlopen(req, timeout=2) as resp:
+                    log.info("EC2 MT5 bridge acknowledged order: %s", resp.getcode())
+            except Exception as _ec2_err:
+                log.debug("EC2 direct bridge skipped (using EA WebRequest bridge): %s", _ec2_err)
+
             return {"status": "enqueued_for_mt5_ea", "command": cmd}
         except Exception as exc:
             return {"status": "skipped", "reason": str(exc)}
