@@ -254,6 +254,16 @@ class DataCollectorAgent:
                 log.debug("Crypto Scanner analysis failed for %s: %s", symbol, exc)
 
             try:
+                from day_trader_skill_engine import DayTraderSkillEngine
+                dts_engine = DayTraderSkillEngine(self.cfg)
+                item["day_trader_skill"] = {
+                    "entry": dts_engine.evaluate_entry_timing(df, float(df['close'].iloc[-1]), "pump"),
+                    "vwap": dts_engine.calculate_vwap(df)
+                }
+            except Exception as exc:
+                log.debug("Day Trader Skill evaluation failed for %s: %s", symbol, exc)
+
+            try:
                 df_1h = self.scanner._ohlcv_1h(symbol, 48)
                 if df_1h is not None and len(df_1h) >= 24:
                     consol = self.consol_engine.detect(df_1h, df)
@@ -486,6 +496,33 @@ class RiskManagerAgent:
         # VOLUME CONFIRMATION GATE REMOVED: thin-volume, fast-moving small-cap coins (new listings)
         # get permanently rejected at 1.8x. Fall back to the raw volume_zscore gate only.
         # (The volume confirmation logic is still performed inside _collect_one: volume_ratio>=1.0.)
+
+        # Day Trader Skill: Monte Carlo Time-Machine & VWAP Gate
+        try:
+            from day_trader_skill_engine import DayTraderSkillEngine
+            dts_engine = DayTraderSkillEngine(self.cfg)
+            entry_p = float(signal.get("price") or supporting.get("close") or supporting.get("current_price") or 0)
+            sl_p = float(signal.get("suggested_sl") or (entry_p * 0.985 if direction == "long" else entry_p * 1.015))
+            tp_p = float(signal.get("suggested_tp") or (entry_p * 1.03 if direction == "long" else entry_p * 0.97))
+            
+            # Check entry timing from collector
+            dts_data = supporting.get("day_trader_skill", {})
+            entry_timing = dts_data.get("entry", {})
+            if entry_timing and not entry_timing.get("pass", True):
+                return risk_reject(signal, f"day_trader_skill_{entry_timing.get('reason', 'vwap_orb_rejected')}")
+
+            # Run 500-iteration Monte Carlo Time-Machine simulation
+            if self.scanner and hasattr(self.scanner, "_ohlcv_5m"):
+                df_mc = self.scanner._ohlcv_5m(symbol, 40)
+            else:
+                df_mc = None
+            if df_mc is not None and entry_p > 0:
+                mc_res = dts_engine.run_monte_carlo_timemachine(df_mc, entry_p, sl_p, tp_p, replays=500)
+                if not mc_res.get("passed", True):
+                    return risk_reject(signal, f"day_trader_timemachine_low_winrate_{mc_res.get('win_rate', 0)*100:.1f}pct")
+                signal["timemachine_win_rate"] = mc_res.get("win_rate")
+        except Exception as _dts_exc:
+            log.debug("Day trader skill risk check skipped: %s", _dts_exc)
 
         # AI Sentiment Filter
         sentiment = self.sentiment_agent.get_market_sentiment()
