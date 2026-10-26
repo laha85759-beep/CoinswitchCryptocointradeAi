@@ -231,3 +231,191 @@ function drawFallbackAgentAvatars() {
   });
 }
 window.drawFallbackAgentAvatars = drawFallbackAgentAvatars;
+
+
+// ==============================================================================
+// HERO 3D HOLOGRAPHIC AI TRADING AVATAR CHARACTER
+// Renders an innovative futuristic 3D Cybernetic Core with dual orbiting rings,
+// pulsing quantum core, and neural particle fields.
+// ==============================================================================
+function initHero3DCharacter() {
+  const canvas = document.getElementById("agent3d-hero-character");
+  if (!canvas) return;
+
+  if (typeof THREE === "undefined") {
+    setTimeout(initHero3DCharacter, 300);
+    return;
+  }
+
+  const container = canvas.parentElement;
+  const width = canvas.clientWidth || 460;
+  const height = canvas.clientHeight || 320;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+  camera.position.z = 4.8;
+  camera.position.y = 0.2;
+
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  } catch (e) {
+    console.warn("WebGL not supported for hero character, using canvas fallback", e);
+    drawHeroFallbackAvatar();
+    return;
+  }
+
+  // Group container
+  const mainGroup = new THREE.Group();
+  scene.add(mainGroup);
+
+  // 1. Central Core: Glowing Cybernetic Icosahedron (Quantum Intelligence Core)
+  const coreGeo = new THREE.IcosahedronGeometry(1.0, 1);
+  const coreMat = new THREE.MeshPhongMaterial({
+    color: 0x00f090,
+    emissive: 0x004422,
+    wireframe: true,
+    transparent: true,
+    opacity: 0.85
+  });
+  const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+  mainGroup.add(coreMesh);
+
+  // Inner Solid Plasma Sphere
+  const innerGeo = new THREE.SphereGeometry(0.55, 16, 16);
+  const innerMat = new THREE.MeshBasicMaterial({
+    color: 0x00d4ff,
+    wireframe: false,
+    transparent: true,
+    opacity: 0.6
+  });
+  const innerMesh = new THREE.Mesh(innerGeo, innerMat);
+  mainGroup.add(innerMesh);
+
+  // 2. Dual Orbiting Holographic Rings (Cyan & Gold)
+  const ring1Geo = new THREE.TorusGeometry(1.65, 0.025, 16, 100);
+  const ring1Mat = new THREE.MeshBasicMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.75 });
+  const ring1 = new THREE.Mesh(ring1Geo, ring1Mat);
+  ring1.rotation.x = Math.PI / 3;
+  mainGroup.add(ring1);
+
+  const ring2Geo = new THREE.TorusGeometry(1.9, 0.02, 16, 100);
+  const ring2Mat = new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.65 });
+  const ring2 = new THREE.Mesh(ring2Geo, ring2Mat);
+  ring2.rotation.y = Math.PI / 4;
+  ring2.rotation.x = -Math.PI / 5;
+  mainGroup.add(ring2);
+
+  // 3. Floating Neural Particle Cloud
+  const particleCount = 120;
+  const particleGeo = new THREE.BufferGeometry();
+  const particlePositions = new Float32Array(particleCount * 3);
+  for (let i = 0; i < particleCount * 3; i += 3) {
+    const r = 2.0 + Math.random() * 1.2;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = (Math.random() - 0.5) * Math.PI;
+    particlePositions[i] = r * Math.cos(phi) * Math.cos(theta);
+    particlePositions[i + 1] = r * Math.sin(phi);
+    particlePositions[i + 2] = r * Math.cos(phi) * Math.sin(theta);
+  }
+  particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+  const particleMat = new THREE.PointsMaterial({
+    color: 0x00f090,
+    size: 0.05,
+    transparent: true,
+    opacity: 0.7
+  });
+  const particleSystem = new THREE.Points(particleGeo, particleMat);
+  mainGroup.add(particleSystem);
+
+  // Lighting
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+  scene.add(ambientLight);
+
+  const dirLight1 = new THREE.DirectionalLight(0x00f090, 1.5);
+  dirLight1.position.set(3, 4, 3);
+  scene.add(dirLight1);
+
+  const dirLight2 = new THREE.DirectionalLight(0x00d4ff, 1.2);
+  dirLight2.position.set(-3, -2, -2);
+  scene.add(dirLight2);
+
+  // Animation Loop
+  let frame = 0;
+  function animate() {
+    requestAnimationFrame(animate);
+    frame += 0.015;
+
+    // Core pulsing & rotation
+    coreMesh.rotation.x += 0.008;
+    coreMesh.rotation.y += 0.012;
+    const s = 1.0 + 0.06 * Math.sin(frame * 2.5);
+    innerMesh.scale.set(s, s, s);
+
+    // Orbiting rings
+    ring1.rotation.z += 0.015;
+    ring1.rotation.y += 0.006;
+    ring2.rotation.z -= 0.012;
+    ring2.rotation.x += 0.008;
+
+    // Particles rotation
+    particleSystem.rotation.y += 0.003;
+    particleSystem.rotation.x = Math.sin(frame * 0.5) * 0.1;
+
+    // Smooth hover bobbing
+    mainGroup.position.y = Math.sin(frame) * 0.12;
+
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  // Resize handler
+  window.addEventListener("resize", () => {
+    if (!canvas || !canvas.parentElement) return;
+    const newW = canvas.clientWidth || 460;
+    const newH = canvas.clientHeight || 320;
+    camera.aspect = newW / newH;
+    camera.updateProjectionMatrix();
+    renderer.setSize(newW, newH);
+  });
+}
+
+function drawHeroFallbackAvatar() {
+  const canvas = document.getElementById("agent3d-hero-character");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  const w = canvas.width;
+  const h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(w / 2, h / 2, 70, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(0, 240, 144, 0.1)";
+  ctx.fill();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = "#00f090";
+  ctx.shadowColor = "#00f090";
+  ctx.shadowBlur = 18;
+  ctx.stroke();
+
+  ctx.font = "bold 16px monospace";
+  ctx.fillStyle = "#00d4ff";
+  ctx.textAlign = "center";
+  ctx.fillText("AI QUANT SENTINEL", w / 2, h / 2 - 8);
+  ctx.font = "12px monospace";
+  ctx.fillStyle = "#00f090";
+  ctx.fillText("ACTIVE 24/7", w / 2, h / 2 + 14);
+  ctx.restore();
+}
+
+window.initHero3DCharacter = initHero3DCharacter;
+window.drawHeroFallbackAvatar = drawHeroFallbackAvatar;
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => setTimeout(initHero3DCharacter, 300));
+} else {
+  setTimeout(initHero3DCharacter, 300);
+}

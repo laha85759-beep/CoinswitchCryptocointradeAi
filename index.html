@@ -378,329 +378,131 @@
 
     <div id="view-landing" class="nc-view-pane tsm-view-section active">
       <div class="tsm-landing-hero">
-        <div class="tsm-hero-grid">
-          <!-- Hero Left Column -->
-            <!-- 🛡️ Capital Preservation & Weekend Protection Disclaimer Banner -->
-            <div style="background:linear-gradient(135deg, rgba(0,240,144,0.12), rgba(0,212,255,0.08)); border:1.5px solid rgba(0,240,144,0.4); border-radius:8px; padding:10px 14px; margin-bottom:14px; display:flex; align-items:center; gap:10px; box-shadow:0 0 20px rgba(0,240,144,0.15);">
-              <span style="font-size:22px; flex-shrink:0;">🛡️</span>
-              <div style="font-size:11px; line-height:1.45; color:var(--text-sec);">
-                <strong style="color:var(--neon-green); font-family:var(--font-mono); letter-spacing:0.5px;">100% CAPITAL SURVIVAL &amp; WEEKEND RISK PROTOCOL:</strong>
-                Autonomous algorithmic trading executes strictly <span style="color:#ffffff; font-weight:700;">Monday to Friday</span>. All open positions across CoinSwitch Pro &amp; Delta Exchange India are auto-flattened before weekends to protect your capital from gap risk and illiquid weekend slippage.
+        <div class="tsm-hero-grid" style="grid-template-columns: 1.15fr 1fr; align-items: center; gap: 32px;">
+          <!-- Hero Left Column: Innovative Cyber-Fintech HUD -->
+          <div class="tsm-hero-left-content">
+            <!-- 🛡️ Capital Survival & Multi-Exchange Protocol Badge -->
+            <div style="background:linear-gradient(135deg, rgba(0,240,144,0.14), rgba(0,212,255,0.09)); border:1.5px solid rgba(0,240,144,0.45); border-radius:10px; padding:12px 16px; margin-bottom:18px; display:flex; align-items:center; gap:12px; box-shadow:0 0 24px rgba(0,240,144,0.18);">
+              <span style="font-size:26px; flex-shrink:0;">🛡️</span>
+              <div style="font-size:11.5px; line-height:1.45; color:var(--text-sec);">
+                <strong style="color:var(--neon-green); font-family:var(--font-mono); letter-spacing:0.5px;">INSTITUTIONAL QUANT RISK &amp; AUTOMATED EXECUTION ENGINE:</strong>
+                Operating live across <span style="color:#00d4ff; font-weight:700;">MyFundedPerpetuals ($2,500)</span>, <span style="color:#00f090; font-weight:700;">CoinSwitch Pro</span>, <span style="color:#f59e0b; font-weight:700;">Delta India</span> &amp; <span style="color:#a855f7; font-weight:700;">MT5 EC2 ($10K)</span> with hard Take-Profit &amp; Stop-Loss protection.
               </div>
             </div>
 
-            <h1 class="tsm-hero-title">
-              Trade Global Markets <br>
-              <span class="tsm-gold-text">with Precision</span>
+            <h1 class="tsm-hero-title" style="font-size: 42px; line-height: 1.15; font-weight: 800; margin-bottom: 14px; letter-spacing: -0.5px;">
+              Autonomous AI Trading <br>
+              <span class="tsm-gold-text" style="background: linear-gradient(135deg, #00f090 0%, #00d4ff 50%, #f59e0b 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Quantum Intelligence</span>
             </h1>
-            <p class="tsm-hero-sub">
-              Professional trading tools, real-time data and automation for traders who demand an edge. Powered by NVIDIA Super Brain AI and multi-exchange execution.
+            <p class="tsm-hero-sub" style="font-size: 14px; line-height: 1.6; color: #94a3b8; max-width: 580px; margin-bottom: 22px;">
+              Multi-model consensus driven by NVIDIA Nemotron, DeepSeek &amp; Qwen. Real-time sub-millisecond execution, proprietary risk-guardian stops, and automated position scaling.
             </p>
 
-            <!-- Asset Selector Pills -->
-            <div class="tsm-asset-pills">
-              <button class="tsm-asset-pill" onclick="switchLandingAsset('stocks')">
-                <span class="tsm-asset-icon">📈</span><span>Stocks</span>
-              </button>
-              <button class="tsm-asset-pill" onclick="switchLandingAsset('forex')">
-                <span class="tsm-asset-icon">💱</span><span>Forex</span>
-              </button>
-              <button class="tsm-asset-pill active" onclick="switchLandingAsset('crypto')">
-                <span class="tsm-asset-icon">₿</span><span>Crypto</span>
-              </button>
-              <button class="tsm-asset-pill" onclick="switchLandingAsset('commodities')">
-                <span class="tsm-asset-icon">🥇</span><span>Commodities</span>
-              </button>
-              <button class="tsm-asset-pill" onclick="switchLandingAsset('indices')">
-                <span class="tsm-asset-icon">🏛</span><span>Indices</span>
-              </button>
+            <!-- Live Exchange Status Strip -->
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px;">
+              <div style="background: rgba(0,240,144,0.1); border: 1px solid rgba(0,240,144,0.3); border-radius: 6px; padding: 6px 12px; font-size: 11px; font-family: var(--font-mono); display: flex; align-items: center; gap: 6px;">
+                <span style="display:inline-block; width:7px; height:7px; background:#00f090; border-radius:50%; box-shadow:0 0 8px #00f090;"></span>
+                <span style="color:#fff; font-weight:600;">MFP PROP:</span>
+                <span style="color:#00f090;">3 TRADES ACTIVE</span>
+              </div>
+              <div style="background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.3); border-radius: 6px; padding: 6px 12px; font-size: 11px; font-family: var(--font-mono); display: flex; align-items: center; gap: 6px;">
+                <span style="display:inline-block; width:7px; height:7px; background:#00d4ff; border-radius:50%; box-shadow:0 0 8px #00d4ff;"></span>
+                <span style="color:#fff; font-weight:600;">COINSWITCH:</span>
+                <span style="color:#00d4ff;">SPOT READY</span>
+              </div>
+              <div style="background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.3); border-radius: 6px; padding: 6px 12px; font-size: 11px; font-family: var(--font-mono); display: flex; align-items: center; gap: 6px;">
+                <span style="display:inline-block; width:7px; height:7px; background:#a855f7; border-radius:50%; box-shadow:0 0 8px #a855f7;"></span>
+                <span style="color:#fff; font-weight:600;">MT5 EC2:</span>
+                <span style="color:#c084fc;">ONLINE (PORT 5005)</span>
+              </div>
+              <div style="background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: 6px; padding: 6px 12px; font-size: 11px; font-family: var(--font-mono); display: flex; align-items: center; gap: 6px;">
+                <span style="display:inline-block; width:7px; height:7px; background:#f59e0b; border-radius:50%; box-shadow:0 0 8px #f59e0b;"></span>
+                <span style="color:#fff; font-weight:600;">DELTA INDIA:</span>
+                <span style="color:#fbbf24;">F&amp;O RADAR</span>
+              </div>
             </div>
 
             <!-- Hero CTA Buttons -->
-            <div class="tsm-hero-ctas">
-              <button class="tsm-btn-hero-primary" onclick="openAuthModal('register')">
-                <span>Start Live Trading</span> <span>&rarr;</span>
+            <div class="tsm-hero-ctas" style="display: flex; gap: 14px; margin-bottom: 22px;">
+              <button class="tsm-btn-hero-primary" onclick="goPage('terminal')" style="padding: 13px 28px; font-size: 13.5px; font-weight: 700; background: linear-gradient(135deg, #00f090 0%, #00d4ff 100%); color: #020817; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 0 25px rgba(0,240,144,0.4); display: flex; align-items: center; gap: 8px; transition: transform 0.2s, box-shadow 0.2s;">
+                <span>⚡ ENTER LIVE TERMINAL</span>
+                <span>&rarr;</span>
               </button>
-              <button class="tsm-btn-hero-secondary" onclick="goPage('terminal')">
-                <span>▶</span> <span>Explore Live Terminal</span>
+              <button class="tsm-btn-hero-secondary" onclick="goPage('chart')" style="padding: 13px 24px; font-size: 13.5px; font-weight: 600; background: rgba(8, 20, 38, 0.85); color: #00d4ff; border: 1.5px solid rgba(0,212,255,0.4); border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; backdrop-filter: blur(10px);">
+                <span>📊</span>
+                <span>PRO LIVE CHART</span>
+              </button>
+              <button class="tsm-btn-hero-secondary" onclick="goPage('trades')" style="padding: 13px 20px; font-size: 13.5px; font-weight: 600; background: rgba(8, 20, 38, 0.85); color: #f59e0b; border: 1.5px solid rgba(245,158,11,0.4); border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; backdrop-filter: blur(10px);">
+                <span>🎯</span>
+                <span>AI SIGNALS</span>
               </button>
             </div>
 
             <!-- Trust Points -->
-            <div class="tsm-hero-trust">
-              <span class="tsm-trust-item"><span class="tsm-trust-check">✓</span> No credit card required</span>
-              <span class="tsm-trust-item"><span class="tsm-trust-check">✓</span> Secure &amp; encrypted</span>
-              <span class="tsm-trust-item"><span class="tsm-trust-check">✓</span> Trusted by 10K+ traders</span>
+            <div class="tsm-hero-trust" style="display: flex; gap: 18px; font-size: 12px; color: #64748b;">
+              <span class="tsm-trust-item"><span style="color:#00f090; font-weight:bold;">✓</span> Automated SL &amp; TP</span>
+              <span class="tsm-trust-item"><span style="color:#00f090; font-weight:bold;">✓</span> Prop Firm Safe ($75 / $300 Caps)</span>
+              <span class="tsm-trust-item"><span style="color:#00f090; font-weight:bold;">✓</span> 24/7 Real-Time Telemetry</span>
             </div>
           </div>
 
-          <!-- Hero Right Column: Interactive Trading Terminal Widget -->
-          <div class="tsm-mockup-terminal" id="heroInteractiveTerminal">
-            <!-- Left Drawing Toolbar -->
-            <div class="tsm-term-toolbar">
-              <button class="tsm-tb-btn active" title="Pointer / Crosshair">┼</button>
-              <button class="tsm-tb-btn" title="Trend Line">╱</button>
-              <button class="tsm-tb-btn" title="Pitchfork / Fib">⑂</button>
-              <button class="tsm-tb-btn" title="Brush / Highlighter">✎</button>
-              <button class="tsm-tb-btn" title="Text Note">T</button>
-              <button class="tsm-tb-btn" title="Measure Ruler">📐</button>
-              <button class="tsm-tb-btn" title="Lock Tools">🔒</button>
-              <button class="tsm-tb-btn" title="Trash / Clear">🗑</button>
-            </div>
-
-            <!-- Main Chart Workspace -->
-            <div class="tsm-term-chart-area">
-              <div class="tsm-term-topbar">
-                <div class="tsm-term-sym-info">
-                  <span class="tsm-term-sym-badge" id="heroTerminalSym">XAUUSD</span>
-                  <div class="tsm-tf-pills">
-                    <button class="tsm-tf-btn" onclick="setHeroChartTimeframe('1m', this)">1m</button>
-                    <button class="tsm-tf-btn" onclick="setHeroChartTimeframe('5m', this)">5m</button>
-                    <button class="tsm-tf-btn active" onclick="setHeroChartTimeframe('15m', this)">15m</button>
-                    <button class="tsm-tf-btn" onclick="setHeroChartTimeframe('1h', this)">1h</button>
-                    <button class="tsm-tf-btn" onclick="setHeroChartTimeframe('4h', this)">4h</button>
-                    <button class="tsm-tf-btn" onclick="setHeroChartTimeframe('D', this)">D</button>
-                  </div>
-                </div>
-                <div style="display:flex; align-items:center; gap:8px;">
-                  <button class="tsm-term-ind-btn" onclick="toggleHeroIndicators()">
-                    <span>📊 Indicators</span>
-                  </button>
-                  <button class="tsm-tb-btn" onclick="refreshHeroChartData()" title="Refresh Chart">🔄</button>
-                </div>
+          <!-- Hero Right Column: 3D Holographic AI Trading Character & Autonomous SuperBrain HUD -->
+          <div class="tsm-hero-3d-character-wrapper" style="position: relative; background: radial-gradient(circle at 50% 50%, rgba(0,212,255,0.12) 0%, rgba(8,20,38,0.7) 60%, rgba(2,8,23,0.95) 100%); border: 1px solid rgba(0,212,255,0.3); border-radius: 16px; padding: 20px; box-shadow: 0 0 40px rgba(0,212,255,0.15); display: flex; flex-direction: column; align-items: center; overflow: hidden; min-height: 480px;">
+            
+            <!-- Floating Hologram Header Badges -->
+            <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; z-index: 2;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #00f090; box-shadow: 0 0 10px #00f090; animation: pulse 2s infinite;"></span>
+                <span style="font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: #00f090; letter-spacing: 1px;">3D AI QUANT SENTINEL v4.8</span>
               </div>
-
-              <!-- Candlestick Canvas Container -->
-              <div class="tsm-chart-canvas-wrap">
-                <canvas id="tsmHeroCandleCanvas"></canvas>
+              <div style="background: rgba(0,212,255,0.15); border: 1px solid rgba(0,212,255,0.4); border-radius: 20px; padding: 3px 10px; font-size: 10px; font-family: var(--font-mono); color: #00d4ff;">
+                AUTONOMOUS CO-PILOT
               </div>
             </div>
 
-            <!-- Right Watchlist Panel -->
-            <div class="tsm-term-watchlist">
-              <div class="tsm-wl-tabs">
-                <button class="tsm-wl-tab active" onclick="filterHeroWatchlist('all', this)">Watchlist</button>
-                <button class="tsm-wl-tab" onclick="filterHeroWatchlist('crypto', this)">Crypto</button>
-                <button class="tsm-wl-tab" onclick="filterHeroWatchlist('forex', this)">Forex</button>
-                <button class="tsm-wl-tab" onclick="filterHeroWatchlist('indices', this)">Indices</button>
+            <!-- 3D WebGL Three.js Canvas -->
+            <div style="position: relative; width: 100%; height: 320px; display: flex; justify-content: center; align-items: center;">
+              <canvas id="agent3d-hero-character" width="460" height="320" style="width: 100%; height: 100%; display: block; border-radius: 12px;"></canvas>
+              
+              <!-- Floating Live Stats Overlays on 3D Character -->
+              <div style="position: absolute; top: 12px; left: 12px; background: rgba(2,8,23,0.85); border: 1px solid rgba(0,240,144,0.35); border-radius: 8px; padding: 6px 10px; font-family: var(--font-mono); font-size: 10.5px; backdrop-filter: blur(8px);">
+                <div style="color: #64748b; font-size: 9px;">AI WIN-RATE RADAR</div>
+                <div style="color: #00f090; font-weight: 700; font-size: 13px;">88.4% CONSENSUS</div>
               </div>
-              <div class="tsm-wl-table-head">
-                <span>Symbol</span>
-                <span>Last</span>
-                <span style="text-align:right;">Chg%</span>
+
+              <div style="position: absolute; top: 12px; right: 12px; background: rgba(2,8,23,0.85); border: 1px solid rgba(0,212,255,0.35); border-radius: 8px; padding: 6px 10px; font-family: var(--font-mono); font-size: 10.5px; backdrop-filter: blur(8px); text-align: right;">
+                <div style="color: #64748b; font-size: 9px;">EXECUTION LATENCY</div>
+                <div style="color: #00d4ff; font-weight: 700; font-size: 13px;">1.42 ms ULTRA-FAST</div>
               </div>
-              <div class="tsm-wl-rows" id="heroWatchlistRows">
-                <!-- Dynamically populated rows from mockup -->
-                <div class="tsm-wl-row active" onclick="selectHeroWatchlistSym('XAUUSD', 2364.80, -0.32)">
-                  <div class="tsm-wl-sym-box"><span class="tsm-wl-ico">🥇</span><span>XAUUSD</span></div>
-                  <div class="tsm-wl-price">2,364.80</div>
-                  <div class="tsm-wl-chg down">-0.32%</div>
-                </div>
-                <div class="tsm-wl-row" onclick="selectHeroWatchlistSym('BTCUSDT', 67320.50, 2.45)">
-                  <div class="tsm-wl-sym-box"><span class="tsm-wl-ico">₿</span><span>BTCUSDT</span></div>
-                  <div class="tsm-wl-price">67,320.50</div>
-                  <div class="tsm-wl-chg up">+2.45%</div>
-                </div>
-                <div class="tsm-wl-row" onclick="selectHeroWatchlistSym('ETHUSDT', 3245.10, 1.24)">
-                  <div class="tsm-wl-sym-box"><span class="tsm-wl-ico">Ξ</span><span>ETHUSDT</span></div>
-                  <div class="tsm-wl-price">3,245.10</div>
-                  <div class="tsm-wl-chg up">+1.24%</div>
-                </div>
-                <div class="tsm-wl-row" onclick="selectHeroWatchlistSym('EURUSD', 1.0874, 0.18)">
-                  <div class="tsm-wl-sym-box"><span class="tsm-wl-ico">€</span><span>EURUSD</span></div>
-                  <div class="tsm-wl-price">1.0874</div>
-                  <div class="tsm-wl-chg up">+0.18%</div>
-                </div>
-                <div class="tsm-wl-row" onclick="selectHeroWatchlistSym('GBPUSD', 1.2736, 0.21)">
-                  <div class="tsm-wl-sym-box"><span class="tsm-wl-ico">£</span><span>GBPUSD</span></div>
-                  <div class="tsm-wl-price">1.2736</div>
-                  <div class="tsm-wl-chg up">+0.21%</div>
-                </div>
-                <div class="tsm-wl-row" onclick="selectHeroWatchlistSym('USOIL', 74.21, 0.65)">
-                  <div class="tsm-wl-sym-box"><span class="tsm-wl-ico">🛢</span><span>USOIL</span></div>
-                  <div class="tsm-wl-price">74.21</div>
-                  <div class="tsm-wl-chg up">+0.65%</div>
-                </div>
-                <div class="tsm-wl-row" onclick="selectHeroWatchlistSym('NAS100', 19842.30, 0.42)">
-                  <div class="tsm-wl-sym-box"><span class="tsm-wl-ico">🏛</span><span>NAS100</span></div>
-                  <div class="tsm-wl-price">19,842.30</div>
-                  <div class="tsm-wl-chg up">+0.42%</div>
-                </div>
-                <div class="tsm-wl-row" onclick="selectHeroWatchlistSym('US30', 42318.60, 0.38)">
-                  <div class="tsm-wl-sym-box"><span class="tsm-wl-ico">🇺🇸</span><span>US30</span></div>
-                  <div class="tsm-wl-price">42,318.60</div>
-                  <div class="tsm-wl-chg up">+0.38%</div>
-                </div>
+
+              <div style="position: absolute; bottom: 12px; left: 12px; background: rgba(2,8,23,0.85); border: 1px solid rgba(245,158,11,0.35); border-radius: 8px; padding: 6px 10px; font-family: var(--font-mono); font-size: 10.5px; backdrop-filter: blur(8px);">
+                <div style="color: #64748b; font-size: 9px;">TAKE PROFIT TARGET</div>
+                <div style="color: #f59e0b; font-weight: 700; font-size: 13px;">+15.0% TO +25.0%</div>
               </div>
-              <div class="tsm-wl-exec-bar">
-                <button class="tsm-btn-wl-buy" onclick="openOrderFromMockup('BUY')">Buy</button>
-                <button class="tsm-btn-wl-sell" onclick="openOrderFromMockup('SELL')">Sell</button>
+
+              <div style="position: absolute; bottom: 12px; right: 12px; background: rgba(2,8,23,0.85); border: 1px solid rgba(239,68,68,0.35); border-radius: 8px; padding: 6px 10px; font-family: var(--font-mono); font-size: 10.5px; backdrop-filter: blur(8px); text-align: right;">
+                <div style="color: #64748b; font-size: 9px;">GUARDIAN STOP-LOSS</div>
+                <div style="color: #ef4444; font-weight: 700; font-size: 13px;">-1.5% TO -2.0%</div>
               </div>
             </div>
+
+            <!-- Bottom Interactive Agent HUD Ribbon -->
+            <div style="width: 100%; margin-top: 12px; background: rgba(8,20,38,0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; z-index: 2;">
+              <div>
+                <span style="color: #94a3b8; font-size: 11px;">Active Neural Agent:</span>
+                <span style="color: #fff; font-weight: 700; font-size: 11px; margin-left: 4px;">QUANTUM CORE MASTER</span>
+              </div>
+              <div style="display: flex; gap: 6px;">
+                <button onclick="goPage('terminal')" style="background: rgba(0,212,255,0.15); border: 1px solid #00d4ff; color: #00d4ff; border-radius: 4px; padding: 4px 10px; font-size: 10.5px; font-family: var(--font-mono); cursor: pointer;">
+                  VIEW WORKFORCE &rarr;
+                </button>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
 
-    <!-- ══════════ LANDING PAGE (MARKETING CONTENT) ══════════ -->
-      <!-- Asset Category Cards Row -->
-      <section class="tsm-assets-row" id="assetsSection">
-        <div class="tsm-asset-card" onclick="goPage('chart')">
-          <div class="tsm-asset-card-icons">💵 💶 💷 💴</div>
-          <div class="tsm-asset-card-info">
-            <h4>Forex</h4>
-            <p>Major, minor &amp; exotic pairs</p>
-          </div>
-          <div class="tsm-asset-card-arrow">&rarr;</div>
-        </div>
-        <div class="tsm-asset-card" onclick="goPage('india')">
-          <div class="tsm-asset-card-icons">🍎 🟢 🚗</div>
-          <div class="tsm-asset-card-info">
-            <h4>Stocks</h4>
-            <p>US &amp; Indian BSE/NSE equities</p>
-          </div>
-          <div class="tsm-asset-card-arrow">&rarr;</div>
-        </div>
-        <div class="tsm-asset-card" onclick="goPage('terminal')">
-          <div class="tsm-asset-card-icons">₿ Ξ ◎</div>
-          <div class="tsm-asset-card-info">
-            <h4>Crypto</h4>
-            <p>Trade BTC, ETH and 300+ coins</p>
-          </div>
-          <div class="tsm-asset-card-arrow">&rarr;</div>
-        </div>
-        <div class="tsm-asset-card" onclick="goPage('chart')">
-          <div class="tsm-asset-card-icons">🥇 🥈 🛢️</div>
-          <div class="tsm-asset-card-info">
-            <h4>Commodities</h4>
-            <p>Gold, Oil, Silver &amp; more</p>
-          </div>
-          <div class="tsm-asset-card-arrow">&rarr;</div>
-        </div>
-        <div class="tsm-asset-card" onclick="goPage('india')">
-          <div class="tsm-asset-card-icons">🗽 🏛 📈</div>
-          <div class="tsm-asset-card-info">
-            <h4>Indices</h4>
-            <p>NIFTY, SENSEX, NAS100 &amp; US30</p>
-          </div>
-          <div class="tsm-asset-card-arrow">&rarr;</div>
-        </div>
-      </section>
-
-      <!-- Pricing Plans Section ("Choose a Plan That Fits You") -->
-      <section class="tsm-pricing-section" id="pricingSection">
-        <div class="tsm-pricing-header">
-          <div class="tsm-pricing-lead">
-            <small>PRICING</small>
-            <h2>Choose a Plan That Fits You</h2>
-            <p>Flexible plans for every type of trader. Upgrade or cancel anytime.</p>
-          </div>
-          <div class="tsm-pricing-toggle">
-            <button class="tsm-toggle-btn active" id="btnPlanMonthly" onclick="toggleBillingPeriod('monthly')">Monthly</button>
-            <button class="tsm-toggle-btn" id="btnPlanYearly" onclick="toggleBillingPeriod('yearly')">Yearly <span class="tsm-save-chip">Save 20%</span></button>
-          </div>
-        </div>
-        <div class="tsm-pricing-cards">
-          <!-- Starter Plan -->
-          <div class="tsm-plan-card">
-            <div class="tsm-plan-top">
-              <h3>Starter</h3>
-              <div class="tsm-plan-sub">For beginners &amp; learners</div>
-              <div class="tsm-plan-price">$0 <small>/month</small></div>
-              <ul class="tsm-plan-features">
-                <li><span class="tsm-plan-check">✓</span> Basic TradingView charts</li>
-                <li><span class="tsm-plan-check">✓</span> Real-time market data</li>
-                <li><span class="tsm-plan-check">✓</span> Limited AI signals (5/day)</li>
-                <li><span class="tsm-plan-check">✓</span> Community telegram access</li>
-              </ul>
-            </div>
-            <button class="tsm-plan-btn outline" onclick="openAuthModal('register')">Get Started</button>
-          </div>
-
-          <!-- Pro Plan (Most Popular) -->
-          <div class="tsm-plan-card featured">
-            <span class="tsm-featured-badge">Most Popular</span>
-            <div class="tsm-plan-top">
-              <h3>Pro</h3>
-              <div class="tsm-plan-sub">For active day traders</div>
-              <div class="tsm-plan-price" id="planPricePro">$29 <small>/month</small></div>
-              <ul class="tsm-plan-features">
-                <li><span class="tsm-plan-check">✓</span> Real-time high-speed data</li>
-                <li><span class="tsm-plan-check">✓</span> 100+ Advanced indicators</li>
-                <li><span class="tsm-plan-check">✓</span> Automated AI trading bots</li>
-                <li><span class="tsm-plan-check">✓</span> Custom strategy builder</li>
-                <li><span class="tsm-plan-check">✓</span> Priority customer support</li>
-              </ul>
-            </div>
-            <button class="tsm-plan-btn solid" onclick="openAuthModal('register')">Get Started</button>
-          </div>
-
-          <!-- Elite Plan -->
-          <div class="tsm-plan-card">
-            <div class="tsm-plan-top">
-              <h3>Elite</h3>
-              <div class="tsm-plan-sub">For professional traders</div>
-              <div class="tsm-plan-price" id="planPriceElite">$99 <small>/month</small></div>
-              <ul class="tsm-plan-features">
-                <li><span class="tsm-plan-check">✓</span> Everything in Pro plan</li>
-                <li><span class="tsm-plan-check">✓</span> Advanced institutional analytics</li>
-                <li><span class="tsm-plan-check">✓</span> Direct API execution keys</li>
-                <li><span class="tsm-plan-check">✓</span> Volume surge custom alerts</li>
-                <li><span class="tsm-plan-check">✓</span> Dedicated account manager</li>
-              </ul>
-            </div>
-            <button class="tsm-plan-btn outline" onclick="openAuthModal('register')">Get Started</button>
-          </div>
-
-          <!-- Enterprise Plan -->
-          <div class="tsm-plan-card">
-            <div class="tsm-plan-top">
-              <h3>Enterprise</h3>
-              <div class="tsm-plan-sub">For institutions &amp; prop teams</div>
-              <div class="tsm-plan-price">Custom</div>
-              <ul class="tsm-plan-features">
-                <li><span class="tsm-plan-check">✓</span> White-label portal solution</li>
-                <li><span class="tsm-plan-check">✓</span> Multi-account sub-API desk</li>
-                <li><span class="tsm-plan-check">✓</span> Dedicated quant engineer</li>
-                <li><span class="tsm-plan-check">✓</span> Custom volume &amp; ML strategies</li>
-              </ul>
-            </div>
-            <button class="tsm-plan-btn outline" onclick="openAuthModal('register')">Contact Sales</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- Institutional Footer -->
-      <footer class="tsm-institutional-footer" id="footerSection">
-        <div class="tsm-footer-top">
-          <div class="tsm-trade-logo">
-            <span class="tsm-bars-icon"><span></span><span></span><span></span></span>
-            <span class="tsm-trade-brand-text"><strong>TheSmartMag</strong> <span>Trade</span></span>
-          </div>
-          <ul class="tsm-footer-links">
-            <li><a href="javascript:void(0)" onclick="openAuthModal('login')">Trading</a></li>
-            <li><a href="javascript:void(0)" onclick="goPage('chart')">Markets</a></li>
-            <li><a href="javascript:void(0)" onclick="goPage('chart')">Tools</a></li>
-            <li><a href="javascript:void(0)" onclick="goPage('landing'); setTimeout(() => document.getElementById('pricingSection')?.scrollIntoView(), 300);">Pricing</a></li>
-            <li><a href="javascript:void(0)" onclick="openAuthModal('register')">Education</a></li>
-            <li><a href="javascript:void(0)" onclick="goPage('partners')">Partners</a></li>
-            <li><a href="javascript:void(0)" onclick="openAuthModal('register')">Help</a></li>
-          </ul>
-          <div class="tsm-footer-socials">
-            <a href="https://x.com" target="_blank" class="tsm-soc-icon" title="Twitter / X">𝕏</a>
-            <a href="https://linkedin.com" target="_blank" class="tsm-soc-icon" title="LinkedIn">in</a>
-            <a href="https://youtube.com" target="_blank" class="tsm-soc-icon" title="YouTube">▶</a>
-            <a href="https://instagram.com" target="_blank" class="tsm-soc-icon" title="Instagram">📷</a>
-          </div>
-        </div>
-        <div class="tsm-footer-bottom">
-          <div>&copy; 2026 TheSmartMag Trade. All rights reserved.</div>
-          <div class="tsm-footer-policies">
-            <a href="javascript:void(0)">Terms</a>
-            <a href="javascript:void(0)">Privacy</a>
-            <a href="javascript:void(0)">Risk Disclosure</a>
-          </div>
-        </div>
-      </footer>
     </div>
 
     <!-- ══════════ VIEW 1: SUPERBRAIN NEURAL DASHBOARD ══════════ -->

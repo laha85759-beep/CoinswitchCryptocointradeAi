@@ -8160,3 +8160,32 @@ input::placeholder, textarea::placeholder {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* ==============================================================================
+   INNOVATIVE 3D HERO CHARACTER & QUANTUM CYBERNETIC COCKPIT
+   ============================================================================== */
+.tsm-hero-3d-character-wrapper {
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.tsm-hero-3d-character-wrapper:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 50px rgba(0, 212, 255, 0.25) !important;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
+
+@media (max-width: 960px) {
+  .tsm-landing-hero .tsm-hero-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .tsm-hero-3d-character-wrapper {
+    min-height: 380px !important;
+  }
+}

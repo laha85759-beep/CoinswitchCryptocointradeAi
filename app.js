@@ -469,7 +469,9 @@ function switchView(viewName, updateHash = true) {
   } else if (viewName === "partners") {
     initOverviewView();
   } else if (viewName === "landing") {
-    // Landing renders the full marketing + hero panels by default (no JS toggle needed)
+    if (typeof initHero3DCharacter === "function") {
+      setTimeout(initHero3DCharacter, 100);
+    }
   } else if (viewName === "overview") {
     initOverviewView();
   } else if (viewName === "chart") {
