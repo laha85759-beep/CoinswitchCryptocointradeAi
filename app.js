@@ -424,7 +424,7 @@ function switchView(viewName, updateHash = true) {
 
   // Per-view SEO: unique document title + description for each section (search & social)
   const VIEW_SEO = {
-    overview: { t: "TheSmartMag Quant Terminal — AI Trading Platform, Pricing & Partner Deals", d: "Institutional AI trading for beginners & pros. Live signals, Capital Survival risk mode, transparent pricing from $19/mo and verified prop-firm partner deals." },
+    landing: { t: "TheSmartMag Quant Terminal — AI Trading Platform, Pricing & Partner Deals", d: "Institutional AI trading for beginners & pros. Live signals, Capital Survival risk mode, transparent pricing from $19/mo and verified prop-firm partner deals." },
     terminal: { t: "Live AI Trading Terminal — Real-Time Neural Consensus | TheSmartMag", d: "Watch the multi-model AI Super Brain scan 250+ markets in real time with live positions, PnL and Capital Survival risk telemetry." },
     india:    { t: "Indian F&O Options Intelligence — Nifty, Bank Nifty, Sensex PCR Radar | TheSmartMag", d: "Live NSE/BSE option chains, PCR, max pain and AI strike playbooks for Nifty 50, Bank Nifty and Sensex intraday traders." },
     news:     { t: "Live Market News, Economic Calendar & Macro Catalysts | TheSmartMag", d: "Breaking financial wires, ForexFactory economic calendar with AI sentiment scoring, pre-catalyst early warnings and topic-targeted market briefings." },

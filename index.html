@@ -250,7 +250,7 @@
         <button class="tsm-drawer-item gold" id="drawerIndiaBtn" data-view="india" onclick="goPage('india'); toggleMobileNavDrawer();">
           <span class="nc-tab-ico">🇮🇳</span><span>INDIA EQUITIES &amp; F&amp;O</span>
         </button>
-        <button class="tsm-drawer-item gold" data-view="overview" onclick="goPage('overview'); toggleMobileNavDrawer();">
+        <button class="tsm-drawer-item gold" data-view="landing" onclick="goPage('landing'); toggleMobileNavDrawer();">
           <span class="nc-tab-ico">🏠</span><span>PLANS &amp; PARTNERS</span>
         </button>
         <button class="tsm-drawer-item cyan" data-view="news" onclick="goPage('news'); toggleMobileNavDrawer();">
@@ -376,148 +376,6 @@
       </div>
     </div>
 
-    <!-- ══════════ VIEW 0: PUBLIC PLATFORM OVERVIEW (LANDING / MARKETING PAGE) ══════════ -->
-    <div id="view-overview" class="nc-view-pane tsm-view-section">
-
-      <!-- HERO: HEADLINE + TRUST STATS STRIP -->
-      <div class="ov-hero">
-        <div class="ov-hero-badge">⚡ INSTITUTIONAL-GRADE AI TRADING • COINSWITCH PRO + DELTA INDIA</div>
-        <h1 class="ov-hero-title">Autonomous AI Quant Terminal<br><span class="ov-grad">Built to Grow Capital Safely</span></h1>
-        <p class="ov-hero-sub">TheSmartMag fuses a multi-model neural ensemble, live Indian F&amp;O intelligence and dual-exchange auto-execution with a Capital Survival risk mandate — so you trade with institutional discipline from day one.</p>
-        <div class="ov-hero-actions">
-          <button class="ov-btn ov-btn-primary" onclick="startNewTraderOnboarding()">🎓 New to Trading? Start Here</button>
-          <button class="ov-btn ov-btn-ghost" onclick="goPage('terminal')">⚡ Enter Live Terminal</button>
-          <button class="ov-btn ov-btn-ghost" onclick="activateFreeDemoExperience()">🧪 Try $10,000 Demo</button>
-          <button class="ov-btn ov-btn-outline" onclick="openSaasUpgradeModal('Full Platform', 'Pro')">★ See Plans</button>
-        </div>
-        <div class="ov-stats-strip">
-          <div class="ov-stat"><div class="ov-stat-num" id="ovStatInstruments">500+</div><div class="ov-stat-lbl">Trading Instruments</div></div>
-          <div class="ov-stat"><div class="ov-stat-num">24/7</div><div class="ov-stat-lbl">Global Market Access</div></div>
-          <div class="ov-stat"><div class="ov-stat-num">&lt; 20ms</div><div class="ov-stat-lbl">Ultra-Fast Execution</div></div>
-          <div class="ov-stat"><div class="ov-stat-num">99.9%</div><div class="ov-stat-lbl">Platform Uptime</div></div>
-          <div class="ov-stat"><div class="ov-stat-num">🛡️</div><div class="ov-stat-lbl">Licensed Technology</div></div>
-        </div>
-      </div>
-
-      <!-- WHO IT'S FOR (AUDIENCE TARGETING) -->
-      <div class="ov-section">
-        <div class="ov-sec-head">
-          <div>
-            <span class="ov-eyebrow">WHO IT'S FOR</span>
-            <h2 class="ov-sec-title">Built for Every Trader</h2>
-            <p class="ov-sec-sub">From your very first trade to running institutional capital — TheSmartMag grows with you.</p>
-          </div>
-        </div>
-        <div class="ov-feature-grid">
-          <div class="ov-feature">
-            <div class="ov-fico green">🎓</div>
-            <h3>New Traders</h3>
-            <p>Start risk-free with the $10,000 demo, plain-English beginner guides on every signal, and a guided 4-step onboarding tour. No experience needed.</p>
-            <button class="ov-btn ov-btn-ghost" style="margin-top:10px; padding:8px 16px; font-size:11px;" onclick="startNewTraderOnboarding()">Start Learning Free ➜</button>
-          </div>
-          <div class="ov-feature">
-            <div class="ov-fico cyan">📊</div>
-            <h3>Active Retail Traders</h3>
-            <p>Live multi-market signals with exact entry/TP/SL levels, Pro charting, journaling and the Capital Survival protocol to protect your account.</p>
-            <button class="ov-btn ov-btn-ghost" style="margin-top:10px; padding:8px 16px; font-size:11px;" onclick="goPage('trades')">See Live Signals ➜</button>
-          </div>
-          <div class="ov-feature">
-            <div class="ov-fico gold">🏆</div>
-            <h3>Experienced &amp; Prop Traders</h3>
-            <p>Institutional SMC/order-flow analytics, direct API execution keys, funding-rate intelligence and exclusive verified prop-firm challenges.</p>
-            <button class="ov-btn ov-btn-ghost" style="margin-top:10px; padding:8px 16px; font-size:11px;" onclick="goPage('partners')">View Prop Deals ➜</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- ASSET CLASS CARDS -->
-      <div class="ov-section">
-        <div class="ov-asset-grid">
-          <a class="ov-asset" href="/chart" onclick="goPage('chart'); return false;"><div class="ov-asset-ico">💱</div><h3>Forex</h3><p>Major, minor &amp; exotic pairs</p><span class="ov-asset-arrow">➜</span></a>
-          <a class="ov-asset" href="/india" onclick="goPage('india'); return false;"><div class="ov-asset-ico">🇮🇳</div><h3>Stocks</h3><p>US &amp; Indian BSE/NSE equities</p><span class="ov-asset-arrow">➜</span></a>
-          <a class="ov-asset" href="/chart" onclick="goPage('chart'); return false;"><div class="ov-asset-ico">₿</div><h3>Crypto</h3><p>Trade BTC, ETH and 300+ coins</p><span class="ov-asset-arrow">➜</span></a>
-          <a class="ov-asset" href="/chart" onclick="goPage('chart'); return false;"><div class="ov-asset-ico">🥇</div><h3>Commodities</h3><p>Gold, Oil, Silver &amp; more</p><span class="ov-asset-arrow">➜</span></a>
-          <a class="ov-asset" href="/india" onclick="goPage('india'); return false;"><div class="ov-asset-ico">🏆</div><h3>Indices</h3><p>NIFTY, SENSEX, NAS100 &amp; US500</p><span class="ov-asset-arrow">➜</span></a>
-        </div>
-      </div>
-
-      <!-- PRICING -->
-      <div class="ov-section" id="ovPricing">
-        <div class="ov-sec-head">
-          <div>
-            <span class="ov-eyebrow">PRICING</span>
-            <h2 class="ov-sec-title">Choose a Plan That Fits You</h2>
-            <p class="ov-sec-sub">Flexible plans for every type of trader. Upgrade or cancel anytime.</p>
-          </div>
-          <div class="ov-billing-toggle">
-            <button class="ov-toggle-btn active" id="ovTglMonthly" onclick="setSaasBillingInterval('monthly')">Monthly</button>
-            <button class="ov-toggle-btn" id="ovTglYearly" onclick="setSaasBillingInterval('yearly')">Yearly <span class="ov-save-pill">Save 20%</span></button>
-          </div>
-        </div>
-        <div class="ov-pricing-grid">
-          <div class="ov-plan">
-            <h3>Starter</h3><div class="ov-plan-for">For beginners &amp; learners</div>
-            <div class="ov-price"><span class="saas-plan-price" data-monthly="$19" data-yearly="$190">$19</span><span class="saas-plan-unit ov-unit">/month</span></div>
-            <ul class="ov-plan-list">
-              <li>✅ Basic TradingView charts</li><li>✅ Real-time market data</li>
-              <li>✅ Limited AI signals (5/day)</li><li>✅ Economic calendar &amp; news</li><li>✅ Community access</li>
-            </ul>
-            <button class="ov-btn ov-plan-btn" onclick="handleCheckoutPlan('starter')">Get Started</button>
-          </div>
-          <div class="ov-plan ov-plan-pop">
-            <span class="ov-pop-pill">MOST POPULAR</span>
-            <h3>Pro</h3><div class="ov-plan-for">For active day traders</div>
-            <div class="ov-price"><span class="saas-plan-price" data-monthly="$49" data-yearly="$490">$49</span><span class="saas-plan-unit ov-unit">/month</span></div>
-            <ul class="ov-plan-list">
-              <li>✅ Real-time high-speed data</li><li>✅ 100+ advanced indicators</li>
-              <li>✅ Unlimited AI signals &amp; bots</li><li>✅ Jarvis Voice Assistant</li><li>✅ Priority support</li>
-            </ul>
-            <button class="ov-btn ov-btn-primary ov-plan-btn" onclick="handleCheckoutPlan('pro')">Get Started</button>
-          </div>
-          <div class="ov-plan">
-            <h3>Elite</h3><div class="ov-plan-for">For professional traders</div>
-            <div class="ov-price"><span class="saas-plan-price" data-monthly="$99" data-yearly="$990">$99</span><span class="saas-plan-unit ov-unit">/month</span></div>
-            <ul class="ov-plan-list">
-              <li>✅ Everything in Pro</li><li>✅ Institutional analytics</li>
-              <li>✅ Direct API execution keys</li><li>✅ Custom volume &amp; ML alerts</li><li>✅ Dedicated manager</li>
-            </ul>
-            <button class="ov-btn ov-plan-btn" onclick="handleCheckoutPlan('elite')">Get Started</button>
-          </div>
-          <div class="ov-plan">
-            <h3>Enterprise</h3><div class="ov-plan-for">For institutions &amp; prop teams</div>
-            <div class="ov-price"><span class="ov-price-custom">Custom</span></div>
-            <ul class="ov-plan-list">
-              <li>✅ White-label portal</li><li>✅ Multi-account sub-API desk</li>
-              <li>✅ Dedicated quant engineer</li><li>✅ Custom strategies</li><li>✅ 99.99% SLA</li>
-            </ul>
-            <button class="ov-btn ov-plan-btn" onclick="handleContactEnterprise()">Contact Sales</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- AFFILIATE / PARTNER CTA BAND -->
-      <div class="ov-section">
-        <div class="ov-partner-band">
-          <div class="ov-sec-head" style="margin-bottom:14px;">
-            <div>
-              <span class="ov-eyebrow">VERIFIED PARTNERS</span>
-              <h2 class="ov-sec-title" style="font-size:22px;">Prop Firms &amp; Broker Exclusive Deals</h2>
-              <p class="ov-sec-sub">Hand-verified partners our quant desk actually trades with. Every click supports the platform.</p>
-            </div>
-            <button class="ov-btn ov-btn-outline" onclick="goPage('partners')">View All Partners ➜</button>
-          </div>
-          <div class="ov-partner-grid">
-            <a class="ov-partner-pill" href="https://fundedtradermarkets.com/ref/arnab" target="_blank" rel="noopener sponsored" data-aff="ftm_prop">🏆 Funded Trader Markets <em>$100k accounts</em></a>
-            <a class="ov-partner-pill" href="https://coinswitch.co/pro/signup?code=PmstphH" target="_blank" rel="noopener sponsored" data-aff="coinswitch_pro">🏛 CoinSwitch Pro <em>Signup bonus</em></a>
-            <a class="ov-partner-pill" href="https://www.delta.exchange/?code=YXQSZA" target="_blank" rel="noopener sponsored" data-aff="delta_india">⚡ Delta India <em>10% off fees</em></a>
-            <a class="ov-partner-pill" href="https://affiliates.atlasfunded.com/Tracking/click/?affid=12275&campaign=11320&product_id=1&t_type=Register&t_lang=EN" target="_blank" rel="noopener sponsored" data-aff="atlas_funded">🚀 Atlas Funded <em>20% off</em></a>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- ══════════ VIEW 0: THESMARTMAG TRADE INSTITUTIONAL LANDING PAGE (MATCHES MOCKUP) ══════════ -->
     <div id="view-landing" class="nc-view-pane tsm-view-section active">
       <div class="tsm-landing-hero">
         <div class="tsm-hero-grid">
@@ -822,7 +680,7 @@
             <li><a href="javascript:void(0)" onclick="openAuthModal('login')">Trading</a></li>
             <li><a href="javascript:void(0)" onclick="goPage('chart')">Markets</a></li>
             <li><a href="javascript:void(0)" onclick="goPage('chart')">Tools</a></li>
-            <li><a href="javascript:void(0)" onclick="goPage('overview'); setTimeout(() => document.getElementById('pricingSection')?.scrollIntoView(), 300);">Pricing</a></li>
+            <li><a href="javascript:void(0)" onclick="goPage('landing'); setTimeout(() => document.getElementById('pricingSection')?.scrollIntoView(), 300);">Pricing</a></li>
             <li><a href="javascript:void(0)" onclick="openAuthModal('register')">Education</a></li>
             <li><a href="javascript:void(0)" onclick="goPage('partners')">Partners</a></li>
             <li><a href="javascript:void(0)" onclick="openAuthModal('register')">Help</a></li>
@@ -4273,7 +4131,7 @@
     <!-- Compliance & trust strip (required for AdSense policy + trader transparency) -->
     <div class="tsm-footer-compliance">
       <div class="tsm-footer-links">
-        <a href="/overview" onclick="goPage('overview'); return false;">Overview &amp; Pricing</a> •
+        <a href="/" onclick="goPage('landing'); return false;">Overview &amp; Pricing</a> •
         <a href="/trades" onclick="goPage('trades'); return false;">AI Signals</a> •
         <a href="/partners" onclick="goPage('partners'); return false;">Partner Deals</a> •
         <a href="/news" onclick="goPage('news'); return false;">Market News</a> •
@@ -5431,6 +5289,6 @@
   </div>
 
   <script defer src="agent_3d_workforce.js?v=20261026-live2"></script>
-  <script src="app.js?v=20261026-live2"></script>
+  <script src="app.js?v=20261026-cleanhome"></script>
 </body>
 </html>
