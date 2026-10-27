@@ -26,7 +26,8 @@ class MultiAccountRiskGuardian:
         self.ledger_file = ledger_file
         self.rules = {
             "116810": {
-                "name": "CK Capital $10K Master",
+                "name": "CK Capital $10K (MT5 Master)",
+                "platform": "MetaTrader 5",
                 "starting_balance": 10000.0,
                 "daily_loss_limit_usd": 300.0,
                 "mll_floor_usd": 9500.0,
@@ -34,12 +35,40 @@ class MultiAccountRiskGuardian:
                 "max_lot_per_trade": 0.05
             },
             "655344": {
-                "name": "EquityEdge $50K Follower",
+                "name": "EquityEdge $50K (MT5 Follower)",
+                "platform": "MetaTrader 5",
                 "starting_balance": 50000.0,
                 "daily_loss_limit_usd": 1500.0,
                 "mll_floor_usd": 47000.0,
                 "max_open_trades": 5,
                 "max_lot_per_trade": 0.20
+            },
+            "DELTA_INDIA": {
+                "name": "Delta Exchange India (F&O & Perps)",
+                "platform": "Delta India",
+                "starting_balance": 500.0,
+                "daily_loss_limit_usd": 25.0,
+                "mll_floor_usd": 200.0,
+                "max_open_trades": 5,
+                "max_lot_per_trade": 1.0
+            },
+            "COINSWITCH": {
+                "name": "CoinSwitch Pro (Spot Crypto)",
+                "platform": "CoinSwitch",
+                "starting_balance": 100.0,
+                "daily_loss_limit_usd": 10.0,
+                "mll_floor_usd": 50.0,
+                "max_open_trades": 5,
+                "max_lot_per_trade": 1.0
+            },
+            "MYFUNDEDPERPETUALS": {
+                "name": "MyFundedPerpetuals ($2.5K Challenge)",
+                "platform": "MFP Prop",
+                "starting_balance": 2500.0,
+                "daily_loss_limit_usd": 75.0,
+                "mll_floor_usd": 2350.0,
+                "max_open_trades": 5,
+                "max_lot_per_trade": 0.5
             }
         }
 
