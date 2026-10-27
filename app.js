@@ -377,7 +377,7 @@ function formatLocalizedDateTime(timestamp) {
 }
 
 // Valid page routes — every section is a REAL page (/news, /chart ...) AND a legacy hash (#news) route
-const PAGE_VIEWS = ["landing", "overview", "terminal", "rwa", "partners", "india", "news", "chart", "trades", "signals", "admin", "trader", "blog"];
+const PAGE_VIEWS = ["landing", "overview", "terminal", "rwa", "partners", "india", "news", "chart", "trades", "signals", "admin", "trader", "blog", "copytrade"];
 
 // goPage(page): navigation entry-point used by all nav UI.
 // Soft-routes when the SPA is already loaded (same document), otherwise performs a

@@ -70,6 +70,11 @@
           <span class="sa-nav-icon">💳</span>
           <span class="sa-nav-label">Plans & Payments</span>
         </button>
+                <button class="sa-nav-item" data-tab="copytrading">
+          <span class="sa-nav-icon">&#x2604;</span>
+          <span class="sa-nav-label">MT5 Copy Accounts</span>
+          <span class="sa-badge-count" id="saCopyAccountsCount">2</span>
+        </button>
         <button class="sa-nav-item" data-tab="botcontrol">
           <span class="sa-nav-icon">🤖</span>
           <span class="sa-nav-label">Master Bot & Risk</span>
@@ -610,6 +615,104 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      </section>
+
+            <!-- TAB: MT5 MULTI-ACCOUNT COPY TRADING -->
+      <section class="sa-tab-content" id="tab-copytrading">
+        <div class="sa-section-header">
+          <div>
+            <h1 class="sa-heading">MT5 Multi-Account Replication & Master Trade Copier</h1>
+            <p class="sa-subtext">Manage, monitor, and synchronize all master and follower MT5 accounts under Super Admin authority.</p>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <button class="sa-btn sa-btn-primary" onclick="loadSuperadminCopyTrading()">&#x21BB; Refresh Live Balances</button>
+          </div>
+        </div>
+
+        <!-- Metric Cards -->
+        <div class="sa-grid-cards">
+          <div class="sa-card">
+            <div class="sa-card-lbl">Master Account</div>
+            <div class="sa-card-val cyan" id="saCpMasterLogin">116810</div>
+            <div class="sa-card-sub" id="saCpMasterServer">Goat Funded / CK Capital</div>
+          </div>
+          <div class="sa-card">
+            <div class="sa-card-lbl">Master Equity</div>
+            <div class="sa-card-val green" id="saCpMasterEquity">$9,989.22</div>
+            <div class="sa-card-sub">Drawdown Floor: $9,500.00</div>
+          </div>
+          <div class="sa-card">
+            <div class="sa-card-lbl">Follower Accounts</div>
+            <div class="sa-card-val gold" id="saCpFollowerCount">1 Active</div>
+            <div class="sa-card-sub">Total Combined Pool: $59,146.19</div>
+          </div>
+          <div class="sa-card">
+            <div class="sa-card-lbl">Replication Health</div>
+            <div class="sa-card-val green">100% ONLINE</div>
+            <div class="sa-card-sub">Adaptive Filling: FOK / IOC / RETURN</div>
+          </div>
+        </div>
+
+        <!-- Connected Accounts Management Table -->
+        <div class="sa-table-box" style="margin-top:20px;">
+          <div class="sa-table-head">
+            <h2 class="sa-subheading">All Active MT5 Accounts (Super Admin Registry)</h2>
+            <span class="sa-badge-pill green">&#x25CF; AUTONOMOUS COPIER LIVE</span>
+          </div>
+          <table class="sa-table">
+            <thead>
+              <tr>
+                <th>Tier / Role</th>
+                <th>Account ID</th>
+                <th>Broker & Server</th>
+                <th>Balance / Equity</th>
+                <th>Lot Multiplier</th>
+                <th>Max Lot Cap</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="saCopyAccountsTableBody">
+              <tr>
+                <td><span class="sa-badge-pill gold">MASTER</span></td>
+                <td><strong>116810</strong></td>
+                <td>GoatFunded-Server</td>
+                <td>$9,989.22</td>
+                <td>1.0x (100%)</td>
+                <td>0.01 Lot</td>
+                <td><span class="sa-badge-pill green">ACTIVE MASTER</span></td>
+              </tr>
+              <tr>
+                <td><span class="sa-badge-pill cyan">FOLLOWER</span></td>
+                <td><strong>655344</strong> (50K Instant)</td>
+                <td>EquityEdge-Trade</td>
+                <td>$49,156.97</td>
+                <td>5.0x (Scaled)</td>
+                <td>0.20 Lot</td>
+                <td><span class="sa-badge-pill green">ACTIVE REPLICATING</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Replicated Executions Audit Log -->
+        <div class="sa-table-box" style="margin-top:20px;">
+          <div class="sa-table-head">
+            <h2 class="sa-subheading">Recent Replicated Orders & Execution Audit</h2>
+            <span class="sa-badge-pill cyan">&#x26A1; SYNC FEED</span>
+          </div>
+          <div id="saCopyExecLog" style="padding:16px; display:flex; flex-direction:column; gap:10px;">
+            <div style="padding:12px; background:rgba(0,240,144,0.05); border:1px solid rgba(0,240,144,0.2); border-radius:6px; font-size:12px;">
+              <div style="display:flex; justify-content:space-between; color:#00f090; font-weight:700;">
+                <span>&#x2714; Master Ticket #3100235 &bull; BUY BTCUSD</span>
+                <span>STATUS: EXECUTED &amp; REPLICATED</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; color:#888; margin-top:4px;">
+                <span>Replicated to: 655344 (EquityEdge-Trade) @ 0.05 Lot (5.0x Multiplier)</span>
+                <span>Adaptive Filling: ORDER_FILLING_RETURN</span>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 

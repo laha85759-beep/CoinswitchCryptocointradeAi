@@ -289,7 +289,7 @@ def serve_dashboard():
 # window.location.pathname and renders ONLY that page's specific functionality.
 # NOTE: /admin and /superadmin are dedicated portal pages served further below
 PAGE_ROUTES = ("overview", "terminal", "india", "news", "chart", "rwa",
-               "partners", "trades", "signals", "trader", "blog")
+               "partners", "trades", "signals", "trader", "blog", "copytrade")
 
 def _serve_page():
     response = send_from_directory(os.path.dirname(os.path.abspath(__file__)), "index.html")
