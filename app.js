@@ -41,6 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initNeuralBgCanvas();
   initWorkflowCycle();
   initUserSession();
+  if (typeof window.detectVisitorGeoCurrency === 'function') window.detectVisitorGeoCurrency();
   initAffiliateClickListeners();
   fetchRealData();
   setInterval(fetchRealData, 4000);
@@ -7333,6 +7334,41 @@ window.saasCurrencyRates = {
   AUD: { rate: 1.52, sym: 'A$' }
 };
 window.selectedSaasCurrency = "INR";
+
+// Auto-detect visitor currency based on timezone & locale for global multi-currency checkout
+window.detectVisitorGeoCurrency = function() {
+  try {
+    const tz = (Intl.DateTimeFormat().resolvedOptions().timeZone || "").toLowerCase();
+    const lang = (navigator.language || navigator.userLanguage || "").toLowerCase();
+    let detected = "USD";
+
+    if (tz.includes("calcutta") || tz.includes("kolkata") || tz.includes("india") || lang.includes("en-in") || lang.includes("hi")) {
+      detected = "INR";
+    } else if (tz.includes("dubai") || tz.includes("abu_dhabi") || tz.includes("muscat") || tz.includes("gulf") || tz.includes("riyadh")) {
+      detected = "AED";
+    } else if (tz.includes("london") || lang.includes("en-gb")) {
+      detected = "GBP";
+    } else if (tz.includes("paris") || tz.includes("berlin") || tz.includes("rome") || tz.includes("madrid") || tz.includes("amsterdam") || tz.includes("brussels") || tz.includes("vienna") || tz.includes("europe")) {
+      detected = "EUR";
+    } else if (tz.includes("singapore") || lang.includes("en-sg")) {
+      detected = "SGD";
+    } else if (tz.includes("toronto") || tz.includes("vancouver") || tz.includes("montreal") || tz.includes("canada") || lang.includes("en-ca")) {
+      detected = "CAD";
+    } else if (tz.includes("sydney") || tz.includes("melbourne") || tz.includes("brisbane") || tz.includes("australia") || lang.includes("en-au")) {
+      detected = "AUD";
+    } else {
+      detected = "USD";
+    }
+
+    const sel = document.getElementById("saasCurrencySelector");
+    if (sel) {
+      sel.value = detected;
+    }
+    window.handleSaasCurrencyChange(detected);
+  } catch (e) {
+    window.handleSaasCurrencyChange("INR");
+  }
+};
 
 window.handleSaasCurrencyChange = function(currency) {
   window.selectedSaasCurrency = (currency || "INR").toUpperCase();

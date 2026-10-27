@@ -162,7 +162,7 @@ class NewsTelegramBroadcaster:
         if link:
             msg += f"\n🔗 <a href='{link}'>Read Full Article</a>\n"
             
-        msg += f"\n⚡ <i>TheSmartMag 24/7 Intelligence Wire</i>"
+        msg += f"\n⚡ <i>TheSmartMag 24/7 Intelligence Wire</i>\n👉 <a href=\"https://trade.thesmartmag.com/overview#pricing\"><b>Trade Breaking News Live &gt;&gt;</b></a>"
         return self.send_message(msg)
 
     def broadcast_indian_market_digest(self, indices: Dict[str, Any], top_headlines: List[Dict[str, Any]], options: Optional[Dict[str, Any]] = None, top_stocks: Optional[List[Dict[str, Any]]] = None) -> bool:
@@ -279,7 +279,8 @@ class NewsTelegramBroadcaster:
             f"🎯 <b>Forecast:</b> <code>{forecast}</code>\n"
             f"⏮ <b>Previous:</b> <code>{previous}</code>"
             f"{deviation_note}\n\n"
-            f"⚡ <i>TheSmartMag Live Macro Catalyst Stream</i>"
+            f"⚡ <i>TheSmartMag Live Macro Catalyst Stream</i>
+👉 <a href="https://trade.thesmartmag.com/overview#pricing"><b>Trade This Catalyst Live on Terminal &gt;&gt;</b></a>"
         )
         return self.send_message(msg)
 
@@ -304,7 +305,8 @@ class NewsTelegramBroadcaster:
             f"🎯 <b>Consensus Forecast:</b> <code>{forecast}</code>\n"
             f"⏮ <b>Previous Reading:</b> <code>{previous}</code>\n\n"
             f"🧭 <b>Action Plan:</b> Expect sharp liquidity repricing & volatility on release. Maintain strict stop-losses.\n\n"
-            f"⚡ <i>TheSmartMag Pre-Catalyst Radar</i>"
+            f"⚡ <i>TheSmartMag Pre-Catalyst Radar</i>
+👉 <a href="https://trade.thesmartmag.com/overview#pricing"><b>Protect Funded Capital &amp; Trade Live &gt;&gt;</b></a>"
         )
         return self.send_message(msg)
 
@@ -337,7 +339,8 @@ class NewsTelegramBroadcaster:
         if levels.get("experienced"):
             msg += f"🏛 <b>Institutional Edge:</b> {levels['experienced']}\n"
             
-        msg += f"\n⚡ <i>TheSmartMag Dedicated Forex & Macro Channel</i>"
+        msg += f"\n⚡ <i>TheSmartMag Dedicated Forex & Macro Channel</i>
+👉 <a href="https://trade.thesmartmag.com/overview#pricing"><b>Automate Trade Execution via MT5 Cloud Bridge &gt;&gt;</b></a>"
         return self.send_message(msg)
 
     def broadcast_full_digest(self, indices: Dict[str, Any], options: Dict[str, Any], stocks: List[Dict[str, Any]], calendar_events: List[Dict[str, Any]], signals: List[Dict[str, Any]], news_items: List[Dict[str, Any]]) -> int:
@@ -414,7 +417,7 @@ class NewsTelegramBroadcaster:
                 f"   🎯 Target 1: <code>₹{p['target1']}</code> | 🎯 Target 2: <code>₹{p['target2']}</code>"
             )
 
-        lines.append("\n⚡ <i>TheSmartMag Live Indian Stock & F&O Intelligence</i>")
+        lines.append("\n⚡ <i>TheSmartMag Live Indian Stock & F&O Intelligence</i>\n👉 <a href=\"https://trade.thesmartmag.com/overview#pricing\"><b>Execute Live on CoinSwitch & Delta India &gt;&gt;</b></a>")
         msg = "\n".join(lines)
         return self.send_message(msg)
 
@@ -466,7 +469,7 @@ class NewsTelegramBroadcaster:
                 f"   🗓 <b>Status / Dates:</b> {ipo['status']} • {ipo['dates']}\n"
             )
 
-        lines.append("⚡ <i>TheSmartMag IPO Radar & Primary Market Watch</i>")
+        lines.append("⚡ <i>TheSmartMag IPO Radar & Primary Market Watch</i>\n👉 <a href=\"https://trade.thesmartmag.com/overview#pricing\"><b>Unlock Live Grey Market Premium Analytics &gt;&gt;</b></a>")
         msg = "\n".join(lines)
         return self.send_message(msg)
 
@@ -531,7 +534,7 @@ class NewsTelegramBroadcaster:
                 ico = "🟢" if quotes[us]["chg"] >= 0 else "🔴"
                 lines.append(f"{ico} <b>{us}:</b> {quotes[us]['price']:,.2f} ({quotes[us]['chg']:+.2f}%)")
 
-        lines.append("\n⚡ <i>TheSmartMag Institutional Global Market Feed</i>")
+        lines.append("\n⚡ <i>TheSmartMag Institutional Global Market Feed</i>\n👉 <a href=\"https://trade.thesmartmag.com/overview#pricing\"><b>Access Multi-Currency Quant Terminal &gt;&gt;</b></a>")
         msg = "\n".join(lines)
         return self.send_message(msg)
 
