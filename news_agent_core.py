@@ -654,7 +654,13 @@ class NewsAgentCore:
             try:
                 self.last_digest_time = now_ts
                 self.broadcast_all_fresh_news()
-                log.info("📢 Broadcasted scheduled institutional market digest to @ForexIndian_bot")
+                time.sleep(2)
+                news_broadcaster.broadcast_indian_stocks_and_intraday()
+                time.sleep(2)
+                news_broadcaster.broadcast_ipo_updates()
+                time.sleep(2)
+                news_broadcaster.broadcast_multi_asset_flash()
+                log.info("📢 Broadcasted scheduled comprehensive multi-asset digest to @ForexIndian_bot")
             except Exception as dig_err:
                 log.warning(f"Market digest broadcast notice: {dig_err}")
 

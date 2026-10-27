@@ -254,7 +254,7 @@ class DataCollectorAgent:
                 log.debug("Crypto Scanner analysis failed for %s: %s", symbol, exc)
 
             try:
-                from day_trader_skill_engine import DayTraderSkillEngine
+                from day_trader_skill_engine import DayTraderFullSkillSuite as DayTraderSkillEngine
                 dts_engine = DayTraderSkillEngine(self.cfg)
                 item["day_trader_skill"] = {
                     "entry": dts_engine.evaluate_entry_timing(df, float(df['close'].iloc[-1]), "pump"),
@@ -499,7 +499,7 @@ class RiskManagerAgent:
 
         # Day Trader Skill: Monte Carlo Time-Machine & VWAP Gate
         try:
-            from day_trader_skill_engine import DayTraderSkillEngine
+            from day_trader_skill_engine import DayTraderFullSkillSuite as DayTraderSkillEngine
             dts_engine = DayTraderSkillEngine(self.cfg)
             entry_p = float(signal.get("price") or supporting.get("close") or supporting.get("current_price") or 0)
             sl_p = float(signal.get("suggested_sl") or (entry_p * 0.985 if direction == "long" else entry_p * 1.015))

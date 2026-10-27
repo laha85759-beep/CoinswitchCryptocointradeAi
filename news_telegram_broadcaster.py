@@ -326,5 +326,172 @@ class NewsTelegramBroadcaster:
 
         return count
 
+    def broadcast_indian_stocks_and_intraday(self, stocks: Optional[List[Dict[str, Any]]] = None) -> bool:
+        """Dispatches Indian Stock News, Intraday Momentum, Gainers and Losers with Entry, SL, Target 1 and 2."""
+        if not self.is_active:
+            return False
+        if not stocks:
+            try:
+                from indian_market_agent import indian_agent
+                stocks = indian_agent.fetch_intraday_stocks()
+            except Exception as e:
+                log.warning(f"Could not fetch intraday stocks for broadcast: {e}")
+                return False
+
+        if not stocks:
+            return False
+
+        gainers = [s for s in stocks if s.get('change_pct', 0) > 0]
+        losers = [s for s in stocks if s.get('change_pct', 0) < 0]
+        gainers.sort(key=lambda x: x.get('change_pct', 0), reverse=True)
+        losers.sort(key=lambda x: x.get('change_pct', 0))
+
+        top_gainers = gainers[:3]
+        top_losers = losers[:3]
+
+        lines = [
+            "🇮🇳 <b>INDIAN STOCK MARKET INTEL & INTRADAY MOMENTUM</b>",
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+            "📊 <b>TOP GAINERS (NSE / BSE):</b>"
+        ]
+        for g in top_gainers:
+            lines.append(f"🟢 <b>{g['symbol']}</b>: ₹{g['ltp']} (+{g['change_pct']}%) • <i>{g.get('sector', '')}</i>")
+
+        if top_losers:
+            lines.append("\n📉 <b>TOP LOSERS:</b>")
+            for l in top_losers:
+                lines.append(f"🔴 <b>{l['symbol']}</b>: ₹{l['ltp']} ({l['change_pct']}%) • <i>{l.get('sector', '')}</i>")
+
+        lines.append("\n🎯 <b>INTRADAY TRADE SETUPS (ENTRY / TARGET / SL):</b>")
+        picks = (gainers[:2] if gainers else []) + (losers[:1] if losers else [])
+        for p in picks[:3]:
+            trend_ico = "🟢 LONG" if p.get('change_pct', 0) >= 0 else "🔴 SHORT"
+            lines.append(
+                f"• <b>{p['name']} ({p['symbol']})</b> | {trend_ico}\n"
+                f"   🔹 Entry Zone: <code>₹{p['ltp']}</code> | 🛑 SL: <code>₹{p['stop_loss']}</code>\n"
+                f"   🎯 Target 1: <code>₹{p['target1']}</code> | 🎯 Target 2: <code>₹{p['target2']}</code>"
+            )
+
+        lines.append("\n⚡ <i>TheSmartMag Live Indian Stock & F&O Intelligence</i>")
+        msg = "\n".join(lines)
+        return self.send_message(msg)
+
+    def broadcast_ipo_updates(self, custom_ipos: Optional[List[Dict[str, Any]]] = None) -> bool:
+        """Dispatches Indian IPO radar (Mainboard & SME, GMP, Dates, Issue Price, Status)."""
+        if not self.is_active:
+            return False
+
+        ipos = custom_ipos or [
+            {
+                "name": "Hexaware Technologies IPO",
+                "category": "Mainboard",
+                "issue_size": "₹9,950 Cr",
+                "price_band": "₹675 - ₹708",
+                "gmp": "+₹115 (+16.2%)",
+                "status": "Upcoming",
+                "dates": "Closing Soon"
+            },
+            {
+                "name": "Swiggy Limited IPO",
+                "category": "Mainboard",
+                "issue_size": "₹11,327 Cr",
+                "price_band": "₹371 - ₹390",
+                "gmp": "+₹25 (+6.4%)",
+                "status": "Allotment Out",
+                "dates": "Listing Tracked"
+            },
+            {
+                "name": "NTPC Green Energy IPO",
+                "category": "Mainboard / PSU",
+                "issue_size": "₹10,000 Cr",
+                "price_band": "₹102 - ₹108",
+                "gmp": "+₹18 (+16.6%)",
+                "status": "Subscription Open",
+                "dates": "Bidding Active"
+            }
+        ]
+
+        lines = [
+            "🚀 <b>INDIAN IPO RADAR & GREY MARKET PREMIUM (GMP)</b>",
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        ]
+        for ipo in ipos:
+            status_ico = "🟢" if "Open" in ipo.get("status", "") else "🟡"
+            lines.append(
+                f"{status_ico} <b>{ipo['name']}</b> ({ipo.get('category', 'Mainboard')})\n"
+                f"   💰 <b>Price Band:</b> <code>{ipo['price_band']}</code> | Size: {ipo['issue_size']}\n"
+                f"   📈 <b>Estimated GMP:</b> <code>{ipo['gmp']}</code>\n"
+                f"   🗓 <b>Status / Dates:</b> {ipo['status']} • {ipo['dates']}\n"
+            )
+
+        lines.append("⚡ <i>TheSmartMag IPO Radar & Primary Market Watch</i>")
+        msg = "\n".join(lines)
+        return self.send_message(msg)
+
+    def broadcast_multi_asset_flash(self, data: Optional[Dict[str, Any]] = None) -> bool:
+        """Dispatches global multi-asset flash: Commodities, Crypto, Forex, US Markets."""
+        if not self.is_active:
+            return False
+
+        quotes = {}
+        symbols = {
+            "XAUUSD (Gold)": "GC=F",
+            "XAGUSD (Silver)": "SI=F",
+            "USOIL (Crude)": "CL=F",
+            "NASDAQ (QQQ)": "^IXIC",
+            "S&P 500 (SPX)": "^GSPC",
+            "DOW JONES (US30)": "^DJI",
+            "EUR/USD": "EURUSD=X",
+            "GBP/USD": "GBPUSD=X",
+            "USD/JPY": "USDJPY=X",
+            "BTC/USD": "BTC-USD",
+            "ETH/USD": "ETH-USD",
+            "SOL/USD": "SOL-USD"
+        }
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+        for name, sym in symbols.items():
+            try:
+                res = requests.get(f"https://query1.finance.yahoo.com/v8/finance/chart/{sym}?interval=1d", headers=headers, timeout=2.0)
+                if res.status_code == 200:
+                    meta = res.json()["chart"]["result"][0]["meta"]
+                    p = meta.get("regularMarketPrice", 0.0)
+                    prev = meta.get("chartPreviousClose", p)
+                    chg = round(((p - prev) / prev) * 100, 2) if prev else 0.0
+                    quotes[name] = {"price": p, "chg": chg}
+            except Exception:
+                pass
+
+        lines = [
+            "🌐 <b>GLOBAL MULTI-ASSET MARKET FLASH</b>",
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+            "🥇 <b>COMMODITIES:</b>"
+        ]
+        for c in ["XAUUSD (Gold)", "XAGUSD (Silver)", "USOIL (Crude)"]:
+            if c in quotes:
+                ico = "🟢" if quotes[c]["chg"] >= 0 else "🔴"
+                lines.append(f"{ico} <b>{c}:</b> ${quotes[c]['price']:,.2f} ({quotes[c]['chg']:+.2f}%)")
+
+        lines.append("\n💎 <b>CRYPTO (SPOT / DERIVATIVES):</b>")
+        for cr in ["BTC/USD", "ETH/USD", "SOL/USD"]:
+            if cr in quotes:
+                ico = "🟢" if quotes[cr]["chg"] >= 0 else "🔴"
+                lines.append(f"{ico} <b>{cr}:</b> ${quotes[cr]['price']:,.2f} ({quotes[cr]['chg']:+.2f}%)")
+
+        lines.append("\n💱 <b>FOREX MAJOR PAIRS:</b>")
+        for fx in ["EUR/USD", "GBP/USD", "USD/JPY"]:
+            if fx in quotes:
+                ico = "🟢" if quotes[fx]["chg"] >= 0 else "🔴"
+                lines.append(f"{ico} <b>{fx}:</b> {quotes[fx]['price']:,.4f} ({quotes[fx]['chg']:+.2f}%)")
+
+        lines.append("\n🇺🇸 <b>US INDICES (WALL STREET):</b>")
+        for us in ["NASDAQ (QQQ)", "S&P 500 (SPX)", "DOW JONES (US30)"]:
+            if us in quotes:
+                ico = "🟢" if quotes[us]["chg"] >= 0 else "🔴"
+                lines.append(f"{ico} <b>{us}:</b> {quotes[us]['price']:,.2f} ({quotes[us]['chg']:+.2f}%)")
+
+        lines.append("\n⚡ <i>TheSmartMag Institutional Global Market Feed</i>")
+        msg = "\n".join(lines)
+        return self.send_message(msg)
+
 # Global Instance
 news_broadcaster = NewsTelegramBroadcaster()

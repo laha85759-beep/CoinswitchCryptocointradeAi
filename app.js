@@ -7314,77 +7314,198 @@ window.toggleSaasBillingInterval = function(isYearly) {
   setSaasBillingInterval(isYearly ? "yearly" : "monthly");
 };
 
+// Multi-Currency Rates for dynamic UI display
+window.saasCurrencyRates = {
+  USD: { rate: 1.0, sym: '$' },
+  INR: { rate: 86.5, sym: '₹' },
+  EUR: { rate: 0.92, sym: '€' },
+  GBP: { rate: 0.78, sym: '£' },
+  AED: { rate: 3.67, sym: 'AED ' },
+  SGD: { rate: 1.34, sym: 'S$' },
+  CAD: { rate: 1.38, sym: 'C$' },
+  AUD: { rate: 1.52, sym: 'A$' }
+};
+window.selectedSaasCurrency = "INR";
+
+window.handleSaasCurrencyChange = function(currency) {
+  window.selectedSaasCurrency = (currency || "INR").toUpperCase();
+  const cInfo = window.saasCurrencyRates[window.selectedSaasCurrency] || window.saasCurrencyRates.INR;
+  const rate = cInfo.rate;
+  const sym = cInfo.sym;
+
+  // Update Plan Prices
+  document.querySelectorAll(".saas-plan-price").forEach(el => {
+    const origMonthly = parseFloat((el.getAttribute("data-monthly") || "$19").replace("$", "")) || 19;
+    const origYearly = parseFloat((el.getAttribute("data-yearly") || "$190").replace("$", "")) || 190;
+    const isYearly = window.currentSaasBillingInterval === "yearly";
+    
+    const convertedMonthly = Math.round(origMonthly * rate);
+    const convertedYearly = Math.round(origYearly * rate);
+    
+    el.setAttribute("data-monthly-converted", `${sym}${convertedMonthly.toLocaleString()}`);
+    el.setAttribute("data-yearly-converted", `${sym}${convertedYearly.toLocaleString()}`);
+    
+    el.textContent = isYearly ? `${sym}${convertedYearly.toLocaleString()}` : `${sym}${convertedMonthly.toLocaleString()}`;
+  });
+};
+
 window.handleCheckoutPlan = async function(planId) {
-  const token = localStorage.getItem("tsm_jwt_token") || getCookie("auth_token");
+  const token = localStorage.getItem("tsm_user_token") || localStorage.getItem("tsm_jwt_token") || getCookie("auth_token");
   if (!token) {
     closeSaasUpgradeModal();
     if (typeof openAuthModal === "function") openAuthModal("register");
     if (typeof showFloatingToast === "function") {
-      showFloatingToast("Please register or log in first before choosing a plan.", "gold");
+      showFloatingToast("Please register or log in first before completing checkout.", "gold");
     }
     return;
   }
 
   const interval = window.currentSaasBillingInterval || "monthly";
+  const currency = window.selectedSaasCurrency || "INR";
+
   try {
-    const res = await fetch("/api/saas/create-checkout-session", {
+    if (typeof showFloatingToast === "function") {
+      showFloatingToast(`Initiating secure ${currency} checkout via Razorpay...`, "cyan");
+    }
+
+    const res = await fetch("/api/saas/razorpay/create-order", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-      body: JSON.stringify({ plan_id: planId, interval: interval })
+      body: JSON.stringify({ plan_id: planId, interval: interval, currency: currency })
     });
     const data = await res.json();
-    if (data.status === "success") {
-      if (data.simulated) {
-        // Activate instantly in test/direct mode
-        await fetch("/api/saas/activate-subscription", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-          body: JSON.stringify({ plan_id: planId, interval: interval })
-        });
-        closeSaasUpgradeModal();
-        await fetchUserSubscriptionData();
-        alert(`🎉 Subscription Activated! You now have full access to ${planId.toUpperCase()} Trader features.`);
-        if (typeof switchView === "function") switchView("trader");
-      } else if (data.checkout_url) {
-        window.location.href = data.checkout_url;
-      }
-    } else {
-      alert(`Checkout Notice: ${data.message || 'Unable to initiate Stripe checkout'}`);
+    if (data.status !== "success" || !data.order_id) {
+      alert(`Payment Initialization Notice: ${data.message || 'Unable to create Razorpay order'}`);
+      return;
     }
+
+    // Launch Official Razorpay Modal
+    if (typeof Razorpay === "undefined") {
+      alert("Razorpay payment gateway SDK is loading. Please click pay again in 2 seconds.");
+      return;
+    }
+
+    const options = {
+      key: data.key_id,
+      amount: data.amount,
+      currency: data.currency,
+      name: "TheSmartMag Institutional",
+      description: data.plan_name || `Access to ${planId.toUpperCase()} Trader`,
+      order_id: data.order_id,
+      image: "https://trade.thesmartmag.com/favicon.ico",
+      theme: { color: "#00F090" },
+      prefill: {
+        email: (currentUser && currentUser.email) || "",
+        name: (currentUser && currentUser.name) || ""
+      },
+      handler: async function (response) {
+        try {
+          if (typeof showFloatingToast === "function") {
+            showFloatingToast("Verifying payment signature with Razorpay servers...", "gold");
+          }
+          const verifyRes = await fetch("/api/saas/razorpay/verify-payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              plan_id: planId,
+              interval: interval,
+              currency: currency
+            })
+          });
+          const verifyData = await verifyRes.json();
+          if (verifyData.status === "success") {
+            closeSaasUpgradeModal();
+            await fetchUserSubscriptionData();
+            alert(`🎉 Payment Verified! Welcome to ${planId.toUpperCase()} Trader with full platform access.`);
+            if (typeof switchView === "function") switchView("trader");
+          } else {
+            alert(`Verification Error: ${verifyData.message || 'Payment signature could not be verified'}`);
+          }
+        } catch (vErr) {
+          alert(`Verification network error: ${vErr.message}`);
+        }
+      },
+      modal: {
+        ondismiss: function() {
+          console.log("Razorpay checkout modal dismissed by user.");
+        }
+      }
+    };
+
+    const rzp = new Razorpay(options);
+    rzp.open();
+
   } catch (err) {
     alert(`Checkout error: ${err.message}`);
   }
 };
 
 window.handleCheckoutAddon = async function(addonId) {
-  const token = localStorage.getItem("tsm_jwt_token") || getCookie("auth_token");
+  const token = localStorage.getItem("tsm_user_token") || localStorage.getItem("tsm_jwt_token") || getCookie("auth_token");
   if (!token) {
     closeSaasUpgradeModal();
     if (typeof openAuthModal === "function") openAuthModal("register");
     return;
   }
 
+  const currency = window.selectedSaasCurrency || "INR";
   try {
-    const res = await fetch("/api/saas/create-checkout-session", {
+    const res = await fetch("/api/saas/razorpay/create-order", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-      body: JSON.stringify({ addon_id: addonId })
+      body: JSON.stringify({ addon_id: addonId, currency: currency })
     });
     const data = await res.json();
-    if (data.status === "success") {
-      if (data.simulated) {
-        await fetch("/api/saas/activate-subscription", {
+    if (data.status !== "success" || !data.order_id) {
+      alert(`Payment Initialization Notice: ${data.message || 'Unable to create Razorpay order'}`);
+      return;
+    }
+
+    if (typeof Razorpay === "undefined") {
+      alert("Razorpay SDK is loading. Please try again in 2 seconds.");
+      return;
+    }
+
+    const options = {
+      key: data.key_id,
+      amount: data.amount,
+      currency: data.currency,
+      name: "TheSmartMag Add-on",
+      description: data.plan_name || `One-Time Add-on: ${addonId}`,
+      order_id: data.order_id,
+      theme: { color: "#00F090" },
+      prefill: {
+        email: (currentUser && currentUser.email) || "",
+        name: (currentUser && currentUser.name) || ""
+      },
+      handler: async function (response) {
+        const verifyRes = await fetch("/api/saas/razorpay/verify-payment", {
           method: "POST",
           headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-          body: JSON.stringify({ plan_id: addonId })
+          body: JSON.stringify({
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+            addon_id: addonId,
+            currency: currency
+          })
         });
-        closeSaasUpgradeModal();
-        await fetchUserSubscriptionData();
-        alert(`🎉 One-Time Add-on Activated! Permanent access granted.`);
-      } else if (data.checkout_url) {
-        window.location.href = data.checkout_url;
+        const verifyData = await verifyRes.json();
+        if (verifyData.status === "success") {
+          closeSaasUpgradeModal();
+          await fetchUserSubscriptionData();
+          alert(`🎉 Add-on Payment Verified! Permanent access granted.`);
+        } else {
+          alert(`Verification Error: ${verifyData.message}`);
+        }
       }
-    }
+    };
+    const rzp = new Razorpay(options);
+    rzp.open();
+
   } catch (err) {
     alert(`Add-on checkout error: ${err.message}`);
   }

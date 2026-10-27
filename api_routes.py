@@ -2245,6 +2245,76 @@ def saas_create_checkout(current_user):
     )
     return jsonify(result)
 
+# ── RAZORPAY MULTI-CURRENCY PAYMENT GATEWAY ENDPOINTS ────────────────────────
+@api_bp.route("/api/saas/razorpay/create-order", methods=["POST"])
+@user_required
+def saas_razorpay_create_order(current_user):
+    """Creates a Razorpay order in user-selected currency (INR, USD, EUR, GBP, AED, etc.)"""
+    data = request.get_json(silent=True) or {}
+    plan_or_addon_id = data.get("plan_id") or data.get("addon_id") or "pro"
+    interval = data.get("interval", "monthly")
+    currency = data.get("currency", "INR").upper()
+
+    result = SaaSService.create_razorpay_order(
+        user_id=current_user["id"],
+        user_email=current_user["email"],
+        plan_or_addon_id=plan_or_addon_id,
+        billing_interval=interval,
+        currency=currency
+    )
+    return jsonify(result)
+
+# ── TELEGRAM MARKET NEWS, STOCKS & IPO BROADCAST TRIGGER ENDPOINTS ──────────
+@api_bp.route("/api/news/broadcast-indian-stocks", methods=["POST"])
+@superadmin_required
+def trigger_broadcast_indian_stocks(current_admin):
+    """Manual or automated trigger to dispatch Indian Stock news & momentum setups to Telegram."""
+    from news_telegram_broadcaster import news_broadcaster
+    success = news_broadcaster.broadcast_indian_stocks_and_intraday()
+    return jsonify({"status": "success" if success else "error", "broadcasted": success})
+
+@api_bp.route("/api/news/broadcast-ipo", methods=["POST"])
+@superadmin_required
+def trigger_broadcast_ipo(current_admin):
+    """Manual or automated trigger to dispatch Indian IPO radar & GMP to Telegram."""
+    from news_telegram_broadcaster import news_broadcaster
+    success = news_broadcaster.broadcast_ipo_updates()
+    return jsonify({"status": "success" if success else "error", "broadcasted": success})
+
+@api_bp.route("/api/news/broadcast-multi-asset", methods=["POST"])
+@superadmin_required
+def trigger_broadcast_multi_asset(current_admin):
+    """Manual or automated trigger to dispatch Global Multi-Asset Flash (Commodities, Crypto, Forex, US)."""
+    from news_telegram_broadcaster import news_broadcaster
+    success = news_broadcaster.broadcast_multi_asset_flash()
+    return jsonify({"status": "success" if success else "error", "broadcasted": success})
+
+@api_bp.route("/api/saas/razorpay/verify-payment", methods=["POST"])
+@user_required
+def saas_razorpay_verify_payment(current_user):
+    """Cryptographically verifies Razorpay payment signature and activates user services."""
+    data = request.get_json(silent=True) or {}
+    razorpay_order_id = (data.get("razorpay_order_id") or "").strip()
+    razorpay_payment_id = (data.get("razorpay_payment_id") or "").strip()
+    razorpay_signature = (data.get("razorpay_signature") or "").strip()
+    plan_or_addon_id = data.get("plan_id") or data.get("addon_id") or "pro"
+    interval = data.get("interval", "monthly")
+    currency = data.get("currency", "INR").upper()
+
+    if not razorpay_order_id or not razorpay_payment_id or not razorpay_signature:
+        return jsonify({"status": "error", "message": "Missing payment signature or IDs"}), 400
+
+    result = SaaSService.verify_and_activate_razorpay_payment(
+        user_id=current_user["id"],
+        razorpay_order_id=razorpay_order_id,
+        razorpay_payment_id=razorpay_payment_id,
+        razorpay_signature=razorpay_signature,
+        plan_or_addon_id=plan_or_addon_id,
+        billing_interval=interval,
+        currency=currency
+    )
+    return jsonify(result)
+
 @api_bp.route("/api/saas/activate-subscription", methods=["POST"])
 @user_required
 def saas_activate_instant(current_user):

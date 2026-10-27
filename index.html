@@ -4977,14 +4977,31 @@
     <div class="tsm-auth-modal-card" style="max-width:920px; width:95%; max-height:90vh; overflow-y:auto;">
       <div class="tsm-auth-header-bar">
         <div>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span class="tsm-badge-pill green">💳 SECURE USD SUBSCRIPTION</span>
-            <span class="tsm-badge-pill gold">STRIPE + RISE BUSINESS USD</span>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="tsm-badge-pill green">⚡ RAZORPAY LIVE INTEGRATED</span>
+            <span class="tsm-badge-pill gold">UPI • CARDS • NETBANKING • MULTI-CURRENCY</span>
           </div>
           <div class="tsm-auth-title" style="font-size:18px; margin-top:4px;">Institutional Quant Access Plans</div>
           <div style="font-size:11px; color:var(--text-sec);">Choose a subscription plan to unlock real-time signals, Jarvis AI Voice, and institutional analytics.</div>
         </div>
         <button type="button" class="tsm-auth-close-btn" onclick="closeSaasUpgradeModal()">✕</button>
+      </div>
+
+      <!-- Currency & Payment Selector -->
+      <div style="display:flex; justify-content:center; align-items:center; gap:12px; margin:10px auto 6px auto; flex-wrap:wrap;">
+        <span style="font-size:12px; font-weight:700; color:var(--text-sec); display:flex; align-items:center; gap:6px;">
+          <span>🌐 Pay in your currency:</span>
+          <select id="saasCurrencySelector" class="tsm-select" style="padding:4px 10px; font-size:12px; font-weight:800; border-radius:6px; background:#040d1a; color:var(--neon-green); border:1px solid rgba(0,240,144,0.4); cursor:pointer;" onchange="handleSaasCurrencyChange(this.value)">
+            <option value="INR" selected>🇮🇳 INR (₹) • UPI / RuPay / NetBanking</option>
+            <option value="USD">🇺🇸 USD ($) • Credit/Debit Cards</option>
+            <option value="EUR">🇪🇺 EUR (€) • Eurozone Cards</option>
+            <option value="GBP">🇬🇧 GBP (£) • UK Cards</option>
+            <option value="AED">🇦🇪 AED (AED) • UAE &amp; Middle East</option>
+            <option value="SGD">🇸🇬 SGD (S$) • Singapore &amp; Asia</option>
+            <option value="CAD">🇨🇦 CAD (C$) • Canada</option>
+            <option value="AUD">🇦🇺 AUD (A$) • Australia</option>
+          </select>
+        </span>
       </div>
 
       <!-- Billing Cycle Toggle (Monthly vs Yearly - 20% OFF) -->
@@ -5393,6 +5410,7 @@
   </div>
 
   <script defer src="agent_3d_workforce.js?v=20261026-live2"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script src="app.js?v=copytrade-1793116327"></script>
 </body>
 </html>

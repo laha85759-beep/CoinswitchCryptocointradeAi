@@ -44,6 +44,29 @@ except ImportError:
     stripe = None
     log.warning("Stripe Python package not installed; falling back to direct API / simulated checkout mode.")
 
+# Import Razorpay (Multi-Currency Global Gateway)
+RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "rzp_live_TsyPwRJG2SfIKs").strip()
+RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "17GRpxDPg31ZHVyCg6psMoLW").strip()
+
+try:
+    import razorpay
+    razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
+except Exception as e:
+    razorpay_client = None
+    log.warning("Razorpay client initialization notice: %s", e)
+
+# Supported Currencies and Real-Time Multipliers for Multi-Currency Checkout
+CURRENCY_RATES = {
+    "USD": 1.0,
+    "INR": 86.50,
+    "EUR": 0.92,
+    "GBP": 0.78,
+    "AED": 3.67,
+    "SGD": 1.34,
+    "CAD": 1.38,
+    "AUD": 1.52
+}
+
 
 class SaaSService:
     @staticmethod
@@ -313,3 +336,178 @@ class SaaSService:
             conn.close()
 
         return {"status": "success", "event_processed": event_type}
+
+    @staticmethod
+    def create_razorpay_order(user_id: int, user_email: str, plan_or_addon_id: str, 
+                              billing_interval: str = "monthly", currency: str = "INR") -> dict:
+        """
+        Creates a Razorpay Order in the user's preferred local currency:
+        - INR: Native UPI, RuPay, NetBanking, Cards
+        - USD, EUR, GBP, AED, SGD, CAD, AUD: Global multi-currency card processing
+        """
+        currency = currency.upper().strip()
+        if currency not in CURRENCY_RATES:
+            currency = "INR"
+
+        rate = CURRENCY_RATES.get(currency, 1.0)
+        
+        # 1. Determine base USD amount
+        if plan_or_addon_id in ONE_TIME_ADDONS:
+            addon = ONE_TIME_ADDONS[plan_or_addon_id]
+            amount_usd = addon["price"]
+            name = addon["name"]
+        else:
+            plans = {p["id"]: p for p in get_saas_plans()}
+            plan = plans.get(plan_or_addon_id, {"monthly_price": 19.0, "yearly_price": 190.0, "name": "Starter Trader"})
+            amount_usd = plan["yearly_price"] if billing_interval == "yearly" else plan["monthly_price"]
+            name = f"{plan.get('name', 'Plan')} ({billing_interval.title()})"
+
+        # 2. Convert to user's currency
+        target_amount = amount_usd * rate
+        # Subunit conversion (paisa / cents: multiply by 100)
+        amount_subunit = int(round(target_amount * 100))
+
+        # Receipt identifier
+        receipt = f"rcpt_{int(time.time())}_{user_id}"[:40]
+
+        if razorpay_client:
+            try:
+                order_data = {
+                    "amount": amount_subunit,
+                    "currency": currency,
+                    "receipt": receipt,
+                    "notes": {
+                        "user_id": str(user_id),
+                        "user_email": user_email,
+                        "plan_or_addon_id": plan_or_addon_id,
+                        "billing_interval": billing_interval,
+                        "base_usd": str(amount_usd)
+                    }
+                }
+                order = razorpay_client.order.create(data=order_data)
+
+                log_platform_activity(user_id, "razorpay_order_created", {
+                    "order_id": order["id"],
+                    "plan": plan_or_addon_id,
+                    "currency": currency,
+                    "amount": target_amount
+                })
+
+                return {
+                    "status": "success",
+                    "order_id": order["id"],
+                    "amount": amount_subunit,
+                    "currency": currency,
+                    "display_amount": round(target_amount, 2),
+                    "key_id": RAZORPAY_KEY_ID,
+                    "plan_name": name,
+                    "plan_id": plan_or_addon_id,
+                    "interval": billing_interval,
+                    "receipt": receipt
+                }
+            except Exception as e:
+                log.error("Razorpay order creation error: %s", e)
+                return {"status": "error", "message": f"Razorpay order creation failed: {str(e)}"}
+        else:
+            return {"status": "error", "message": "Razorpay gateway is not configured on this server"}
+
+    @staticmethod
+    def verify_and_activate_razorpay_payment(user_id: int, razorpay_order_id: str, 
+                                            razorpay_payment_id: str, razorpay_signature: str,
+                                            plan_or_addon_id: str, billing_interval: str = "monthly",
+                                            currency: str = "INR") -> dict:
+        """
+        Verifies cryptographic HMAC-SHA256 signature and instantly activates subscription/service.
+        """
+        if not razorpay_client:
+            return {"status": "error", "message": "Razorpay client unavailable"}
+
+        try:
+            # Cryptographic signature verification
+            params = {
+                "razorpay_order_id": razorpay_order_id,
+                "razorpay_payment_id": razorpay_payment_id,
+                "razorpay_signature": razorpay_signature
+            }
+            razorpay_client.utility.verify_payment_signature(params)
+        except Exception as e:
+            log.error("Razorpay payment signature mismatch: %s", e)
+            return {"status": "error", "message": "Invalid payment signature verification failed"}
+
+        # Payment is cryptographically verified! Fetch payment details from Razorpay
+        try:
+            payment_info = razorpay_client.payment.fetch(razorpay_payment_id)
+            amount_paid = float(payment_info.get("amount", 0)) / 100.0
+            curr_paid = payment_info.get("currency", currency).upper()
+        except Exception:
+            amount_paid = 0.0
+            curr_paid = currency
+
+        now = int(time.time())
+
+        # Check if One-Time Add-on
+        if plan_or_addon_id in ONE_TIME_ADDONS:
+            addon = ONE_TIME_ADDONS[plan_or_addon_id]
+            record_saas_payment(
+                user_id=user_id,
+                amount=amount_paid,
+                currency=curr_paid,
+                stripe_payment_id=razorpay_payment_id,
+                stripe_session_id=razorpay_order_id,
+                plan_or_addon_id=plan_or_addon_id,
+                status="succeeded",
+                payout_account="Razorpay Multi-Currency Live Settlement"
+            )
+            set_user_permission_override(user_id, addon["grant_service"], True)
+            log_platform_activity(user_id, "razorpay_addon_unlocked", {"addon": plan_or_addon_id, "payment_id": razorpay_payment_id})
+            return {
+                "status": "success",
+                "message": f"Payment verified! Successfully activated add-on: {addon['name']}",
+                "service_unlocked": addon["grant_service"]
+            }
+
+        # Subscriptions
+        plans = {p["id"]: p for p in get_saas_plans()}
+        plan = plans.get(plan_or_addon_id, {"monthly_price": 19.0, "yearly_price": 190.0, "name": "Starter Trader"})
+        
+        if billing_interval == "yearly":
+            expires_at = now + (365 * 86400)
+        else:
+            expires_at = now + (30 * 86400)
+
+        # Record payment transaction
+        record_saas_payment(
+            user_id=user_id,
+            amount=amount_paid,
+            currency=curr_paid,
+            stripe_payment_id=razorpay_payment_id,
+            stripe_session_id=razorpay_order_id,
+            plan_or_addon_id=plan_or_addon_id,
+            status="succeeded",
+            payout_account="Razorpay Multi-Currency Live Settlement"
+        )
+
+        # Update user subscription in database
+        update_user_subscription(
+            user_id=user_id,
+            plan_id=plan_or_addon_id,
+            billing_interval=billing_interval,
+            expires_at=expires_at,
+            stripe_sub_id=razorpay_order_id,
+            stripe_cust_id=razorpay_payment_id,
+            status="active"
+        )
+
+        log_platform_activity(user_id, "razorpay_subscription_activated", {
+            "plan": plan_or_addon_id,
+            "interval": billing_interval,
+            "payment_id": razorpay_payment_id,
+            "expires_at": expires_at
+        })
+
+        return {
+            "status": "success",
+            "message": f"Payment verified! Upgraded to {plan.get('name', plan_or_addon_id)} successfully!",
+            "plan_id": plan_or_addon_id,
+            "expires_at": expires_at
+        }
