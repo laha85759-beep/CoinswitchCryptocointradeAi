@@ -1267,8 +1267,28 @@ class DualMonitorAgent:
             import urllib.request
             from webhook_server import _MT5_COMMAND_QUEUE
             raw_sym = approval["symbol"]
-            clean_sym = raw_sym.replace("/USDT", "").replace("USDT", "").upper()
-            mt5_sym = "XAUUSD" if "XAU" in clean_sym or "GOLD" in clean_sym else (f"{clean_sym}USD" if "BTC" in clean_sym or "ETH" in clean_sym else clean_sym)
+            clean_sym = raw_sym.replace("/USDT", "").replace("USDT", "").replace("/USD", "").replace("USD", "").upper()
+            
+            # Universal MT5 Symbol Mapper:
+            # 1. Commodities & Precious Metals
+            if any(x in clean_sym for x in ["XAU", "GOLD"]):
+                mt5_sym = "XAUUSD"
+            elif any(x in clean_sym for x in ["XAG", "SILVER"]):
+                mt5_sym = "XAGUSD"
+            elif any(x in clean_sym for x in ["USOIL", "WTI", "CRUDE"]):
+                mt5_sym = "USOIL"
+            # 2. US Stock Indices & Tech Stocks
+            elif any(x in clean_sym for x in ["US100", "NDX", "NASDAQ", "QQQ"]):
+                mt5_sym = "US100"
+            elif any(x in clean_sym for x in ["US500", "SPX", "SP500"]):
+                mt5_sym = "US500"
+            elif any(x in clean_sym for x in ["US30", "DJI", "DOW"]):
+                mt5_sym = "US30"
+            elif clean_sym in ["NVDA", "TSLA", "AAPL", "MSFT", "AMZN", "META", "GOOGL"]:
+                mt5_sym = clean_sym
+            # 3. Major Cryptos & Altcoins (e.g., BTC -> BTCUSD, ETH -> ETHUSD, SOL -> SOLUSD, DOGE -> DOGEUSD)
+            else:
+                mt5_sym = f"{clean_sym}USD" 
             action = "BUY" if approval.get("direction") == "long" else "SELL"
             
             cmd = {
