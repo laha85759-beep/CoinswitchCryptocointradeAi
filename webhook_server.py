@@ -2298,3 +2298,51 @@ def mt5_send_command():
     _MT5_COMMAND_QUEUE.append(cmd)
     log.info("Enqueued MT5 Command: %s", cmd)
     return jsonify({"status": "enqueued", "command": cmd}), 200
+
+
+# ==============================================================================
+# COPY TRADING MULTI-ACCOUNT API
+# ==============================================================================
+@app.route("/api/copytrading/accounts", methods=["GET"])
+def get_copytrading_accounts():
+    try:
+        from mt5_copy_trading_engine import SuperBrainMT5Copier
+        copier = SuperBrainMT5Copier()
+        cfg = copier.load_config()
+        # hide passwords for security in UI
+        safe_followers = []
+        for f in cfg.get("follower_accounts", []):
+            safe_f = dict(f)
+            safe_f["password"] = "********" if safe_f.get("password") else ""
+            safe_followers.append(safe_f)
+        
+        telemetry = _MT5_TELEMETRY if isinstance(_MT5_TELEMETRY, dict) else {}
+        return jsonify({
+            "status": "success",
+            "master_account": cfg.get("master_account", {}),
+            "master_telemetry": telemetry,
+            "followers": safe_followers,
+            "recent_executions": _MT5_RECENT_EXECUTIONS[-15:]
+        })
+    except Exception as exc:
+        return jsonify({"status": "error", "message": str(exc)}), 500
+
+@app.route("/api/copytrading/add-account", methods=["POST"])
+def add_copytrading_account():
+    try:
+        data = request.get_json(force=True) or {}
+        login = data.get("login")
+        password = data.get("password", "")
+        server = data.get("server", "")
+        multiplier = float(data.get("lot_multiplier", 1.0))
+        max_lot = float(data.get("max_lot", 0.05))
+        
+        if not login or not server:
+            return jsonify({"status": "error", "message": "Missing login or server"}), 400
+            
+        from mt5_copy_trading_engine import SuperBrainMT5Copier
+        copier = SuperBrainMT5Copier()
+        acc = copier.add_follower_account(login, password, server, lot_multiplier=multiplier, max_lot=max_lot)
+        return jsonify({"status": "success", "message": f"Account {login} registered successfully", "account": acc})
+    except Exception as exc:
+        return jsonify({"status": "error", "message": str(exc)}), 500

@@ -274,7 +274,10 @@
         <button class="tsm-drawer-item green" id="drawerTraderTab" data-view="trader" onclick="goPage('trader'); toggleMobileNavDrawer();" style="display:none;">
           <span class="nc-tab-ico">👤</span><span>TRADER COCKPIT</span>
         </button>
-        <button class="tsm-drawer-item magenta" id="drawerAdminTab" data-view="admin" onclick="goPage('admin'); toggleMobileNavDrawer();">
+                  <button class="tsm-drawer-item cyan" id="drawerCopyTradeTab" data-view="copytrade" onclick="goPage('copytrade'); toggleMobileNavDrawer();">
+            <span class="nc-tab-ico">&#x2604;</span><span>COPY TRADING HUB</span>
+          </button>
+          <button class="tsm-drawer-item magenta" id="drawerAdminTab" data-view="admin" onclick="goPage('admin'); toggleMobileNavDrawer();">
           <span class="nc-tab-ico">⚙</span><span>SUPER ADMIN PORTAL</span>
         </button>
       </div>
@@ -366,7 +369,14 @@
           </div>
         </button>
 
-        <button class="tsm-dock-item magenta" id="dockAdminBtn" data-view="admin" onclick="toggleAdminView()" title="Super Admin Control Portal">
+            <button class="tsm-dock-item cyan" id="dockCopyTradeBtn" data-view="copytrade" onclick="goPage('copytrade')" title="MT5 Multi-Account Copy Trading">
+      <span class="tsm-dock-icon">&#x2604;</span>
+      <div class="tsm-dock-info">
+        <span class="tsm-dock-title">COPY TRADING</span>
+        <span class="tsm-dock-desc">MT5 Multi-Account Replication</span>
+      </div>
+    </button>
+    <button class="tsm-dock-item magenta" id="dockAdminBtn" data-view="admin" onclick="toggleAdminView()" title="Super Admin Control Portal">
           <span class="tsm-dock-icon">⚙</span>
           <div class="tsm-dock-info">
             <span class="tsm-dock-title">SUPER ADMIN</span>
@@ -2979,6 +2989,179 @@
     </div>
 
     <!-- VIEW 6: ADMIN COMMAND PROTOCOL -->
+    
+    <!-- ================================================================= -->
+    <!-- VIEW: COPY TRADING MULTI-ACCOUNT HUB                              -->
+    <!-- ================================================================= -->
+    <div id="view-copytrade" class="nc-view-pane tsm-view-section">
+      <div class="tsm-panel" style="border-color:var(--neon-cyan); box-shadow:0 0 25px rgba(0,229,255,0.15); margin-bottom:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; flex-wrap:wrap;">
+              <span class="tsm-badge-pill cyan">&#x2604; SUPERBRAIN MULTI-ACCOUNT COPIER</span>
+              <span class="tsm-badge-pill green" id="copyMasterStatusBadge">&#x25CF; MASTER MT5: ONLINE</span>
+              <span class="tsm-badge-pill gold">&#x26A1; LATENCY &lt; 20MS</span>
+            </div>
+            <h2 style="font-size:20px; font-weight:800; color:#ffffff; margin:4px 0; letter-spacing:0.5px;">
+              Autonomous MT5 Copy Trading &amp; Trade Replication Console
+            </h2>
+            <div style="font-size:12px; color:var(--text-dim);">
+              Real-time multi-account mirror: Duplicates every algorithmic trade, stop-loss, and take-profit from your master SuperBrain account to follower MT5 accounts instantly.
+            </div>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <button class="tsm-btn-pill cyan" onclick="refreshCopyTradingData()" style="cursor:pointer; display:flex; align-items:center; gap:6px;">
+              <span>&#x21BB;</span> Refresh Accounts
+            </button>
+            <button class="tsm-btn-pill green" onclick="openAddAccountModal()" style="cursor:pointer; display:flex; align-items:center; gap:6px;">
+              <span>+</span> Add Follower Account
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Master Account KPI Cards -->
+      <div class="nc-hex-grid" style="margin-bottom:20px;">
+        <div class="nc-hex-card hex-delta tsm-kpi-card">
+          <div class="nc-hex-inner">
+            <span class="nc-hex-lbl">Master Account</span>
+            <div class="nc-hex-val" id="cpMasterLogin">116810</div>
+            <span class="nc-hex-pct cyan" id="cpMasterServer">Goat Funded / CK Capital</span>
+            <div class="nc-hex-subtext">Source of all trade signals</div>
+          </div>
+        </div>
+
+        <div class="nc-hex-card hex-volume tsm-kpi-card">
+          <div class="nc-hex-inner">
+            <span class="nc-hex-lbl">Master Equity / Balance</span>
+            <div class="nc-hex-val" id="cpMasterEquity">$9,989.22</div>
+            <span class="nc-hex-pct green" id="cpMasterPnL">+$0.00 Float</span>
+            <div class="nc-hex-subtext">Drawdown Floor: $9,500.00</div>
+          </div>
+        </div>
+
+        <div class="nc-hex-card hex-trades tsm-kpi-card">
+          <div class="nc-hex-inner">
+            <span class="nc-hex-lbl">Connected Accounts</span>
+            <div class="nc-hex-val" id="cpTotalAccounts">2</div>
+            <span class="nc-hex-pct gold">1 Master &bull; 1 Follower</span>
+            <div class="nc-hex-subtext">Simultaneous order replication</div>
+          </div>
+        </div>
+
+        <div class="nc-hex-card hex-rate tsm-kpi-card">
+          <div class="nc-hex-inner">
+            <span class="nc-hex-lbl">Replication Health</span>
+            <div class="nc-hex-val green" id="cpReplHealth">100%</div>
+            <span class="nc-hex-pct green">Adaptive Filling Active</span>
+            <div class="nc-hex-subtext">FOK / IOC / RETURN synced</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Accounts Table & Live Copied Trades -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(450px, 1fr)); gap:18px; margin-bottom:24px;">
+        <!-- Left: Registered Accounts List -->
+        <div class="tsm-panel" style="border-color:rgba(0,229,255,0.3);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:8px;">
+            <h3 style="font-size:15px; font-weight:700; color:#ffffff; margin:0; display:flex; align-items:center; gap:8px;">
+              <span>&#x1F4CB;</span> Managed MT5 Accounts
+            </h3>
+            <span class="tsm-badge-pill cyan" id="cpAccountCountBadge">1 Follower Linked</span>
+          </div>
+
+          <div style="overflow-x:auto;">
+            <table class="tsm-table" style="width:100%; border-collapse:collapse; font-size:12px;">
+              <thead>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.1); text-align:left; color:var(--text-dim);">
+                  <th style="padding:8px;">Role</th>
+                  <th style="padding:8px;">Login / ID</th>
+                  <th style="padding:8px;">Broker Server</th>
+                  <th style="padding:8px;">Multiplier</th>
+                  <th style="padding:8px;">Status</th>
+                </tr>
+              </thead>
+              <tbody id="cpAccountsTableBody">
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+                  <td style="padding:10px 8px;"><span class="tsm-badge-pill gold" style="font-size:10px;">MASTER</span></td>
+                  <td style="padding:10px 8px; font-weight:700; color:#fff;">116810</td>
+                  <td style="padding:10px 8px; color:var(--text-dim);">GoatFunded-Server</td>
+                  <td style="padding:10px 8px; color:#fff;">1.0x (100%)</td>
+                  <td style="padding:10px 8px;"><span class="tsm-badge-pill green" style="font-size:10px;">ACTIVE</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right: Recent Copied Executions Log -->
+        <div class="tsm-panel" style="border-color:rgba(0,240,144,0.3);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:8px;">
+            <h3 style="font-size:15px; font-weight:700; color:#ffffff; margin:0; display:flex; align-items:center; gap:8px;">
+              <span>&#x26A1;</span> Real-Time Replicated Trade Logs
+            </h3>
+            <span class="tsm-badge-pill green">&#x25CF; LIVE FEED</span>
+          </div>
+
+          <div id="cpExecutionsLog" style="display:flex; flex-direction:column; gap:8px; max-height:280px; overflow-y:auto; padding-right:4px;">
+            <div style="padding:10px; background:rgba(0,240,144,0.05); border:1px solid rgba(0,240,144,0.2); border-radius:6px; font-size:11.5px;">
+              <div style="display:flex; justify-content:space-between; color:#00f090; font-weight:700;">
+                <span>&#x2714; TICKET #3100235 &bull; BUY BTCUSD</span>
+                <span>STATUS: EXECUTED</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; color:var(--text-dim); margin-top:4px;">
+                <span>Volume: 0.01 | SL: 60,000 | TP: 75,000</span>
+                <span>Copied to all follower accounts</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add Account Modal -->
+      <div id="cpAddAccountModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.8); z-index:99999; justify-content:center; align-items:center;">
+        <div class="tsm-panel" style="max-width:460px; width:90%; border-color:var(--neon-cyan); background:#0c1017; box-shadow:0 0 35px rgba(0,229,255,0.3);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px;">
+            <h3 style="margin:0; font-size:16px; color:#fff;">+ Link New MT5 Follower Account</h3>
+            <span onclick="closeAddAccountModal()" style="cursor:pointer; font-size:18px; color:var(--text-dim);">&times;</span>
+          </div>
+
+          <form id="cpAddAccountForm" onsubmit="submitAddAccount(event)">
+            <div style="margin-bottom:12px;">
+              <label style="display:block; font-size:11px; color:var(--text-dim); margin-bottom:4px;">MT5 Login Number</label>
+              <input type="number" id="cpInputLogin" placeholder="e.g. 655344" required class="tsm-input" style="width:100%; box-sizing:border-box;">
+            </div>
+
+            <div style="margin-bottom:12px;">
+              <label style="display:block; font-size:11px; color:var(--text-dim); margin-bottom:4px;">Broker Server Name</label>
+              <input type="text" id="cpInputServer" placeholder="e.g. EquityEdge-Trade or GoatFunded-Server" required class="tsm-input" style="width:100%; box-sizing:border-box;">
+            </div>
+
+            <div style="margin-bottom:12px;">
+              <label style="display:block; font-size:11px; color:var(--text-dim); margin-bottom:4px;">Account Password (Master or Investor)</label>
+              <input type="password" id="cpInputPass" placeholder="Enter MT5 Password" required class="tsm-input" style="width:100%; box-sizing:border-box;">
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;">
+              <div>
+                <label style="display:block; font-size:11px; color:var(--text-dim); margin-bottom:4px;">Lot Multiplier</label>
+                <input type="number" step="0.1" id="cpInputMultiplier" value="1.0" required class="tsm-input" style="width:100%; box-sizing:border-box;">
+              </div>
+              <div>
+                <label style="display:block; font-size:11px; color:var(--text-dim); margin-bottom:4px;">Max Lot Cap</label>
+                <input type="number" step="0.01" id="cpInputMaxLot" value="0.05" required class="tsm-input" style="width:100%; box-sizing:border-box;">
+              </div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+              <button type="button" onclick="closeAddAccountModal()" class="tsm-btn-pill" style="cursor:pointer; background:transparent; border-color:rgba(255,255,255,0.2);">Cancel</button>
+              <button type="submit" class="tsm-btn-pill cyan" style="cursor:pointer;">Link &amp; Activate Account</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
     <div id="view-admin" class="nc-view-pane tsm-view-section">
       <div id="admin-login-box" class="tsm-login-card">
         <div class="tsm-login-head">

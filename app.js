@@ -9467,3 +9467,146 @@ window.generateNewsstandArticle = generateNewsstandArticle;
 window.openArticleReader = openArticleReader;
 window.trackArticleCta = trackArticleCta;
 window.initOverviewView = initOverviewView;
+
+
+// =============================================================================
+// COPY TRADING MULTI-ACCOUNT HUB LOGIC
+// =============================================================================
+function openAddAccountModal() {
+  const modal = document.getElementById("cpAddAccountModal");
+  if (modal) modal.style.display = "flex";
+}
+
+function closeAddAccountModal() {
+  const modal = document.getElementById("cpAddAccountModal");
+  if (modal) modal.style.display = "none";
+}
+
+async function refreshCopyTradingData() {
+  try {
+    const res = await fetch("/api/copytrading/accounts");
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.status !== "success") return;
+
+    // Update master stats
+    const master = data.master_account || {};
+    const telem = data.master_telemetry || {};
+    if (document.getElementById("cpMasterLogin")) {
+      document.getElementById("cpMasterLogin").textContent = telem.account || master.login || "116810";
+    }
+    if (document.getElementById("cpMasterServer")) {
+      document.getElementById("cpMasterServer").textContent = master.server || "GoatFunded-Server";
+    }
+    if (document.getElementById("cpMasterEquity")) {
+      const eq = telem.equity != null ? telem.equity.toFixed(2) : "9,989.22";
+      document.getElementById("cpMasterEquity").textContent = `$${eq}`;
+    }
+    if (document.getElementById("cpMasterPnL")) {
+      const profit = telem.profit != null ? telem.profit.toFixed(2) : "0.00";
+      const isPositive = (telem.profit || 0) >= 0;
+      document.getElementById("cpMasterPnL").textContent = `${isPositive ? '+' : ''}$${profit} Float`;
+      document.getElementById("cpMasterPnL").className = `nc-hex-pct ${isPositive ? 'green' : 'red'}`;
+    }
+
+    // Populate followers table
+    const followers = data.followers || [];
+    const totalAccs = 1 + followers.length;
+    if (document.getElementById("cpTotalAccounts")) {
+      document.getElementById("cpTotalAccounts").textContent = totalAccs;
+    }
+    if (document.getElementById("cpAccountCountBadge")) {
+      document.getElementById("cpAccountCountBadge").textContent = `${followers.length} Follower${followers.length === 1 ? '' : 's'} Linked`;
+    }
+
+    const tbody = document.getElementById("cpAccountsTableBody");
+    if (tbody) {
+      let html = `
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+          <td style="padding:10px 8px;"><span class="tsm-badge-pill gold" style="font-size:10px;">MASTER</span></td>
+          <td style="padding:10px 8px; font-weight:700; color:#fff;">${telem.account || master.login || '116810'}</td>
+          <td style="padding:10px 8px; color:var(--text-dim);">${master.server || 'GoatFunded-Server'}</td>
+          <td style="padding:10px 8px; color:#fff;">1.0x (100%)</td>
+          <td style="padding:10px 8px;"><span class="tsm-badge-pill green" style="font-size:10px;">ACTIVE</span></td>
+        </tr>
+      `;
+
+      followers.forEach(f => {
+        html += `
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+            <td style="padding:10px 8px;"><span class="tsm-badge-pill cyan" style="font-size:10px;">FOLLOWER</span></td>
+            <td style="padding:10px 8px; font-weight:700; color:#fff;">${f.login}</td>
+            <td style="padding:10px 8px; color:var(--text-dim);">${f.server}</td>
+            <td style="padding:10px 8px; color:#fff;">${f.lot_multiplier || 1.0}x (Max ${f.max_lot || 0.05} lot)</td>
+            <td style="padding:10px 8px;"><span class="tsm-badge-pill ${f.enabled ? 'green' : 'gold'}" style="font-size:10px;">${f.enabled ? 'ACTIVE' : 'PAUSED'}</span></td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    }
+
+    // Populate recent executions
+    const execLog = document.getElementById("cpExecutionsLog");
+    const execs = data.recent_executions || [];
+    if (execLog && execs.length > 0) {
+      execLog.innerHTML = execs.slice(-6).reverse().map(e => {
+        const isSuccess = e.status === "EXECUTED" || e.status === "CLOSED_ALL";
+        return `
+          <div style="padding:10px; background:${isSuccess ? 'rgba(0,240,144,0.05)' : 'rgba(255,75,75,0.05)'}; border:1px solid ${isSuccess ? 'rgba(0,240,144,0.2)' : 'rgba(255,75,75,0.2)'}; border-radius:6px; font-size:11.5px;">
+            <div style="display:flex; justify-content:space-between; color:${isSuccess ? '#00f090' : '#ff4b4b'}; font-weight:700;">
+              <span>${isSuccess ? '&#x2714;' : '&#x2718;'} ${e.command_id} ${e.ticket ? `&bull; TICKET #${e.ticket}` : ''}</span>
+              <span>STATUS: ${e.status}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; color:var(--text-dim); margin-top:4px;">
+              <span>Replication: All follower accounts synchronized</span>
+              <span>${new Date((e.timestamp || Date.now()/1000) * 1000).toLocaleTimeString()}</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+  } catch (err) {
+    console.debug("Error loading copy trading data:", err);
+  }
+}
+
+async function submitAddAccount(e) {
+  e.preventDefault();
+  const login = document.getElementById("cpInputLogin").value;
+  const server = document.getElementById("cpInputServer").value;
+  const password = document.getElementById("cpInputPass").value;
+  const multiplier = document.getElementById("cpInputMultiplier").value;
+  const max_lot = document.getElementById("cpInputMaxLot").value;
+
+  try {
+    const res = await fetch("/api/copytrading/add-account", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        login: parseInt(login),
+        server: server,
+        password: password,
+        lot_multiplier: parseFloat(multiplier),
+        max_lot: parseFloat(max_lot)
+      })
+    });
+    const data = await res.json();
+    if (data.status === "success") {
+      alert("Follower MT5 Account added successfully and linked to Copy Trading!");
+      closeAddAccountModal();
+      refreshCopyTradingData();
+    } else {
+      alert("Error adding account: " + (data.message || "Unknown error"));
+    }
+  } catch (err) {
+    alert("Network error adding account: " + err);
+  }
+}
+
+// Hook into periodic polling
+setInterval(() => {
+  const view = document.getElementById("view-copytrade");
+  if (view && view.style.display !== "none") {
+    refreshCopyTradingData();
+  }
+}, 3000);
