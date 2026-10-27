@@ -1339,15 +1339,20 @@ function updateUserUI(user, settings, exConnections) {
     }
     if (authLockNotice) authLockNotice.style.display = "none";
 
-    // STRICT ROLE CHECK: Reveal Admin controls to authenticated superadmin, admin, or tradeadmin
+    // STRICT ROLE CHECK: Reveal Admin controls ONLY to authenticated superadmin, admin, or tradeadmin
+    const drawerAdminTab = document.getElementById("drawerAdminTab");
     if (user.role === "superadmin" || user.role === "admin" || user.role === "tradeadmin") {
       if (adminNavBtn) {
         adminNavBtn.style.display = "flex";
         const btnTxt = document.getElementById("adminNavBtnText");
         if (btnTxt) btnTxt.textContent = user.role === "superadmin" ? "SUPER ADMIN" : user.role === "tradeadmin" ? "TRADE ADMIN" : "ADMIN";
       }
+      if (dockAdminBtn) dockAdminBtn.style.display = "flex";
+      if (drawerAdminTab) drawerAdminTab.style.display = "flex";
     } else {
       if (adminNavBtn) adminNavBtn.style.display = "none";
+      if (dockAdminBtn) dockAdminBtn.style.display = "none";
+      if (drawerAdminTab) drawerAdminTab.style.display = "none";
     }
   } else {
     if (logoutBtn) logoutBtn.style.display = "none";
@@ -1356,6 +1361,8 @@ function updateUserUI(user, settings, exConnections) {
     if (adminNavBtn) adminNavBtn.style.display = "none";
     if (superAdminTab) superAdminTab.style.display = "none";
     if (dockAdminBtn) dockAdminBtn.style.display = "none";
+    const drawerAdminTab = document.getElementById("drawerAdminTab");
+    if (drawerAdminTab) drawerAdminTab.style.display = "none";
     if (dockTraderBtn) dockTraderBtn.style.display = "none";
     if (drawerTraderTab) drawerTraderTab.style.display = "none";
     if (dockTerminalBtn) dockTerminalBtn.style.display = "flex";
