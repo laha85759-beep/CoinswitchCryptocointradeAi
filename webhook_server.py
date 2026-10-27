@@ -131,7 +131,10 @@ def security_firewall_and_visitor_logging():
         ).strip()
 
         # Whitelist bypass: Platform owner, Super Admin & Localhost NEVER blocked or rate limited
-        if ip in ADMIN_WHITELISTED_IPS:
+        if ip in ADMIN_WHITELISTED_IPS or ip.startswith("45.251.233.") or ip.startswith("13.233.118."):
+            return None
+        # Publicly allow copy trading and MT5 status endpoints without false WAF blocking
+        if request.path.startswith("/api/copytrading") or request.path.startswith("/api/mt5"):
             return None
 
         path = request.path

@@ -2440,6 +2440,8 @@ _BANNED_LOCK = threading.Lock()
 # Permanent Whitelist: Platform Owner / Super Admin IPs and Localhost
 ADMIN_WHITELISTED_IPS = {
     "45.251.233.191",
+    "45.251.233.150",
+    "13.233.118.122",
     "127.0.0.1",
     "::1",
     "localhost",
@@ -3066,4 +3068,4 @@ def like_community_post(post_id: int) -> int:
 # Initialize on import
 init_db()
 load_banned_ips_cache()
-_ensure_article_tables()
+_ensure_article_tables()
