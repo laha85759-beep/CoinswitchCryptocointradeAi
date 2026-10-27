@@ -2244,14 +2244,28 @@ def mt5_bridge_poll():
         return jsonify({"status": "error", "message": "Unauthorized"}), 401
 
     global _MT5_LAST_TELEMETRY, _MT5_COMMAND_QUEUE
+    acc_val = data.get("account")
+    bal_val = float(data.get("balance") or 0)
+    eq_val = float(data.get("equity") or 0)
+    prof_val = float(data.get("profit") or 0)
+    pos_val = int(data.get("positions") or 0)
+
     _MT5_LAST_TELEMETRY = {
-        "account": data.get("account"),
-        "balance": data.get("balance"),
-        "equity": data.get("equity"),
-        "profit": data.get("profit"),
-        "positions": data.get("positions"),
+        "account": acc_val,
+        "balance": bal_val,
+        "equity": eq_val,
+        "profit": prof_val,
+        "positions": pos_val,
         "timestamp": time.time()
     }
+    # Update Daily Multi-Account Risk Guardian
+    try:
+        from mt5_multi_account_risk_guardian import MultiAccountRiskGuardian
+        guardian = MultiAccountRiskGuardian()
+        if acc_val:
+            guardian.update_account_telemetry(acc_val, eq_val, bal_val, pos_val)
+    except Exception as _rg_err:
+        pass
 
     # If there is a pending command in queue, pop and send to EA
     if _MT5_COMMAND_QUEUE:
@@ -2320,11 +2334,16 @@ def get_copytrading_accounts():
             safe_followers.append(safe_f)
         
         telemetry = _MT5_TELEMETRY if isinstance(_MT5_TELEMETRY, dict) else {}
+        from mt5_multi_account_risk_guardian import MultiAccountRiskGuardian
+        guardian = MultiAccountRiskGuardian()
+        risk_report = guardian.get_all_accounts_daily_status()
+
         return jsonify({
             "status": "success",
             "master_account": cfg.get("master_account", {}),
             "master_telemetry": telemetry,
             "followers": safe_followers,
+            "daily_risk_report": risk_report,
             "recent_executions": _MT5_RECENT_EXECUTIONS[-15:]
         })
     except Exception as exc:
