@@ -192,6 +192,7 @@ class NewsAgentCore:
 
     # ── Persistent seen-news ledger (survives gunicorn worker restarts) ──────
     _SEEN_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "news_seen_ids.json")
+    _SEEN_CAL_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "calendar_published_events.json")
     _SEEN_MAX = 3000
 
     def _load_seen_ids(self):
@@ -201,6 +202,34 @@ class NewsAgentCore:
                     raw = json.load(f)
                 cutoff = time.time() - 48 * 3600  # 48h memory
                 self.seen_news_ids = {k for k, v in raw.items() if isinstance(v, (int, float)) and v >= cutoff}
+        except Exception:
+            pass
+        self.published_calendar_events = set()
+        try:
+            if os.path.exists(self._SEEN_CAL_FILE):
+                with open(self._SEEN_CAL_FILE, "r", encoding="utf-8") as f:
+                    raw_cal = json.load(f)
+                cutoff = time.time() - 72 * 3600
+                self.published_calendar_events = {k for k, v in raw_cal.items() if isinstance(v, (int, float)) and v >= cutoff}
+        except Exception:
+            pass
+
+    def _mark_calendar_event_published(self, event_id: str):
+        try:
+            self.published_calendar_events.add(event_id)
+            raw = {}
+            if os.path.exists(self._SEEN_CAL_FILE):
+                try:
+                    with open(self._SEEN_CAL_FILE, "r", encoding="utf-8") as f:
+                        raw = json.load(f)
+                except Exception:
+                    raw = {}
+            cutoff = time.time() - 72 * 3600
+            raw = {k: v for k, v in raw.items() if isinstance(v, (int, float)) and v >= cutoff}
+            raw[event_id] = time.time()
+            with open(self._SEEN_CAL_FILE + ".tmp", "w", encoding="utf-8") as f:
+                json.dump(raw, f)
+            os.replace(self._SEEN_CAL_FILE + ".tmp", self._SEEN_CAL_FILE)
         except Exception:
             pass
 
@@ -665,38 +694,64 @@ class NewsAgentCore:
                 log.warning(f"Market digest broadcast notice: {dig_err}")
 
     def _broadcast_upcoming_event_warnings(self, calendar: List[Dict[str, Any]]):
-        """Pre-announce high-impact events 60 & 15 minutes before release so traders
-        are positioned BEFORE the move, not after (front-run the catalyst)."""
+        """
+        Immediate Economic Calendar Catalyst Broadcaster:
+        1. BEFORE RELEASE (30-60 min & 5-15 min advance warnings) for BOTH High & Medium impact events.
+        2. AT PUBLISH TIME (When Actual data is reported / status is Released/Completed) immediately to Telegram.
+        """
         if not news_broadcaster.is_active or not calendar:
             return
+
         now_ts = time.time()
+        now_utc = datetime.now(timezone.utc)
+        today_str = now_utc.strftime("%Y-%m-%d")
+
         for ev in calendar:
             try:
-                if (ev.get("impact") or "").lower() != "high":
+                impact = str(ev.get("impact") or "").lower()
+                # User Requirement: ALWAYS High and Medium impact events sent immediately
+                if impact not in ("high", "medium"):
                     continue
-                if ev.get("status", "").upper() in ("RELEASED", "COMPLETED"):
-                    continue
-                event_dt = datetime.strptime(f"{ev.get('date')} {ev.get('time', '00:00 UTC')}", "%Y-%m-%d %H:%M UTC")
-                mins_left = (event_dt - datetime.utcnow()).total_seconds() / 60.0
-                if not (0 < mins_left <= 75):
-                    continue
-                window = "60 MIN" if mins_left > 30 else "15 MIN"
-                alert_key = f"prealert_{ev.get('date')}_{ev.get('title', '')[:40]}_{window}"
-                if alert_key in self.last_event_alert_time:
-                    continue
-                self.last_event_alert_time[alert_key] = now_ts
-                news_broadcaster.send_message(
-                    f"⏰ <b>EARLY WARNING • HIGH-IMPACT EVENT IN ~{window}</b>\n"
-                    f"━━━━━━━━━━━━━━━━━━━━\n"
-                    f"🏛 <b>{ev.get('country')}:</b> {ev.get('title', '')}\n"
-                    f"🕒 Release: <code>{ev.get('date')} {ev.get('time')}</code> (~{int(mins_left)} min)\n"
-                    f"🎯 Forecast: <code>{ev.get('forecast', '—')}</code> | Previous: <code>{ev.get('previous', '—')}</code>\n"
-                    f"🧭 <b>Plan:</b> Reduce leverage, widen awareness — expect volatility spike on release.\n"
-                    f"\n⚡ <i>TheSmartMag Pre-Catalyst Radar</i>",
-                    dedupe=True
+
+                title = ev.get("title", "").strip()
+                date_str = ev.get("date", "").strip()
+                time_str = ev.get("time", "00:00").replace(" UTC", "").strip()
+                status = str(ev.get("status") or "").upper()
+                actual = str(ev.get("actual") or "").strip()
+
+                # ── 1. PUBLISH TIME BROADCAST (Immediate upon Actual Release) ───────
+                is_published = (
+                    "COMPLETED" in status
+                    or "RELEASED" in status
+                    or (actual and actual not in ("N/A", "—", "-", "", "None"))
                 )
-                time.sleep(0.5)
-            except Exception:
+
+                if is_published and date_str == today_str:
+                    pub_key = f"pub_{date_str}_{title[:40]}"
+                    if pub_key not in getattr(self, "published_calendar_events", set()):
+                        self._mark_calendar_event_published(pub_key)
+                        news_broadcaster.broadcast_calendar_event(ev)
+                        time.sleep(1.0)
+                        continue
+
+                # ── 2. PRE-PUBLISH IMMEDIATE WARNINGS (60 min & 15 min windows) ───
+                if not is_published:
+                    try:
+                        event_dt = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
+                        mins_left = (event_dt - now_utc).total_seconds() / 60.0
+                        
+                        if 0 < mins_left <= 75:
+                            window = "60 MIN" if mins_left > 25 else "15 MIN"
+                            warn_key = f"prewarn_{date_str}_{title[:40]}_{window}"
+                            if warn_key not in self.last_event_alert_time:
+                                self.last_event_alert_time[warn_key] = now_ts
+                                news_broadcaster.broadcast_calendar_warning(ev, mins_left=mins_left, window=window)
+                                time.sleep(1.0)
+                    except Exception:
+                        pass
+
+            except Exception as ev_err:
+                log.debug("Calendar broadcast loop item notice: %s", ev_err)
                 continue
 
     def start_background_loop(self, interval_seconds: int = 90):

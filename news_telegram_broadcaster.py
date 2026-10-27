@@ -247,22 +247,64 @@ class NewsTelegramBroadcaster:
     def broadcast_calendar_event(self, event: Dict[str, Any]) -> bool:
         title = event.get("title", "")
         country = event.get("country", "GLOBAL")
-        impact = event.get("impact", "High").upper()
+        impact = str(event.get("impact", "High")).upper()
         actual = event.get("actual", "N/A")
         forecast = event.get("forecast", "N/A")
         previous = event.get("previous", "N/A")
+        date_str = event.get("date", "")
+        time_str = event.get("time", "")
         
         imp_icon = "🔴 HIGH IMPACT" if "HIGH" in impact else "🟠 MEDIUM IMPACT"
         
+        # Calculate surprise / deviation indicator if actual & forecast exist
+        deviation_note = ""
+        try:
+            act_num = float(str(actual).replace("%", "").replace("K", "").replace("M", "").replace("B", "").strip())
+            fc_num = float(str(forecast).replace("%", "").replace("K", "").replace("M", "").replace("B", "").strip())
+            diff = round(act_num - fc_num, 2)
+            if diff > 0:
+                deviation_note = f"\n📊 <b>Surprise:</b> <code>+{diff} (BETTER THAN EXPECTED 🟢)</code>"
+            elif diff < 0:
+                deviation_note = f"\n📊 <b>Surprise:</b> <code>{diff} (WORSE THAN EXPECTED 🔴)</code>"
+        except Exception:
+            pass
+
         msg = (
             f"🏛 <b>ECONOMIC CALENDAR CATALYST • {country}</b>\n"
             f"━━━━━━━━━━━━━━━━━━━━\n"
-            f"<b>{title}</b>\n\n"
-            f"⚠️ <b>Impact:</b> {imp_icon}\n"
+            f"📢 <b>{title}</b>\n\n"
+            f"⚠️ <b>Impact Tier:</b> {imp_icon}\n"
+            f"🕒 <b>Release Time:</b> <code>{date_str} {time_str}</code>\n"
             f"📈 <b>Actual:</b> <code>{actual}</code>\n"
             f"🎯 <b>Forecast:</b> <code>{forecast}</code>\n"
-            f"⏮ <b>Previous:</b> <code>{previous}</code>\n\n"
+            f"⏮ <b>Previous:</b> <code>{previous}</code>"
+            f"{deviation_note}\n\n"
             f"⚡ <i>TheSmartMag Live Macro Catalyst Stream</i>"
+        )
+        return self.send_message(msg)
+
+    def broadcast_calendar_warning(self, event: Dict[str, Any], mins_left: float = 15, window: str = "15 MIN") -> bool:
+        """Dispatches urgent advance warning before high/medium impact calendar catalyst."""
+        title = event.get("title", "")
+        country = event.get("country", "GLOBAL")
+        impact = str(event.get("impact", "High")).upper()
+        forecast = event.get("forecast", "—")
+        previous = event.get("previous", "—")
+        date_str = event.get("date", "")
+        time_str = event.get("time", "")
+
+        imp_icon = "🔴 HIGH IMPACT" if "HIGH" in impact else "🟠 MEDIUM IMPACT"
+
+        msg = (
+            f"⏰ <b>ECONOMIC CATALYST IMMINENT • IN ~{window}</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
+            f"🏛 <b>{country}:</b> <b>{title}</b>\n\n"
+            f"⚠️ <b>Impact Tier:</b> {imp_icon}\n"
+            f"🕒 <b>Scheduled Release:</b> <code>{date_str} {time_str}</code> (~{int(mins_left)} min)\n"
+            f"🎯 <b>Consensus Forecast:</b> <code>{forecast}</code>\n"
+            f"⏮ <b>Previous Reading:</b> <code>{previous}</code>\n\n"
+            f"🧭 <b>Action Plan:</b> Expect sharp liquidity repricing & volatility on release. Maintain strict stop-losses.\n\n"
+            f"⚡ <i>TheSmartMag Pre-Catalyst Radar</i>"
         )
         return self.send_message(msg)
 
