@@ -182,6 +182,53 @@ string ExtractJsonValue(const string json, const string key)
   }
 
 //+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
+//| Validate and Normalize Stop Loss & Take Profit against broker stops|
+//+------------------------------------------------------------------+
+void NormalizeAndValidateStops(const string sym, const string act, const double currentPrice, double &sl, double &tp)
+  {
+   int digits = (int)SymbolInfoInteger(sym, SYMBOL_DIGITS);
+   double point = SymbolInfoDouble(sym, SYMBOL_POINT);
+   long stopLevel = SymbolInfoInteger(sym, SYMBOL_TRADE_STOPS_LEVEL);
+   double minDistance = (stopLevel > 0 ? (double)stopLevel : 10.0) * point;
+
+   if(act == "BUY")
+     {
+      // SL must be strictly below current ask price minus minDistance
+      if(sl > 0.0)
+        {
+         if(sl >= currentPrice - minDistance)
+            sl = currentPrice - (minDistance * 2.0);
+         sl = NormalizeDouble(sl, digits);
+        }
+      // TP must be strictly above current ask price plus minDistance
+      if(tp > 0.0)
+        {
+         if(tp <= currentPrice + minDistance)
+            tp = currentPrice + (minDistance * 2.0);
+         tp = NormalizeDouble(tp, digits);
+        }
+     }
+   else if(act == "SELL")
+     {
+      // SL must be strictly above current bid price plus minDistance
+      if(sl > 0.0)
+        {
+         if(sl <= currentPrice + minDistance)
+            sl = currentPrice + (minDistance * 2.0);
+         sl = NormalizeDouble(sl, digits);
+        }
+      // TP must be strictly below current bid price minus minDistance
+      if(tp > 0.0)
+        {
+         if(tp >= currentPrice - minDistance)
+            tp = currentPrice - (minDistance * 2.0);
+         tp = NormalizeDouble(tp, digits);
+        }
+     }
+  }
+
+//+------------------------------------------------------------------+
 //| Execute incoming Trade Signal or Order                           |
 //+------------------------------------------------------------------+
 void ProcessCommand(const string json)
@@ -226,7 +273,23 @@ void ProcessCommand(const string json)
    if(action == "BUY")
      {
       double price = m_symbol.Ask();
-      if(m_trade.Buy(volume, symbol, price, sl, tp, "SuperBrain AI Quantum"))
+      NormalizeAndValidateStops(symbol, "BUY", price, sl, tp);
+
+      bool orderPlaced = m_trade.Buy(volume, symbol, price, sl, tp, "SuperBrain AI Quantum");
+      
+      // Fallback: If broker rejects with 10016 (invalid stops), open at market with no stops, then modify!
+      if(!orderPlaced && m_trade.ResultRetcode() == 10016)
+        {
+         PrintFormat("WARNING: Broker rejected stops (10016). Executing market BUY 0.00 SL/TP fallback...");
+         orderPlaced = m_trade.Buy(volume, symbol, price, 0.0, 0.0, "SuperBrain AI Quantum");
+         if(orderPlaced && (sl > 0.0 || tp > 0.0))
+           {
+            ulong ticket = m_trade.ResultOrder();
+            m_trade.PositionModify(ticket, sl, tp);
+           }
+        }
+
+      if(orderPlaced)
         {
          PrintFormat("SUCCESS: Live BUY placed on %s ticket=%d", symbol, m_trade.ResultOrder());
          SendAcknowledge(cmdId, "EXECUTED", m_trade.ResultOrder());
@@ -240,7 +303,23 @@ void ProcessCommand(const string json)
    else if(action == "SELL")
      {
       double price = m_symbol.Bid();
-      if(m_trade.Sell(volume, symbol, price, sl, tp, "SuperBrain AI Quantum"))
+      NormalizeAndValidateStops(symbol, "SELL", price, sl, tp);
+
+      bool orderPlaced = m_trade.Sell(volume, symbol, price, sl, tp, "SuperBrain AI Quantum");
+
+      // Fallback: If broker rejects with 10016 (invalid stops), open at market with no stops, then modify!
+      if(!orderPlaced && m_trade.ResultRetcode() == 10016)
+        {
+         PrintFormat("WARNING: Broker rejected stops (10016). Executing market SELL 0.00 SL/TP fallback...");
+         orderPlaced = m_trade.Sell(volume, symbol, price, 0.0, 0.0, "SuperBrain AI Quantum");
+         if(orderPlaced && (sl > 0.0 || tp > 0.0))
+           {
+            ulong ticket = m_trade.ResultOrder();
+            m_trade.PositionModify(ticket, sl, tp);
+           }
+        }
+
+      if(orderPlaced)
         {
          PrintFormat("SUCCESS: Live SELL placed on %s ticket=%d", symbol, m_trade.ResultOrder());
          SendAcknowledge(cmdId, "EXECUTED", m_trade.ResultOrder());
