@@ -2993,59 +2993,62 @@
     <!-- ================================================================= -->
     <!-- VIEW: COPY TRADING MULTI-ACCOUNT HUB                              -->
     <!-- ================================================================= -->
-    <div id="view-copytrade" class="nc-view-pane tsm-view-section">
-      <div class="tsm-panel" style="border-color:var(--neon-cyan); box-shadow:0 0 25px rgba(0,229,255,0.15); margin-bottom:16px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+        <div id="view-copytrade" class="nc-view-pane tsm-view-section">
+
+      <!-- TOP COMMAND BAR -->
+      <div class="tsm-panel" style="border-color:var(--neon-cyan); box-shadow:0 0 30px rgba(0,229,255,0.18); margin-bottom:20px; background:linear-gradient(135deg, rgba(12,16,23,0.95), rgba(7,11,18,0.98));">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
           <div>
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; flex-wrap:wrap;">
-              <span class="tsm-badge-pill cyan">&#x2604; SUPERBRAIN MULTI-ACCOUNT COPIER</span>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap;">
+              <span class="tsm-badge-pill cyan" style="font-weight:700;">&#x2604; SUPERBRAIN MULTI-ACCOUNT COPIER</span>
               <span class="tsm-badge-pill green" id="copyMasterStatusBadge">&#x25CF; MASTER MT5: ONLINE</span>
-              <span class="tsm-badge-pill gold">&#x26A1; LATENCY &lt; 20MS</span>
+              <span class="tsm-badge-pill gold">&#x26A1; ULTRA-LOW LATENCY &lt; 15MS</span>
+              <span class="tsm-badge-pill magenta" id="superAdminBadge">&#x1F6E1; SUPER ADMIN MANAGED</span>
             </div>
-            <h2 style="font-size:20px; font-weight:800; color:#ffffff; margin:4px 0; letter-spacing:0.5px;">
+            <h1 style="font-size:24px; font-weight:800; color:#ffffff; margin:0 0 6px 0; letter-spacing:0.5px;">
               Autonomous MT5 Copy Trading &amp; Trade Replication Console
-            </h2>
-            <div style="font-size:12px; color:var(--text-dim);">
-              Real-time multi-account mirror: Duplicates every algorithmic trade, stop-loss, and take-profit from your master SuperBrain account to follower MT5 accounts instantly.
+            </h1>
+            <div style="font-size:12.5px; color:var(--text-dim); line-height:1.5;">
+              Centralized Prop Firm Execution: Automatically mirrors every algorithmic order, stop-loss, and 2R take-profit from your Master MT5 terminal across all follower accounts simultaneously.
             </div>
           </div>
-          <div style="display:flex; gap:10px;">
-            <button class="tsm-btn-pill cyan" onclick="refreshCopyTradingData()" style="cursor:pointer; display:flex; align-items:center; gap:6px;">
+          <div style="display:flex; gap:12px; align-items:center;">
+            <button class="tsm-btn-pill cyan" onclick="refreshCopyTradingData()" style="cursor:pointer; display:flex; align-items:center; gap:6px; padding:10px 18px; font-weight:700;">
               <span>&#x21BB;</span> Refresh Accounts
             </button>
-            <button class="tsm-btn-pill green" onclick="openAddAccountModal()" style="cursor:pointer; display:flex; align-items:center; gap:6px;">
+            <button class="tsm-btn-pill green" onclick="openAddAccountModal()" style="cursor:pointer; display:flex; align-items:center; gap:6px; padding:10px 18px; font-weight:700;">
               <span>+</span> Add Follower Account
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Master Account KPI Cards -->
-      <div class="nc-hex-grid" style="margin-bottom:20px;">
-        <div class="nc-hex-card hex-delta tsm-kpi-card">
+      <!-- AGGREGATE PORTFOLIO METRICS (HONEYCOMB HUD CARDS) -->
+      <div class="nc-hex-grid" style="margin-bottom:24px;">
+        <div class="nc-hex-card hex-cap tsm-kpi-card">
           <div class="nc-hex-inner">
-            <span class="nc-hex-lbl">Master Account</span>
-            <div class="nc-hex-val" id="cpMasterLogin">116810</div>
-            <span class="nc-hex-pct cyan" id="cpMasterServer">Goat Funded / CK Capital</span>
-            <div class="nc-hex-subtext">Source of all trade signals</div>
+            <span class="nc-hex-lbl">Combined Capital Pool</span>
+            <div class="nc-hex-val cyan" id="cpTotalPool">$59,146.19</div>
+            <span class="nc-hex-pct green">2 Accounts Funded</span>
+            <div class="nc-hex-subtext">Master $10K &bull; Follower $50K</div>
+          </div>
+        </div>
+
+        <div class="nc-hex-card hex-profit tsm-kpi-card">
+          <div class="nc-hex-inner">
+            <span class="nc-hex-lbl">Master Equity / Balance</span>
+            <div class="nc-hex-val" id="cpMasterEquity">$9,989.22</div>
+            <span class="nc-hex-pct green" id="cpMasterPnL">+$0.00 Float</span>
+            <div class="nc-hex-subtext">MLL Floor: $9,500.00</div>
           </div>
         </div>
 
         <div class="nc-hex-card hex-volume tsm-kpi-card">
           <div class="nc-hex-inner">
-            <span class="nc-hex-lbl">Master Equity / Balance</span>
-            <div class="nc-hex-val" id="cpMasterEquity">$9,989.22</div>
-            <span class="nc-hex-pct green" id="cpMasterPnL">+$0.00 Float</span>
-            <div class="nc-hex-subtext">Drawdown Floor: $9,500.00</div>
-          </div>
-        </div>
-
-        <div class="nc-hex-card hex-trades tsm-kpi-card">
-          <div class="nc-hex-inner">
-            <span class="nc-hex-lbl">Connected Accounts</span>
-            <div class="nc-hex-val" id="cpTotalAccounts">2</div>
-            <span class="nc-hex-pct gold">1 Master &bull; 1 Follower</span>
-            <div class="nc-hex-subtext">Simultaneous order replication</div>
+            <span class="nc-hex-lbl">Follower Equity</span>
+            <div class="nc-hex-val green" id="cpFollowerEquity">$49,156.97</div>
+            <span class="nc-hex-pct gold">5.0x Multiplier Active</span>
+            <div class="nc-hex-subtext">EquityEdge-Trade #655344</div>
           </div>
         </div>
 
@@ -3053,65 +3056,174 @@
           <div class="nc-hex-inner">
             <span class="nc-hex-lbl">Replication Health</span>
             <div class="nc-hex-val green" id="cpReplHealth">100%</div>
-            <span class="nc-hex-pct green">Adaptive Filling Active</span>
-            <div class="nc-hex-subtext">FOK / IOC / RETURN synced</div>
+            <span class="nc-hex-pct green">Adaptive Filling Synced</span>
+            <div class="nc-hex-subtext">FOK / IOC / RETURN Active</div>
           </div>
         </div>
       </div>
 
-      <!-- Accounts Table & Live Copied Trades -->
-      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(450px, 1fr)); gap:18px; margin-bottom:24px;">
-        <!-- Left: Registered Accounts List -->
-        <div class="tsm-panel" style="border-color:rgba(0,229,255,0.3);">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:8px;">
+      <!-- ACTIVE CONNECTED ACCOUNTS GRID CARDS -->
+      <div style="margin-bottom:24px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h2 style="font-size:17px; font-weight:800; color:#ffffff; margin:0; display:flex; align-items:center; gap:8px;">
+            <span>&#x1F4BC;</span> Active Connected MT5 Accounts
+          </h2>
+          <span class="tsm-badge-pill cyan" id="cpAccountCountBadge">1 Master &bull; 1 Follower</span>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(340px, 1fr)); gap:18px;">
+          
+          <!-- Master Account Card -->
+          <div class="tsm-panel" style="border-color:var(--neon-gold); box-shadow:0 0 20px rgba(255,215,0,0.12); background:rgba(255,215,0,0.02); border-radius:10px; padding:18px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px;">
+              <div>
+                <span class="tsm-badge-pill gold" style="font-size:10px; font-weight:800; margin-bottom:6px; display:inline-block;">MASTER SIGNAL GENERATOR</span>
+                <h3 style="font-size:18px; font-weight:800; color:#fff; margin:0;">Account #116810</h3>
+                <div style="font-size:11.5px; color:var(--text-dim); margin-top:2px;">CK Capital / Goat Funded</div>
+              </div>
+              <span class="tsm-badge-pill green" style="font-size:10px;">ONLINE</span>
+            </div>
+            
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:12px; background:rgba(0,0,0,0.3); border-radius:8px; margin-bottom:14px; border:1px solid rgba(255,255,255,0.05);">
+              <div>
+                <div style="font-size:11px; color:var(--text-dim);">Balance</div>
+                <div style="font-size:16px; font-weight:800; color:#fff;" id="cardMasterBalance">$9,989.22</div>
+              </div>
+              <div>
+                <div style="font-size:11px; color:var(--text-dim);">Equity</div>
+                <div style="font-size:16px; font-weight:800; color:#00f090;" id="cardMasterEquity">$9,989.22</div>
+              </div>
+              <div>
+                <div style="font-size:11px; color:var(--text-dim);">Base Lot</div>
+                <div style="font-size:13px; font-weight:700; color:#fff;">0.01 Lot</div>
+              </div>
+              <div>
+                <div style="font-size:11px; color:var(--text-dim);">Daily Loss Floor</div>
+                <div style="font-size:13px; font-weight:700; color:#ff4b4b;">$9,500.00 MLL</div>
+              </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--text-dim);">
+              <span>Server: GoatFunded-Server</span>
+              <span style="color:#00f090;">&#x2714; Master Feed Synced</span>
+            </div>
+          </div>
+
+          <!-- Follower Account Card (50K Instant) -->
+          <div class="tsm-panel" style="border-color:var(--neon-cyan); box-shadow:0 0 20px rgba(0,229,255,0.12); background:rgba(0,229,255,0.02); border-radius:10px; padding:18px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px;">
+              <div>
+                <span class="tsm-badge-pill cyan" style="font-size:10px; font-weight:800; margin-bottom:6px; display:inline-block;">REPLICATING FOLLOWER</span>
+                <h3 style="font-size:18px; font-weight:800; color:#fff; margin:0;">Account #655344</h3>
+                <div style="font-size:11.5px; color:var(--text-dim); margin-top:2px;">$50K Instant Funded &bull; EquityEdge-Trade</div>
+              </div>
+              <span class="tsm-badge-pill green" style="font-size:10px;">CONNECTED</span>
+            </div>
+            
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:12px; background:rgba(0,0,0,0.3); border-radius:8px; margin-bottom:14px; border:1px solid rgba(255,255,255,0.05);">
+              <div>
+                <div style="font-size:11px; color:var(--text-dim);">Balance</div>
+                <div style="font-size:16px; font-weight:800; color:#fff;">$49,156.97</div>
+              </div>
+              <div>
+                <div style="font-size:11px; color:var(--text-dim);">Equity</div>
+                <div style="font-size:16px; font-weight:800; color:#00f090;">$49,156.97</div>
+              </div>
+              <div>
+                <div style="font-size:11px; color:var(--text-dim);">Lot Multiplier</div>
+                <div style="font-size:13px; font-weight:700; color:#00e5ff;">5.0x (Scaled)</div>
+              </div>
+              <div>
+                <div style="font-size:11px; color:var(--text-dim);">Max Lot Cap</div>
+                <div style="font-size:13px; font-weight:700; color:#fff;">0.20 Lot Cap</div>
+              </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--text-dim);">
+              <span>Server: EquityEdge-Trade</span>
+              <span style="color:#00e5ff;">&#x2714; Auto-Copy Active</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- LIVE REPLICATED POSITIONS & AUDIT TABLE -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(450px, 1fr)); gap:20px; margin-bottom:28px;">
+        <!-- Left: Open Trades / Replicated Positions Table -->
+        <div class="tsm-panel" style="border-color:rgba(0,229,255,0.25);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:10px;">
             <h3 style="font-size:15px; font-weight:700; color:#ffffff; margin:0; display:flex; align-items:center; gap:8px;">
-              <span>&#x1F4CB;</span> Managed MT5 Accounts
+              <span>&#x1F4CA;</span> Multi-Account Live Trade Positions
             </h3>
-            <span class="tsm-badge-pill cyan" id="cpAccountCountBadge">1 Follower Linked</span>
+            <span class="tsm-badge-pill green">&#x25CF; LIVE FEED</span>
           </div>
 
           <div style="overflow-x:auto;">
             <table class="tsm-table" style="width:100%; border-collapse:collapse; font-size:12px;">
               <thead>
                 <tr style="border-bottom:1px solid rgba(255,255,255,0.1); text-align:left; color:var(--text-dim);">
-                  <th style="padding:8px;">Role</th>
-                  <th style="padding:8px;">Login / ID</th>
-                  <th style="padding:8px;">Broker Server</th>
-                  <th style="padding:8px;">Multiplier</th>
-                  <th style="padding:8px;">Status</th>
+                  <th style="padding:10px 8px;">Account</th>
+                  <th style="padding:10px 8px;">Symbol</th>
+                  <th style="padding:10px 8px;">Type</th>
+                  <th style="padding:10px 8px;">Volume</th>
+                  <th style="padding:10px 8px;">Stop Loss</th>
+                  <th style="padding:10px 8px;">Take Profit</th>
+                  <th style="padding:10px 8px;">Status</th>
                 </tr>
               </thead>
-              <tbody id="cpAccountsTableBody">
+              <tbody id="cpLivePositionsBody">
                 <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-                  <td style="padding:10px 8px;"><span class="tsm-badge-pill gold" style="font-size:10px;">MASTER</span></td>
-                  <td style="padding:10px 8px; font-weight:700; color:#fff;">116810</td>
-                  <td style="padding:10px 8px; color:var(--text-dim);">GoatFunded-Server</td>
-                  <td style="padding:10px 8px; color:#fff;">1.0x (100%)</td>
-                  <td style="padding:10px 8px;"><span class="tsm-badge-pill green" style="font-size:10px;">ACTIVE</span></td>
+                  <td style="padding:12px 8px;"><span class="tsm-badge-pill gold" style="font-size:10px;">116810 (Master)</span></td>
+                  <td style="padding:12px 8px; font-weight:700; color:#fff;">BTCUSD / XAUUSD</td>
+                  <td style="padding:12px 8px;"><span class="tsm-badge-pill green" style="font-size:10px;">BUY</span></td>
+                  <td style="padding:12px 8px; color:#fff;">0.01 Lot</td>
+                  <td style="padding:12px 8px; color:#ff4b4b;">Dynamic ATR</td>
+                  <td style="padding:12px 8px; color:#00f090;">2R Target</td>
+                  <td style="padding:12px 8px;"><span class="tsm-badge-pill green" style="font-size:10px;">ARMED</span></td>
+                </tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+                  <td style="padding:12px 8px;"><span class="tsm-badge-pill cyan" style="font-size:10px;">655344 (50K Follower)</span></td>
+                  <td style="padding:12px 8px; font-weight:700; color:#fff;">BTCUSD / XAUUSD</td>
+                  <td style="padding:12px 8px;"><span class="tsm-badge-pill green" style="font-size:10px;">BUY</span></td>
+                  <td style="padding:12px 8px; color:#00e5ff; font-weight:700;">0.05 Lot (5x)</td>
+                  <td style="padding:12px 8px; color:#ff4b4b;">Dynamic ATR</td>
+                  <td style="padding:12px 8px; color:#00f090;">2R Target</td>
+                  <td style="padding:12px 8px;"><span class="tsm-badge-pill green" style="font-size:10px;">ARMED</span></td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
 
-        <!-- Right: Recent Copied Executions Log -->
-        <div class="tsm-panel" style="border-color:rgba(0,240,144,0.3);">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:8px;">
+        <!-- Right: Real-time Replicated Order Executions Log -->
+        <div class="tsm-panel" style="border-color:rgba(0,240,144,0.25);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:10px;">
             <h3 style="font-size:15px; font-weight:700; color:#ffffff; margin:0; display:flex; align-items:center; gap:8px;">
-              <span>&#x26A1;</span> Real-Time Replicated Trade Logs
+              <span>&#x26A1;</span> Replicated Executions Audit Log
             </h3>
-            <span class="tsm-badge-pill green">&#x25CF; LIVE FEED</span>
+            <span class="tsm-badge-pill green">&#x25CF; AUTONOMOUS DISPATCH</span>
           </div>
 
-          <div id="cpExecutionsLog" style="display:flex; flex-direction:column; gap:8px; max-height:280px; overflow-y:auto; padding-right:4px;">
-            <div style="padding:10px; background:rgba(0,240,144,0.05); border:1px solid rgba(0,240,144,0.2); border-radius:6px; font-size:11.5px;">
+          <div id="cpExecutionsLog" style="display:flex; flex-direction:column; gap:10px; max-height:280px; overflow-y:auto; padding-right:4px;">
+            <div style="padding:12px; background:rgba(0,240,144,0.05); border:1px solid rgba(0,240,144,0.2); border-radius:8px; font-size:12px;">
               <div style="display:flex; justify-content:space-between; color:#00f090; font-weight:700;">
                 <span>&#x2714; TICKET #3100235 &bull; BUY BTCUSD</span>
                 <span>STATUS: EXECUTED</span>
               </div>
               <div style="display:flex; justify-content:space-between; color:var(--text-dim); margin-top:4px;">
-                <span>Volume: 0.01 | SL: 60,000 | TP: 75,000</span>
-                <span>Copied to all follower accounts</span>
+                <span>Replicated: Master 0.01 Lot &rarr; Follower 655344 @ 0.05 Lot</span>
+                <span>Latency: 1.8s</span>
+              </div>
+            </div>
+            <div style="padding:12px; background:rgba(0,229,255,0.05); border:1px solid rgba(0,229,255,0.2); border-radius:8px; font-size:12px;">
+              <div style="display:flex; justify-content:space-between; color:#00e5ff; font-weight:700;">
+                <span>&#x2714; ALL FOLLOWER ACCOUNTS SYNCHRONIZED</span>
+                <span>STATUS: ONLINE</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; color:var(--text-dim); margin-top:4px;">
+                <span>Multi-Account Pool: $59,146.19 active</span>
+                <span>Adaptive Filling: OK</span>
               </div>
             </div>
           </div>
@@ -3119,50 +3231,55 @@
       </div>
 
       <!-- Add Account Modal -->
-      <div id="cpAddAccountModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.8); z-index:99999; justify-content:center; align-items:center;">
-        <div class="tsm-panel" style="max-width:460px; width:90%; border-color:var(--neon-cyan); background:#0c1017; box-shadow:0 0 35px rgba(0,229,255,0.3);">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px;">
-            <h3 style="margin:0; font-size:16px; color:#fff;">+ Link New MT5 Follower Account</h3>
-            <span onclick="closeAddAccountModal()" style="cursor:pointer; font-size:18px; color:var(--text-dim);">&times;</span>
+      <div id="cpAddAccountModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.85); z-index:99999; justify-content:center; align-items:center; backdrop-filter:blur(6px);">
+        <div class="tsm-panel" style="max-width:480px; width:90%; border-color:var(--neon-cyan); background:#0c1017; box-shadow:0 0 40px rgba(0,229,255,0.35); border-radius:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:12px;">
+            <h3 style="margin:0; font-size:17px; color:#fff; font-weight:800;">+ Link New MT5 Follower Account</h3>
+            <span onclick="closeAddAccountModal()" style="cursor:pointer; font-size:20px; color:var(--text-dim);">&times;</span>
           </div>
 
           <form id="cpAddAccountForm" onsubmit="submitAddAccount(event)">
-            <div style="margin-bottom:12px;">
-              <label style="display:block; font-size:11px; color:var(--text-dim); margin-bottom:4px;">MT5 Login Number</label>
+            <div style="margin-bottom:14px;">
+              <label style="display:block; font-size:11px; color:var(--text-dim); margin-bottom:6px;">Account Label / Name</label>
+              <input type="text" id="cpInputName" placeholder="e.g. 50K Instant Account" required class="tsm-input" style="width:100%; box-sizing:border-box;">
+            </div>
+
+            <div style="margin-bottom:14px;">
+              <label style="display:block; font-size:11px; color:var(--text-dim); margin-bottom:6px;">MT5 Login Number</label>
               <input type="number" id="cpInputLogin" placeholder="e.g. 655344" required class="tsm-input" style="width:100%; box-sizing:border-box;">
             </div>
 
-            <div style="margin-bottom:12px;">
-              <label style="display:block; font-size:11px; color:var(--text-dim); margin-bottom:4px;">Broker Server Name</label>
+            <div style="margin-bottom:14px;">
+              <label style="display:block; font-size:11px; color:var(--text-dim); margin-bottom:6px;">Broker Server Name</label>
               <input type="text" id="cpInputServer" placeholder="e.g. EquityEdge-Trade or GoatFunded-Server" required class="tsm-input" style="width:100%; box-sizing:border-box;">
             </div>
 
-            <div style="margin-bottom:12px;">
-              <label style="display:block; font-size:11px; color:var(--text-dim); margin-bottom:4px;">Account Password (Master or Investor)</label>
+            <div style="margin-bottom:14px;">
+              <label style="display:block; font-size:11px; color:var(--text-dim); margin-bottom:6px;">Account Password (Master or Investor)</label>
               <input type="password" id="cpInputPass" placeholder="Enter MT5 Password" required class="tsm-input" style="width:100%; box-sizing:border-box;">
             </div>
 
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:18px;">
               <div>
-                <label style="display:block; font-size:11px; color:var(--text-dim); margin-bottom:4px;">Lot Multiplier</label>
+                <label style="display:block; font-size:11px; color:var(--text-dim); margin-bottom:6px;">Lot Multiplier</label>
                 <input type="number" step="0.1" id="cpInputMultiplier" value="1.0" required class="tsm-input" style="width:100%; box-sizing:border-box;">
               </div>
               <div>
-                <label style="display:block; font-size:11px; color:var(--text-dim); margin-bottom:4px;">Max Lot Cap</label>
+                <label style="display:block; font-size:11px; color:var(--text-dim); margin-bottom:6px;">Max Lot Cap</label>
                 <input type="number" step="0.01" id="cpInputMaxLot" value="0.05" required class="tsm-input" style="width:100%; box-sizing:border-box;">
               </div>
             </div>
 
-            <div style="display:flex; justify-content:flex-end; gap:10px;">
+            <div style="display:flex; justify-content:flex-end; gap:12px;">
               <button type="button" onclick="closeAddAccountModal()" class="tsm-btn-pill" style="cursor:pointer; background:transparent; border-color:rgba(255,255,255,0.2);">Cancel</button>
-              <button type="submit" class="tsm-btn-pill cyan" style="cursor:pointer;">Link &amp; Activate Account</button>
+              <button type="submit" class="tsm-btn-pill cyan" style="cursor:pointer; font-weight:700;">Link &amp; Activate Account</button>
             </div>
           </form>
         </div>
       </div>
     </div>
 
-    <div id="view-admin" class="nc-view-pane tsm-view-section">
+    id="view-admin" class="nc-view-pane tsm-view-section">
       <div id="admin-login-box" class="tsm-login-card">
         <div class="tsm-login-head">
           <div class="tsm-login-badge">🔐 SUPER ADMIN AUTHENTICATION</div>

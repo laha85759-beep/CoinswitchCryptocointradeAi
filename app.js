@@ -489,6 +489,8 @@ function switchView(viewName, updateHash = true) {
     fetchRealData();
   } else if (viewName === "trader") {
     if (typeof fetchTraderTerminalData === "function") fetchTraderTerminalData();
+  } else if (viewName === "copytrade") {
+    if (typeof refreshCopyTradingData === "function") refreshCopyTradingData();
   } else if (viewName === "admin") {
     checkAdminAuth();
   } else if (viewName === "blog") {
