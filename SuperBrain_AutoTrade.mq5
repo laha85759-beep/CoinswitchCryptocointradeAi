@@ -49,7 +49,14 @@ int OnInit()
   {
    m_trade.SetExpertMagicNumber(InpMagicNumber);
    m_trade.SetDeviationInPoints(InpSlippagePoints);
-   m_trade.SetTypeFilling(ORDER_FILLING_IOC);
+   // Adaptive Filling Mode detection (FOK / IOC / RETURN) based on broker symbol execution policy
+   uint filling = (uint)SymbolInfoInteger(_Symbol, SYMBOL_FILLING_MODE);
+   if((filling & SYMBOL_FILLING_IOC) != 0)
+      m_trade.SetTypeFilling(ORDER_FILLING_IOC);
+   else if((filling & SYMBOL_FILLING_FOK) != 0)
+      m_trade.SetTypeFilling(ORDER_FILLING_FOK);
+   else
+      m_trade.SetTypeFilling(ORDER_FILLING_RETURN);
 
    m_starting_balance = m_account.Balance();
 
@@ -201,6 +208,15 @@ void ProcessCommand(const string json)
 
    m_symbol.Name(symbol);
    m_symbol.RefreshRates();
+
+   // Set broker-supported filling type for target symbol
+   uint sym_filling = (uint)SymbolInfoInteger(symbol, SYMBOL_FILLING_MODE);
+   if((sym_filling & SYMBOL_FILLING_IOC) != 0)
+      m_trade.SetTypeFilling(ORDER_FILLING_IOC);
+   else if((sym_filling & SYMBOL_FILLING_FOK) != 0)
+      m_trade.SetTypeFilling(ORDER_FILLING_FOK);
+   else
+      m_trade.SetTypeFilling(ORDER_FILLING_RETURN);
 
    if(volume <= 0.0)
       volume = InpDefaultLots;
