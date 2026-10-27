@@ -203,6 +203,72 @@ def dispatch_signals_to_all_users(approved_signals: list[dict], global_cfg: dict
                     except Exception as ccxt_err:
                         log.warning(f"Universal CCXT ({ex_id}) execution error for User #{user_id}: {ccxt_err}")
 
+            # 3.5 Execute on MT5 Prop Firm & Multi-Account Copier (EquityEdge / GoatFunded)
+            if user.get("role") in ("superadmin", "tradeadmin", "admin") or user_id == 1:
+                try:
+                    import MetaTrader5 as mt5_client
+                    from mt5_copy_trading_engine import SuperBrainMT5Copier
+                    copier = SuperBrainMT5Copier()
+                    cfg = copier.load_config()
+                    follower_accs = [f for f in cfg.get("follower_accounts", []) if f.get("enabled", True)]
+                    
+                    # Convert crypto/commodity to MT5 broker symbol if needed (e.g. BTC/USDT -> BTCUSD, XAU/USD -> XAUUSD)
+                    mt5_sym = symbol.replace("/USDT", "").replace("USDT", "").replace("/USD", "").replace("-USD", "").upper()
+                    if mt5_sym == "BTC": mt5_sym = "BTCUSD"
+                    elif mt5_sym == "ETH": mt5_sym = "ETHUSD"
+                    elif mt5_sym in ("GOLD", "XAU"): mt5_sym = "XAUUSD"
+
+                    for f_acc in follower_accs:
+                        f_login = f_acc.get("login")
+                        f_pwd = f_acc.get("password")
+                        f_srv = f_acc.get("server")
+                        f_mult = float(f_acc.get("lot_multiplier", 1.0))
+                        f_max_lot = float(f_acc.get("max_lot", 0.20))
+                        f_vol = min(round(0.01 * f_mult, 2), f_max_lot)
+                        if f_vol <= 0: f_vol = 0.01
+
+                        if mt5_client.initialize(login=f_login, password=f_pwd, server=f_srv, timeout=3000):
+                            mt5_client.symbol_select(mt5_sym, True)
+                            mt5_tick = mt5_client.symbol_info_tick(mt5_sym)
+                            if mt5_tick:
+                                mt5_order_type = mt5_client.ORDER_TYPE_BUY if direction in ["buy", "long"] else mt5_client.ORDER_TYPE_SELL
+                                mt5_entry_p = mt5_tick.ask if mt5_order_type == mt5_client.ORDER_TYPE_BUY else mt5_tick.bid
+                                mt5_sl = round(mt5_entry_p * (1.0 - (hard_sl_pct / 100.0)), 2) if mt5_order_type == mt5_client.ORDER_TYPE_BUY else round(mt5_entry_p * (1.0 + (hard_sl_pct / 100.0)), 2)
+                                mt5_tp = round(mt5_entry_p * (1.0 + (take_profit_pct / 100.0)), 2) if mt5_order_type == mt5_client.ORDER_TYPE_BUY else round(mt5_entry_p * (1.0 - (take_profit_pct / 100.0)), 2)
+
+                                mt5_req = {
+                                    "action": mt5_client.TRADE_ACTION_DEAL,
+                                    "symbol": mt5_sym,
+                                    "volume": f_vol,
+                                    "type": mt5_order_type,
+                                    "price": mt5_entry_p,
+                                    "sl": mt5_sl,
+                                    "tp": mt5_tp,
+                                    "deviation": 20,
+                                    "magic": 1002026,
+                                    "comment": f"SuperBrain Multi MT5 {f_login}",
+                                    "type_time": mt5_client.ORDER_TIME_GTC,
+                                    "type_filling": mt5_client.ORDER_FILLING_IOC,
+                                }
+                                mt5_res = mt5_client.order_send(mt5_req)
+                                if mt5_res and mt5_res.retcode == mt5_client.TRADE_RETCODE_DONE:
+                                    c_db = get_db()
+                                    c_cur = c_db.cursor()
+                                    c_cur.execute('''
+                                        INSERT INTO user_trades (user_id, exchange, symbol, direction, entry_price, qty, status, sl_price, tp_price, strategy, opened_at)
+                                        VALUES (?, 'mt5', ?, ?, ?, ?, 'open', ?, ?, ?, ?)
+                                    ''', (user_id, mt5_sym, direction, mt5_entry_p, f_vol, mt5_sl, mt5_tp, sig_strategy_name, now))
+                                    c_db.commit()
+                                    c_db.close()
+                                    total_executed += 1
+                                    log.info(f"Executed MT5 live trade on {f_srv} #{f_login} for {mt5_sym} ({direction.upper()} {f_vol} lots, Ticket #{mt5_res.order})")
+                                else:
+                                    err_comment = mt5_res.comment if mt5_res else mt5_client.last_error()
+                                    log.warning(f"MT5 order send to {f_login} notice: {err_comment}")
+                            mt5_client.shutdown()
+                except Exception as mt5_err:
+                    log.warning(f"MT5 multi-account execution error for User #{user_id}: {mt5_err}")
+
             # 4. Execute on MyFundedPerpetuals (Prop Firm Challenge with strict $75 loss cap)
             if user.get("role") in ("superadmin", "tradeadmin", "admin") or user_id == 1:
                 try:
@@ -339,6 +405,18 @@ def monitor_and_manage_all_user_trades(global_cfg: dict = None) -> dict:
                 current_p = float(_mfp.get_ticker_price(clean_base) or 0.0)
             except Exception:
                 pass
+        elif exchange == "mt5":
+            try:
+                import MetaTrader5 as mt5_client
+                clean_sym = symbol.replace("/USDT", "").replace("USDT", "").upper()
+                if mt5_client.initialize(timeout=1500):
+                    mt5_client.symbol_select(clean_sym, True)
+                    tick = mt5_client.symbol_info_tick(clean_sym)
+                    if tick:
+                        current_p = float(tick.bid if is_long else tick.ask)
+                    mt5_client.shutdown()
+            except Exception:
+                pass
 
         if current_p <= 0:
             try:
@@ -408,6 +486,32 @@ def monitor_and_manage_all_user_trades(global_cfg: dict = None) -> dict:
                     _mfp.place_order(symbol=clean_base, side=close_side, size=qty, leverage=5, order_type="market")
                 except Exception as ex_err:
                     log.error("MFP auto-close failed for User #%s: %s", user_id, ex_err)
+
+            elif exchange == "mt5":
+                try:
+                    import MetaTrader5 as mt5_client
+                    if mt5_client.initialize(timeout=2000):
+                        positions = mt5_client.positions_get(symbol=symbol)
+                        if positions:
+                            for p in positions:
+                                c_type = mt5_client.ORDER_TYPE_SELL if p.type == mt5_client.ORDER_TYPE_BUY else mt5_client.ORDER_TYPE_BUY
+                                c_tick = mt5_client.symbol_info_tick(p.symbol)
+                                c_price = (c_tick.bid if c_type == mt5_client.ORDER_TYPE_SELL else c_tick.ask) if c_tick else p.price_current
+                                close_req = {
+                                    "action": mt5_client.TRADE_ACTION_DEAL,
+                                    "position": p.ticket,
+                                    "symbol": p.symbol,
+                                    "volume": p.volume,
+                                    "type": c_type,
+                                    "price": c_price,
+                                    "deviation": 20,
+                                    "magic": 1002026,
+                                    "comment": f"Auto-Close TP/SL {close_reason}"
+                                }
+                                mt5_client.order_send(close_req)
+                        mt5_client.shutdown()
+                except Exception as ex_err:
+                    log.error("MT5 auto-close failed for User #%s: %s", user_id, ex_err)
 
             elif exchange in ("binance", "bybit", "okx", "bitget", "kucoin", "mexc", "gateio"):
                 try:
