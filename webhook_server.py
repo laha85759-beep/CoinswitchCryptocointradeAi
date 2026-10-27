@@ -635,6 +635,17 @@ def get_terminal_data():
             db_cur.execute("SELECT * FROM user_trades WHERE status = 'open' ORDER BY opened_at DESC")
             db_trades = [dict(r) for r in db_cur.fetchall()]
             db_conn.close()
+
+            # Fallback to persistent backup if DB trades were empty
+            if not db_trades:
+                try:
+                    from database import TRADES_BACKUP_FILE
+                    if os.path.exists(TRADES_BACKUP_FILE):
+                        with open(TRADES_BACKUP_FILE, "r", encoding="utf-8") as bf:
+                            bk = json.load(bf)
+                            db_trades = [t for t in bk if t.get("status") == "open"]
+                except Exception as be:
+                    log.warning("Notice loading backup trades: %s", be)
             existing_delta_syms = {str(p.get("symbol", "")).upper() for p in open_delta}
             existing_cs_syms = {str(p.get("symbol", "")).upper() for p in open_cs}
             for t in db_trades:
@@ -2333,7 +2344,7 @@ def get_copytrading_accounts():
             safe_f["password"] = "********" if safe_f.get("password") else ""
             safe_followers.append(safe_f)
         
-        telemetry = _MT5_TELEMETRY if isinstance(_MT5_TELEMETRY, dict) else {}
+        telemetry = _MT5_LAST_TELEMETRY if isinstance(_MT5_LAST_TELEMETRY, dict) else {}
         from mt5_multi_account_risk_guardian import MultiAccountRiskGuardian
         guardian = MultiAccountRiskGuardian()
         risk_report = guardian.get_all_accounts_daily_status()
@@ -2344,7 +2355,7 @@ def get_copytrading_accounts():
             "master_telemetry": telemetry,
             "followers": safe_followers,
             "daily_risk_report": risk_report,
-            "recent_executions": _MT5_RECENT_EXECUTIONS[-15:]
+            "recent_executions": _MT5_EXECUTED_LOG[-15:]
         })
     except Exception as exc:
         return jsonify({"status": "error", "message": str(exc)}), 500
