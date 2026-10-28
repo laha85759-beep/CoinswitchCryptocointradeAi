@@ -114,20 +114,31 @@ class MultiAccountRiskGuardian:
         })
 
         if login_id not in ledger[today]:
+            # Baseline day start to the theoretical initial starting balance or previous balance
+            init_baseline = rule["starting_balance"] if (rule.get("starting_balance") and rule["starting_balance"] > current_balance) else current_balance
+            peak_hwm = max(current_equity, current_balance, rule["starting_balance"])
+            
+            # Initial trailing calculations
+            initial_daily_loss = max(0.0, init_baseline - current_equity)
+            initial_floor = rule["mll_floor_usd"]
+            floor_breached = current_equity <= initial_floor
+            daily_breached = initial_daily_loss >= rule["daily_loss_limit_usd"]
+
             ledger[today][login_id] = {
                 "name": rule["name"],
-                "day_start_balance": current_balance,
+                "day_start_balance": init_baseline,
                 "lowest_equity": current_equity,
-                "highest_equity": current_equity,
-                "peak_high_water_mark": max(current_equity, current_balance, rule["starting_balance"]),
+                "highest_equity": max(current_equity, init_baseline),
+                "peak_high_water_mark": peak_hwm,
                 "current_equity": current_equity,
                 "current_balance": current_balance,
                 "open_positions": open_positions_count,
-                "unrealized_daily_loss": 0.0,
-                "trailing_daily_drawdown": 0.0,
-                "trailing_mll_floor": rule["mll_floor_usd"],
-                "trading_halted": False,
-                "halt_reason": None,
+                "unrealized_daily_loss": round(initial_daily_loss, 2),
+                "trailing_daily_drawdown": round(initial_daily_loss, 2),
+                "trailing_mll_floor": initial_floor,
+                "trailing_mll_room": round(max(0.0, current_equity - initial_floor), 2),
+                "trading_halted": daily_breached or floor_breached,
+                "halt_reason": ("TRAILING_DAILY_LOSS_EXCEEDED" if daily_breached else "TRAILING_MLL_FLOOR_BREACH") if (daily_breached or floor_breached) else None,
                 "last_sync": time.time()
             }
         else:
@@ -151,11 +162,19 @@ class MultiAccountRiskGuardian:
             
             # 3. Trailing Daily Drawdown:
             # Measures pullback from today's highest equity peak
-            day_peak = acc_data.get("highest_equity", current_equity)
-            start_bal = acc_data.get("day_start_balance", current_balance)
-            daily_loss_from_start = max(0.0, start_bal - current_equity)
-            trailing_daily_dd = max(daily_loss_from_start, max(0.0, day_peak - current_equity))
-            acc_data["unrealized_daily_loss"] = round(daily_loss_from_start, 2)
+            # Baseline balance is the maximum of recorded day_start_balance and account's starting balance
+            start_bal = max(acc_data.get("day_start_balance", current_balance), rule["starting_balance"])
+            acc_data["day_start_balance"] = start_bal
+            day_peak = max(acc_data.get("highest_equity", current_equity), start_bal)
+            acc_data["highest_equity"] = day_peak
+            
+            # Cumulative loss from starting baseline
+            cumulative_loss = max(0.0, start_bal - current_equity)
+            # Pullback from today's equity peak
+            peak_pullback = max(0.0, day_peak - current_equity)
+            trailing_daily_dd = max(cumulative_loss, peak_pullback)
+            
+            acc_data["unrealized_daily_loss"] = round(cumulative_loss, 2)
             acc_data["trailing_daily_drawdown"] = round(trailing_daily_dd, 2)
 
             # 4. Trailing Maximum Loss Room Remaining
@@ -206,17 +225,26 @@ class MultiAccountRiskGuardian:
         report = []
 
         for acc_id, rule in self.rules.items():
-            acc_data = ledger.get(acc_id, {
-                "name": rule["name"],
-                "current_balance": rule["starting_balance"],
-                "current_equity": rule["starting_balance"],
-                "open_positions": 0,
-                "trading_halted": False,
-                "halt_reason": "SYNCING",
-                "lowest_equity": rule["starting_balance"]
-            })
+            acc_data = ledger.get(acc_id)
+            if not acc_data:
+                acc_data = {
+                    "name": rule["name"],
+                    "current_balance": rule["starting_balance"],
+                    "current_equity": rule["starting_balance"],
+                    "open_positions": 0,
+                    "trading_halted": False,
+                    "halt_reason": "SYNCING",
+                    "lowest_equity": rule["starting_balance"],
+                    "highest_equity": rule["starting_balance"],
+                    "peak_high_water_mark": rule["starting_balance"],
+                    "trailing_daily_drawdown": 0.0,
+                    "trailing_mll_floor": rule["mll_floor_usd"]
+                }
 
-            daily_room = max(0.0, rule["daily_loss_limit_usd"] - acc_data.get("trailing_daily_drawdown", 0.0))
+            # Accurately compute daily loss including any drawdown below $10,000 / starting baseline
+            start_bal = max(acc_data.get("day_start_balance", rule["starting_balance"]), rule["starting_balance"])
+            actual_loss = max(acc_data.get("trailing_daily_drawdown", 0.0), max(0.0, start_bal - acc_data["current_equity"]))
+            daily_room = max(0.0, rule["daily_loss_limit_usd"] - actual_loss)
             trailing_floor = acc_data.get("trailing_mll_floor", rule["mll_floor_usd"])
             floor_room = max(0.0, acc_data["current_equity"] - trailing_floor)
 
@@ -228,7 +256,7 @@ class MultiAccountRiskGuardian:
                 "day_peak_equity": acc_data.get("highest_equity", acc_data["current_equity"]),
                 "peak_high_water_mark": acc_data.get("peak_high_water_mark", acc_data["current_equity"]),
                 "daily_loss_limit": rule["daily_loss_limit_usd"],
-                "trailing_daily_loss": acc_data.get("trailing_daily_drawdown", 0.0),
+                "trailing_daily_loss": round(actual_loss, 2),
                 "daily_loss_room_remaining": round(daily_room, 2),
                 "mll_floor": rule["mll_floor_usd"],
                 "trailing_mll_floor": trailing_floor,

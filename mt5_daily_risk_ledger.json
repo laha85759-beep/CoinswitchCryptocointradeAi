@@ -1,0 +1,53 @@
+{
+  "2026-10-27": {
+    "116810": {
+      "name": "CK Capital $10K Master",
+      "day_start_balance": 9989.22,
+      "lowest_equity": 9989.22,
+      "highest_equity": 9989.22,
+      "current_equity": 9989.22,
+      "current_balance": 9989.22,
+      "open_positions": 0,
+      "realized_daily_pnl": 0.0,
+      "unrealized_daily_pnl": 0.0,
+      "trading_halted": false,
+      "halt_reason": null,
+      "last_sync": 1793102963.4735115,
+      "unrealized_daily_loss": 0.0
+    },
+    "655344": {
+      "name": "EquityEdge $50K Follower",
+      "day_start_balance": 49156.97,
+      "lowest_equity": 49156.97,
+      "highest_equity": 49156.97,
+      "current_equity": 49156.97,
+      "current_balance": 49156.97,
+      "open_positions": 0,
+      "realized_daily_pnl": 0.0,
+      "unrealized_daily_pnl": 0.0,
+      "trading_halted": false,
+      "halt_reason": null,
+      "last_sync": 1793102963.486185,
+      "unrealized_daily_loss": 0.0
+    }
+  },
+  "2026-10-28": {
+    "116810": {
+      "name": "CK Capital  (MT5 Master)",
+      "day_start_balance": 10000.0,
+      "lowest_equity": 9813.0,
+      "highest_equity": 10000.0,
+      "peak_high_water_mark": 10000.0,
+      "current_equity": 9813.0,
+      "current_balance": 9813.0,
+      "open_positions": 0,
+      "unrealized_daily_loss": 187.0,
+      "trailing_daily_drawdown": 187.0,
+      "trailing_mll_floor": 9500.0,
+      "trailing_mll_room": 313.0,
+      "trading_halted": false,
+      "halt_reason": null,
+      "last_sync": 1793169960.0
+    }
+  }
+}
