@@ -2238,11 +2238,12 @@ if __name__ == "__main__":
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# MT5 EA BRIDGE ENDPOINTS (POLL & DISPATCH COMMANDS)
+# MT5 EA BRIDGE ENDPOINTS (MULTI-ACCOUNT DISPATCH & ROUTING)
 # ══════════════════════════════════════════════════════════════════════════════
 _MT5_COMMAND_QUEUE = []
 _MT5_EXECUTED_LOG = []
 _MT5_LAST_TELEMETRY = {}
+_MT5_ACCOUNTS_TELEMETRY = {}
 
 @app.route("/api/mt5/bridge", methods=["POST"])
 def mt5_bridge_poll():
@@ -2254,14 +2255,14 @@ def mt5_bridge_poll():
     if secret not in valid_secrets:
         return jsonify({"status": "error", "message": "Unauthorized"}), 401
 
-    global _MT5_LAST_TELEMETRY, _MT5_COMMAND_QUEUE
+    global _MT5_LAST_TELEMETRY, _MT5_COMMAND_QUEUE, _MT5_ACCOUNTS_TELEMETRY
     acc_val = data.get("account")
     bal_val = float(data.get("balance") or 0)
     eq_val = float(data.get("equity") or 0)
     prof_val = float(data.get("profit") or 0)
     pos_val = int(data.get("positions") or 0)
 
-    _MT5_LAST_TELEMETRY = {
+    telem_entry = {
         "account": acc_val,
         "balance": bal_val,
         "equity": eq_val,
@@ -2269,6 +2270,10 @@ def mt5_bridge_poll():
         "positions": pos_val,
         "timestamp": time.time()
     }
+    _MT5_LAST_TELEMETRY = telem_entry
+    if acc_val:
+        _MT5_ACCOUNTS_TELEMETRY[str(acc_val)] = telem_entry
+
     # Update Daily Multi-Account Risk Guardian
     try:
         from mt5_multi_account_risk_guardian import MultiAccountRiskGuardian
@@ -2278,11 +2283,19 @@ def mt5_bridge_poll():
     except Exception as _rg_err:
         pass
 
-    # If there is a pending command in queue, pop and send to EA
-    if _MT5_COMMAND_QUEUE:
-        cmd = _MT5_COMMAND_QUEUE.pop(0)
-        log.info("Dispatched MT5 command to EA: %s", cmd)
-        return jsonify(cmd), 200
+    # Account-Targeted Queue Dispatch: Pop command meant for THIS polling account (or broadcast)
+    if _MT5_COMMAND_QUEUE and acc_val:
+        target_idx = None
+        for i, cmd in enumerate(_MT5_COMMAND_QUEUE):
+            target_acc = cmd.get("target_account")
+            if not target_acc or str(target_acc) == "all" or str(target_acc) == str(acc_val):
+                target_idx = i
+                break
+        
+        if target_idx is not None:
+            dispatched_cmd = _MT5_COMMAND_QUEUE.pop(target_idx)
+            log.info("Dispatched MT5 targeted command to EA #%s: %s", acc_val, dispatched_cmd)
+            return jsonify(dispatched_cmd), 200
 
     return jsonify({"status": "idle", "active_signals": 0}), 200
 

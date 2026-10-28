@@ -212,33 +212,65 @@ def dispatch_signals_to_all_users(approved_signals: list[dict], global_cfg: dict
                     elif mt5_sym == "ETH": mt5_sym = "ETHUSD"
                     elif mt5_sym in ("GOLD", "XAU"): mt5_sym = "XAUUSD"
 
-                    # 1. PRIMARY TARGET: Dispatched directly to AWS EC2 MT5 Bridge Queue (Used by Account 116810 & Follower 655344)
+                    # 1. PRIMARY TARGET: Dispatched to BOTH Master Account 116810 and Follower 655344 with Dynamic Risk-Adaptive Lot Sizing
                     try:
                         from webhook_server import _MT5_COMMAND_QUEUE
-                        ec2_cmd_id = f"CMD-{int(time.time()*1000)}"
-                        ec2_cmd = {
-                            "command_id": ec2_cmd_id,
+                        
+                        # Calculate Risk-Adaptive Master Lot Size based on price and stop loss distance ($30-$50 risk)
+                        stop_dist = abs(float(price) - float(sl_price)) if sl_price and price else 0.0
+                        if "XAU" in mt5_sym or "GOLD" in mt5_sym:
+                            calc_master_lot = round(40.0 / max(1.0, stop_dist * 100.0), 2) if stop_dist > 0 else 0.03
+                        else:
+                            calc_master_lot = round(40.0 / max(1.0, stop_dist * 100000.0), 2) if stop_dist > 0 else 0.03
+                        
+                        # Clamp lot size within prop firm safe boundaries
+                        master_lot = max(0.01, min(0.15, calc_master_lot))
+                        
+                        # Follower 655344 ($50K account) scales lot size proportionally by account size ratio (50K / 10K = 5x)
+                        follower_lot = min(0.30, max(0.02, round(master_lot * 5.0, 2)))
+
+                        # A. Enqueue for Master Account (#116810)
+                        master_cmd_id = f"CMD-M-{int(time.time()*1000)}"
+                        master_cmd = {
+                            "command_id": master_cmd_id,
+                            "target_account": 116810,
                             "action": "BUY" if direction in ["buy", "long"] else "SELL",
                             "symbol": mt5_sym,
-                            "volume": 0.01,
+                            "volume": master_lot,
                             "sl": float(sl_price) if sl_price else 0.0,
                             "tp": float(tp_price) if tp_price else 0.0,
                             "magic": 20261026,
-                            "comment": f"SuperBrain MultiTenant #{user_id}"
+                            "comment": f"SuperBrain Master #{user_id}"
                         }
-                        _MT5_COMMAND_QUEUE.append(ec2_cmd)
-                        log.info(f"Enqueued MT5 trade directly to AWS EC2 Bridge Queue for {mt5_sym} ({ec2_cmd['action']} 0.01 lots, ID: {ec2_cmd_id})")
-                        
+                        _MT5_COMMAND_QUEUE.append(master_cmd)
+                        log.info(f"Enqueued MT5 Master #116810 trade: {mt5_sym} ({master_cmd['action']} {master_lot} lots, Risk-Adaptive)")
+
+                        # B. Enqueue for Follower Account (#655344 - $50K Instant)
+                        follower_cmd_id = f"CMD-F-{int(time.time()*1000)}"
+                        follower_cmd = {
+                            "command_id": follower_cmd_id,
+                            "target_account": 655344,
+                            "action": "BUY" if direction in ["buy", "long"] else "SELL",
+                            "symbol": mt5_sym,
+                            "volume": follower_lot,
+                            "sl": float(sl_price) if sl_price else 0.0,
+                            "tp": float(tp_price) if tp_price else 0.0,
+                            "magic": 20261026,
+                            "comment": f"SuperBrain Follower #{user_id}"
+                        }
+                        _MT5_COMMAND_QUEUE.append(follower_cmd)
+                        log.info(f"Enqueued MT5 Follower #655344 trade: {mt5_sym} ({follower_cmd['action']} {follower_lot} lots, 50K Scaled)")
+
                         # Record in user_trades database
                         c_db = get_db()
                         c_cur = c_db.cursor()
                         c_cur.execute('''
                             INSERT INTO user_trades (user_id, exchange, symbol, direction, entry_price, qty, status, sl_price, tp_price, strategy, opened_at)
-                            VALUES (?, 'mt5_ec2', ?, ?, ?, 0.01, 'open', ?, ?, ?, ?)
-                        ''', (user_id, mt5_sym, direction, price, sl_price, tp_price, sig_strategy_name, now))
+                            VALUES (?, 'mt5_ec2', ?, ?, ?, ?, 'open', ?, ?, ?, ?)
+                        ''', (user_id, mt5_sym, direction, price, master_lot, sl_price, tp_price, sig_strategy_name, now))
                         c_db.commit()
                         c_db.close()
-                        total_executed += 1
+                        total_executed += 2
                     except Exception as ec2_q_err:
                         log.debug(f"Direct EC2 bridge queue notice: {ec2_q_err}")
 
