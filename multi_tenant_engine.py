@@ -25,7 +25,7 @@ def dispatch_signals_to_all_users(approved_signals: list[dict], global_cfg: dict
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute('''
-        SELECT u.id, u.email, u.name, s.hard_sl_pct, s.take_profit_pct, s.trail_pct, s.max_capital_pct, s.active_strategy
+        SELECT u.id, u.email, u.name, u.role, s.hard_sl_pct, s.take_profit_pct, s.trail_pct, s.max_capital_pct, s.active_strategy
         FROM users u
         JOIN user_settings s ON u.id = s.user_id
         WHERE u.is_active = 1 AND s.autotrade_enabled = 1
@@ -36,7 +36,8 @@ def dispatch_signals_to_all_users(approved_signals: list[dict], global_cfg: dict
     total_executed = 0
     now = int(time.time())
 
-    for user in active_users:
+    for user_row in active_users:
+        user = dict(user_row)
         user_id = user["id"]
         keys = get_user_api_keys(user_id)
         
