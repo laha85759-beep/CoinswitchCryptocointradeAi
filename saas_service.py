@@ -45,8 +45,8 @@ except ImportError:
     log.warning("Stripe Python package not installed; falling back to direct API / simulated checkout mode.")
 
 # Import Razorpay (Multi-Currency Global Gateway)
-RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "rzp_live_TsyPwRJG2SfIKs").strip()
-RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "17GRpxDPg31ZHVyCg6psMoLW").strip()
+RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "").strip()
+RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "").strip()
 
 try:
     import razorpay
