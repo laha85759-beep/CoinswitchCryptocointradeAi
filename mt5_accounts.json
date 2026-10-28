@@ -1,20 +1,8 @@
 {
     "master_account": {
         "login": 116810,
-        "password": "",
+        "password": "KQh1Z1$#zD2p",
         "server": "GoatFunded-Server"
     },
-    "follower_accounts": [
-        {
-            "id": "account_655344",
-            "name": "50K Instant Account",
-            "enabled": true,
-            "login": 655344,
-            "password": "Z3B#9elUxc",
-            "server": "EquityEdge-Trade",
-            "account_size": 50000.0,
-            "lot_multiplier": 5.0,
-            "max_lot": 0.20
-        }
-    ]
+    "follower_accounts": []
 }

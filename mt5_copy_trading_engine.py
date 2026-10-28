@@ -34,19 +34,7 @@ class SuperBrainMT5Copier:
                     "password": "",
                     "server": "GoatFunded-Server"
                 },
-                "follower_accounts": [
-                    {
-                        "id": "account_655344",
-                        "name": "50K Instant Account",
-                        "enabled": True,
-                        "login": 655344,
-                        "password": "Z3B#9elUxc",
-                        "server": "EquityEdge-Trade",
-                        "account_size": 50000.0,
-                        "lot_multiplier": 5.0,
-                        "max_lot": 0.20
-                    }
-                ]
+                "follower_accounts": []
             }
             with open(self.config_file, "w", encoding="utf-8") as f:
                 json.dump(default, f, indent=4)

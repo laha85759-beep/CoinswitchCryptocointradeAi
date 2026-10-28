@@ -14,21 +14,6 @@
       "halt_reason": null,
       "last_sync": 1793102963.4735115,
       "unrealized_daily_loss": 0.0
-    },
-    "655344": {
-      "name": "EquityEdge $50K Follower",
-      "day_start_balance": 49156.97,
-      "lowest_equity": 49156.97,
-      "highest_equity": 49156.97,
-      "current_equity": 49156.97,
-      "current_balance": 49156.97,
-      "open_positions": 0,
-      "realized_daily_pnl": 0.0,
-      "unrealized_daily_pnl": 0.0,
-      "trading_halted": false,
-      "halt_reason": null,
-      "last_sync": 1793102963.486185,
-      "unrealized_daily_loss": 0.0
     }
   },
   "2026-10-28": {

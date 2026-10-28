@@ -34,15 +34,6 @@ class MultiAccountRiskGuardian:
                 "max_open_trades": 2,
                 "max_lot_per_trade": 0.05
             },
-            "655344": {
-                "name": "EquityEdge $50K (MT5 Follower)",
-                "platform": "MetaTrader 5",
-                "starting_balance": 50000.0,
-                "daily_loss_limit_usd": 1500.0,
-                "mll_floor_usd": 47000.0,
-                "max_open_trades": 2,
-                "max_lot_per_trade": 0.20
-            },
             "DELTA_INDIA": {
                 "name": "Delta Exchange India (F&O & Perps)",
                 "platform": "Delta India",
