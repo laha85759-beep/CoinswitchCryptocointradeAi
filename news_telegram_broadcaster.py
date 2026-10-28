@@ -279,8 +279,8 @@ class NewsTelegramBroadcaster:
             f"🎯 <b>Forecast:</b> <code>{forecast}</code>\n"
             f"⏮ <b>Previous:</b> <code>{previous}</code>"
             f"{deviation_note}\n\n"
-            f"⚡ <i>TheSmartMag Live Macro Catalyst Stream</i>
-👉 <a href="https://trade.thesmartmag.com/overview#pricing"><b>Trade This Catalyst Live on Terminal &gt;&gt;</b></a>"
+            f"⚡ <i>TheSmartMag Live Macro Catalyst Stream</i>\n"
+            f"👉 <a href='https://trade.thesmartmag.com/overview#pricing'><b>Trade This Catalyst Live on Terminal &gt;&gt;</b></a>"
         )
         return self.send_message(msg)
 
@@ -305,8 +305,8 @@ class NewsTelegramBroadcaster:
             f"🎯 <b>Consensus Forecast:</b> <code>{forecast}</code>\n"
             f"⏮ <b>Previous Reading:</b> <code>{previous}</code>\n\n"
             f"🧭 <b>Action Plan:</b> Expect sharp liquidity repricing & volatility on release. Maintain strict stop-losses.\n\n"
-            f"⚡ <i>TheSmartMag Pre-Catalyst Radar</i>
-👉 <a href="https://trade.thesmartmag.com/overview#pricing"><b>Protect Funded Capital &amp; Trade Live &gt;&gt;</b></a>"
+            f"⚡ <i>TheSmartMag Pre-Catalyst Radar</i>\n"
+            f"👉 <a href='https://trade.thesmartmag.com/overview#pricing'><b>Protect Funded Capital &amp; Trade Live &gt;&gt;</b></a>"
         )
         return self.send_message(msg)
 
@@ -339,8 +339,8 @@ class NewsTelegramBroadcaster:
         if levels.get("experienced"):
             msg += f"🏛 <b>Institutional Edge:</b> {levels['experienced']}\n"
             
-        msg += f"\n⚡ <i>TheSmartMag Dedicated Forex & Macro Channel</i>
-👉 <a href="https://trade.thesmartmag.com/overview#pricing"><b>Automate Trade Execution via MT5 Cloud Bridge &gt;&gt;</b></a>"
+        msg += f"\n⚡ <i>TheSmartMag Dedicated Forex & Macro Channel</i>\n"
+        msg += f"👉 <a href='https://trade.thesmartmag.com/overview#pricing'><b>Automate Trade Execution via MT5 Cloud Bridge &gt;&gt;</b></a>"
         return self.send_message(msg)
 
     def broadcast_full_digest(self, indices: Dict[str, Any], options: Dict[str, Any], stocks: List[Dict[str, Any]], calendar_events: List[Dict[str, Any]], signals: List[Dict[str, Any]], news_items: List[Dict[str, Any]]) -> int:

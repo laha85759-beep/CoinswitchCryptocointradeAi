@@ -6771,20 +6771,54 @@ function initNeuralBgCanvas() {
 }
 
 let activeWfStep = 0;
+let activeFunnelPacketCount = 1489;
 function initWorkflowCycle() {
   const steps = document.querySelectorAll(".wf-step-item");
-  if (!steps || steps.length === 0) return;
+  const funnelStages = [
+    document.getElementById("funnelStage1"),
+    document.getElementById("funnelStage2"),
+    document.getElementById("funnelStage3"),
+    document.getElementById("funnelStage4"),
+    document.getElementById("funnelStage5")
+  ];
+  const packetCounter = document.getElementById("orderflowPacketCounter");
 
   setInterval(() => {
-    steps.forEach((s, idx) => {
-      if (idx === activeWfStep) {
-        s.classList.add("active");
-      } else {
-        s.classList.remove("active");
+    // 1. Cycle 3D Agent Workforce cards
+    if (steps && steps.length > 0) {
+      steps.forEach((s, idx) => {
+        if (idx === activeWfStep) {
+          s.classList.add("active");
+        } else {
+          s.classList.remove("active");
+        }
+      });
+    }
+
+    // 2. Cycle Order Flow Funnel Pipeline Stages with dynamic data pulse
+    if (funnelStages.some(Boolean)) {
+      funnelStages.forEach((stage, idx) => {
+        if (!stage) return;
+        if (idx === activeWfStep) {
+          stage.style.borderColor = "#00f090";
+          stage.style.boxShadow = "0 0 16px rgba(0,240,144,0.35)";
+          stage.style.transform = "translateY(-2px)";
+        } else {
+          stage.style.borderColor = "rgba(255,255,255,0.08)";
+          stage.style.boxShadow = "none";
+          stage.style.transform = "none";
+        }
+      });
+
+      // Increment live packet counter to show active data transfer
+      activeFunnelPacketCount += Math.floor(Math.random() * 3) + 1;
+      if (packetCounter) {
+        packetCounter.textContent = `PACKETS PROCESSED: ${activeFunnelPacketCount.toLocaleString()}`;
       }
-    });
-    activeWfStep = (activeWfStep + 1) % steps.length;
-  }, 2500);
+    }
+
+    activeWfStep = (activeWfStep + 1) % 5;
+  }, 2200);
 }
 
 // ══════════ 23. RESPONSIVE MENUBAR & MOBILE DRAWER HANDLERS ══════════
