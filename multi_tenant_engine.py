@@ -203,20 +203,51 @@ def dispatch_signals_to_all_users(approved_signals: list[dict], global_cfg: dict
                     except Exception as ccxt_err:
                         log.warning(f"Universal CCXT ({ex_id}) execution error for User #{user_id}: {ccxt_err}")
 
-            # 3.5 Execute on MT5 Prop Firm & Multi-Account Copier (EquityEdge / GoatFunded)
+            # 3.5 Execute on MT5 Prop Firm (AWS EC2 Cloud Instance Bridge & Multi-Account Copier)
             if user.get("role") in ("superadmin", "tradeadmin", "admin") or user_id == 1:
                 try:
-                    import MetaTrader5 as mt5_client
-                    from mt5_copy_trading_engine import SuperBrainMT5Copier
-                    copier = SuperBrainMT5Copier()
-                    cfg = copier.load_config()
-                    follower_accs = [f for f in cfg.get("follower_accounts", []) if f.get("enabled", True)]
-                    
                     # Convert crypto/commodity to MT5 broker symbol if needed (e.g. BTC/USDT -> BTCUSD, XAU/USD -> XAUUSD)
                     mt5_sym = symbol.replace("/USDT", "").replace("USDT", "").replace("/USD", "").replace("-USD", "").upper()
                     if mt5_sym == "BTC": mt5_sym = "BTCUSD"
                     elif mt5_sym == "ETH": mt5_sym = "ETHUSD"
                     elif mt5_sym in ("GOLD", "XAU"): mt5_sym = "XAUUSD"
+
+                    # 1. PRIMARY TARGET: Dispatched directly to AWS EC2 MT5 Bridge Queue (Used by Account 116810 & Follower 655344)
+                    try:
+                        from webhook_server import _MT5_COMMAND_QUEUE
+                        ec2_cmd_id = f"CMD-{int(time.time()*1000)}"
+                        ec2_cmd = {
+                            "command_id": ec2_cmd_id,
+                            "action": "BUY" if direction in ["buy", "long"] else "SELL",
+                            "symbol": mt5_sym,
+                            "volume": 0.01,
+                            "sl": float(sl_price) if sl_price else 0.0,
+                            "tp": float(tp_price) if tp_price else 0.0,
+                            "magic": 20261026,
+                            "comment": f"SuperBrain MultiTenant #{user_id}"
+                        }
+                        _MT5_COMMAND_QUEUE.append(ec2_cmd)
+                        log.info(f"Enqueued MT5 trade directly to AWS EC2 Bridge Queue for {mt5_sym} ({ec2_cmd['action']} 0.01 lots, ID: {ec2_cmd_id})")
+                        
+                        # Record in user_trades database
+                        c_db = get_db()
+                        c_cur = c_db.cursor()
+                        c_cur.execute('''
+                            INSERT INTO user_trades (user_id, exchange, symbol, direction, entry_price, qty, status, sl_price, tp_price, strategy, opened_at)
+                            VALUES (?, 'mt5_ec2', ?, ?, ?, 0.01, 'open', ?, ?, ?, ?)
+                        ''', (user_id, mt5_sym, direction, price, sl_price, tp_price, sig_strategy_name, now))
+                        c_db.commit()
+                        c_db.close()
+                        total_executed += 1
+                    except Exception as ec2_q_err:
+                        log.debug(f"Direct EC2 bridge queue notice: {ec2_q_err}")
+
+                    # 2. Also forward to local desktop MT5 client if available
+                    import MetaTrader5 as mt5_client
+                    from mt5_copy_trading_engine import SuperBrainMT5Copier
+                    copier = SuperBrainMT5Copier()
+                    cfg = copier.load_config()
+                    follower_accs = [f for f in cfg.get("follower_accounts", []) if f.get("enabled", True)]
 
                     for f_acc in follower_accs:
                         f_login = f_acc.get("login")
