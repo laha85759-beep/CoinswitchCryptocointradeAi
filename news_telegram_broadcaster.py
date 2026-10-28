@@ -285,9 +285,9 @@ class NewsTelegramBroadcaster:
         return self.send_message(msg)
 
     def broadcast_calendar_warning(self, event: Dict[str, Any], mins_left: float = 15, window: str = "15 MIN") -> bool:
-        """Dispatches urgent advance warning before high/medium impact calendar catalyst."""
+        """Dispatches urgent advance warning before high/medium impact calendar catalyst with impacted assets and setup targets."""
         title = event.get("title", "")
-        country = event.get("country", "GLOBAL")
+        country = event.get("country", "GLOBAL").upper()
         impact = str(event.get("impact", "High")).upper()
         forecast = event.get("forecast", "—")
         previous = event.get("previous", "—")
@@ -295,6 +295,53 @@ class NewsTelegramBroadcaster:
         time_str = event.get("time", "")
 
         imp_icon = "🔴 HIGH IMPACT" if "HIGH" in impact else "🟠 MEDIUM IMPACT"
+
+        # Determine primary impacted asset, bias, and levels based on country & event type
+        primary_asset = "XAUUSD"
+        bias = "NEUTRAL / STRADDLE BREAKOUT"
+        entry_hint = "Wait for 5M candle close outside opening range"
+        sl_hint = "Tight 20-30 pips stop"
+        tp1_hint = "1:2.0 Risk-Reward target"
+        impacted_list = "• <b>XAUUSD (Gold)</b>\n• <b>EURUSD</b>\n• <b>BTCUSD</b>"
+
+        c_upper = country.upper()
+        t_upper = title.upper()
+
+        if "USD" in c_upper or "US" in c_upper or "FED" in t_upper or "FOMC" in t_upper or "NFP" in t_upper or "CPI" in t_upper:
+            primary_asset = "XAUUSD (Gold)"
+            impacted_list = "• <b>XAUUSD (Gold)</b> (Direct USD Inverse)\n• <b>EURUSD</b> (Global FX Driver)\n• <b>US500 / NASDAQ</b> (Risk Sentiment)"
+            bias = "BUY DIPS (4035 - 4040) / SELL RALLIES (4065 - 4070)"
+            entry_hint = "4038.00 - 4042.00 (Demand Zone Rebound)"
+            sl_hint = "4028.00 (100 pips stop protection)"
+            tp1_hint = "4058.00 (TP1) | 4072.00 (TP2)"
+        elif "GBP" in c_upper or "UK" in c_upper or "BOE" in t_upper or "BUDGET" in t_upper:
+            primary_asset = "GBPUSD"
+            impacted_list = "• <b>GBPUSD</b> (Primary Driver)\n• <b>EURGBP</b> (Cross Hedge)\n• <b>FTSE 100</b>"
+            bias = "SELL / SHORT (FADE RALLIES)"
+            entry_hint = "1.2980 - 1.3010"
+            sl_hint = "1.3060 (Hard SL)"
+            tp1_hint = "1.2910 (TP1) | 1.2840 (TP2)"
+        elif "EUR" in c_upper or "ECB" in t_upper or "GERMANY" in c_upper:
+            primary_asset = "EURUSD"
+            impacted_list = "• <b>EURUSD</b> (Primary Driver)\n• <b>GER40 (DAX)</b>\n• <b>USDCHF</b>"
+            bias = "BUY ZONE / BREAKOUT CONFIRMATION"
+            entry_hint = "1.0820 - 1.0845"
+            sl_hint = "1.0785"
+            tp1_hint = "1.0890 (TP1) | 1.0940 (TP2)"
+        elif "CAD" in c_upper or "BOC" in t_upper:
+            primary_asset = "USDCAD"
+            impacted_list = "• <b>USDCAD</b> (Rate Differential)\n• <b>WTI Crude Oil</b>"
+            bias = "SELL RALLIES / BUY DIP ON OVERSHOOT"
+            entry_hint = "1.3850 - 1.3880"
+            sl_hint = "1.3920"
+            tp1_hint = "1.3790 (TP1) | 1.3730 (TP2)"
+        elif "JPY" in c_upper or "BOJ" in t_upper:
+            primary_asset = "USDJPY"
+            impacted_list = "• <b>USDJPY</b>\n• <b>GBPJPY</b> (High Beta Cross)\n• <b>NIKKEI 225</b>"
+            bias = "MOMENTUM EXTENSION"
+            entry_hint = "152.80 - 153.20"
+            sl_hint = "152.10"
+            tp1_hint = "154.20 (TP1) | 155.00 (TP2)"
 
         msg = (
             f"⏰ <b>ECONOMIC CATALYST IMMINENT • IN ~{window}</b>\n"
@@ -304,8 +351,16 @@ class NewsTelegramBroadcaster:
             f"🕒 <b>Scheduled Release:</b> <code>{date_str} {time_str}</code> (~{int(mins_left)} min)\n"
             f"🎯 <b>Consensus Forecast:</b> <code>{forecast}</code>\n"
             f"⏮ <b>Previous Reading:</b> <code>{previous}</code>\n\n"
-            f"🧭 <b>Action Plan:</b> Expect sharp liquidity repricing & volatility on release. Maintain strict stop-losses.\n\n"
-            f"⚡ <i>TheSmartMag Pre-Catalyst Radar</i>\n"
+            f"🎯 <b>IMPACTED ASSETS:</b>\n{impacted_list}\n\n"
+            f"⚡ <b>ACTIONABLE TRADE PLAN &amp; LEVELS:</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
+            f"📊 <b>Focus Asset:</b> <code>{primary_asset}</code>\n"
+            f"🎯 <b>Bias:</b> <code>{bias}</code>\n"
+            f"🔹 <b>Optimal Entry:</b> <code>{entry_hint}</code>\n"
+            f"🎯 <b>Targets:</b> <code>{tp1_hint}</code>\n"
+            f"🛑 <b>Stop Loss:</b> <code>{sl_hint}</code>\n\n"
+            f"🧭 <b>Risk Rule:</b> Reduce position size by 50% before news releases to absorb spread widening.\n\n"
+            f"⚡ <i>TheSmartMag Pre-Catalyst Radar &amp; Execution</i>\n"
             f"👉 <a href='https://trade.thesmartmag.com/overview#pricing'><b>Protect Funded Capital &amp; Trade Live &gt;&gt;</b></a>"
         )
         return self.send_message(msg)
