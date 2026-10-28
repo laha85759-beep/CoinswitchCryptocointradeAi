@@ -746,6 +746,41 @@ class NewsAgentCore:
                             if warn_key not in self.last_event_alert_time:
                                 self.last_event_alert_time[warn_key] = now_ts
                                 news_broadcaster.broadcast_calendar_warning(ev, mins_left=mins_left, window=window)
+                                
+                                # Auto-Execute Catalyst Trade across all accounts (MT5 Master & Follower)
+                                try:
+                                    country = str(ev.get("country", "")).upper()
+                                    t_upper = str(ev.get("title", "")).upper()
+                                    trade_sym = "XAUUSD"
+                                    trade_side = "BUY"
+                                    if "GBP" in country or "UK" in country or "BUDGET" in t_upper:
+                                        trade_sym = "GBPUSD"
+                                        trade_side = "SELL"
+                                    elif "CAD" in country or "BOC" in t_upper:
+                                        trade_sym = "USDCAD"
+                                        trade_side = "SELL"
+                                    elif "EUR" in country or "ECB" in t_upper:
+                                        trade_sym = "EURUSD"
+                                        trade_side = "BUY"
+                                    elif "JPY" in country or "BOJ" in t_upper:
+                                        trade_sym = "USDJPY"
+                                        trade_side = "BUY"
+                                    
+                                    from multi_tenant_engine import dispatch_signals_to_all_users
+                                    cat_signal = {
+                                        "symbol": trade_sym,
+                                        "direction": trade_side,
+                                        "price": 0.0,
+                                        "stop_loss_pct": 1.0,
+                                        "take_profit_pct": 2.5,
+                                        "confidence": 0.94,
+                                        "strategy_name": f"Economic Catalyst: {title[:25]}"
+                                    }
+                                    dispatch_signals_to_all_users([cat_signal])
+                                    log.info(f"Auto-dispatched Economic Catalyst trade for {trade_sym} ({trade_side}) on all MT5 accounts")
+                                except Exception as _cat_trade_err:
+                                    log.warning(f"Catalyst auto-trade execution error: {_cat_trade_err}")
+
                                 time.sleep(1.0)
                     except Exception:
                         pass
