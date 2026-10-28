@@ -9709,7 +9709,7 @@ async function refreshCopyTradingData() {
       document.getElementById("cpMasterPnL").className = `nc-hex-pct ${isPositive ? 'green' : 'red'}`;
     }
 
-    // Populate followers table
+    // Populate trailing risk metrics & followers table
     const followers = data.followers || [];
     const totalAccs = 1 + followers.length;
     if (document.getElementById("cpTotalAccounts")) {
@@ -9717,6 +9717,21 @@ async function refreshCopyTradingData() {
     }
     if (document.getElementById("cpAccountCountBadge")) {
       document.getElementById("cpAccountCountBadge").textContent = `${followers.length} Follower${followers.length === 1 ? '' : 's'} Linked`;
+    }
+
+    // Populate Trailing Risk HUD metrics from daily_risk_report
+    const riskReport = data.daily_risk_report || [];
+    const masterRisk = riskReport.find(r => String(r.account_id) === "116810") || {};
+    const followerRisk = riskReport.find(r => String(r.account_id) === "655344") || {};
+
+    if (document.getElementById("cpFollowerEquity") && followerRisk.current_equity) {
+      document.getElementById("cpFollowerEquity").textContent = `$${Number(followerRisk.current_equity).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+    }
+
+    if (document.getElementById("cpTotalPool")) {
+      const mEq = Number(masterRisk.current_equity || telem.equity || 9900);
+      const fEq = Number(followerRisk.current_equity || 48997);
+      document.getElementById("cpTotalPool").textContent = `$${(mEq + fEq).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
     }
 
     const tbody = document.getElementById("cpAccountsTableBody");

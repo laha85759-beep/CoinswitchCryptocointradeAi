@@ -92,7 +92,11 @@ class MultiAccountRiskGuardian:
             log.error("Failed to save daily risk ledger: %s", e)
 
     def update_account_telemetry(self, login_id, current_equity, current_balance, open_positions_count=0):
-        """Records daily telemetry snapshot and calculates daily drawdown."""
+        """
+        Records daily telemetry snapshot with TRAILING Daily Loss and TRAILING Maximum Loss (High-Water Mark MLL).
+        - Trailing Daily Loss = Highest Equity of the Day minus Current Equity (or Day-Start Balance minus Current Equity)
+        - Trailing Maximum Loss = Lifetime/Session Peak Equity (High-Water Mark) minus Current Equity, locking in profit
+        """
         login_id = str(login_id)
         today = self._today_str()
         ledger = self.load_ledger()
@@ -105,7 +109,7 @@ class MultiAccountRiskGuardian:
             "starting_balance": current_balance,
             "daily_loss_limit_usd": current_balance * 0.03,
             "mll_floor_usd": current_balance * 0.90,
-            "max_open_trades": 5,
+            "max_open_trades": 2,
             "max_lot_per_trade": 0.10
         })
 
@@ -115,11 +119,13 @@ class MultiAccountRiskGuardian:
                 "day_start_balance": current_balance,
                 "lowest_equity": current_equity,
                 "highest_equity": current_equity,
+                "peak_high_water_mark": max(current_equity, current_balance, rule["starting_balance"]),
                 "current_equity": current_equity,
                 "current_balance": current_balance,
                 "open_positions": open_positions_count,
-                "realized_daily_pnl": 0.0,
-                "unrealized_daily_pnl": 0.0,
+                "unrealized_daily_loss": 0.0,
+                "trailing_daily_drawdown": 0.0,
+                "trailing_mll_floor": rule["mll_floor_usd"],
                 "trading_halted": False,
                 "halt_reason": None,
                 "last_sync": time.time()
@@ -129,22 +135,44 @@ class MultiAccountRiskGuardian:
             acc_data["current_equity"] = current_equity
             acc_data["current_balance"] = current_balance
             acc_data["open_positions"] = open_positions_count
-            acc_data["lowest_equity"] = min(acc_data["lowest_equity"], current_equity)
-            acc_data["highest_equity"] = max(acc_data["highest_equity"], current_equity)
+            acc_data["lowest_equity"] = min(acc_data.get("lowest_equity", current_equity), current_equity)
+            acc_data["highest_equity"] = max(acc_data.get("highest_equity", current_equity), current_equity)
+            
+            # 1. Update Lifetime/Session Peak Equity (High-Water Mark)
+            prev_peak = acc_data.get("peak_high_water_mark", max(current_equity, rule["starting_balance"]))
+            new_peak = max(prev_peak, current_equity)
+            acc_data["peak_high_water_mark"] = new_peak
+            
+            # 2. Dynamic Trailing MLL Floor:
+            # As account equity grows, trailing floor moves UP by profit made, never moves down
+            profit_cushion = max(0.0, new_peak - rule["starting_balance"])
+            trailing_floor = rule["mll_floor_usd"] + profit_cushion
+            acc_data["trailing_mll_floor"] = round(trailing_floor, 2)
+            
+            # 3. Trailing Daily Drawdown:
+            # Measures pullback from today's highest equity peak
+            day_peak = acc_data.get("highest_equity", current_equity)
+            start_bal = acc_data.get("day_start_balance", current_balance)
+            daily_loss_from_start = max(0.0, start_bal - current_equity)
+            trailing_daily_dd = max(daily_loss_from_start, max(0.0, day_peak - current_equity))
+            acc_data["unrealized_daily_loss"] = round(daily_loss_from_start, 2)
+            acc_data["trailing_daily_drawdown"] = round(trailing_daily_dd, 2)
+
+            # 4. Trailing Maximum Loss Room Remaining
+            trailing_mll_room = current_equity - trailing_floor
+            acc_data["trailing_mll_room"] = round(trailing_mll_room, 2)
             acc_data["last_sync"] = time.time()
 
-            # Calculate daily drawdown against day_start_balance
-            start_bal = acc_data.get("day_start_balance", current_balance)
-            daily_loss = start_bal - current_equity
-            acc_data["unrealized_daily_loss"] = round(daily_loss, 2)
-
-            # Check Circuit Breakers
-            if daily_loss >= rule["daily_loss_limit_usd"]:
+            # 5. Enforce Trailing Circuit Breakers:
+            if trailing_daily_dd >= rule["daily_loss_limit_usd"]:
                 acc_data["trading_halted"] = True
-                acc_data["halt_reason"] = f"DAILY_LOSS_LIMIT_EXCEEDED: -${daily_loss:.2f} >= -${rule['daily_loss_limit_usd']:.2f}"
-            elif current_equity <= rule["mll_floor_usd"]:
+                acc_data["halt_reason"] = f"TRAILING_DAILY_LOSS_EXCEEDED: Peak DD ${trailing_daily_dd:.2f} >= Limit ${rule['daily_loss_limit_usd']:.2f}"
+            elif current_equity <= trailing_floor:
                 acc_data["trading_halted"] = True
-                acc_data["halt_reason"] = f"HARD_MLL_FLOOR_BREACH: Equity ${current_equity:.2f} <= Floor ${rule['mll_floor_usd']:.2f}"
+                acc_data["halt_reason"] = f"TRAILING_MLL_FLOOR_BREACH: Equity ${current_equity:.2f} <= Trailing Floor ${trailing_floor:.2f}"
+            else:
+                acc_data["trading_halted"] = False
+                acc_data["halt_reason"] = None
 
         self.save_ledger(ledger)
         return ledger[today][login_id]
@@ -188,18 +216,23 @@ class MultiAccountRiskGuardian:
                 "lowest_equity": rule["starting_balance"]
             })
 
-            daily_room = rule["daily_loss_limit_usd"] - (acc_data.get("day_start_balance", rule["starting_balance"]) - acc_data["current_equity"])
-            floor_room = acc_data["current_equity"] - rule["mll_floor_usd"]
+            daily_room = max(0.0, rule["daily_loss_limit_usd"] - acc_data.get("trailing_daily_drawdown", 0.0))
+            trailing_floor = acc_data.get("trailing_mll_floor", rule["mll_floor_usd"])
+            floor_room = max(0.0, acc_data["current_equity"] - trailing_floor)
 
             report.append({
                 "account_id": acc_id,
                 "name": rule["name"],
                 "current_balance": acc_data["current_balance"],
                 "current_equity": acc_data["current_equity"],
+                "day_peak_equity": acc_data.get("highest_equity", acc_data["current_equity"]),
+                "peak_high_water_mark": acc_data.get("peak_high_water_mark", acc_data["current_equity"]),
                 "daily_loss_limit": rule["daily_loss_limit_usd"],
-                "daily_loss_room_remaining": max(0.0, round(daily_room, 2)),
+                "trailing_daily_loss": acc_data.get("trailing_daily_drawdown", 0.0),
+                "daily_loss_room_remaining": round(daily_room, 2),
                 "mll_floor": rule["mll_floor_usd"],
-                "mll_cushion_remaining": max(0.0, round(floor_room, 2)),
+                "trailing_mll_floor": trailing_floor,
+                "mll_cushion_remaining": round(floor_room, 2),
                 "open_positions": acc_data.get("open_positions", 0),
                 "max_positions": rule["max_open_trades"],
                 "trading_status": "HALTED" if acc_data.get("trading_halted") else "SAFE_TRADING",
