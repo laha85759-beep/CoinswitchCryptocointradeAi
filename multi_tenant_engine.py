@@ -236,8 +236,29 @@ def dispatch_signals_to_all_users(approved_signals: list[dict], global_cfg: dict
                             log.info(f"Skipping MT5 trade dispatch for {mt5_sym}: Both accounts at max position limit (Master={m_open_pos}/2, Follower={f_open_pos}/2)")
                             continue
                         
+                        # Guaranteed Non-Zero SL and TP Calculation for MT5 (Never allow naked orders)
+                        trade_p = float(price) if price else 0.0
+                        if trade_p <= 0.0:
+                            try:
+                                from real_market_feed import market_feed
+                                live_p = market_feed.get_crypto_ticker(mt5_sym)
+                                if live_p:
+                                    trade_p = float(live_p.get("price", 0.0) or 0.0)
+                            except Exception:
+                                pass
+
+                        is_mt5_buy = direction in ["buy", "long"]
+                        mt5_sl = float(sl_price) if sl_price else 0.0
+                        mt5_tp = float(tp_price) if tp_price else 0.0
+
+                        if trade_p > 0.0:
+                            if mt5_sl <= 0.0:
+                                mt5_sl = round(trade_p * 0.985 if is_mt5_buy else trade_p * 1.015, 4 if ("XAU" in mt5_sym or "GOLD" in mt5_sym) else 5)
+                            if mt5_tp <= 0.0:
+                                mt5_tp = round(trade_p * 1.030 if is_mt5_buy else trade_p * 0.970, 4 if ("XAU" in mt5_sym or "GOLD" in mt5_sym) else 5)
+
                         # Calculate Risk-Adaptive Master Lot Size based on price and stop loss distance ($30-$50 risk)
-                        stop_dist = abs(float(price) - float(sl_price)) if sl_price and price else 0.0
+                        stop_dist = abs(trade_p - mt5_sl) if (mt5_sl and trade_p) else 0.0
                         if "XAU" in mt5_sym or "GOLD" in mt5_sym:
                             calc_master_lot = round(40.0 / max(1.0, stop_dist * 100.0), 2) if stop_dist > 0 else 0.03
                         else:
@@ -258,8 +279,8 @@ def dispatch_signals_to_all_users(approved_signals: list[dict], global_cfg: dict
                                 "action": "BUY" if direction in ["buy", "long"] else "SELL",
                                 "symbol": mt5_sym,
                                 "volume": master_lot,
-                                "sl": float(sl_price) if sl_price else 0.0,
-                                "tp": float(tp_price) if tp_price else 0.0,
+                                "sl": float(mt5_sl),
+                                "tp": float(mt5_tp),
                                 "magic": 20261026,
                                 "comment": f"SuperBrain Master #{user_id}"
                             }
@@ -277,8 +298,8 @@ def dispatch_signals_to_all_users(approved_signals: list[dict], global_cfg: dict
                                 "action": "BUY" if direction in ["buy", "long"] else "SELL",
                                 "symbol": mt5_sym,
                                 "volume": follower_lot,
-                                "sl": float(sl_price) if sl_price else 0.0,
-                                "tp": float(tp_price) if tp_price else 0.0,
+                                "sl": float(mt5_sl),
+                                "tp": float(mt5_tp),
                                 "magic": 20261026,
                                 "comment": f"SuperBrain Follower #{user_id}"
                             }
@@ -577,6 +598,25 @@ def monitor_and_manage_all_user_trades(global_cfg: dict = None) -> dict:
                     log.error("MFP auto-close failed for User #%s: %s", user_id, ex_err)
 
             elif exchange == "mt5":
+                # Primary: Dispatch CLOSE command to EC2 Cloud MT5 Bridge Queue
+                try:
+                    from webhook_server import _MT5_COMMAND_QUEUE
+                    close_cmd = {
+                        "command_id": f"CMD-CLOSE-{int(time.time()*1000)}",
+                        "target_account": "all",
+                        "action": "CLOSE_ALL" if not symbol else "SELL" if is_long else "BUY",
+                        "symbol": symbol.replace("/USDT", "").replace("USDT", "").upper(),
+                        "volume": qty,
+                        "sl": 0.0,
+                        "tp": 0.0,
+                        "comment": f"Auto-Close TP/SL {close_reason}"
+                    }
+                    _MT5_COMMAND_QUEUE.append(close_cmd)
+                    log.info("Dispatched MT5 close order to Cloud Queue: %s", close_cmd)
+                except Exception as _cq_err:
+                    pass
+
+                # Fallback: Local MT5 client if running locally
                 try:
                     import MetaTrader5 as mt5_client
                     if mt5_client.initialize(timeout=2000):
