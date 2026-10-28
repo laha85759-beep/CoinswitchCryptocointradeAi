@@ -212,9 +212,29 @@ def dispatch_signals_to_all_users(approved_signals: list[dict], global_cfg: dict
                     elif mt5_sym == "ETH": mt5_sym = "ETHUSD"
                     elif mt5_sym in ("GOLD", "XAU"): mt5_sym = "XAUUSD"
 
-                    # 1. PRIMARY TARGET: Dispatched to BOTH Master Account 116810 and Follower 655344 with Dynamic Risk-Adaptive Lot Sizing
+                    # 1. PRIMARY TARGET: Dispatched to BOTH Master Account 116810 and Follower 655344 with Max 2 Open Positions Gate
                     try:
-                        from webhook_server import _MT5_COMMAND_QUEUE
+                        from webhook_server import _MT5_COMMAND_QUEUE, _MT5_ACCOUNTS_TELEMETRY, _MT5_LAST_TELEMETRY
+                        from mt5_multi_account_risk_guardian import MultiAccountRiskGuardian
+                        risk_guardian = MultiAccountRiskGuardian()
+
+                        # Check live position counts from telemetry to strictly enforce 1 to 2 positions max per account
+                        m_telem = _MT5_ACCOUNTS_TELEMETRY.get("116810") or (_MT5_LAST_TELEMETRY if str(_MT5_LAST_TELEMETRY.get("account")) == "116810" else {})
+                        f_telem = _MT5_ACCOUNTS_TELEMETRY.get("655344") or (_MT5_LAST_TELEMETRY if str(_MT5_LAST_TELEMETRY.get("account")) == "655344" else {})
+
+                        m_open_pos = int(m_telem.get("positions") or 0)
+                        f_open_pos = int(f_telem.get("positions") or 0)
+
+                        can_m, reason_m = risk_guardian.can_account_trade("116810")
+                        can_f, reason_f = risk_guardian.can_account_trade("655344")
+
+                        # Hard Cap: Never open more than 2 positions per account
+                        allow_master_trade = (can_m and m_open_pos < 2)
+                        allow_follower_trade = (can_f and f_open_pos < 2)
+
+                        if not allow_master_trade and not allow_follower_trade:
+                            log.info(f"Skipping MT5 trade dispatch for {mt5_sym}: Both accounts at max position limit (Master={m_open_pos}/2, Follower={f_open_pos}/2)")
+                            continue
                         
                         # Calculate Risk-Adaptive Master Lot Size based on price and stop loss distance ($30-$50 risk)
                         stop_dist = abs(float(price) - float(sl_price)) if sl_price and price else 0.0
@@ -229,37 +249,43 @@ def dispatch_signals_to_all_users(approved_signals: list[dict], global_cfg: dict
                         # Follower 655344 ($50K account) scales lot size proportionally by account size ratio (50K / 10K = 5x)
                         follower_lot = min(0.30, max(0.02, round(master_lot * 5.0, 2)))
 
-                        # A. Enqueue for Master Account (#116810)
-                        master_cmd_id = f"CMD-M-{int(time.time()*1000)}"
-                        master_cmd = {
-                            "command_id": master_cmd_id,
-                            "target_account": 116810,
-                            "action": "BUY" if direction in ["buy", "long"] else "SELL",
-                            "symbol": mt5_sym,
-                            "volume": master_lot,
-                            "sl": float(sl_price) if sl_price else 0.0,
-                            "tp": float(tp_price) if tp_price else 0.0,
-                            "magic": 20261026,
-                            "comment": f"SuperBrain Master #{user_id}"
-                        }
-                        _MT5_COMMAND_QUEUE.append(master_cmd)
-                        log.info(f"Enqueued MT5 Master #116810 trade: {mt5_sym} ({master_cmd['action']} {master_lot} lots, Risk-Adaptive)")
+                        # A. Enqueue for Master Account (#116810) - Max 2 Positions Enforced
+                        if allow_master_trade:
+                            master_cmd_id = f"CMD-M-{int(time.time()*1000)}"
+                            master_cmd = {
+                                "command_id": master_cmd_id,
+                                "target_account": 116810,
+                                "action": "BUY" if direction in ["buy", "long"] else "SELL",
+                                "symbol": mt5_sym,
+                                "volume": master_lot,
+                                "sl": float(sl_price) if sl_price else 0.0,
+                                "tp": float(tp_price) if tp_price else 0.0,
+                                "magic": 20261026,
+                                "comment": f"SuperBrain Master #{user_id}"
+                            }
+                            _MT5_COMMAND_QUEUE.append(master_cmd)
+                            log.info(f"Enqueued MT5 Master #116810 trade: {mt5_sym} ({master_cmd['action']} {master_lot} lots, Pos={m_open_pos}/2)")
+                        else:
+                            log.info(f"Master #116810 skipped: Max positions limit reached ({m_open_pos}/2)")
 
-                        # B. Enqueue for Follower Account (#655344 - $50K Instant)
-                        follower_cmd_id = f"CMD-F-{int(time.time()*1000)}"
-                        follower_cmd = {
-                            "command_id": follower_cmd_id,
-                            "target_account": 655344,
-                            "action": "BUY" if direction in ["buy", "long"] else "SELL",
-                            "symbol": mt5_sym,
-                            "volume": follower_lot,
-                            "sl": float(sl_price) if sl_price else 0.0,
-                            "tp": float(tp_price) if tp_price else 0.0,
-                            "magic": 20261026,
-                            "comment": f"SuperBrain Follower #{user_id}"
-                        }
-                        _MT5_COMMAND_QUEUE.append(follower_cmd)
-                        log.info(f"Enqueued MT5 Follower #655344 trade: {mt5_sym} ({follower_cmd['action']} {follower_lot} lots, 50K Scaled)")
+                        # B. Enqueue for Follower Account (#655344 - $50K Instant) - Max 2 Positions Enforced
+                        if allow_follower_trade:
+                            follower_cmd_id = f"CMD-F-{int(time.time()*1000)}"
+                            follower_cmd = {
+                                "command_id": follower_cmd_id,
+                                "target_account": 655344,
+                                "action": "BUY" if direction in ["buy", "long"] else "SELL",
+                                "symbol": mt5_sym,
+                                "volume": follower_lot,
+                                "sl": float(sl_price) if sl_price else 0.0,
+                                "tp": float(tp_price) if tp_price else 0.0,
+                                "magic": 20261026,
+                                "comment": f"SuperBrain Follower #{user_id}"
+                            }
+                            _MT5_COMMAND_QUEUE.append(follower_cmd)
+                            log.info(f"Enqueued MT5 Follower #655344 trade: {mt5_sym} ({follower_cmd['action']} {follower_lot} lots, Pos={f_open_pos}/2)")
+                        else:
+                            log.info(f"Follower #655344 skipped: Max positions limit reached ({f_open_pos}/2)")
 
                         # Record in user_trades database
                         c_db = get_db()

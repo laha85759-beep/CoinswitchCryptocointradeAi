@@ -31,7 +31,7 @@ class MultiAccountRiskGuardian:
                 "starting_balance": 10000.0,
                 "daily_loss_limit_usd": 300.0,
                 "mll_floor_usd": 9500.0,
-                "max_open_trades": 3,
+                "max_open_trades": 2,
                 "max_lot_per_trade": 0.05
             },
             "655344": {
@@ -40,7 +40,7 @@ class MultiAccountRiskGuardian:
                 "starting_balance": 50000.0,
                 "daily_loss_limit_usd": 1500.0,
                 "mll_floor_usd": 47000.0,
-                "max_open_trades": 5,
+                "max_open_trades": 2,
                 "max_lot_per_trade": 0.20
             },
             "DELTA_INDIA": {
