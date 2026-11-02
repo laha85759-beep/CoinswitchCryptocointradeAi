@@ -63,7 +63,7 @@ CONFIG = {
     "mfp_account_id":           os.getenv("MFP_ACCOUNT_ID", "jh71h9rm4gkgrva57hkvawc6y18fjhkq"),
     "mfp_daily_loss_limit_usd": _float_env("MFP_DAILY_LOSS_LIMIT_USD", 75.0),
     "mfp_total_loss_limit_usd": _float_env("MFP_TOTAL_LOSS_LIMIT_USD", 75.0),
-    "mfp_enabled":              _bool_env("MFP_ENABLED", True),
+    "mfp_enabled":              _bool_env("MFP_ENABLED", False),
 
     # ── Telegram ─────────────────────────────────────────────────────────────
     "telegram_token":   os.getenv("TELEGRAM_TOKEN") or os.getenv("TELEGRAM_BOT_TOKEN", ""),
