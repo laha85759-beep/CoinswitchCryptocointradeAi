@@ -200,25 +200,27 @@ class InstitutionalStrategyEngine:
         return {"name": "Market Structure + VWAP", "score": score, "direction": direction, "approved": score >= self.min_quality_score}
 
     def eval_strategy_2_ema_rsi(self, df_m5: pd.DataFrame) -> Dict[str, Any]:
-        """Strategy 2: EMA 9/21 + RSI Momentum Filter."""
+        """Strategy 2: EMA 9/21 + 43 EMA Baseline Trend Filter + RSI Momentum Filter."""
         ema9 = self.calculate_ema(df_m5["close"], 9).iloc[-1]
         ema21 = self.calculate_ema(df_m5["close"], 21).iloc[-1]
+        ema43 = self.calculate_ema(df_m5["close"], 43).iloc[-1]
         prev_ema9 = self.calculate_ema(df_m5["close"], 9).iloc[-2]
         prev_ema21 = self.calculate_ema(df_m5["close"], 21).iloc[-2]
         rsi = self.calculate_rsi(df_m5["close"], 14).iloc[-1]
+        close = df_m5["close"].iloc[-1]
 
         score = 0
         direction = None
-        # Bullish Crossover & RSI confirmation (avoid extreme overbought > 72)
-        if prev_ema9 <= prev_ema21 and ema9 > ema21 and 48 <= rsi <= 68:
-            score = 82
+        # Bullish: Price > 43 EMA, EMA 9 > EMA 21 crossover, RSI 48-68
+        if close > ema43 and prev_ema9 <= prev_ema21 and ema9 > ema21 and 48 <= rsi <= 68:
+            score = 85
             direction = "BUY"
-        # Bearish Crossover & RSI confirmation (avoid extreme oversold < 28)
-        elif prev_ema9 >= prev_ema21 and ema9 < ema21 and 32 <= rsi <= 52:
-            score = 82
+        # Bearish: Price < 43 EMA, EMA 9 < EMA 21 crossunder, RSI 32-52
+        elif close < ema43 and prev_ema9 >= prev_ema21 and ema9 < ema21 and 32 <= rsi <= 52:
+            score = 85
             direction = "SELL"
 
-        return {"name": "EMA 9/21 + RSI", "score": score, "direction": direction, "approved": score >= self.min_quality_score}
+        return {"name": "EMA 9/21/43 + RSI", "score": score, "direction": direction, "approved": score >= self.min_quality_score, "ema43": round(ema43, 4)}
 
     def eval_strategy_3_supertrend_vwap(self, df_m5: pd.DataFrame) -> Dict[str, Any]:
         """Strategy 3: Supertrend + VWAP Trend Flip."""

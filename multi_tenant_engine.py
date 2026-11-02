@@ -74,9 +74,20 @@ def dispatch_signals_to_all_users(approved_signals: list[dict], global_cfg: dict
             if not strategy_match:
                 continue
 
-            # Check open trade duplicate for this user
+            # Strict Open Position Limits: Prevent over-trading & capital exposure
             conn = get_db()
             cursor = conn.cursor()
+            
+            # Check maximum concurrent open trades for this user (Max 2 trades to avoid over-exposure)
+            cursor.execute("SELECT COUNT(*) FROM user_trades WHERE user_id = ? AND status = 'open'", (user_id,))
+            user_open_count = cursor.fetchone()[0]
+            max_allowed_user_trades = int(cfg.get("max_open_trades", 2))
+            if user_open_count >= max_allowed_user_trades:
+                log.info("User #%s max open trades reached (%s/%s). Skipping new entry for %s", user_id, user_open_count, max_allowed_user_trades, symbol)
+                conn.close()
+                break  # Don't open any more trades for this user this cycle
+            
+            # Check open trade duplicate for this user
             cursor.execute("SELECT id FROM user_trades WHERE user_id = ? AND symbol = ? AND status = 'open'", (user_id, symbol))
             if cursor.fetchone():
                 conn.close()
