@@ -474,7 +474,7 @@ def init_db():
 
     # Pre-seed verified affiliate partners
     seed_partners = [
-        ("12275", "Atlas Funded", "Prop Firm", "20%", "https://affiliates.atlasfunded.com/Tracking/click/?affid=12275&campaign=11320&product_id=1&t_type=Register&t_lang=EN"),
+        ("12275", "Atlas Funded", "Prop Firm", "20%", "https://app.atlasfunded.com/?afmc=ARNAB"),
         ("arnab", "Funded Trader Markets", "Prop Firm", "15%", "https://fundedtradermarkets.com/ref/arnab"),
         ("6e9", "AquaFunded", "Prop Firm", "15%", "https://www.aquafunded.com/?afmc=6e9"),
         ("FUTURES2026", "MyFundedFutures (MFFU)", "Prop Firm", "15%", "https://mffu.com/f/85f1f73f30"),
