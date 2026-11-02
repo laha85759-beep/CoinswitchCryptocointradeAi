@@ -788,6 +788,53 @@ def run() -> None:
         log.warning("[NO_TRADE_HEARTBEAT] Cycle found %s signals but placed 0 trades — %s",
                     len(signals), halt_reason)
 
+    # ?? HyperGrok Institutional Trading Desk: Pre-Send Verification & Audit Lifecycle ??
+    try:
+        from hypergrok_desk_engine import hypergrok_desk
+        filtered_approved = []
+        for app in approved:
+            c_price = float(app.get("scan_price") or app.get("price") or 0.0)
+            if c_price <= 0.0 and delta_client:
+                try:
+                    c_price = float(delta_client.get_ticker_price(app.get("symbol")) or 0.0)
+                except Exception:
+                    pass
+            
+            p_sl = float(app.get("stop_loss_price") or app.get("sl_price") or 0.0)
+            p_tp = float(app.get("take_profit_price") or app.get("tp_price") or 0.0)
+            
+            if c_price > 0.0 and (p_sl <= 0.0 or p_tp <= 0.0):
+                dir_l = str(app.get("direction", "long")).lower()
+                sl_pct = float(app.get("stop_loss_pct") or 2.0)
+                tp_pct = float(app.get("take_profit_pct") or 4.0)
+                if dir_l in ("buy", "long"):
+                    p_sl = round(c_price * (1.0 - sl_pct / 100.0), 6)
+                    p_tp = round(c_price * (1.0 + tp_pct / 100.0), 6)
+                else:
+                    p_sl = round(c_price * (1.0 + sl_pct / 100.0), 6)
+                    p_tp = round(c_price * (1.0 - tp_pct / 100.0), 6)
+                app["price"] = c_price
+                app["scan_price"] = c_price
+                app["stop_loss_price"] = p_sl
+                app["take_profit_price"] = p_tp
+
+            prop = hypergrok_desk.evaluate_proposal(
+                symbol=app.get("symbol", "UNKNOWN"),
+                direction=app.get("direction", "long"),
+                current_price=c_price,
+                proposed_sl=p_sl,
+                proposed_tp=p_tp,
+                account_equity=100.0,
+                exchange="delta"
+            )
+            if prop.get("status") == "PASS":
+                filtered_approved.append(app)
+            else:
+                log.info("HyperGrok Desk Veto for %s: %s", app.get("symbol"), prop.get("reason"))
+        approved = filtered_approved
+    except Exception as _hg_err:
+        log.warning("HyperGrok Desk evaluation notice: %s", _hg_err)
+
     log.info("Step 5/5 — Execute on CoinSwitch + Delta India")
     results = dual_executor.execute(approved)
     # Multi-Tenant User Autonomous Dispatch

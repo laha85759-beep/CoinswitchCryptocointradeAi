@@ -600,11 +600,21 @@ class RiskManagerAgent:
         if position_size <= 0:
             return risk_reject(signal, f"position_{position_size:.2f}_below_min_order")
 
+        # Extract current price from supporting data if present
+        supp = signal.get("supporting_data") or {}
+        entry_p = float(supp.get("price") or supp.get("close") or supp.get("scan_price") or 0.0)
+        calc_sl = round(entry_p * (1.0 - stop_loss_pct / 100.0), 6) if entry_p > 0 and direction in ("buy", "long") else (round(entry_p * (1.0 + stop_loss_pct / 100.0), 6) if entry_p > 0 else 0.0)
+        calc_tp = round(entry_p * (1.0 + take_profit_pct / 100.0), 6) if entry_p > 0 and direction in ("buy", "long") else (round(entry_p * (1.0 - take_profit_pct / 100.0), 6) if entry_p > 0 else 0.0)
+
         return {
             "signal_id": signal.get("signal_id", ""),
             "symbol": symbol,
             "approved": True,
             "reason": "approved",
+            "price": entry_p,
+            "scan_price": entry_p,
+            "stop_loss_price": calc_sl,
+            "take_profit_price": calc_tp,
             "position_size_usd": round(position_size, 2),
             "stop_loss_pct": stop_loss_pct,
             "take_profit_pct": take_profit_pct,
