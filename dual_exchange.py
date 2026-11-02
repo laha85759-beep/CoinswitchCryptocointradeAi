@@ -508,6 +508,33 @@ class DualExecutionAgent:
 
     # ── MyFundedPerpetuals (MFP) Prop Firm execution ─────────────────────────
 
+    def _execute_mt5(self, approval: dict) -> dict:
+        """Dispatches approved trade signal to MT5 Master & Follower Copy Trading Engine."""
+        try:
+            import time
+            from metaapi_copyfactory_service import copyfactory_engine
+            symbol = approval.get("symbol", "BTCUSD").replace("/", "").replace("_", "")
+            if "USDT" in symbol:
+                symbol = symbol.replace("USDT", "USD")
+            direction = approval.get("direction", "buy").upper()
+            price = float(approval.get("price") or approval.get("scan_price") or 0.0)
+            sl = float(approval.get("stop_loss_price") or 0.0)
+            tp = float(approval.get("take_profit_price") or 0.0)
+            
+            res = copyfactory_engine.dispatch_signal(
+                master_ticket=int(time.time() % 1000000),
+                symbol=symbol,
+                direction=direction,
+                volume=0.01,
+                entry_price=price,
+                stop_loss=sl,
+                take_profit=tp
+            )
+            return {"status": "success", "result": res}
+        except Exception as exc:
+            log.warning("MT5 copy trading dispatch notice: %s", exc)
+            return {"status": "skipped", "reason": str(exc)}
+
     def _execute_mfp(self, approval: dict) -> dict:
         """
         Executes approved trade on MyFundedPerpetuals with strict $75 daily & total loss limits.
