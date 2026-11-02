@@ -1337,7 +1337,9 @@ class DualMonitorAgent:
 
             return {"status": "enqueued_for_mt5_ea", "command": cmd}
         except Exception as exc:
-            return {"status": "skipped", "reason": str(exc)}    def _execute_mt5(self, approval: dict) -> dict:
+            return {"status": "skipped", "reason": str(exc)}
+
+    def _execute_mt5(self, approval: dict) -> dict:
         """Dispatches approved trade signal to MT5 Master & Follower Copy Trading Engine."""
         try:
             from metaapi_copyfactory_service import copyfactory_engine
