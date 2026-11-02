@@ -30,7 +30,126 @@ class MetaApiCopyFactoryService:
         self.active_state = "RUNNING"  # RUNNING, PAUSED, STOPPED
         self.emergency_stop = False
 
+    def init_tables(self):
+        conn = sqlite3.connect(DB_PATH, timeout=10)
+        cursor = conn.cursor()
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS master_accounts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            name TEXT NOT NULL,
+            login INTEGER NOT NULL UNIQUE,
+            server TEXT NOT NULL,
+            password_enc TEXT,
+            metaapi_account_id TEXT,
+            copyfactory_provider_id TEXT,
+            is_active INTEGER DEFAULT 1,
+            connection_status TEXT DEFAULT 'ONLINE',
+            balance REAL DEFAULT 0.0,
+            equity REAL DEFAULT 0.0,
+            currency TEXT DEFAULT 'USD',
+            mll_floor REAL DEFAULT 9500.0,
+            created_at INTEGER,
+            updated_at INTEGER
+        )
+        """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS follower_accounts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            name TEXT NOT NULL,
+            login INTEGER NOT NULL UNIQUE,
+            server TEXT NOT NULL,
+            password_enc TEXT,
+            metaapi_account_id TEXT,
+            copyfactory_subscriber_id TEXT,
+            is_active INTEGER DEFAULT 1,
+            connection_status TEXT DEFAULT 'CONNECTED',
+            balance REAL DEFAULT 0.0,
+            equity REAL DEFAULT 0.0,
+            currency TEXT DEFAULT 'USD',
+            lot_multiplier REAL DEFAULT 1.0,
+            fixed_lot REAL DEFAULT 0.0,
+            sizing_mode TEXT DEFAULT 'multiplier',
+            max_lot REAL DEFAULT 0.20,
+            max_daily_loss REAL DEFAULT 1000.0,
+            symbol_whitelist TEXT DEFAULT 'BTCUSD,ETHUSD,XAUUSD',
+            daily_pnl REAL DEFAULT 0.0,
+            created_at INTEGER,
+            updated_at INTEGER
+        )
+        """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS trading_signals (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            signal_id TEXT UNIQUE NOT NULL,
+            master_account_id INTEGER,
+            master_ticket INTEGER,
+            symbol TEXT NOT NULL,
+            direction TEXT NOT NULL,
+            volume REAL NOT NULL,
+            entry_price REAL,
+            stop_loss REAL,
+            take_profit REAL,
+            signal_status TEXT DEFAULT 'RECEIVED',
+            followers_count INTEGER DEFAULT 0,
+            timestamp INTEGER,
+            created_at INTEGER
+        )
+        """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS copy_orders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            signal_id TEXT NOT NULL,
+            master_ticket INTEGER,
+            follower_id INTEGER NOT NULL,
+            follower_ticket INTEGER,
+            symbol TEXT NOT NULL,
+            direction TEXT NOT NULL,
+            volume REAL NOT NULL,
+            entry_price REAL,
+            exit_price REAL,
+            stop_loss REAL,
+            take_profit REAL,
+            profit_loss REAL DEFAULT 0.0,
+            status TEXT DEFAULT 'PENDING',
+            execution_time INTEGER,
+            latency_ms INTEGER DEFAULT 12,
+            error_message TEXT,
+            created_at INTEGER
+        )
+        """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS execution_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            signal_id TEXT,
+            event_type TEXT NOT NULL,
+            status TEXT NOT NULL,
+            details TEXT,
+            timestamp INTEGER
+        )
+        """)
+        # Seed default master & followers if empty
+        cursor.execute("SELECT COUNT(*) FROM master_accounts")
+        if cursor.fetchone()[0] == 0:
+            now = int(time.time())
+            cursor.execute("""
+            INSERT OR IGNORE INTO master_accounts (name, login, server, is_active, connection_status, balance, equity, currency, mll_floor, created_at, updated_at)
+            VALUES ('SuperBrain Master Alpha', 116810, 'GoatFunded-Server', 1, 'ONLINE', 9989.22, 9989.22, 'USD', 9500.00, ?, ?)
+            """, (now, now))
+            cursor.execute("""
+            INSERT OR IGNORE INTO follower_accounts (name, login, server, is_active, connection_status, balance, equity, currency, lot_multiplier, max_lot, daily_pnl, created_at, updated_at)
+            VALUES ('50K Instant Funded', 655344, 'EquityEdge-Trade', 1, 'CONNECTED', 49156.97, 49156.97, 'USD', 5.0, 0.20, 0.0, ?, ?)
+            """, (now, now))
+            cursor.execute("""
+            INSERT OR IGNORE INTO follower_accounts (name, login, server, is_active, connection_status, balance, equity, currency, lot_multiplier, max_lot, daily_pnl, created_at, updated_at)
+            VALUES ('Aiwa Capital Follower', 971021, 'AiwaCapital-Server', 1, 'CONNECTED', 0.0, 0.0, 'USD', 1.0, 0.10, 0.0, ?, ?)
+            """, (now, now))
+        conn.commit()
+        conn.close()
+
     def get_db(self):
+        self.init_tables()
         conn = sqlite3.connect(DB_PATH, timeout=10)
         conn.row_factory = sqlite3.Row
         return conn
