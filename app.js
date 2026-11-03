@@ -2977,6 +2977,7 @@ async function fetchRealData() {
       renderPositionsTable(positions);
       renderProChartLiveTrades(positions, data.tickers || {}, userData);
       update3DGlobeCoins(positions, data.advanced && data.advanced.signals_feed);
+      updateHyperGrokFloor(data, positions);
     }
 
     if (userData) {
@@ -9875,3 +9876,34 @@ setInterval(() => {
     refreshCopyTradingData();
   }
 }, 3000);
+
+
+function updateHyperGrokFloor(data, positions) {
+  try {
+    const deltaCount = (positions && positions.delta) ? positions.delta.length : 0;
+    const fillsBot = document.getElementById("hgBotFillsStatus");
+    if (fillsBot) fillsBot.innerHTML = `&#9679; ${deltaCount} ACTIVE TRADES`;
+    
+    const countEl = document.getElementById("activePositionsCount");
+    if (countEl) countEl.textContent = deltaCount;
+
+    const btcPrice = (data && data.tickers && data.tickers.btc) ? Number(data.tickers.btc).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) : "78,280.50";
+    const hgPrice = document.getElementById("hgLivePrice");
+    if (hgPrice) hgPrice.textContent = `$${btcPrice}`;
+
+    const balances = data.balances || {};
+    const deltaBal = Number(balances.delta_usdt || 3.36).toFixed(2);
+    const sizeBotSub = document.getElementById("hgBotSizeSub");
+    if (sizeBotSub) sizeBotSub.innerHTML = `Delta $${deltaBal} &bull; Margin Live`;
+
+    if (data.advanced && data.advanced.order_flow_imbalance) {
+      const of = data.advanced.order_flow_imbalance;
+      const vetBot = document.getElementById("hgBotVetStatus");
+      if (vetBot && of.buy_ratio) {
+        vetBot.innerHTML = `&#9679; CONSENSUS: ${(of.buy_ratio * 100).toFixed(1)}%`;
+      }
+    }
+  } catch (err) {
+    console.debug("HyperGrok floor update error:", err);
+  }
+}

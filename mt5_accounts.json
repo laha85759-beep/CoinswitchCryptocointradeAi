@@ -4,5 +4,16 @@
         "password": "KQh1Z1$#zD2p",
         "server": "GoatFunded-Server"
     },
-    "follower_accounts": []
+    "follower_accounts": [
+        {
+            "id": "account_971021",
+            "name": "Aiwa Capital Follower",
+            "enabled": true,
+            "login": 971021,
+            "password": "r3b3H%3b",
+            "server": "AiwaCapital-Server",
+            "lot_multiplier": 1.0,
+            "max_lot": 0.1
+        }
+    ]
 }
