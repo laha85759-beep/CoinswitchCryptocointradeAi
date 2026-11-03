@@ -75,6 +75,10 @@ def add_security_and_compression_headers(response):
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    # Ensure private application, terminal, and admin views emit X-Robots-Tag: noindex
+    path = request.path.lower()
+    if any(p in path for p in ["/admin", "/superadmin", "/terminal", "/app", "/api"]):
+        response.headers["X-Robots-Tag"] = "noindex, nofollow"
     # Keep-Alive & Cache optimization for high concurrency
     if request.path.startswith("/api/"):
         response.headers["Cache-Control"] = "no-transform, public, max-age=2"
@@ -1634,7 +1638,6 @@ def handle_ai_chat():
                 f"• **Funded Trader Markets**: Code `arnab` → [FTM Evaluation](https://fundedtradermarkets.com/ref/arnab)\n"
                 f"• **CK Capital UK**: Code `ALPROP` → [Institutional Pass](https://app.ckcapital.co.uk/signup/ALPROP/)\n\n"
                 f"📈 **VIP Brokers & Trading Fee Rebates:**\n"
-                f"• **Pocket Option**: 50% Match + $10k Demo (Code `50START`) → [Start Trading](https://v4.lands-po.com/en/land/001-QT-02?utm_campaign=865170&utm_source=affiliate&utm_medium=sr&a=5zrdNdJrvFxqJO&al=1794767&ac=smart-link&cid=979105&code=50START)\n"
                 f"• **Delta Exchange India**: 15% Lifetime Rebate (Code `YXQSZA`) → [Trade Perps](https://www.delta.exchange/?code=YXQSZA)\n"
                 f"• **CoinSwitch Pro**: Direct INR Spot VIP (Code `NLfEITW`) → [Sign Up Pro](https://coinswitch.co/pro/signup?code=NLfEITW)\n\n"
                 f"📦 **Trading Hardware & Gear Deals:**\n"

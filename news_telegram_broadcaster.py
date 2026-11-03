@@ -238,7 +238,7 @@ class NewsTelegramBroadcaster:
                     t1 = s.get("target1", 0)
                     sl = s.get("stop_loss", 0)
                     icon = "🟢" if "BUY" in sig else "🔴"
-                    msg += f"• <code>{sym}</code> (₹{ltp}) ➔ {icon} <b>{sig}</b> | TGT: ₹{t1} | SL: ₹{sl}\n"
+                    msg += f"• <code>{sym}</code> (₹{ltp}) ➔ {icon} <b>{sig}</b>\n"
             if bse_stocks:
                 msg += f"<b>[BSE Intraday Momentum]</b>\n"
                 for s in bse_stocks[:3]:
@@ -249,7 +249,7 @@ class NewsTelegramBroadcaster:
                     sl = s.get("stop_loss", 0)
                     rvol = s.get("rvol", 2.0)
                     icon = "🟢" if "BUY" in sig else "🔴"
-                    msg += f"• <code>{sym}</code> (₹{ltp}) ➔ {icon} <b>{sig}</b> (RVOL {rvol}x) | TGT: ₹{t1} | SL: ₹{sl}\n"
+                    msg += f"• <code>{sym}</code> (₹{ltp}) ➔ {icon} <b>{sig}</b> (RVOL {rvol}x)\n"
             msg += "\n"
 
         if top_headlines:
@@ -491,14 +491,16 @@ class NewsTelegramBroadcaster:
             for l in top_losers:
                 lines.append(f"🔴 <b>{l['symbol']}</b>: ₹{l['ltp']} ({l['change_pct']}%) • <i>{l.get('sector', '')}</i>")
 
-        lines.append("\n🎯 <b>INTRADAY TRADE SETUPS (ENTRY / TARGET / SL):</b>")
+        lines.append("\n🎯 <b>INTRADAY TRADElines.append("\n📊 <b>HIGH RELATIVE VOLUME & TECHNICAL MOMENTUM SCREENER:</b>")
+        lines.append("<i>(Educational technical filters only; not investment advice or recommendations)</i>")
         picks = (gainers[:2] if gainers else []) + (losers[:1] if losers else [])
         for p in picks[:3]:
-            trend_ico = "🟢 LONG" if p.get('change_pct', 0) >= 0 else "🔴 SHORT"
+            direction = "BULLISH MOMENTUM" if p.get('change_pct', 0) >= 0 else "BEARISH MOMENTUM"
             lines.append(
-                f"• <b>{p['name']} ({p['symbol']})</b> | {trend_ico}\n"
-                f"   🔹 Entry Zone: <code>₹{p['ltp']}</code> | 🛑 SL: <code>₹{p['stop_loss']}</code>\n"
-                f"   🎯 Target 1: <code>₹{p['target1']}</code> | 🎯 Target 2: <code>₹{p['target2']}</code>"
+                f"• <b>{p['name']} ({p['symbol']})</b> | <code>{direction}</code>\n"
+                f"   LTP: <code>₹{p['ltp']}</code> ({p.get('change_pct', 0)}%) | 24h Volatility: Active\n"
+                f"   Day Range: <code>₹{p.get('low', p['ltp'])} - ₹{p.get('high', p['ltp'])}</code>"
+            )e> | 🎯 Target 2: <code>₹{p['target2']}</code>"
             )
 
         lines.append("\n⚡ <i>TheSmartMag Live Indian Stock & F&O Intelligence</i>\n👉 <a href=\"https://trade.thesmartmag.com/overview#pricing\"><b>Execute Live on CoinSwitch & Delta India &gt;&gt;</b></a>")

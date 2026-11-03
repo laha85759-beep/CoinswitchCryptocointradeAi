@@ -1,56 +1,20 @@
-# Robots.txt for TheSmartMag Quant Terminal & AI Trading Engine
-# Crawl-rate and indexing configuration for search engines
-User-agent: Googlebot
-Allow: /
-Allow: /ads.txt
-Allow: /manifest.json
-Disallow: /api/admin/
-Disallow: /api/user/
-Disallow: /api/trade/
-Disallow: /api/panic-flatten
-Disallow: /api/emergency-stop
-
-User-agent: Googlebot-Image
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-Disallow: /api/admin/
-Disallow: /api/user/
-Disallow: /api/trade/
-Crawl-delay: 1
-
-User-agent: Slurp
-Allow: /
-Disallow: /api/admin/
-Disallow: /api/user/
-Disallow: /api/trade/
-
-User-agent: DuckDuckBot
-Allow: /
-Disallow: /api/admin/
-Disallow: /api/user/
-Disallow: /api/trade/
-
-User-agent: Baiduspider
-Allow: /
-Disallow: /api/admin/
-Disallow: /api/user/
-Disallow: /api/trade/
-
-User-agent: YandexBot
-Allow: /
-Disallow: /api/admin/
-Disallow: /api/user/
-Disallow: /api/trade/
+# Robots.txt for TheSmartMag Quant Research & Trading Education Portal
+# https://thesmartmag.com/trade/
 
 User-agent: *
 Allow: /
-Disallow: /api/admin/
-Disallow: /api/user/
-Disallow: /api/trade/
-Disallow: /api/panic-flatten
-Disallow: /api/emergency-stop
+Allow: /trade/
+Allow: /trade/learn/
+Allow: /trade/compare/
+Allow: /trade/tools/
+Allow: /trade/about
+Allow: /trade/editorial-policy
+Allow: /trade/affiliate-disclosure
+Allow: /trade/risk-disclaimer
+
+# Disallow internal API endpoints, sensitive admin paths and order routes
+Disallow: /api/
+Disallow: /ws/
 
 # XML Sitemaps
 Sitemap: https://trade.thesmartmag.com/sitemap.xml
