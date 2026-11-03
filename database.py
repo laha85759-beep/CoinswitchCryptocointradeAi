@@ -2063,7 +2063,12 @@ ONE_TIME_ADDONS = {
     "addon_gold": {"name": "Gold Strategy Pack", "price": 25.0, "grant_service": "gold_strategy"},
     "addon_propfirm": {"name": "Prop Firm Toolkit", "price": 30.0, "grant_service": "prop_toolkit"},
     "addon_indicators": {"name": "Premium Indicator Bundle", "price": 49.0, "grant_service": "indicators"},
-    "addon_voice": {"name": "AI Voice Upgrade", "price": 20.0, "grant_service": "voice"}
+    "addon_voice": {"name": "AI Voice Upgrade", "price": 20.0, "grant_service": "voice"},
+    "addon_orderflow": {"name": "Institutional Order Flow Pro", "price": 35.0, "grant_service": "order_flow_pro"},
+    "addon_algo_bot": {"name": "Autonomous Python Scalper Bot", "price": 69.0, "grant_service": "algo_bot_source"},
+    "addon_crypto_signals": {"name": "100x Crypto Gem Screener VIP", "price": 19.0, "grant_service": "crypto_gem_vip"},
+    "addon_nifty_options": {"name": "Nifty & BankNifty 0DTE Options Algorithm", "price": 45.0, "grant_service": "nifty_options_algo"},
+    "addon_risk_guardian": {"name": "Drawdown Shield & MT5 EA Copier", "price": 39.0, "grant_service": "risk_shield_ea"}
 }
 
 def get_saas_plans() -> list[dict]:
