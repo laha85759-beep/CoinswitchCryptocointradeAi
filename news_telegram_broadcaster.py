@@ -102,7 +102,7 @@ class NewsTelegramBroadcaster:
         self._sent_log[key] = time.time()
         _save_sent_log(self._sent_log)
 
-        @staticmethod
+    @staticmethod
     def is_indian_stock_market_open() -> bool:
         """
         Returns True ONLY during Indian Stock Market (NSE/BSE) trading hours:
@@ -491,7 +491,7 @@ class NewsTelegramBroadcaster:
             for l in top_losers:
                 lines.append(f"🔴 <b>{l['symbol']}</b>: ₹{l['ltp']} ({l['change_pct']}%) • <i>{l.get('sector', '')}</i>")
 
-        lines.append("\n🎯 <b>INTRADAY TRADElines.append("\n📊 <b>HIGH RELATIVE VOLUME & TECHNICAL MOMENTUM SCREENER:</b>")
+        lines.append("\n📊 <b>HIGH RELATIVE VOLUME & TECHNICAL MOMENTUM SCREENER:</b>")
         lines.append("<i>(Educational technical filters only; not investment advice or recommendations)</i>")
         picks = (gainers[:2] if gainers else []) + (losers[:1] if losers else [])
         for p in picks[:3]:
@@ -500,7 +500,6 @@ class NewsTelegramBroadcaster:
                 f"• <b>{p['name']} ({p['symbol']})</b> | <code>{direction}</code>\n"
                 f"   LTP: <code>₹{p['ltp']}</code> ({p.get('change_pct', 0)}%) | 24h Volatility: Active\n"
                 f"   Day Range: <code>₹{p.get('low', p['ltp'])} - ₹{p.get('high', p['ltp'])}</code>"
-            )e> | 🎯 Target 2: <code>₹{p['target2']}</code>"
             )
 
         lines.append("\n⚡ <i>TheSmartMag Live Indian Stock & F&O Intelligence</i>\n👉 <a href=\"https://trade.thesmartmag.com/overview#pricing\"><b>Execute Live on CoinSwitch & Delta India &gt;&gt;</b></a>")
