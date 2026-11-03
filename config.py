@@ -59,11 +59,11 @@ CONFIG = {
     "delta_api_secret": os.getenv("DELTA_API_SECRET", ""),
 
     # ── MyFundedPerpetuals (MFP) Prop Firm credentials & Risk Rules ─────────
-    "mfp_api_key":              os.getenv("MFP_API_KEY", "fp_live_ae7eca1c3265bee4d9f357d91115b871e9b1c192af119552882c46b5a67dd1f5"),
-    "mfp_account_id":           os.getenv("MFP_ACCOUNT_ID", "jh71h9rm4gkgrva57hkvawc6y18fjhkq"),
+    "mfp_api_key":              os.getenv("MFP_API_KEY", "fp_live_6d88061fb05d7d462fc685da1bcf24c2cd33bb194ca67a4b60d0d9cda9f3556c"),
+    "mfp_account_id":           os.getenv("MFP_ACCOUNT_ID", "jh7b2bfn4f46hqfg1c701hr8xx8hg5d4"),
     "mfp_daily_loss_limit_usd": _float_env("MFP_DAILY_LOSS_LIMIT_USD", 75.0),
     "mfp_total_loss_limit_usd": _float_env("MFP_TOTAL_LOSS_LIMIT_USD", 75.0),
-    "mfp_enabled":              _bool_env("MFP_ENABLED", False),
+    "mfp_enabled":              _bool_env("MFP_ENABLED", True),
 
     # ── Telegram ─────────────────────────────────────────────────────────────
     "telegram_token":   os.getenv("TELEGRAM_TOKEN") or os.getenv("TELEGRAM_BOT_TOKEN", ""),
