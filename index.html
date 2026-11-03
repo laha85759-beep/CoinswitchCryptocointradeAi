@@ -152,8 +152,8 @@
   <link rel="preload" href="/styles.css?v=20261026-3d" as="style" />
   <link rel="preload" href="/logo.png" as="image" type="image/png" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=1793718386" />
-  <link rel="stylesheet" href="/higgsfield.css?v=1793718386" />
+  <link rel="stylesheet" href="styles.css?v=1793720142" />
+  <link rel="stylesheet" href="/higgsfield.css?v=1793720142" />
   
   <!-- Deferred External Heavy Libraries for Faster First Contentful Paint -->
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -529,75 +529,10 @@
     <div id="view-terminal" class="nc-view-pane tsm-view-section">
 
       <!-- THREE-COLUMN NEURAL CORE COCKPIT (MATCHES APPROVED IMAGE) -->
-      <div class="nc-cockpit-grid">
+      <div class="nc-cockpit-grid" style="display:flex; flex-direction:column; width:100%; gap:18px;">
 
-        <!-- LEFT COLUMN: HONEYCOMB HEXAGONAL HUD METRIC CARDS -->
-        <div class="nc-hex-cluster">
-
-          <!-- Hexagon 1: Total Capital -->
-          <div class="nc-hex-card hex-cap tsm-kpi-card">
-            <div class="nc-hex-inner">
-              <span class="nc-hex-lbl">Total Capital</span>
-              <div class="nc-hex-val" id="total-capital">$0.00 <span class="nc-hex-unit">USDT</span></div>
-              <span class="nc-hex-pct cyan" id="pnl-pct-tag">LIVE FEED</span>
-              <div class="nc-hex-subtext">
-                <span id="cs-bal-txt">CS: $0.00</span> • <span id="delta-bal-txt">Delta: $0.00</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Hexagon 2: Realized Profit -->
-          <div class="nc-hex-card hex-profit tsm-kpi-card">
-            <div class="nc-hex-inner">
-              <span class="nc-hex-lbl">Realized P&amp;L</span>
-              <div class="nc-hex-val" id="total-pnl-value">$0.00</div>
-              <span class="nc-hex-pct cyan" id="realized-tag">ACCOUNT LEDGER</span>
-              <div class="nc-hex-subtext">
-                Closed: <span id="closed-trades-count">0</span> | Win Rate: <span id="stat-winrate" class="green">--%</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Hexagon 3: Trades & Positions -->
-          <div class="nc-hex-card hex-trades tsm-kpi-card">
-            <div class="nc-hex-inner">
-              <span class="nc-hex-lbl">Active Positions</span>
-              <div class="nc-hex-val" id="total-open-count">0 <span class="nc-hex-unit">OPEN</span></div>
-              <span class="nc-hex-pct cyan" id="positions-tag">SYNCED</span>
-              <div class="nc-hex-subtext">
-                CS: <span id="cs-open-count">0</span> | Delta: <span id="delta-open-count">0</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Hexagon 4: Risk Protocol -->
-          <div class="nc-hex-card hex-risk tsm-kpi-card">
-            <div class="nc-hex-inner">
-              <span class="nc-hex-lbl">Risk Protocol</span>
-              <div class="nc-hex-val purple-hex">AUTOMATED</div>
-              <span class="nc-hex-tier gold">Capital Shield</span>
-              <div class="nc-hex-subtext">
-                Max 2 Open | Hard SL
-              </div>
-            </div>
-          </div>
-
-          <!-- Hexagon 5: System Execution Status -->
-          <div class="nc-hex-card hex-score tsm-kpi-card">
-            <div class="nc-hex-inner">
-              <span class="nc-hex-lbl">System Engine</span>
-              <div class="nc-hex-val" style="font-size:14px; color:#00f090;">ONLINE</div>
-              <span class="nc-hex-pct cyan">Multi-Broker</span>
-              <div class="nc-hex-subtext">
-                Trailing Stops: <span class="green">Active</span>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- CENTER COLUMN: 3D HOLOGRAPHIC GLOWING NEURAL BRAIN & GLOBE -->
-        <div class="nc-brain-center-stage">
+        <!-- CENTER STAGE: PURE 3D HOLOGRAPHIC GLOBE WITH ORBITING ASSET NODES & HUD -->
+        <div class="nc-brain-center-stage" style="width:100%; min-height:540px;">
           <!-- Fullscreen Floating Controls -->
           <div class="globe-fs-controls">
             <button class="globe-fs-btn" id="toggleGlobeFullscreenBtn" onclick="toggleGlobeFullscreen()" title="Toggle Fullscreen 3D Globe">
@@ -620,8 +555,8 @@
             <!-- 3D Floating Indicative Coin Badges Overlay -->
             <div class="floating-3d-nodes-overlay" id="floatingNodesOverlay"></div>
             
-            <div class="nc-brain-hud-label" id="agent3dStatus" onclick="openJarvisModal()">
-              <span class="pulse-dot"></span> NEURAL AI BRAIN • CLICK FOR JARVIS HOLOGRAM ↗
+            <div class="nc-brain-hud-label" id="agent3dStatus" onclick="toggleGlobeFullscreen()">
+              <span class="pulse-dot"></span> 3D QUANTUM GLOBE • CLICK TO EXPAND FULLSCREEN ↗
             </div>
           </div>
         </div>
@@ -630,11 +565,11 @@
         <div class="order-flow-container" id="orderFlowGraphicsBox">
           <div class="order-flow-header">
             <div style="display:flex; align-items:center; gap:8px;">
-              <span class="tsm-live-dot" style="width:7px; height:7px; background:#00d4ff; border-radius:50%; box-shadow:0 0 8px #00d4ff;"></span>
-              <strong style="color:#00d4ff;">INSTITUTIONAL ORDER FLOW TELEMETRY</strong>
-              <span style="color:#64748b; font-size:9.5px;">(Depth Velocity & Aggressive Takers)</span>
+              <span class="tsm-live-dot" style="width:8px; height:8px; background:#00d4ff; border-radius:50%; box-shadow:0 0 10px #00d4ff;"></span>
+              <strong style="color:#00d4ff; font-size:12px; letter-spacing:1px;">INSTITUTIONAL QUANT ORDER FLOW TELEMETRY</strong>
+              <span style="color:#64748b; font-size:10px;">(Depth Velocity & High-Frequency Takers)</span>
             </div>
-            <div style="display:flex; gap:12px; font-size:10px;">
+            <div style="display:flex; gap:16px; font-size:11px; font-family:var(--font-mono, monospace);">
               <span style="color:#00f090;">BUY FLOW: <b id="flowBuyRatio">64.2%</b></span>
               <span style="color:#f43f5e;">SELL FLOW: <b id="flowSellRatio">35.8%</b></span>
               <span style="color:#fbbf24;">NET DELTA: <b id="flowNetDelta">+1,420 BTC</b></span>
@@ -650,196 +585,21 @@
           </div>
         </div>
 
-        <!-- RIGHT COLUMN: LIVE AGENT EXECUTION LOG TERMINAL WINDOW -->
-        <div class="nc-terminal-window tsm-panel tsm-logs-panel">
-          <div class="nc-term-header">
-            <div class="nc-term-title">
-              <span class="nc-dot-live-matrix"></span>
-              <span>LIVE AGENT EXECUTION LOG</span>
-            </div>
-            <div class="nc-term-ctrls">
-              <button class="nc-term-btn" onclick="fetchAgentLogs()" title="Refresh Logs">⟳</button>
-              <span class="nc-term-btn">✕</span>
-            </div>
-          </div>
-          <div class="nc-term-body" id="agent-logs-console">
-            <div class="log-entry"><span class="log-badge badge-daemon">DAEMON</span> <span>178935 Trade AI 025: $25</span></div>
-            <div class="log-entry"><span class="log-badge badge-scanner">SCANNER</span> <span>176935 Trade Decision: 99.689%</span></div>
-            <div class="log-entry"><span class="log-badge badge-nvidia">QUANT_AI</span> <span>178935 Trade Decision: +6.0558</span></div>
-            <div class="log-entry"><span class="log-badge badge-risk">RISK_GUARD</span> <span>176755 Trade Rocket lkde: 990</span></div>
-            <div class="log-entry"><span class="log-badge badge-trade">EXECUTION</span> <span>178935 AI Trader 5000: Executed</span></div>
-          </div>
-        </div>
-
-      </div>
-
-            
-      <!-- ========================================================================= -->
-      <!-- HYPERGROK INSTITUTIONAL 8-BIT CYBERPUNK TRADING FLOOR & HUD WORKFORCE     -->
-      <!-- ========================================================================= -->
-      <div class="hypergrok-trading-floor-panel" style="background:linear-gradient(180deg, #0b0c16 0%, #06070c 100%); border:2px solid #ff007f; border-radius:14px; padding:20px; box-shadow:0 0 40px rgba(255,0,127,0.25), inset 0 0 30px rgba(0,229,255,0.05); margin-top:24px; position:relative; overflow:hidden;">
-        
-        <!-- Retro Header Bar -->
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; border-bottom:1px solid rgba(255,0,127,0.3); padding-bottom:12px; flex-wrap:wrap; gap:12px;">
-          <div style="display:flex; align-items:center; gap:12px;">
-            <span style="background:#ff007f; color:#fff; font-family:'Press Start 2P', monospace, sans-serif; font-size:11px; font-weight:900; padding:4px 10px; border-radius:4px; box-shadow:0 0 12px #ff007f; letter-spacing:1px;">&#9889; HYPERGROK DESK</span>
-            <span style="font-family:'Courier New', monospace; font-size:13px; color:#00e5ff; font-weight:700;">AUTONOMOUS PRO TRADING FLOOR &#8226; 24/7 ACTIVE</span>
-          </div>
-          <div style="display:flex; align-items:center; gap:10px; font-family:'Courier New', monospace; font-size:11px;">
-            <span style="color:#00ff88; background:rgba(0,255,136,0.1); border:1px solid #00ff88; padding:3px 8px; border-radius:4px;">&#9679; ALL EXCHANGES SYNCED</span>
-            <span style="color:#ffcc00; background:rgba(255,204,0,0.1); border:1px solid #ffcc00; padding:3px 8px; border-radius:4px;">LATENCY &lt; 15MS</span>
-          </div>
-        </div>
-
-        <!-- Main Floor Layout: Left Trading Room Graphic + Right Cyberpunk Agent Terminal Cards -->
-        <div style="display:grid; grid-template-columns:360px 1fr; gap:20px; align-items:stretch;">
-          
-          <!-- Left: Retro 8-Bit Pixel Trading Floor Viewport -->
-          <div style="background:#05070d; border:1.5px solid #00e5ff; border-radius:10px; padding:16px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 0 20px rgba(0,229,255,0.15); position:relative;">
-            
-            <!-- Live Ticker Screen -->
-            <div style="background:#0a0d18; border:1px solid rgba(255,255,255,0.15); border-radius:6px; padding:10px; margin-bottom:14px; text-align:center;">
-              <div style="font-family:'Press Start 2P', monospace; font-size:9px; color:#00e5ff; margin-bottom:4px;">BTCUSD &#8226; DELTA &amp; MT5 LIVE</div>
-              <div style="font-family:'Courier New', monospace; font-size:16px; font-weight:900; color:#00ff88;" id="hgLivePrice">$78,280.50</div>
-              <div style="font-size:9.5px; color:#8892b0; margin-top:2px;">43 EMA: $77,950 &#8226; Trend: BULLISH CONFIRMED</div>
-            </div>
-
-            <!-- Pixel Characters Mini Desk Floor -->
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;">
-              <div style="background:rgba(255,0,127,0.06); border:1px solid rgba(255,0,127,0.3); border-radius:6px; padding:8px; text-align:center;">
-                <div style="font-size:24px;">&#128126;</div>
-                <div style="font-family:'Courier New', monospace; font-size:10px; font-weight:800; color:#ff007f;">CHIEF (Lead)</div>
-                <div style="font-size:8.5px; color:#8892b0;">Routes Lifecycle</div>
-              </div>
-              <div style="background:rgba(0,229,255,0.06); border:1px solid rgba(0,229,255,0.3); border-radius:6px; padding:8px; text-align:center;">
-                <div style="font-size:24px;">&#128202;</div>
-                <div style="font-family:'Courier New', monospace; font-size:10px; font-weight:800; color:#00e5ff;">SCANNER</div>
-                <div style="font-size:8.5px; color:#8892b0;">43 EMA + RSI</div>
-              </div>
-              <div style="background:rgba(0,255,136,0.06); border:1px solid rgba(0,255,136,0.3); border-radius:6px; padding:8px; text-align:center;">
-                <div style="font-size:24px;">&#128104;&#8205;&#128187;</div>
-                <div style="font-family:'Courier New', monospace; font-size:10px; font-weight:800; color:#00ff88;">FILLS (Trader)</div>
-                <div style="font-size:8.5px; color:#8892b0;">Delta + CS + MT5</div>
-              </div>
-              <div style="background:rgba(255,204,0,0.06); border:1px solid rgba(255,204,0,0.3); border-radius:6px; padding:8px; text-align:center;">
-                <div style="font-size:24px;">&#128737;&#65039;</div>
-                <div style="font-family:'Courier New', monospace; font-size:10px; font-weight:800; color:#ffcc00;">RISK GUARDIAN</div>
-                <div style="font-size:8.5px; color:#8892b0;">Max 2 Trades Cap</div>
-              </div>
-            </div>
-
-            <div style="background:rgba(0,0,0,0.6); border:1px solid rgba(0,229,255,0.2); border-radius:6px; padding:8px; font-family:'Courier New', monospace; font-size:10.5px; color:#a0aec0; text-align:center;">
-              <span style="color:#00e5ff;">&#10004;</span> Live Trading Desk Ready &#8226; Auto-Execution Armed
-            </div>
-          </div>
-
-          <!-- Right: Grid of Cyberpunk Specialist Bots (CHIEF, SCAN, VET, SOCIAL, SIZE, FILLS, RISK, CRAWLER) -->
-          <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px;">
-            
-            <!-- Bot 1: CHIEF -->
-            <div style="background:#0c0f1d; border:1px solid rgba(255,0,127,0.4); border-radius:8px; padding:12px; position:relative;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                <div style="font-family:'Press Start 2P', monospace; font-size:8.5px; color:#ff007f;">&#128126; CHIEF</div>
-                <span style="font-size:8px; background:rgba(255,0,127,0.2); color:#ff007f; padding:2px 5px; border-radius:3px; font-weight:800;">LEAD</span>
-              </div>
-              <div style="font-family:'Courier New', monospace; font-size:10px; color:#fff; font-weight:700;">Writes the call</div>
-              <div style="font-size:9.5px; color:#00ff88; margin-top:8px;" id="hgBotChiefStatus">&#9679; REGIME: BULL RUN</div>
-              <div style="font-size:8.5px; color:#718096; margin-top:4px;" id="hgBotChiefSub">Desk ready &bull; routes trade tickets</div>
-            </div>
-
-            <!-- Bot 2: SCAN -->
-            <div style="background:#0c0f1d; border:1px solid rgba(0,229,255,0.4); border-radius:8px; padding:12px; position:relative;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                <div style="font-family:'Press Start 2P', monospace; font-size:8.5px; color:#00e5ff;">&#128200; SCAN</div>
-                <span style="font-size:8px; background:rgba(0,229,255,0.2); color:#00e5ff; padding:2px 5px; border-radius:3px; font-weight:800;">CHARTS</span>
-              </div>
-              <div style="font-family:'Courier New', monospace; font-size:10px; color:#fff; font-weight:700;">43 EMA + Supertrend</div>
-              <div style="font-size:9.5px; color:#00ff88; margin-top:8px;" id="hgBotScanStatus">&#9679; 43 EMA: ACTIVE</div>
-              <div style="font-size:8.5px; color:#718096; margin-top:4px;" id="hgBotScanSub">Delta &amp; MT5 15m/1h streams</div>
-            </div>
-
-            <!-- Bot 3: VET -->
-            <div style="background:#0c0f1d; border:1px solid rgba(192,132,252,0.4); border-radius:8px; padding:12px; position:relative;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                <div style="font-family:'Press Start 2P', monospace; font-size:8.5px; color:#c084fc;">&#129504; VET</div>
-                <span style="font-size:8px; background:rgba(192,132,252,0.2); color:#c084fc; padding:2px 5px; border-radius:3px; font-weight:800;">NEMOTRON</span>
-              </div>
-              <div style="font-family:'Courier New', monospace; font-size:10px; color:#fff; font-weight:700;">Nvidia 550B Audit</div>
-              <div style="font-size:9.5px; color:#00ff88; margin-top:8px;" id="hgBotVetStatus">&#9679; CONSENSUS: 94.8%</div>
-              <div style="font-size:8.5px; color:#718096; margin-top:4px;" id="hgBotVetSub">LLM trade verification pass</div>
-            </div>
-
-            <!-- Bot 4: SOCIAL -->
-            <div style="background:#0c0f1d; border:1px solid rgba(251,191,36,0.4); border-radius:8px; padding:12px; position:relative;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                <div style="font-family:'Press Start 2P', monospace; font-size:8.5px; color:#fbbf24;">&#128172; SOCIAL</div>
-                <span style="font-size:8px; background:rgba(251,191,36,0.2); color:#fbbf24; padding:2px 5px; border-radius:3px; font-weight:800;">X/TELEGRAM</span>
-              </div>
-              <div style="font-family:'Courier New', monospace; font-size:10px; color:#fff; font-weight:700;">Sentiment Engine</div>
-              <div style="font-size:9.5px; color:#00ff88; margin-top:8px;" id="hgBotSocialStatus">&#9679; SENTIMENT: 78% BULL</div>
-              <div style="font-size:8.5px; color:#718096; margin-top:4px;" id="hgBotSocialSub">24/7 financial wire scraper</div>
-            </div>
-
-            <!-- Bot 5: SIZE -->
-            <div style="background:#0c0f1d; border:1px solid rgba(0,255,136,0.4); border-radius:8px; padding:12px; position:relative;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                <div style="font-family:'Press Start 2P', monospace; font-size:8.5px; color:#00ff88;">&#128181; SIZE</div>
-                <span style="font-size:8px; background:rgba(0,255,136,0.2); color:#00ff88; padding:2px 5px; border-radius:3px; font-weight:800;">ALLOCATION</span>
-              </div>
-              <div style="font-family:'Courier New', monospace; font-size:10px; color:#fff; font-weight:700;">Margin &amp; Kelly Ratio</div>
-              <div style="font-size:9.5px; color:#00ff88; margin-top:8px;" id="hgBotSizeStatus">&#9679; CAPITAL: LIVE</div>
-              <div style="font-size:8.5px; color:#718096; margin-top:4px;" id="hgBotSizeSub">Delta $3.36 &bull; Free $0.88</div>
-            </div>
-
-            <!-- Bot 6: FILLS -->
-            <div style="background:#0c0f1d; border:1px solid rgba(0,212,255,0.4); border-radius:8px; padding:12px; position:relative;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                <div style="font-family:'Press Start 2P', monospace; font-size:8.5px; color:#00d4ff;">&#9889; FILLS</div>
-                <span style="font-size:8px; background:rgba(0,212,255,0.2); color:#00d4ff; padding:2px 5px; border-radius:3px; font-weight:800;">EXEC</span>
-              </div>
-              <div style="font-family:'Courier New', monospace; font-size:10px; color:#fff; font-weight:700;">Smart Router</div>
-              <div style="font-size:9.5px; color:#00ff88; margin-top:8px;" id="hgBotFillsStatus">&#9679; 11 ACTIVE TRADES</div>
-              <div style="font-size:8.5px; color:#718096; margin-top:4px;" id="hgBotFillsSub">Auto SL &amp; TP attached</div>
-            </div>
-
-            <!-- Bot 7: RISK -->
-            <div style="background:#0c0f1d; border:1px solid rgba(239,68,68,0.4); border-radius:8px; padding:12px; position:relative;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                <div style="font-family:'Press Start 2P', monospace; font-size:8.5px; color:#ef4444;">&#128737;&#65039; RISK</div>
-                <span style="font-size:8px; background:rgba(239,68,68,0.2); color:#ef4444; padding:2px 5px; border-radius:3px; font-weight:800;">GUARDIAN</span>
-              </div>
-              <div style="font-family:'Courier New', monospace; font-size:10px; color:#fff; font-weight:700;">Circuit Breaker</div>
-              <div style="font-size:9.5px; color:#00ff88; margin-top:8px;" id="hgBotRiskStatus">&#9679; 0% DAILY DD</div>
-              <div style="font-size:8.5px; color:#718096; margin-top:4px;" id="hgBotRiskSub">Hard SL enforced on all</div>
-            </div>
-
-            <!-- Bot 8: CRAWLER -->
-            <div style="background:#0c0f1d; border:1px solid rgba(168,85,247,0.4); border-radius:8px; padding:12px; position:relative;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                <div style="font-family:'Press Start 2P', monospace; font-size:8.5px; color:#a855f7;">&#128225; CRAWLER</div>
-                <span style="font-size:8px; background:rgba(168,85,247,0.2); color:#a855f7; padding:2px 5px; border-radius:3px; font-weight:800;">RADAR</span>
-              </div>
-              <div style="font-family:'Courier New', monospace; font-size:10px; color:#fff; font-weight:700;">Live Feed Monitor</div>
-              <div style="font-size:9.5px; color:#00ff88; margin-top:8px;" id="hgBotCrawlerStatus">&#9679; 24/7 ONLINE</div>
-              <div style="font-size:8.5px; color:#718096; margin-top:4px;" id="hgBotCrawlerSub">Trailing stops checked &lt; 5s</div>
-            </div>
-
-          </div>
-
-        </div>
-
       </div>
 
 <!-- SECONDARY HUD: LIVE POSITIONS & SIGNALS ACCORDION -->
-      <div class="nc-positions-bar tsm-split-row" style="margin-top:24px;">
-        <div class="tsm-panel" style="flex:1.5;">
+      <div class="nc-positions-bar full-width" style="margin-top:18px; width:100%;">
+        <div class="tsm-panel" style="width:100%;">
           <div class="tsm-panel-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-            <div class="tsm-panel-title" style="font-family:var(--font-orb); font-size:12px; font-weight:800; color:#00f090; letter-spacing:1px;">
-              💼 LIVE ACTIVE POSITIONS (<span id="activePositionsCount">0</span>)
+            <div class="tsm-panel-title" style="font-family:var(--font-orb); font-size:13px; font-weight:800; color:#00f090; letter-spacing:1px;">
+              💼 LIVE EXECUTED TRADES &amp; ACTIVE POSITIONS (<span id="activePositionsCount">0</span>)
             </div>
-            <span class="tsm-badge-cyan" id="pos-table-badge" style="background:rgba(0,212,255,0.15); border:1px solid #00d4ff; color:#00d4ff; padding:3px 8px; border-radius:4px; font-size:10px; font-weight:700;">SCANNING</span>
+            <div style="display:flex; gap:10px; align-items:center;">
+              <span class="tsm-badge-cyan" id="pos-table-badge" style="background:rgba(0,212,255,0.15); border:1px solid #00d4ff; color:#00d4ff; padding:3px 8px; border-radius:4px; font-size:10px; font-weight:700;">LIVE EXECUTING</span>
+              <span style="font-size:10px; color:#94a3b8; font-family:var(--font-mono);">MFP ($100K) • CS • DELTA</span>
+            </div>
           </div>
-          <div class="tsm-table-wrap open-positions-scroll-wrap" style="overflow-x:auto; overflow-y:auto; max-height:360px;">
+          <div class="tsm-table-wrap open-positions-scroll-wrap" style="overflow-x:auto; overflow-y:auto; max-height:420px; width:100%;">
             <table class="tsm-table" style="width:100%; border-collapse:collapse; font-size:11px; font-family:var(--font-mono);">
               <thead id="openTradesThead">
                 <tr id="openTradesHeaderRow" style="border-bottom:1px solid rgba(255,255,255,0.1); color:#94a3b8; text-align:left;">

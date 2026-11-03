@@ -323,12 +323,33 @@ function initHero3DCharacter() {
   particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
   const particleMat = new THREE.PointsMaterial({
     color: 0x00f090,
-    size: 0.05,
+    size: 0.055,
     transparent: true,
-    opacity: 0.7
+    opacity: 0.85
   });
   const particleSystem = new THREE.Points(particleGeo, particleMat);
   mainGroup.add(particleSystem);
+
+  // 4. Kinetic Holographic Wireframe Earth/Globe Sphere
+  const globeGeo = new THREE.SphereGeometry(1.35, 24, 24);
+  const globeMat = new THREE.MeshBasicMaterial({
+    color: 0x00d4ff,
+    wireframe: true,
+    transparent: true,
+    opacity: 0.28
+  });
+  const globeMesh = new THREE.Mesh(globeGeo, globeMat);
+  mainGroup.add(globeMesh);
+
+  // 5. Orbiting Beacon Satellites
+  const satGeo = new THREE.SphereGeometry(0.08, 8, 8);
+  const satMat1 = new THREE.MeshBasicMaterial({ color: 0x00f090 });
+  const sat1 = new THREE.Mesh(satGeo, satMat1);
+  mainGroup.add(sat1);
+
+  const satMat2 = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
+  const sat2 = new THREE.Mesh(satGeo, satMat2);
+  mainGroup.add(sat2);
 
   // Lighting
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
@@ -359,6 +380,19 @@ function initHero3DCharacter() {
     ring1.rotation.y += 0.006;
     ring2.rotation.z -= 0.012;
     ring2.rotation.x += 0.008;
+
+    // Globe rotation
+    globeMesh.rotation.y += 0.005;
+    globeMesh.rotation.x = 0.25;
+
+    // Satellites orbiting globe
+    sat1.position.x = 1.85 * Math.cos(frame * 2.2);
+    sat1.position.z = 1.85 * Math.sin(frame * 2.2);
+    sat1.position.y = 0.5 * Math.sin(frame * 2.2);
+
+    sat2.position.x = 2.1 * Math.cos(-frame * 1.8);
+    sat2.position.z = 2.1 * Math.sin(-frame * 1.8);
+    sat2.position.y = 0.7 * Math.cos(-frame * 1.8);
 
     // Particles rotation
     particleSystem.rotation.y += 0.003;

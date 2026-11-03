@@ -459,8 +459,10 @@ body.adm-body {
 
 /* =============================================================================
 
+/* =============================================================================
+
 /* ==============================================================================
-   HIGGSFIELD KINETIC UI SYSTEM OVERLAY - ENHANCED GLOBE, ORDER FLOW & SCROLLBARS
+   HIGGSFIELD KINETIC UI SYSTEM OVERLAY - CLEAN GLOBE STAGE & FULL-WIDTH POSITIONS
    ============================================================================== */
 
 :root {
@@ -529,105 +531,43 @@ body {
   text-shadow: 0 0 12px rgba(0, 240, 144, 0.45);
 }
 
-/* 3. Kinetic Buttons & Interactive Pills */
-.tsm-btn-nav-signin,
-.tsm-btn-nav-getstarted,
-.tsm-btn-hero-primary,
-.tsm-btn-hero-secondary,
-.nc-btn-admin,
-.adm-btn,
-.sa-btn,
-.nc-term-btn,
-.btn-side-toggle,
-.btn-amt-preset,
-.cal-date-btn,
-.admin-tab-btn,
-.globe-toggle-btn {
-  transition: all 0.22s var(--hf-ease-spring) !important;
-  position: relative;
-  overflow: hidden;
+/* 3. Pure 3D Globe Stage: Center stage expands to full view width */
+.nc-cockpit-grid {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  gap: 18px !important;
 }
 
-.tsm-btn-nav-getstarted, .tsm-btn-hero-primary, .sa-btn-primary, .adm-btn-primary {
-  background: linear-gradient(135deg, #00f090 0%, #00d4ff 100%) !important;
-  color: #020817 !important;
-  font-weight: 700 !important;
-  box-shadow: 0 0 20px rgba(0, 240, 144, 0.35) !important;
-  border: none !important;
-}
-
-.tsm-btn-nav-getstarted:hover, .tsm-btn-hero-primary:hover, .sa-btn-primary:hover {
-  transform: translateY(-2px) scale(1.02) !important;
-  box-shadow: 0 0 28px rgba(0, 240, 144, 0.55) !important;
-}
-
-.tsm-btn-nav-signin, .tsm-btn-hero-secondary, .nc-btn-admin, .adm-btn-outline {
-  background: rgba(15, 23, 42, 0.75) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  backdrop-filter: blur(10px) !important;
-}
-
-.tsm-btn-nav-signin:hover, .tsm-btn-hero-secondary:hover, .nc-btn-admin:hover {
-  transform: translateY(-1.5px) !important;
-  border-color: rgba(0, 212, 255, 0.5) !important;
-  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.2) !important;
-}
-
-/* 4. Complete Glassmorphism Across All Cards & Panels */
-.tsm-panel,
-.nc-hex-card,
-.tsm-kpi-card,
-.adm-card,
-.sa-card,
-.broker-card,
-.crm-stat-card,
-.ai-ind-card,
-.admin-kpi-card,
-.bot-fleet-card,
-.opt-card,
-.tsm-hero-3d-character-wrapper {
-  background: rgba(11, 19, 38, 0.68) !important;
-  backdrop-filter: blur(16px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  border-radius: 14px !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
-  transition: transform 0.24s var(--hf-ease-spring), border-color 0.24s ease, box-shadow 0.24s ease !important;
-}
-
-.tsm-panel:hover,
-.nc-hex-card:hover,
-.adm-card:hover,
-.sa-card:hover,
-.broker-card:hover,
-.crm-stat-card:hover,
-.bot-fleet-card:hover {
-  transform: translateY(-3px) !important;
-  border-color: rgba(0, 212, 255, 0.38) !important;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65), 0 0 24px rgba(0, 212, 255, 0.18) !important;
-}
-
-/* 5. 3D Globe Fullscreen & Expanded Stage Capabilities */
 .nc-brain-center-stage {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  min-height: 480px;
-  transition: all 0.35s var(--hf-ease-spring);
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  width: 100% !important;
+  min-height: 540px !important;
+  background: radial-gradient(circle at center, rgba(6, 20, 48, 0.7) 0%, rgba(3, 7, 18, 0.85) 65%, transparent 100%) !important;
+  border: 1px solid rgba(0, 212, 255, 0.22) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 0 50px rgba(0, 212, 255, 0.12), inset 0 0 35px rgba(0, 240, 144, 0.06) !important;
+  overflow: hidden !important;
 }
 
 .nc-brain-container {
-  width: 100%;
-  height: 480px;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: radial-gradient(circle at center, rgba(0, 212, 255, 0.08) 0%, rgba(3, 7, 18, 0.4) 70%, transparent 100%);
-  border-radius: 16px;
-  transition: all 0.35s var(--hf-ease-spring);
+  width: 100% !important;
+  height: 520px !important;
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+#agent3dCanvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+  filter: drop-shadow(0 0 45px rgba(0, 240, 144, 0.55)) drop-shadow(0 0 25px rgba(0, 212, 255, 0.4)) !important;
 }
 
 /* Fullscreen Mode for 3D Globe */
@@ -680,86 +620,26 @@ body {
   transform: translateY(-2px);
 }
 
-#agent3dCanvas {
-  width: 100% !important;
-  height: 100% !important;
-  display: block;
-  filter: drop-shadow(0 0 35px rgba(0, 240, 144, 0.45));
-}
-
-/* 6. Kinetic Order Flow Visualizer Ribbon & Stream */
-.order-flow-container {
-  margin-top: 14px;
-  width: 100%;
-  background: rgba(4, 9, 20, 0.75);
-  border: 1px solid rgba(0, 212, 255, 0.2);
-  border-radius: 10px;
-  padding: 10px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-.order-flow-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-family: var(--font-mono, monospace);
-  font-size: 10.5px;
-  letter-spacing: 0.8px;
-}
-
-.order-flow-stream {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-}
-
-.flow-ticket {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-family: var(--font-mono, monospace);
-  font-size: 10.5px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(14, 22, 42, 0.6);
-  animation: flowTicketSlide 0.35s ease forwards;
-}
-
-.flow-ticket.buy {
-  border-color: rgba(0, 240, 144, 0.35);
-  background: rgba(0, 240, 144, 0.08);
-  color: #00f090;
-}
-
-.flow-ticket.sell {
-  border-color: rgba(244, 63, 94, 0.35);
-  background: rgba(244, 63, 94, 0.08);
-  color: #f43f5e;
-}
-
-@keyframes flowTicketSlide {
-  from { opacity: 0; transform: translateX(-15px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-/* 7. Open Positions Section Scrollbar & Fixed Height Containment */
+/* 4. Full Width Live Active Positions Section */
 .nc-positions-bar {
-  margin-top: 24px;
+  margin-top: 18px !important;
+  width: 100% !important;
+}
+
+.nc-positions-bar.full-width {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
 }
 
 .open-positions-scroll-wrap, .tsm-table-wrap {
   overflow-x: auto !important;
   overflow-y: auto !important;
-  max-height: 380px !important;
+  max-height: 440px !important;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  background: rgba(3, 7, 18, 0.55);
+  border-radius: 12px;
+  background: rgba(3, 7, 18, 0.75);
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 
 .open-positions-scroll-wrap::-webkit-scrollbar,
@@ -786,49 +666,93 @@ body {
   background: linear-gradient(180deg, #00f090 0%, #ffd700 100%) !important;
 }
 
-/* 8. Hexagon KPI Cluster Micro-Glow Accents */
-.nc-hex-card.hex-cap {
-  border-left: 3px solid var(--hf-neon-green) !important;
-}
-.nc-hex-card.hex-profit {
-  border-left: 3px solid var(--hf-neon-cyan) !important;
-}
-.nc-hex-card.hex-risk {
-  border-left: 3px solid var(--hf-neon-rose) !important;
-}
-.nc-hex-card.hex-trades {
-  border-left: 3px solid var(--hf-neon-purple) !important;
-}
-.nc-hex-card.hex-score {
-  border-left: 3px solid var(--hf-neon-gold) !important;
+/* 5. Expanded Kinetic Order Flow Visualizer Ribbon */
+.order-flow-container {
+  margin-top: 8px;
+  width: 100%;
+  background: rgba(4, 9, 20, 0.85);
+  border: 1.5px solid rgba(0, 212, 255, 0.35);
+  border-radius: 12px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 0 25px rgba(0, 212, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-/* 9. Section Command Dock & Bottom Navigation Bar */
-.tsm-section-command-dock {
-  background: rgba(3, 7, 18, 0.88) !important;
-  backdrop-filter: blur(20px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.6) !important;
+.order-flow-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  letter-spacing: 0.8px;
 }
 
-.tsm-dock-item {
-  border-radius: 10px !important;
-  transition: all 0.2s var(--hf-ease-spring) !important;
+.order-flow-stream {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 6px;
 }
 
-.tsm-dock-item:hover {
-  background: rgba(255, 255, 255, 0.06) !important;
-  transform: translateY(-2px) !important;
+.flow-ticket {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(14, 22, 42, 0.7);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  animation: flowTicketSlide 0.35s ease forwards;
 }
 
-.tsm-dock-item.active {
-  background: linear-gradient(135deg, rgba(0, 240, 144, 0.15), rgba(0, 212, 255, 0.1)) !important;
-  border: 1px solid rgba(0, 240, 144, 0.45) !important;
-  box-shadow: 0 0 16px rgba(0, 240, 144, 0.25) !important;
+.flow-ticket.buy {
+  border-color: rgba(0, 240, 144, 0.4);
+  background: rgba(0, 240, 144, 0.1);
+  color: #00f090;
+  box-shadow: 0 0 14px rgba(0, 240, 144, 0.2);
 }
 
-/* 10. Live Pulse Glows */
+.flow-ticket.sell {
+  border-color: rgba(244, 63, 94, 0.4);
+  background: rgba(244, 63, 94, 0.1);
+  color: #f43f5e;
+  box-shadow: 0 0 14px rgba(244, 63, 94, 0.2);
+}
+
+@keyframes flowTicketSlide {
+  from { opacity: 0; transform: translateX(-20px) scale(0.96); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+/* 6. Kinetic Buttons, Glass Panels & Glow Physics */
+.tsm-btn-nav-signin,
+.tsm-btn-nav-getstarted,
+.tsm-btn-hero-primary,
+.tsm-btn-hero-secondary,
+.nc-btn-admin,
+.adm-btn,
+.sa-btn,
+.globe-fs-btn {
+  transition: all 0.22s var(--hf-ease-spring) !important;
+}
+
+.tsm-panel, .adm-card, .sa-card, .broker-card, .crm-stat-card, .tsm-hero-3d-character-wrapper {
+  background: rgba(11, 19, 38, 0.7) !important;
+  backdrop-filter: blur(16px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
+}
+
 .pulse-dot, .live-pulse-dot, .tsm-live-dot, .nc-dot-live-matrix {
   animation: hfKineticPulse 2s infinite ease-in-out !important;
 }
@@ -842,32 +766,4 @@ body {
     transform: scale(1.18);
     box-shadow: 0 0 14px 4px rgba(0, 240, 144, 0.35);
   }
-}
-
-/* 11. Tables, Inputs, and Modal Overlays */
-table tr {
-  transition: background 0.18s ease;
-}
-table tr:hover {
-  background: rgba(255, 255, 255, 0.035) !important;
-}
-
-input, select, textarea {
-  background: rgba(8, 14, 28, 0.75) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  border-radius: 8px !important;
-  color: #fff !important;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
-}
-
-input:focus, select:focus, textarea:focus {
-  border-color: var(--hf-neon-cyan) !important;
-  box-shadow: 0 0 12px rgba(0, 212, 255, 0.3) !important;
-  outline: none !important;
-}
-
-.auth-modal-overlay, .adm-modal-overlay {
-  background: rgba(2, 6, 17, 0.78) !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
 }
