@@ -984,16 +984,19 @@ input:checked + .sa-slider:before {
 }
 
 
+/* =============================================================================
+
 /* ==============================================================================
    HIGGSFIELD KINETIC UI SYSTEM OVERLAY
-   Modern AI Motion, Glassmorphism, Micro-Glows, Tactile Spring Physics
+   Modern AI Motion, Deep Space Glassmorphism, Micro-Glows, Tactile Spring Physics
+   Directly targeted to all Live Portal Classes
    ============================================================================== */
 
 :root {
   --hf-bg-base:        #030712;
-  --hf-bg-surface-1:   rgba(8, 14, 28, 0.85);
-  --hf-bg-surface-2:   rgba(14, 22, 42, 0.75);
-  --hf-bg-glass:       rgba(6, 11, 24, 0.70);
+  --hf-bg-surface-1:   rgba(8, 14, 28, 0.82);
+  --hf-bg-surface-2:   rgba(14, 22, 42, 0.72);
+  --hf-bg-glass:       rgba(6, 11, 24, 0.65);
   
   --hf-neon-green:     #00f090;
   --hf-neon-cyan:      #00d4ff;
@@ -1009,81 +1012,195 @@ input:checked + .sa-slider:before {
   --hf-ease-spring:    cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Glassmorphic Panels & Cards */
-.tsm-panel, .sa-card, .adm-card, .nc-hex-card {
-  background: var(--hf-bg-surface-1) !important;
-  backdrop-filter: blur(14px) !important;
-  -webkit-backdrop-filter: blur(14px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.09) !important;
-  box-shadow: var(--hf-shadow-glass) !important;
-  transition: transform 0.25s var(--hf-ease-spring), border-color 0.25s ease, box-shadow 0.25s ease !important;
+/* 1. Global Polish: Deep Space Dark Background & Typography */
+body {
+  background-color: #030712 !important;
+  color: #f1f5f9;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
 }
 
-.tsm-panel:hover, .sa-card:hover, .adm-card:hover {
-  border-color: rgba(0, 212, 255, 0.35) !important;
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.65), 0 0 20px rgba(0, 212, 255, 0.15) !important;
+/* 2. Top Header Glassmorphism & Micro-Glow */
+.nc-top-header, .tsm-trade-header, .adm-header, .sa-header {
+  background: rgba(3, 7, 18, 0.85) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4) !important;
 }
 
-/* Tactile Spring Buttons */
-.tsm-btn-cta, .tsm-btn-small, .sa-btn, .adm-btn {
-  transition: transform 0.2s var(--hf-ease-spring), box-shadow 0.2s ease, background 0.2s ease !important;
+.tsm-trade-brand-text {
+  letter-spacing: -0.3px;
+}
+.tsm-trade-brand-text strong {
+  background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.tsm-trade-brand-text span {
+  color: var(--hf-neon-green) !important;
+  text-shadow: 0 0 12px rgba(0, 240, 144, 0.45);
+}
+
+/* 3. Kinetic Buttons & Interactive Pills */
+.tsm-btn-nav-signin,
+.tsm-btn-nav-getstarted,
+.tsm-btn-hero-primary,
+.tsm-btn-hero-secondary,
+.nc-btn-admin,
+.adm-btn,
+.sa-btn,
+.nc-term-btn,
+.btn-side-toggle,
+.btn-amt-preset,
+.cal-date-btn,
+.admin-tab-btn {
+  transition: all 0.22s var(--hf-ease-spring) !important;
   position: relative;
   overflow: hidden;
 }
 
-.tsm-btn-cta:hover, .tsm-btn-small:hover, .sa-btn:hover, .adm-btn:hover {
-  transform: translateY(-2px) !important;
-  filter: brightness(1.1);
+.tsm-btn-nav-getstarted, .tsm-btn-hero-primary, .sa-btn-primary, .adm-btn-primary {
+  background: linear-gradient(135deg, #00f090 0%, #00d4ff 100%) !important;
+  color: #020817 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 0 20px rgba(0, 240, 144, 0.35) !important;
+  border: none !important;
 }
 
-.tsm-btn-cta:active, .sa-btn:active {
-  transform: translateY(0px) scale(0.98) !important;
+.tsm-btn-nav-getstarted:hover, .tsm-btn-hero-primary:hover, .sa-btn-primary:hover {
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 0 28px rgba(0, 240, 144, 0.55) !important;
 }
 
-/* Modern Pill Navigation Bar */
-.tsm-nav-dock, .sa-header, .adm-header {
+.tsm-btn-nav-signin, .tsm-btn-hero-secondary, .nc-btn-admin, .adm-btn-outline {
+  background: rgba(15, 23, 42, 0.75) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.tsm-btn-nav-signin:hover, .tsm-btn-hero-secondary:hover, .nc-btn-admin:hover {
+  transform: translateY(-1.5px) !important;
+  border-color: rgba(0, 212, 255, 0.5) !important;
+  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.2) !important;
+}
+
+/* 4. Complete Glassmorphism Across All Cards & Panels */
+.tsm-panel,
+.nc-hex-card,
+.tsm-kpi-card,
+.adm-card,
+.sa-card,
+.broker-card,
+.crm-stat-card,
+.ai-ind-card,
+.admin-kpi-card,
+.bot-fleet-card,
+.opt-card,
+.tsm-hero-3d-character-wrapper {
+  background: rgba(11, 19, 38, 0.68) !important;
+  backdrop-filter: blur(16px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
+  transition: transform 0.24s var(--hf-ease-spring), border-color 0.24s ease, box-shadow 0.24s ease !important;
+}
+
+.tsm-panel:hover,
+.nc-hex-card:hover,
+.adm-card:hover,
+.sa-card:hover,
+.broker-card:hover,
+.crm-stat-card:hover,
+.bot-fleet-card:hover {
+  transform: translateY(-3px) !important;
+  border-color: rgba(0, 212, 255, 0.38) !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65), 0 0 24px rgba(0, 212, 255, 0.18) !important;
+}
+
+/* 5. Hexagon KPI Cluster Micro-Glow Accents */
+.nc-hex-card.hex-cap {
+  border-left: 3px solid var(--hf-neon-green) !important;
+}
+.nc-hex-card.hex-profit {
+  border-left: 3px solid var(--hf-neon-cyan) !important;
+}
+.nc-hex-card.hex-risk {
+  border-left: 3px solid var(--hf-neon-rose) !important;
+}
+.nc-hex-card.hex-trades {
+  border-left: 3px solid var(--hf-neon-purple) !important;
+}
+.nc-hex-card.hex-score {
+  border-left: 3px solid var(--hf-neon-gold) !important;
+}
+
+/* 6. Section Command Dock & Bottom Navigation Bar */
+.tsm-section-command-dock {
   background: rgba(3, 7, 18, 0.88) !important;
-  backdrop-filter: blur(18px) !important;
-  -webkit-backdrop-filter: blur(18px) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.6) !important;
 }
 
 .tsm-dock-item {
-  transition: all 0.22s var(--hf-ease-spring) !important;
-  border-radius: 8px !important;
+  border-radius: 10px !important;
+  transition: all 0.2s var(--hf-ease-spring) !important;
 }
 
 .tsm-dock-item:hover {
-  background: rgba(255, 255, 255, 0.05) !important;
-  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.06) !important;
+  transform: translateY(-2px) !important;
 }
 
 .tsm-dock-item.active {
-  background: linear-gradient(180deg, rgba(0, 212, 255, 0.15) 0%, rgba(0, 240, 144, 0.05) 100%) !important;
-  border: 1px solid rgba(0, 212, 255, 0.4) !important;
-  box-shadow: 0 0 18px rgba(0, 212, 255, 0.2) !important;
+  background: linear-gradient(135deg, rgba(0, 240, 144, 0.15), rgba(0, 212, 255, 0.1)) !important;
+  border: 1px solid rgba(0, 240, 144, 0.45) !important;
+  box-shadow: 0 0 16px rgba(0, 240, 144, 0.25) !important;
 }
 
-/* Status Indicator Breathing Pulse */
-.live-pulse-dot, .pulse-dot, .tsm-live-dot {
-  animation: hfPulseGlow 2.2s infinite ease-in-out !important;
+/* 7. Live Pulse Glows */
+.pulse-dot, .live-pulse-dot, .tsm-live-dot, .nc-dot-live-matrix {
+  animation: hfKineticPulse 2s infinite ease-in-out !important;
 }
 
-@keyframes hfPulseGlow {
+@keyframes hfKineticPulse {
   0%, 100% {
     transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(0, 240, 144, 0.5);
+    box-shadow: 0 0 0 0 rgba(0, 240, 144, 0.55);
   }
   50% {
-    transform: scale(1.12);
-    box-shadow: 0 0 12px 3px rgba(0, 240, 144, 0.3);
+    transform: scale(1.18);
+    box-shadow: 0 0 14px 4px rgba(0, 240, 144, 0.35);
   }
 }
 
-/* Tables & Tickers Refinement */
-.tsm-table tr {
+/* 8. Tables, Inputs, and Modal Overlays */
+table tr {
   transition: background 0.18s ease;
 }
-.tsm-table tr:hover {
-  background: rgba(255, 255, 255, 0.04) !important;
+table tr:hover {
+  background: rgba(255, 255, 255, 0.035) !important;
+}
+
+input, select, textarea {
+  background: rgba(8, 14, 28, 0.75) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 8px !important;
+  color: #fff !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--hf-neon-cyan) !important;
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.3) !important;
+  outline: none !important;
+}
+
+.auth-modal-overlay, .adm-modal-overlay {
+  background: rgba(2, 6, 17, 0.78) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
 }
