@@ -986,17 +986,17 @@ input:checked + .sa-slider:before {
 
 /* =============================================================================
 
+/* =============================================================================
+
 /* ==============================================================================
-   HIGGSFIELD KINETIC UI SYSTEM OVERLAY
-   Modern AI Motion, Deep Space Glassmorphism, Micro-Glows, Tactile Spring Physics
-   Directly targeted to all Live Portal Classes
+   HIGGSFIELD KINETIC UI SYSTEM OVERLAY - ENHANCED GLOBE, ORDER FLOW & SCROLLBARS
    ============================================================================== */
 
 :root {
   --hf-bg-base:        #030712;
-  --hf-bg-surface-1:   rgba(8, 14, 28, 0.82);
-  --hf-bg-surface-2:   rgba(14, 22, 42, 0.72);
-  --hf-bg-glass:       rgba(6, 11, 24, 0.65);
+  --hf-bg-surface-1:   rgba(8, 14, 28, 0.85);
+  --hf-bg-surface-2:   rgba(14, 22, 42, 0.75);
+  --hf-bg-glass:       rgba(6, 11, 24, 0.70);
   
   --hf-neon-green:     #00f090;
   --hf-neon-cyan:      #00d4ff;
@@ -1012,12 +1012,28 @@ input:checked + .sa-slider:before {
   --hf-ease-spring:    cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* 1. Global Polish: Deep Space Dark Background & Typography */
+/* 1. Global Polish & Cyber Scrollbar */
 body {
   background-color: #030712 !important;
   color: #f1f5f9;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(3, 7, 18, 0.85);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 212, 255, 0.35);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 240, 144, 0.6);
+  box-shadow: 0 0 10px rgba(0, 240, 144, 0.5);
 }
 
 /* 2. Top Header Glassmorphism & Micro-Glow */
@@ -1054,7 +1070,8 @@ body {
 .btn-side-toggle,
 .btn-amt-preset,
 .cal-date-btn,
-.admin-tab-btn {
+.admin-tab-btn,
+.globe-toggle-btn {
   transition: all 0.22s var(--hf-ease-spring) !important;
   position: relative;
   overflow: hidden;
@@ -1119,7 +1136,186 @@ body {
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65), 0 0 24px rgba(0, 212, 255, 0.18) !important;
 }
 
-/* 5. Hexagon KPI Cluster Micro-Glow Accents */
+/* 5. 3D Globe Fullscreen & Expanded Stage Capabilities */
+.nc-brain-center-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  min-height: 480px;
+  transition: all 0.35s var(--hf-ease-spring);
+}
+
+.nc-brain-container {
+  width: 100%;
+  height: 480px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at center, rgba(0, 212, 255, 0.08) 0%, rgba(3, 7, 18, 0.4) 70%, transparent 100%);
+  border-radius: 16px;
+  transition: all 0.35s var(--hf-ease-spring);
+}
+
+/* Fullscreen Mode for 3D Globe */
+.nc-brain-container.globe-fullscreen {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 999999 !important;
+  background: radial-gradient(circle at center, rgba(6, 20, 42, 0.98) 0%, rgba(2, 6, 17, 0.99) 100%) !important;
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.globe-fs-controls {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 1000;
+}
+
+.globe-fs-btn {
+  background: rgba(8, 20, 38, 0.85);
+  border: 1px solid rgba(0, 212, 255, 0.45);
+  color: #00d4ff;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 12px rgba(0, 212, 255, 0.2);
+  backdrop-filter: blur(8px);
+  transition: all 0.2s var(--hf-ease-spring);
+}
+
+.globe-fs-btn:hover {
+  background: rgba(0, 212, 255, 0.2);
+  border-color: #00f090;
+  color: #00f090;
+  box-shadow: 0 0 20px rgba(0, 240, 144, 0.4);
+  transform: translateY(-2px);
+}
+
+#agent3dCanvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+  filter: drop-shadow(0 0 35px rgba(0, 240, 144, 0.45));
+}
+
+/* 6. Kinetic Order Flow Visualizer Ribbon & Stream */
+.order-flow-container {
+  margin-top: 14px;
+  width: 100%;
+  background: rgba(4, 9, 20, 0.75);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.order-flow-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono, monospace);
+  font-size: 10.5px;
+  letter-spacing: 0.8px;
+}
+
+.order-flow-stream {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.flow-ticket {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-family: var(--font-mono, monospace);
+  font-size: 10.5px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(14, 22, 42, 0.6);
+  animation: flowTicketSlide 0.35s ease forwards;
+}
+
+.flow-ticket.buy {
+  border-color: rgba(0, 240, 144, 0.35);
+  background: rgba(0, 240, 144, 0.08);
+  color: #00f090;
+}
+
+.flow-ticket.sell {
+  border-color: rgba(244, 63, 94, 0.35);
+  background: rgba(244, 63, 94, 0.08);
+  color: #f43f5e;
+}
+
+@keyframes flowTicketSlide {
+  from { opacity: 0; transform: translateX(-15px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* 7. Open Positions Section Scrollbar & Fixed Height Containment */
+.nc-positions-bar {
+  margin-top: 24px;
+}
+
+.open-positions-scroll-wrap, .tsm-table-wrap {
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  max-height: 380px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(3, 7, 18, 0.55);
+}
+
+.open-positions-scroll-wrap::-webkit-scrollbar,
+.tsm-table-wrap::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+.open-positions-scroll-wrap::-webkit-scrollbar-track,
+.tsm-table-wrap::-webkit-scrollbar-track {
+  background: rgba(6, 11, 24, 0.9) !important;
+  border-radius: 4px;
+}
+
+.open-positions-scroll-wrap::-webkit-scrollbar-thumb,
+.tsm-table-wrap::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #00d4ff 0%, #00f090 100%) !important;
+  border-radius: 4px;
+  box-shadow: 0 0 10px rgba(0, 240, 144, 0.4) !important;
+}
+
+.open-positions-scroll-wrap::-webkit-scrollbar-thumb:hover,
+.tsm-table-wrap::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #00f090 0%, #ffd700 100%) !important;
+}
+
+/* 8. Hexagon KPI Cluster Micro-Glow Accents */
 .nc-hex-card.hex-cap {
   border-left: 3px solid var(--hf-neon-green) !important;
 }
@@ -1136,7 +1332,7 @@ body {
   border-left: 3px solid var(--hf-neon-gold) !important;
 }
 
-/* 6. Section Command Dock & Bottom Navigation Bar */
+/* 9. Section Command Dock & Bottom Navigation Bar */
 .tsm-section-command-dock {
   background: rgba(3, 7, 18, 0.88) !important;
   backdrop-filter: blur(20px) saturate(180%) !important;
@@ -1161,7 +1357,7 @@ body {
   box-shadow: 0 0 16px rgba(0, 240, 144, 0.25) !important;
 }
 
-/* 7. Live Pulse Glows */
+/* 10. Live Pulse Glows */
 .pulse-dot, .live-pulse-dot, .tsm-live-dot, .nc-dot-live-matrix {
   animation: hfKineticPulse 2s infinite ease-in-out !important;
 }
@@ -1177,7 +1373,7 @@ body {
   }
 }
 
-/* 8. Tables, Inputs, and Modal Overlays */
+/* 11. Tables, Inputs, and Modal Overlays */
 table tr {
   transition: background 0.18s ease;
 }

@@ -9912,3 +9912,86 @@ function updateHyperGrokFloor(data, positions) {
     console.debug("HyperGrok floor update error:", err);
   }
 }
+
+
+// ── 12b. 3D Globe Fullscreen Toggle & Order Flow Animation Engine ─────────────
+let isGlobeFullscreen = false;
+
+function toggleGlobeFullscreen() {
+  const container = document.getElementById("agent3dContainer");
+  const canvas = document.getElementById("agent3dCanvas");
+  const icon = document.getElementById("globeFsIcon");
+  const txt = document.getElementById("globeFsText");
+  if (!container || !canvas) return;
+
+  isGlobeFullscreen = !isGlobeFullscreen;
+
+  if (isGlobeFullscreen) {
+    container.classList.add("globe-fullscreen");
+    if (icon) icon.textContent = "✕";
+    if (txt) txt.textContent = "EXIT FULLSCREEN";
+    document.body.style.overflow = "hidden";
+  } else {
+    container.classList.remove("globe-fullscreen");
+    if (icon) icon.textContent = "⛶";
+    if (txt) txt.textContent = "FULLSCREEN GLOBE";
+    document.body.style.overflow = "auto";
+  }
+
+  // Trigger resize on Three.js renderer
+  setTimeout(() => {
+    window.dispatchEvent(new Event('resize'));
+    if (typeof initAgent3dCore === "function") {
+      initAgent3dCore();
+    }
+  }, 100);
+}
+
+// Press 'Escape' key to exit fullscreen globe
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && isGlobeFullscreen) {
+    toggleGlobeFullscreen();
+  }
+});
+
+// Dynamic Order Flow Simulation Engine
+(function initOrderFlowTicker() {
+  const assets = [
+    { s: "BTCUSDT", min: 0.5, max: 15.0, p: 67350, step: 10, unit: "BTC" },
+    { s: "ETHUSDT", min: 5.0, max: 120.0, p: 3245, step: 2, unit: "ETH" },
+    { s: "SOLUSDT", min: 50.0, max: 800.0, p: 142.5, step: 0.2, unit: "SOL" },
+    { s: "NIFTY 50", min: 25, max: 200, p: 23280, step: 5, unit: "LOTS" },
+    { s: "BANKNIFTY", min: 15, max: 150, p: 50120, step: 15, unit: "LOTS" },
+    { s: "XAUUSD", min: 10, max: 80, p: 2645, step: 1, unit: "OZ" }
+  ];
+
+  const venues = ["BINANCE", "DELTA IND", "COINSWITCH", "MFP PROP", "INSTITUTION", "AGGR TAKER"];
+
+  setInterval(() => {
+    const stream = document.getElementById("orderFlowStream");
+    if (!stream) return;
+
+    const asset = assets[Math.floor(Math.random() * assets.length)];
+    const isBuy = Math.random() > 0.42; // Bullish tilt
+    const qty = (Math.random() * (asset.max - asset.min) + asset.min).toFixed(asset.unit === "LOTS" ? 0 : 2);
+    const venue = venues[Math.floor(Math.random() * venues.length)];
+    const price = (asset.p + (Math.random() - 0.5) * asset.step * 4).toFixed(2);
+
+    const ticket = document.createElement("div");
+    ticket.className = `flow-ticket ${isBuy ? 'buy' : 'sell'}`;
+    ticket.innerHTML = `
+      <span>${isBuy ? '🟢 BUY' : '🔴 SELL'}</span>
+      <b>${asset.s}</b>
+      <span>${qty} ${asset.unit}</span>
+      <span>${asset.s.includes('NIFTY') ? '₹' : '$'}${price}</span>
+      <span style="font-size:9px; color:#64748b;">${venue}</span>
+    `;
+
+    stream.insertBefore(ticket, stream.firstChild);
+
+    // Keep max 15 tickets visible in flow
+    while (stream.children.length > 15) {
+      stream.removeChild(stream.lastChild);
+    }
+  }, 2200);
+})();

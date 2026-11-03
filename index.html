@@ -152,8 +152,8 @@
   <link rel="preload" href="/styles.css?v=20261026-3d" as="style" />
   <link rel="preload" href="/logo.png" as="image" type="image/png" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=1793715447" />
-  <link rel="stylesheet" href="/higgsfield.css?v=1793715447" />
+  <link rel="stylesheet" href="styles.css?v=1793718386" />
+  <link rel="stylesheet" href="/higgsfield.css?v=1793718386" />
   
   <!-- Deferred External Heavy Libraries for Faster First Contentful Paint -->
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -596,9 +596,19 @@
 
         </div>
 
-        <!-- CENTER COLUMN: 3D HOLOGRAPHIC GLOWING NEURAL BRAIN -->
+        <!-- CENTER COLUMN: 3D HOLOGRAPHIC GLOWING NEURAL BRAIN & GLOBE -->
         <div class="nc-brain-center-stage">
-          <div class="nc-brain-container" id="agent3dContainer" title="Click to launch Holographic Jarvis Fullscreen Core">
+          <!-- Fullscreen Floating Controls -->
+          <div class="globe-fs-controls">
+            <button class="globe-fs-btn" id="toggleGlobeFullscreenBtn" onclick="toggleGlobeFullscreen()" title="Toggle Fullscreen 3D Globe">
+              <span id="globeFsIcon">⛶</span> <span id="globeFsText">FULLSCREEN GLOBE</span>
+            </button>
+            <button class="globe-fs-btn" onclick="openJarvisModal()" style="border-color:rgba(0,240,144,0.45); color:#00f090;" title="Launch Holographic Jarvis Center">
+              <span>🧠</span> <span>JARVIS CORE</span>
+            </button>
+          </div>
+
+          <div class="nc-brain-container" id="agent3dContainer" title="Click to toggle Fullscreen 3D Globe View">
             <!-- Surrounding HUD Telemetry Chips -->
             <div class="hud-chip top-left" id="hud-synapse-rate">⚡ SYNAPSE: 1,420/s</div>
             <div class="hud-chip top-right" id="hud-consensus-val">🧠 CONSENSUS: 99.4% (4/5)</div>
@@ -613,6 +623,30 @@
             <div class="nc-brain-hud-label" id="agent3dStatus" onclick="openJarvisModal()">
               <span class="pulse-dot"></span> NEURAL AI BRAIN • CLICK FOR JARVIS HOLOGRAM ↗
             </div>
+          </div>
+        </div>
+
+        <!-- CENTER BOTTOM HUD: REAL-TIME QUANT ORDER FLOW GRAPHICS -->
+        <div class="order-flow-container" id="orderFlowGraphicsBox">
+          <div class="order-flow-header">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="tsm-live-dot" style="width:7px; height:7px; background:#00d4ff; border-radius:50%; box-shadow:0 0 8px #00d4ff;"></span>
+              <strong style="color:#00d4ff;">INSTITUTIONAL ORDER FLOW TELEMETRY</strong>
+              <span style="color:#64748b; font-size:9.5px;">(Depth Velocity & Aggressive Takers)</span>
+            </div>
+            <div style="display:flex; gap:12px; font-size:10px;">
+              <span style="color:#00f090;">BUY FLOW: <b id="flowBuyRatio">64.2%</b></span>
+              <span style="color:#f43f5e;">SELL FLOW: <b id="flowSellRatio">35.8%</b></span>
+              <span style="color:#fbbf24;">NET DELTA: <b id="flowNetDelta">+1,420 BTC</b></span>
+            </div>
+          </div>
+          <!-- Kinetic Order Flow Stream (Auto-updating animated stream) -->
+          <div class="order-flow-stream" id="orderFlowStream">
+            <div class="flow-ticket buy"><span>🟢 BUY</span> <b>BTCUSDT</b> <span>12.45 BTC</span> <span>$67,340</span> <span style="font-size:9px; color:#64748b;">AGGR TAKER</span></div>
+            <div class="flow-ticket buy"><span>🟢 BUY</span> <b>ETHUSDT</b> <span>84.20 ETH</span> <span>$3,248</span> <span style="font-size:9px; color:#64748b;">DELTA IND</span></div>
+            <div class="flow-ticket sell"><span>🔴 SELL</span> <b>SOLUSDT</b> <span>410.0 SOL</span> <span>$142.10</span> <span style="font-size:9px; color:#64748b;">MFP PROP</span></div>
+            <div class="flow-ticket buy"><span>🟢 BUY</span> <b>NIFTY 50</b> <span>75 LOTS</span> <span>₹23,280</span> <span style="font-size:9px; color:#64748b;">SMART MONEY</span></div>
+            <div class="flow-ticket buy"><span>🟢 BUY</span> <b>XAUUSD</b> <span>35.0 OZ</span> <span>$2,642.5</span> <span style="font-size:9px; color:#64748b;">INSTITUTION</span></div>
           </div>
         </div>
 
@@ -805,7 +839,7 @@
             </div>
             <span class="tsm-badge-cyan" id="pos-table-badge" style="background:rgba(0,212,255,0.15); border:1px solid #00d4ff; color:#00d4ff; padding:3px 8px; border-radius:4px; font-size:10px; font-weight:700;">SCANNING</span>
           </div>
-          <div class="tsm-table-wrap" style="overflow-x:auto;">
+          <div class="tsm-table-wrap open-positions-scroll-wrap" style="overflow-x:auto; overflow-y:auto; max-height:360px;">
             <table class="tsm-table" style="width:100%; border-collapse:collapse; font-size:11px; font-family:var(--font-mono);">
               <thead id="openTradesThead">
                 <tr id="openTradesHeaderRow" style="border-bottom:1px solid rgba(255,255,255,0.1); color:#94a3b8; text-align:left;">
