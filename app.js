@@ -36,7 +36,9 @@ document.addEventListener("DOMContentLoaded", () => {
   initTheme();
   initUtcClock();
   initTradingViewWidget("tradingview_widget_container", currentTvSymbol);
-  initAgent3dCore();
+  if (typeof initAgent3dCore === "function") {
+    setTimeout(initAgent3dCore, 100);
+  }
   initCircuitBgCanvas();
   initNeuralBgCanvas();
   initWorkflowCycle();
@@ -488,6 +490,9 @@ function switchView(viewName, updateHash = true) {
     fetchMultiMarketSignals();
   } else if (viewName === "terminal") {
     fetchRealData();
+    if (typeof initAgent3dCore === "function") {
+      setTimeout(initAgent3dCore, 150);
+    }
   } else if (viewName === "trader") {
     if (typeof fetchTraderTerminalData === "function") fetchTraderTerminalData();
   } else if (viewName === "copytrade") {
@@ -6370,8 +6375,8 @@ function initAgent3dCore() {
   const canvas = document.getElementById("agent3dCanvas");
   if (!container || !canvas || typeof THREE === "undefined") return;
 
-  const width = container.clientWidth || 450;
-  const height = container.clientHeight || 340;
+  const width = container.clientWidth || container.offsetWidth || 450;
+  const height = container.clientHeight || container.offsetHeight || 380;
 
   scene3d = new THREE.Scene();
   camera3d = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
