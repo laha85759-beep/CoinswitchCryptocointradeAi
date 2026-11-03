@@ -102,6 +102,24 @@ class NewsTelegramBroadcaster:
         self._sent_log[key] = time.time()
         _save_sent_log(self._sent_log)
 
+        @staticmethod
+    def is_indian_stock_market_open() -> bool:
+        """
+        Returns True ONLY during Indian Stock Market (NSE/BSE) trading hours:
+        Monday to Friday, 09:15 AM to 03:30 PM IST.
+        """
+        try:
+            import pytz
+            from datetime import datetime, time as dtime
+            ist = pytz.timezone("Asia/Kolkata")
+            now_ist = datetime.now(ist)
+            if now_ist.weekday() >= 5:  # Saturday or Sunday
+                return False
+            now_time = now_ist.time()
+            return dtime(9, 15) <= now_time <= dtime(15, 30)
+        except Exception:
+            return True
+
     def send_message(self, text: str, parse_mode: str = "HTML", dedupe: bool = True) -> bool:
         """Send a Telegram message; identical content is skipped within the dedupe TTL."""
         if not self.is_active:
@@ -165,7 +183,11 @@ class NewsTelegramBroadcaster:
         msg += f"\n⚡ <i>TheSmartMag 24/7 Intelligence Wire</i>\n👉 <a href=\"https://trade.thesmartmag.com/overview#pricing\"><b>Trade Breaking News Live &gt;&gt;</b></a>"
         return self.send_message(msg)
 
-    def broadcast_indian_market_digest(self, indices: Dict[str, Any], top_headlines: List[Dict[str, Any]], options: Optional[Dict[str, Any]] = None, top_stocks: Optional[List[Dict[str, Any]]] = None) -> bool:
+    def broadcast_indian_market_digest(self, indices: Dict[str, Any], top_headlines: List[Dict[str, Any]], options: Optional[Dict[str, Any]] = None, top_stocks: Optional[List[Dict[str, Any]]] = None, enforce_market_hours: bool = False) -> bool:
+        """Broadcast live Indian Market (NSE/BSE) index scorecard, Nifty/Sensex/BankNifty Options PCR & Max Pain, Intraday Stock Picks, and top news."""
+        if enforce_market_hours and not self.is_indian_stock_market_open():
+            log.info("ℹ️ Indian stock market is currently CLOSED. Suppressing Indian market digest.")
+            return False
         """Broadcast live Indian Market (NSE/BSE) index scorecard, Nifty/Sensex/BankNifty Options PCR & Max Pain, Intraday Stock Picks, and top news."""
         nifty = indices.get("NIFTY 50", {})
         bank_nifty = indices.get("BANK NIFTY", {})
@@ -245,9 +267,11 @@ class NewsTelegramBroadcaster:
         return self.send_message(msg)
 
     def broadcast_calendar_event(self, event: Dict[str, Any]) -> bool:
+        impact = str(event.get("impact", "High")).upper()
+        if "HIGH" not in impact:
+            return False
         title = event.get("title", "")
         country = event.get("country", "GLOBAL")
-        impact = str(event.get("impact", "High")).upper()
         actual = event.get("actual", "N/A")
         forecast = event.get("forecast", "N/A")
         previous = event.get("previous", "N/A")
@@ -285,10 +309,12 @@ class NewsTelegramBroadcaster:
         return self.send_message(msg)
 
     def broadcast_calendar_warning(self, event: Dict[str, Any], mins_left: float = 15, window: str = "15 MIN") -> bool:
-        """Dispatches urgent advance warning before high/medium impact calendar catalyst with impacted assets and setup targets."""
+        """Dispatches urgent advance warning before high impact calendar catalyst with impacted assets and setup targets."""
+        impact = str(event.get("impact", "High")).upper()
+        if "HIGH" not in impact:
+            return False
         title = event.get("title", "")
         country = event.get("country", "GLOBAL").upper()
-        impact = str(event.get("impact", "High")).upper()
         forecast = event.get("forecast", "—")
         previous = event.get("previous", "—")
         date_str = event.get("date", "")
@@ -426,9 +452,12 @@ class NewsTelegramBroadcaster:
 
         return count
 
-    def broadcast_indian_stocks_and_intraday(self, stocks: Optional[List[Dict[str, Any]]] = None) -> bool:
-        """Dispatches Indian Stock News, Intraday Momentum, Gainers and Losers with Entry, SL, Target 1 and 2."""
+    def broadcast_indian_stocks_and_intraday(self, stocks: Optional[List[Dict[str, Any]]] = None, enforce_market_hours: bool = True) -> bool:
+        """Dispatches Indian Stock News, Intraday Momentum, Gainers and Losers with Entry, SL, Target 1 and 2 (Only during Indian market hours)."""
         if not self.is_active:
+            return False
+        if enforce_market_hours and not self.is_indian_stock_market_open():
+            log.info("ℹ️ Indian stock market is currently CLOSED (Trading hours: Mon-Fri 09:15-15:30 IST). Suppressing broadcast.")
             return False
         if not stocks:
             try:

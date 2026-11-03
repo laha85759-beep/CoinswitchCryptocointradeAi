@@ -684,10 +684,12 @@ class NewsAgentCore:
                 self.last_digest_time = now_ts
                 self.broadcast_all_fresh_news()
                 time.sleep(2)
-                news_broadcaster.broadcast_indian_stocks_and_intraday()
-                time.sleep(2)
-                news_broadcaster.broadcast_ipo_updates()
-                time.sleep(2)
+                # Dispatched strictly during active Indian stock market trading hours (Mon-Fri 09:15-15:30 IST)
+                if news_broadcaster.is_indian_stock_market_open():
+                    news_broadcaster.broadcast_indian_stocks_and_intraday(enforce_market_hours=True)
+                    time.sleep(2)
+                    news_broadcaster.broadcast_ipo_updates()
+                    time.sleep(2)
                 news_broadcaster.broadcast_multi_asset_flash()
                 log.info("📢 Broadcasted scheduled comprehensive multi-asset digest to @ForexIndian_bot")
             except Exception as dig_err:
@@ -710,7 +712,7 @@ class NewsAgentCore:
             try:
                 impact = str(ev.get("impact") or "").lower()
                 # User Requirement: ALWAYS High and Medium impact events sent immediately
-                if impact not in ("high", "medium"):
+                if impact != "high":
                     continue
 
                 title = ev.get("title", "").strip()
