@@ -4124,6 +4124,61 @@ function initAgent3dCore() {
   const sparkLine = new THREE.Line(sparkGeo, sparkMat);
   mainGroup.add(sparkLine);
 
+  // 6. 3D In-Globe Institutional Order Flow Particles & Velocity Photons
+  const orderFlowCount = 180;
+  const orderFlowGeo = new THREE.BufferGeometry();
+  const ofPositions = new Float32Array(orderFlowCount * 3);
+  const ofColors = new Float32Array(orderFlowCount * 3);
+  const ofData = []; // Store trajectory progress, speed, color type
+
+  const colBuy = new THREE.Color(0x00f090);
+  const colSell = new THREE.Color(0xf43f5e);
+  const colGold = new THREE.Color(0xfbbf24);
+
+  for (let i = 0; i < orderFlowCount; i++) {
+    const isBuy = Math.random() > 0.38; // Bullish order flow tilt
+    const col = isBuy ? (Math.random() > 0.2 ? colBuy : colGold) : colSell;
+    ofColors[i * 3] = col.r;
+    ofColors[i * 3 + 1] = col.g;
+    ofColors[i * 3 + 2] = col.b;
+
+    ofData.push({
+      progress: Math.random(),
+      speed: 0.008 + Math.random() * 0.018,
+      radius: 4.8 + Math.random() * 4.6,
+      elevation: (Math.random() - 0.5) * Math.PI,
+      azimuth: Math.random() * Math.PI * 2,
+      isBuy: isBuy
+    });
+  }
+
+  orderFlowGeo.setAttribute('position', new THREE.BufferAttribute(ofPositions, 3));
+  orderFlowGeo.setAttribute('color', new THREE.BufferAttribute(ofColors, 3));
+
+  const orderFlowMat = new THREE.PointsMaterial({
+    size: 0.42,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.95,
+    blending: THREE.AdditiveBlending
+  });
+  const orderFlowPoints = new THREE.Points(orderFlowGeo, orderFlowMat);
+  mainGroup.add(orderFlowPoints);
+
+  // 7. 3D Glowing Order Flow Equator Rings (Buy Liquidity & Sell Liquidity Belts)
+  const buyRingGeo = new THREE.TorusGeometry(5.4, 0.06, 16, 120);
+  const buyRingMat = new THREE.MeshBasicMaterial({ color: 0x00f090, wireframe: true, transparent: true, opacity: 0.55 });
+  const buyRing = new THREE.Mesh(buyRingGeo, buyRingMat);
+  buyRing.rotation.x = Math.PI / 2.2;
+  mainGroup.add(buyRing);
+
+  const sellRingGeo = new THREE.TorusGeometry(5.8, 0.04, 16, 120);
+  const sellRingMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e, wireframe: true, transparent: true, opacity: 0.45 });
+  const sellRing = new THREE.Mesh(sellRingGeo, sellRingMat);
+  sellRing.rotation.x = Math.PI / 1.8;
+  sellRing.rotation.y = Math.PI / 6;
+  mainGroup.add(sellRing);
+
   let mouseX = 0, mouseY = 0;
   window.addEventListener('mousemove', (e) => {
     mouseX = (e.clientX / window.innerWidth - 0.5) * 0.4;
@@ -4191,6 +4246,28 @@ function initAgent3dCore() {
         }
       }
     });
+
+    // Update 3D In-Globe Order Flow Photons & Streams
+    const ofArr = orderFlowPoints.geometry.attributes.position.array;
+    for (let i = 0; i < orderFlowCount; i++) {
+      const d = ofData[i];
+      d.progress += d.speed;
+      if (d.progress > 1.0) d.progress = 0.0;
+
+      // Calculate spiral orbital flow from equator towards asset nodes
+      const currentAz = d.azimuth + d.progress * Math.PI * 2;
+      const currentR = d.radius + Math.sin(d.progress * Math.PI * 4) * 0.4;
+      const currentEl = d.elevation + Math.cos(d.progress * Math.PI * 2) * 0.3;
+
+      ofArr[i * 3] = currentR * Math.cos(currentEl) * Math.cos(currentAz);
+      ofArr[i * 3 + 1] = currentR * Math.sin(currentEl) + Math.sin(time * 3 + i) * 0.25;
+      ofArr[i * 3 + 2] = currentR * Math.cos(currentEl) * Math.sin(currentAz);
+    }
+    orderFlowPoints.geometry.attributes.position.needsUpdate = true;
+
+    // Rotate Order Flow Liquidity Belts
+    buyRing.rotation.z += 0.012;
+    sellRing.rotation.z -= 0.009;
 
     // Lightning discharge spark effect
     if (Math.random() < 0.25) {
