@@ -152,8 +152,8 @@
   <link rel="preload" href="/styles.css?v=20261026-3d" as="style" />
   <link rel="preload" href="/logo.png" as="image" type="image/png" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=1793721348" />
-  <link rel="stylesheet" href="/higgsfield.css?v=1793721348" />
+  <link rel="stylesheet" href="styles.css?v=1793721932" />
+  <link rel="stylesheet" href="/higgsfield.css?v=1793721932" />
   
   <!-- Deferred External Heavy Libraries for Faster First Contentful Paint -->
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -606,16 +606,18 @@
                   <th style="padding:8px;">EXCHANGE</th>
                   <th style="padding:8px;">SYMBOL</th>
                   <th style="padding:8px;">SIDE</th>
-                  <th style="padding:8px;">QTY</th>
+                  <th style="padding:8px;">QTY / LOT SIZE</th>
+                  <th style="padding:8px;">LEVERAGE</th>
+                  <th style="padding:8px;">NOTIONAL (USD)</th>
                   <th style="padding:8px;">ENTRY</th>
                   <th style="padding:8px;">MARK</th>
                   <th style="padding:8px;">RUNNING P&amp;L</th>
-                  <th style="padding:8px;">STOP LOSS</th>
+                  <th style="padding:8px;">RISK BUFFER / SL</th>
                   <th style="padding:8px;">TAKE PROFIT</th>
                 </tr>
               </thead>
               <tbody id="open-trades-tbody">
-                <tr><td colspan="9" style="text-align:center; padding:16px; color:#64748b;">Loading live exchange positions...</td></tr>
+                <tr><td colspan="11" style="text-align:center; padding:16px; color:#64748b;">Loading live exchange positions with risk management lot sizes...</td></tr>
               </tbody>
             </table>
           </div>

@@ -3016,37 +3016,41 @@ function renderPositionsTable(posData) {
   const validMfp = (posData.mfp || []).filter(p => p && p.symbol && (Number(p.entry_price || p.price || p.avg_entry_price || p.mark_price || 0) > 0 || Math.abs(Number(p.qty || p.size || 0)) > 0));
 
   const allPositions = [
-    ...validCs.map(p => ({...p, exchange: "CoinSwitch (Spot)"})),
-    ...validDelta.map(p => ({...p, exchange: "Delta (Futures)"})),
-    ...validMfp.map(p => ({...p, exchange: "MyFundedPerpetuals (Prop 5x)"}))
+    ...validMfp.map(p => ({...p, exchange: "MyFundedPerpetuals ($100K)", is_prop: true})),
+    ...validCs.map(p => ({...p, exchange: "CoinSwitch (Spot)", is_prop: false})),
+    ...validDelta.map(p => ({...p, exchange: "Delta India (Futures)", is_prop: false}))
   ];
 
   if (badge) {
-    badge.textContent = allPositions.length > 0 ? `${allPositions.length} RUNNING` : "SCANNING";
+    badge.textContent = allPositions.length > 0 ? `${allPositions.length} EXECUTING` : "SCANNING";
   }
 
   const isUserLoggedIn = !!userToken;
 
   if (thead) {
     thead.innerHTML = isUserLoggedIn
-      ? `<tr><th>EXCHANGE</th><th>SYMBOL</th><th>STRATEGY</th><th>TYPE</th><th>ENTRY</th><th>RUNNING P&amp;L</th><th>STOP LOSS</th><th>TAKE PROFIT</th><th>TRAILING STATUS</th><th>ACTION</th></tr>`
-      : `<tr><th>EXCHANGE</th><th>SYMBOL</th><th>STRATEGY</th><th>TYPE</th><th>ENTRY</th><th>RUNNING P&amp;L</th><th>STOP LOSS</th><th>TAKE PROFIT</th><th>TRAILING STATUS</th></tr>`;
+      ? `<tr><th>EXCHANGE</th><th>SYMBOL</th><th>SIDE</th><th>QTY / LOT SIZE</th><th>LEVERAGE</th><th>NOTIONAL (USD)</th><th>ENTRY</th><th>MARK</th><th>RUNNING P&amp;L</th><th>RISK BUFFER / SL</th><th>TAKE PROFIT</th><th>STRATEGY CONFLUENCE</th><th>ACTION</th></tr>`
+      : `<tr><th>EXCHANGE</th><th>SYMBOL</th><th>SIDE</th><th>QTY / LOT SIZE</th><th>LEVERAGE</th><th>NOTIONAL (USD)</th><th>ENTRY</th><th>MARK</th><th>RUNNING P&amp;L</th><th>RISK BUFFER / SL</th><th>TAKE PROFIT</th><th>STRATEGY CONFLUENCE</th></tr>`;
   }
 
   if (allPositions.length === 0) {
-    const colSpan = isUserLoggedIn ? 10 : 9;
-    tbody.innerHTML = `<tr><td colspan="${colSpan}" class="text-center empty-state" style="padding:18px;">No open positions. Autonomous quantum scanner is actively monitoring liquidity blocks for momentum breakout entries.</td></tr>`;
+    const colSpan = isUserLoggedIn ? 13 : 12;
+    tbody.innerHTML = `<tr><td colspan="${colSpan}" class="text-center empty-state" style="padding:18px;">No open positions. Autonomous quantum scanner is actively monitoring liquidity blocks and 43 EMA trend filters for entry executions.</td></tr>`;
     return;
   }
 
   tbody.innerHTML = allPositions.map(pos => {
-    const sym = pos.symbol || "BTC/USDT";
-    const dir = String(pos.direction || "long").toUpperCase();
+    const sym = pos.symbol || pos.coin || "BTC/USDT";
+    const dir = String(pos.direction || pos.side || "long").toUpperCase();
     const isLong = dir === "LONG" || dir === "BUY";
     const entryP = Number(pos.entry_price || pos.price || 0);
     const markP = Number(pos.mark_price || pos.current_price || entryP);
-    const qty = Number(pos.qty || pos.quantity || 1.0);
-    const strategyName = pos.strategy || "Market Structure + VWAP";
+    const qty = Number(pos.qty || pos.size || pos.quantity || 1.0);
+    const lev = pos.leverage ? `${pos.leverage}x` : "Isolated 5x";
+    const notional = (qty * (entryP > 0 ? entryP : 1.0)).toFixed(2);
+    
+    // Strategy Confluence (Explicitly showcasing 43 EMA Trend Filter & SMC)
+    const strategyName = pos.strategy || "43 EMA Trend + SMC Liquidity";
 
     // Calculate Running PnL (Unrealized Profit & Loss)
     let pnl = 0.0;
@@ -3060,8 +3064,8 @@ function renderPositionsTable(posData) {
     const pnlClass = pnl >= 0 ? "green-text" : "red-text";
     const pnlPrefix = pnl >= 0 ? "+$" : "-$";
 
-    // Dynamic SL & TP computation if 0 or missing
-    let slVal = Number(pos.hard_sl || pos.stop_loss || 0);
+    // Risk Management Stop-Loss & Risk Room
+    let slVal = Number(pos.hard_sl || pos.stop_loss || pos.liquidation_price || 0);
     if (slVal <= 0 && entryP > 0) {
       slVal = isLong ? entryP * (1 - 0.02) : entryP * (1 + 0.02);
     }
@@ -3088,15 +3092,18 @@ function renderPositionsTable(posData) {
 
     return `
       <tr>
-        <td><span class="live-tag">${pos.exchange}</span></td>
+        <td><span class="live-tag" style="background:${pos.is_prop ? 'rgba(0,212,255,0.18)' : 'rgba(0,240,144,0.18)'}; color:${pos.is_prop ? '#00d4ff' : '#00f090'}; border:1px solid ${pos.is_prop ? 'rgba(0,212,255,0.4)' : 'rgba(0,240,144,0.4)'};">${pos.exchange}</span></td>
         <td><strong>${sym}</strong></td>
-        <td><span class="tsm-strat-tag" style="background:rgba(0,240,255,0.08); border:1px solid rgba(0,240,255,0.25); color:var(--neon-cyan); padding:2px 7px; border-radius:4px; font-size:10px; font-weight:600; white-space:nowrap; display:inline-block;">🎯 ${strategyName}</span></td>
-        <td><span class="${isLong ? 'green-text' : 'red-text'} font-mono font-bold">${dir}</span></td>
-        <td>${fmtPrice(entryP)}</td>
+        <td><span class="${isLong ? 'green-text' : 'red-text'} font-mono font-bold" style="padding:2px 6px; background:${isLong ? 'rgba(0,240,144,0.1)' : 'rgba(244,63,94,0.1)'}; border-radius:4px;">${dir}</span></td>
+        <td><strong class="cyan-text font-mono">${qty.toLocaleString()} ${sym.replace('/USDT', '').replace('USDT', '')}</strong></td>
+        <td><span class="gold-text font-mono font-bold">${lev}</span></td>
+        <td><span class="font-mono">$${Number(notional).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></td>
+        <td class="font-mono">${fmtPrice(entryP)}</td>
+        <td class="font-mono">${fmtPrice(markP)}</td>
         <td><strong class="${pnlClass} font-mono">${pnlPrefix}${Math.abs(pnl).toFixed(2)} (${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%)</strong></td>
         <td class="red-text font-mono">${fmtPrice(slVal)}</td>
         <td class="green-text font-mono">${fmtPrice(tpVal)}</td>
-        <td><span class="green-text">${pos.trail_active ? '🟢 ACTIVE (+0.2%)' : 'ARMED'}</span></td>
+        <td><span class="tsm-strat-tag" style="background:rgba(0,212,255,0.1); border:1px solid rgba(0,212,255,0.3); color:#00d4ff; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:600; white-space:nowrap; display:inline-block;">⚡ ${strategyName}</span></td>
         ${actionCell}
       </tr>
     `;
