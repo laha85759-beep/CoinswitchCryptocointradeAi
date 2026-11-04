@@ -99,7 +99,22 @@ void OnTimer()
       return;
      }
 
-   // 2. Enforce Mandatory Protective Stop Loss & Take Profit on all open positions
+   // 2. Weekend Auto-Flatten Protocol: Close all positions Friday before market close (>= 21:00 UTC) and block weekend trades
+   MqlDateTime dt;
+   TimeToStruct(TimeCurrent(), dt);
+   bool isWeekend = (dt.day_of_week == 6 || dt.day_of_week == 0 || (dt.day_of_week == 5 && dt.hour >= 21));
+   if(isWeekend)
+     {
+      if(PositionsTotal() > 0)
+        {
+         Print("WEEKEND PROTECTION ACTIVATED: Auto-closing all open positions for weekend safety (Friday Close / Weekend).");
+         CloseAllPositions();
+        }
+      DrawDashboard("WEEKEND REST: TRADING PAUSED (MON-FRI ONLY)");
+      return;
+     }
+
+   // 3. Enforce Mandatory Protective Stop Loss & Take Profit on all open positions
    EnforceSafetyStopsOnOpenPositions();
 
    // 3. Transmit Account Telemetry & Fetch Pending Signals from AI Brain
@@ -237,6 +252,15 @@ void NormalizeAndValidateStops(const string sym, const string act, const double 
 //+------------------------------------------------------------------+
 void ProcessCommand(const string json)
   {
+   // Strict Monday to Friday Trading Policy Check
+   MqlDateTime dt_cmd;
+   TimeToStruct(TimeCurrent(), dt_cmd);
+   if(dt_cmd.day_of_week == 6 || dt_cmd.day_of_week == 0 || (dt_cmd.day_of_week == 5 && dt_cmd.hour >= 21))
+     {
+      Print("WEEKEND POLICY: New trade command blocked. Live trading operates strictly Monday to Friday.");
+      return;
+     }
+
    string action  = ExtractJsonValue(json, "action");
    string symbol  = ExtractJsonValue(json, "symbol");
    double volume  = StringToDouble(ExtractJsonValue(json, "volume"));

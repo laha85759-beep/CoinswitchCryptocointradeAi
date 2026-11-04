@@ -51,7 +51,7 @@ TOPICS: Dict[str, Dict[str, Any]] = {
         "audience": "forex swing traders and macro watchers",
         "partners": [
             {"code": "ftm_prop", "name": "Funded Trader Markets", "url": "https://fundedtradermarkets.com/ref/arnab", "cta": "Get a funded forex account up to $100k (promo: arnab)"},
-            {"code": "atlas_funded", "name": "Atlas Funded", "url": "https://affiliates.atlasfunded.com/Tracking/click/?affid=12275&campaign=11320&product_id=1&t_type=Register&t_lang=EN", "cta": "Pass your prop challenge with Atlas — 20% off"},
+            {"code": "atlas_funded", "name": "Atlas Funded", "url": "https://app.atlasfunded.com/?afmc=ARNAB", "cta": "Pass your prop challenge with Atlas — 20% off"},
         ],
     },
     "prop": {
@@ -59,7 +59,7 @@ TOPICS: Dict[str, Dict[str, Any]] = {
         "audience": "funded-challenge aspirants and scalpers",
         "partners": [
             {"code": "mfp", "name": "MyFundedPerpetuals", "url": "https://myfundedperpetuals.com/@FUTURES2026", "cta": "Get funded on crypto perps with MyFundedPerpetuals — 20% off challenge"},
-            {"code": "atlas_funded", "name": "Atlas Funded", "url": "https://affiliates.atlasfunded.com/Tracking/click/?affid=12275&campaign=11320&product_id=1&t_type=Register&t_lang=EN", "cta": "Start your Atlas Funded evaluation — 20% off"},
+            {"code": "atlas_funded", "name": "Atlas Funded", "url": "https://app.atlasfunded.com/?afmc=ARNAB", "cta": "Start your Atlas Funded evaluation — 20% off"},
             {"code": "aquafunded", "name": "AquaFunded", "url": "https://www.aquafunded.com/?afmc=6e9", "cta": "Claim AquaFunded 90% payout challenge (promo: 6e9)"},
         ],
     },

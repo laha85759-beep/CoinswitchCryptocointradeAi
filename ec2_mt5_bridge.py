@@ -18,9 +18,9 @@ log = logging.getLogger("EC2_MT5_Bridge")
 app = Flask(__name__)
 
 # Credentials & Risk Rules for CK Capital
-LOGIN = int(os.getenv("MT5_LOGIN", "116810"))
-PASSWORD = os.getenv("MT5_PASSWORD", "KQh1Z1$#zD2p")
-SERVER = os.getenv("MT5_SERVER", "Alphaglobalmarket-live")
+LOGIN = int(os.getenv("MT5_LOGIN", "212170266"))
+PASSWORD = os.getenv("MT5_PASSWORD", "tfhMAbXLky7Cfw$E")
+SERVER = os.getenv("MT5_SERVER", "AtlasFunded-Server")
 BRIDGE_SECRET = os.getenv("MT5_BRIDGE_SECRET", "ck_capital_secret_2026")
 
 MAX_DAILY_LOSS = float(os.getenv("MT5_MAX_DAILY_LOSS_USD", "300.0"))
@@ -137,6 +137,12 @@ def place_order():
     volume = float(data.get("volume", 0.01))
     sl = float(data.get("sl", 0.0))
     tp = float(data.get("tp", 0.0))
+
+    # 0. Weekend Blackout Policy: Trading operates Monday to Friday only
+    from datetime import datetime, timezone
+    now_utc = datetime.now(timezone.utc)
+    if now_utc.weekday() in (5, 6) or (now_utc.weekday() == 4 and now_utc.hour >= 21):
+        return jsonify({"status": "rejected", "reason": "Weekend trading blackout active. Live execution strictly Monday to Friday."}), 403
 
     # 1. Check CK Capital MLL floor limit ($9,500.00)
     acc = mt5.account_info()

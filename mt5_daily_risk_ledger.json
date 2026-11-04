@@ -1,38 +1,74 @@
 {
-  "2026-10-27": {
-    "116810": {
-      "name": "CK Capital $10K Master",
-      "day_start_balance": 9989.22,
-      "lowest_equity": 9989.22,
-      "highest_equity": 9989.22,
-      "current_equity": 9989.22,
-      "current_balance": 9989.22,
-      "open_positions": 0,
-      "realized_daily_pnl": 0.0,
-      "unrealized_daily_pnl": 0.0,
-      "trading_halted": false,
-      "halt_reason": null,
-      "last_sync": 1793102963.4735115,
-      "unrealized_daily_loss": 0.0
+    "2026-10-27": {
+        "116810": {
+            "name": "CK Capital $10K Master",
+            "day_start_balance": 9989.22,
+            "lowest_equity": 9989.22,
+            "highest_equity": 9989.22,
+            "current_equity": 9989.22,
+            "current_balance": 9989.22,
+            "open_positions": 0,
+            "realized_daily_pnl": 0.0,
+            "unrealized_daily_pnl": 0.0,
+            "trading_halted": false,
+            "halt_reason": null,
+            "last_sync": 1793102963.4735115,
+            "unrealized_daily_loss": 0.0
+        }
+    },
+    "2026-10-28": {
+        "116810": {
+            "name": "CK Capital  (MT5 Master)",
+            "day_start_balance": 10000.0,
+            "lowest_equity": 9813.0,
+            "highest_equity": 10000.0,
+            "peak_high_water_mark": 10000.0,
+            "current_equity": 9813.0,
+            "current_balance": 9813.0,
+            "open_positions": 0,
+            "unrealized_daily_loss": 187.0,
+            "trailing_daily_drawdown": 187.0,
+            "trailing_mll_floor": 9500.0,
+            "trailing_mll_room": 313.0,
+            "trading_halted": false,
+            "halt_reason": null,
+            "last_sync": 1793169960.0
+        }
+    },
+    "2026-11-02": {
+        "DELTA_INDIA": {
+            "name": "Delta Exchange India (F&O & Perps)",
+            "day_start_balance": 500.0,
+            "lowest_equity": 5.86,
+            "highest_equity": 500.0,
+            "peak_high_water_mark": 500.0,
+            "current_equity": 5.86,
+            "current_balance": 5.86,
+            "open_positions": 0,
+            "unrealized_daily_loss": 494.14,
+            "trailing_daily_drawdown": 494.14,
+            "trailing_mll_floor": 200.0,
+            "trailing_mll_room": -194.14,
+            "trading_halted": true,
+            "halt_reason": "TRAILING_DAILY_LOSS_EXCEEDED: Peak DD $494.14 >= Limit $25.00",
+            "last_sync": 1793633188.8413036
+        },
+        "COINSWITCH": {
+            "name": "CoinSwitch Pro (Spot Crypto)",
+            "day_start_balance": 100.0,
+            "lowest_equity": 2.34,
+            "highest_equity": 100.0,
+            "peak_high_water_mark": 100.0,
+            "current_equity": 2.34,
+            "current_balance": 2.34,
+            "open_positions": 0,
+            "unrealized_daily_loss": 97.66,
+            "trailing_daily_drawdown": 97.66,
+            "trailing_mll_floor": 50.0,
+            "trailing_mll_room": -47.66,
+            "trading_halted": true,
+            "halt_reason": "TRAILING_DAILY_LOSS_EXCEEDED: Peak DD $97.66 >= Limit $10.00",
+            "last_sync": 1793633188.8679962
+        }
     }
-  },
-  "2026-10-28": {
-    "116810": {
-      "name": "CK Capital  (MT5 Master)",
-      "day_start_balance": 10000.0,
-      "lowest_equity": 9813.0,
-      "highest_equity": 10000.0,
-      "peak_high_water_mark": 10000.0,
-      "current_equity": 9813.0,
-      "current_balance": 9813.0,
-      "open_positions": 0,
-      "unrealized_daily_loss": 187.0,
-      "trailing_daily_drawdown": 187.0,
-      "trailing_mll_floor": 9500.0,
-      "trailing_mll_room": 313.0,
-      "trading_halted": false,
-      "halt_reason": null,
-      "last_sync": 1793169960.0
-    }
-  }
 }

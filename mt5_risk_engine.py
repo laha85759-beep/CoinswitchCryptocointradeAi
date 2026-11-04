@@ -59,3 +59,30 @@ class CKCapitalRiskGuardian:
         else:
             lot = risk_budget / (stop_pips * 100000.0)
         return max(0.01, min(0.50, round(lot, 2)))
+
+    def check_consistency_rule(self, best_day_pnl: float, cycle_total_pnl: float, limit_pct: float = 20.0) -> Dict[str, Any]:
+        if cycle_total_pnl <= 0 or best_day_pnl <= 0:
+            return {
+                'compliant': True,
+                'share_pct': 0.0,
+                'needed_total_profit': 0.0,
+                'additional_profit_needed': 0.0,
+                'message': 'No closed net profit in cycle yet.'
+            }
+
+        share_pct = round((best_day_pnl / cycle_total_pnl) * 100.0, 2)
+        needed_total_profit = round(best_day_pnl / (limit_pct / 100.0), 2)
+        additional_profit_needed = max(0.0, round(needed_total_profit - cycle_total_pnl, 2))
+        compliant = (share_pct <= limit_pct)
+
+        return {
+            'compliant': compliant,
+            'limit_pct': limit_pct,
+            'best_day_pnl': round(best_day_pnl, 2),
+            'cycle_total_pnl': round(cycle_total_pnl, 2),
+            'share_pct': share_pct,
+            'needed_total_profit': needed_total_profit,
+            'additional_profit_needed': additional_profit_needed,
+            'message': 'Compliant' if compliant else f'Consistency Pending: Best day () is {share_pct}% of total (). Need  more profit across subsequent days to meet the 20% payout threshold.'
+        }
+

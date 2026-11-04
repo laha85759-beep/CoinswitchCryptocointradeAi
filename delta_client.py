@@ -168,6 +168,12 @@ class DeltaClient:
         base = symbol.split("/")[0].upper()
         delta_sym = f"{base}USD"
 
+        # Direct check for US Stock perpetuals on Delta India (e.g. NVDAXUSD, TSLAXUSD, MSFTBUSD, AMDBUSD)
+        for stock_sym in (f"{base}XUSD", f"{base}BUSD"):
+            if stock_sym in self._product_cache:
+                p = self._product_cache[stock_sym]
+                if p.get("contract_type") == "perpetual_futures" and p.get("state") == "live":
+                    return int(p["id"])
 
         # Search cache for this symbol, prefer perpetual_futures
         best = None
@@ -204,14 +210,24 @@ class DeltaClient:
     def get_ticker(self, symbol: str) -> dict:
         """
         Get 24h ticker for a symbol.
-        Delta India symbol format: 'BTCUSD' (base + USD, no slash, no T).
+        Delta India symbol format: 'BTCUSD' or 'NVDAXUSD' / 'MSFTBUSD' for US stocks.
         """
+        self._build_product_cache()
+        base = symbol.split("/")[0].upper().replace("USDT", "")
+        candidates = [symbol.upper(), f"{base}USD", f"{base}XUSD", f"{base}BUSD"]
+        for cand in candidates:
+            if cand in self._product_cache:
+                data = self._request("GET", f"/v2/tickers/{cand}", auth=False)
+                res = data.get("result")
+                if res and isinstance(res, dict):
+                    return res
+
+        # Fallback to direct call
         sym = symbol.upper().replace("/", "").replace("USDT", "")
         delta_sym = sym if sym.endswith("USD") else f"{sym}USD"
         data = self._request("GET", f"/v2/tickers/{delta_sym}", auth=False)
         result = data.get("result")
         if result is None:
-            # Try all tickers and find by symbol
             all_t = self.get_all_tickers()
             return all_t.get(delta_sym, {})
         return result
