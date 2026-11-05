@@ -436,13 +436,23 @@ class NewsAgentCore:
             sentiment = "NEUTRAL"
             impact = 50
             
-        # Target Assets & Indian Tickers
+        # Target Assets & Indian / Global / Macro Tickers
         assets = []
-        for sym in ["NIFTY", "SENSEX", "BANKNIFTY", "RELIANCE", "HDFCBANK", "TCS", "INFY", "TATA", "COINSWITCH", "DELTA", "TDS", "FIU", "RBI", "SEBI", "BTC", "ETH", "SOL", "XRP", "USDT", "GOLD", "USD", "INR", "EUR", "GBP"]:
+        for sym in ["NIFTY", "SENSEX", "BANKNIFTY", "RELIANCE", "HDFCBANK", "TCS", "INFY", "TATA", "COINSWITCH", "DELTA", "TDS", "FIU", "RBI", "SEBI", "BTC", "ETH", "SOL", "XRP", "USDT", "GOLD", "USD", "INR", "EUR", "GBP", "CRUDE", "OIL", "SILVER", "NASDAQ", "SPX"]:
             if sym.lower() in full_text:
                 assets.append(sym)
+        # Macro / Election / Regulatory / Central Bank catalysts detection
+        is_macro_news = any(w in full_text for w in [
+            "election", "midterm", "congress", "senate", "house", "democrat", "republican",
+            "biden", "trump", "fed", "fomc", "powell", "inflation", "cpi", "rate cut", "rate hike",
+            "gdp", "treasury", "tariff", "trade war", "budget", "deficit", "rbi", "macro"
+        ])
+        if is_macro_news and not assets:
+            assets.append("US & GLOBAL MACRO")
         if not assets:
             assets = ["MARKET / CATALYST"]
+        if is_macro_news:
+            impact = max(impact, 75)
             
         return {
             "sentiment": sentiment,
@@ -659,18 +669,19 @@ class NewsAgentCore:
         #    RULE: Only broadcast when a specific tradeable asset is on radar (e.g. BTC, ETH, SOL, NIFTY, XAU)
         #    with high conviction impact (>= 75). Suppress generic "MARKET / CATALYST" filler.
         if news and news_broadcaster.is_active:
-            for item in news[:8]:
+            for item in news[:25]:
                 assets = item.get("affected_assets", [])
                 has_concrete_asset = bool(assets and any(a not in ("MARKET / CATALYST", "MARKET", "CATALYST") for a in assets))
-                is_high_impact = item.get("impact_score", 0) >= 75
+                is_high_impact = item.get("impact_score", 0) >= 65
+                full_t = f"{item.get('title', '')} {item.get('summary', '')}".lower()
+                is_macro = any(w in full_t for w in ["election", "midterm", "congress", "senate", "house", "democrat", "republican", "fed", "fomc", "cpi", "rate cut", "inflation", "rbi"])
                 
-                if item["id"] not in self.seen_news_ids and has_concrete_asset and is_high_impact:
+                if item["id"] not in self.seen_news_ids and (is_high_impact or is_macro or has_concrete_asset):
                     self._mark_news_seen(item["id"])
                     news_broadcaster.broadcast_breaking_news(item, item.get("ai_takeaway"))
                     time.sleep(1)
                 elif item["id"] not in self.seen_news_ids:
-                    # Mark seen even if skipped so we don't re-evaluate repeatedly
-                    self._mark_news_seen(item["id"])
+                    pass
 
         # 2. Early-warning alerts for high-impact calendar events BEFORE they hit the tape
         self._broadcast_upcoming_event_warnings(cal)

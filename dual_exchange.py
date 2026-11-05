@@ -345,15 +345,10 @@ class DualExecutionAgent:
             else:
                 leverage = 3                        # Safe 3x Leverage default
 
-            # Strict risk safeguard:
-            # For standard accounts, cap margin at max_position_pct (15%).
-            # For small accounts (< $50), allow position margin up to free balance or $5 max,
-            # so the minimum 1-contract order size can actually be placed rather than always rejected.
+            # Strict risk safeguard: Trade ONLY within currently available balance
+            # Usable margin is strictly capped at 90% of available free balance
             base_margin = delta_balance * (float(self.cfg.get("max_position_pct", 15.0)) / 100.0)
-            if delta_balance < 50.0:
-                max_pos_margin = min(delta_balance * 0.85, max(base_margin, 2.50))
-            else:
-                max_pos_margin = base_margin
+            max_pos_margin = min(delta_balance * 0.90, max(base_margin, min(delta_balance * 0.90, 2.50)))
             position_usd = min(position_usd, max_pos_margin * leverage)
         else:
             leverage = 5
@@ -363,6 +358,18 @@ class DualExecutionAgent:
         contract_notional = current_price * contract_val
         if contract_notional > 0:
             margin_per_contract = contract_notional / leverage
+            # If 1 contract margin exceeds current balance at base leverage, check if exchange allows higher leverage
+            # (e.g. BTC 200x, ETH 200x, SOL/XRP/DOGE 100x) to allow execution on small accounts
+            if margin_per_contract > delta_balance and delta_balance >= 0.50:
+                prod_specs = self.delta_client.get_product_info(symbol) or {}
+                max_dev_lev = float(prod_specs.get("default_leverage") or prod_specs.get("leverage") or 50.0)
+                needed_lev = int((contract_notional / (delta_balance * 0.90)) + 1)
+                if needed_lev <= max_dev_lev and needed_lev <= 50:
+                    leverage = max(leverage, min(int(max_dev_lev), needed_lev))
+                    margin_per_contract = contract_notional / leverage
+                    log.info("Delta auto-scaled leverage to %sx for %s (1 contract requires $%.4f margin with $%.4f balance)",
+                             leverage, symbol, margin_per_contract, delta_balance)
+
             if margin_per_contract > delta_balance:
                 log.warning("Delta order skipped for %s: 1 contract requires $%.4f margin, available balance is $%.4f",
                             symbol, margin_per_contract, delta_balance)
@@ -371,9 +378,17 @@ class DualExecutionAgent:
                     "reason": f"insufficient_margin (1 contract needs ${margin_per_contract:.3f}, avail ${delta_balance:.3f})",
                     "symbol": symbol,
                 }
-            max_contracts_for_balance = int((max_pos_margin * leverage) / contract_notional) if delta_balance > 0 else 0
+            # Strict contract cap: margin required MUST NEVER exceed available free balance
+            max_contracts_for_balance = int((delta_balance * 0.90 * leverage) / contract_notional) if delta_balance > 0 else 0
+            if max_contracts_for_balance < 1:
+                log.warning("Delta order skipped: 1 contract requires $%.4f margin, exceeding available $%.4f", margin_per_contract, delta_balance)
+                return {
+                    "status": "rejected",
+                    "reason": f"insufficient_available_balance (need ${margin_per_contract:.3f}, avail ${delta_balance:.3f})",
+                    "symbol": symbol,
+                }
             calculated_contracts = int(position_usd / contract_notional) if position_usd > 0 else 1
-            num_contracts = max(1, min(calculated_contracts, max(1, max_contracts_for_balance)))
+            num_contracts = max(1, min(calculated_contracts, max_contracts_for_balance))
         else:
             num_contracts = 1
 

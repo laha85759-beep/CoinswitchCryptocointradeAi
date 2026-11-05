@@ -70,5 +70,41 @@
             "halt_reason": "TRAILING_DAILY_LOSS_EXCEEDED: Peak DD $97.66 >= Limit $10.00",
             "last_sync": 1793633188.8679962
         }
+    },
+    "2026-11-04": {
+        "DELTA_INDIA": {
+            "name": "Delta Exchange India (F&O & Perps)",
+            "day_start_balance": 500.0,
+            "lowest_equity": 5.86,
+            "highest_equity": 500.0,
+            "peak_high_water_mark": 500.0,
+            "current_equity": 5.86,
+            "current_balance": 5.86,
+            "open_positions": 0,
+            "unrealized_daily_loss": 494.14,
+            "trailing_daily_drawdown": 494.14,
+            "trailing_mll_floor": 200.0,
+            "trailing_mll_room": 0.0,
+            "trading_halted": true,
+            "halt_reason": "TRAILING_DAILY_LOSS_EXCEEDED",
+            "last_sync": 1793807249.3518739
+        },
+        "COINSWITCH": {
+            "name": "CoinSwitch Pro (Spot Crypto)",
+            "day_start_balance": 100.0,
+            "lowest_equity": 2.34,
+            "highest_equity": 100.0,
+            "peak_high_water_mark": 100.0,
+            "current_equity": 2.34,
+            "current_balance": 2.34,
+            "open_positions": 0,
+            "unrealized_daily_loss": 97.66,
+            "trailing_daily_drawdown": 97.66,
+            "trailing_mll_floor": 50.0,
+            "trailing_mll_room": 0.0,
+            "trading_halted": true,
+            "halt_reason": "TRAILING_DAILY_LOSS_EXCEEDED",
+            "last_sync": 1793807249.42285
+        }
     }
 }

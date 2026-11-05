@@ -1,0 +1,17 @@
+# TheSmartMag Quant Terminal & AI Trading Engine
+> Institutional AI-powered quantitative trading terminal, autonomous multi-exchange execution, and prop firm risk management.
+
+## Overview
+TheSmartMag Quant Terminal provides real-time algorithmic trade analysis and automated execution across global crypto exchanges (CoinSwitch Pro, Delta Exchange India) and Forex/CFD prop firm accounts (Atlas Funded, MT5). It incorporates a multi-model neural consensus engine, institutional Smart Money Concepts (SMC), and strict capital survival risk controls.
+
+## Key Capabilities
+- **Autonomous Multi-Exchange Execution**: Real-time signal generation and bracket order execution (SL/TP) for crypto futures and FX pairs.
+- **Top 5 Quantitative Strategies**: ICT/SMC Liquidity Sweeps, Session Opening Range Breakout (ORB), EMA 50/200 Trend Following, Bollinger Band / RSI Mean Reversion, and ATR Supertrend Volatility.
+- **Prop Firm Risk Guardian**: Live daily loss trailing floor monitoring, static/trailing drawdown enforcement, and 20% consistency rule compliance for Atlas Funded evaluation and funded accounts.
+- **Indian F&O & Crypto PCR Analytics**: Real-time Put-Call Ratio (PCR) analysis, open interest tracking, and macroeconomic catalyst detection.
+
+## Official Resources
+- Homepage & Trading Terminal: https://trade.thesmartmag.com/
+- Prop Firm Hub & Challenges: https://trade.thesmartmag.com/?view=partners
+- Atlas Funded Instant Funding: https://app.atlasfunded.com/?afmc=ARNAB
+- API Health & Status: https://trade.thesmartmag.com/healthz

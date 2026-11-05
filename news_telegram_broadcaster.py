@@ -164,23 +164,49 @@ class NewsTelegramBroadcaster:
         link = article.get("url") or article.get("link") or ""
         sentiment = article.get("sentiment", "NEUTRAL").upper()
         category = article.get("category", "MARKET").upper()
+        affected = article.get("affected_assets", [])
+        impact = article.get("impact_score", 70)
         
         sent_icon = "🟢 BULLISH" if "BULL" in sentiment else ("🔴 BEARISH" if "BEAR" in sentiment else "⚪ NEUTRAL")
-        cat_badge = "🇮🇳 INDIAN EQUITIES & REGULATORY" if category == "INDIA" else f"🌐 {category}"
+        if category == "INDIA":
+            cat_badge = "🇮🇳 INDIAN EQUITIES & REGULATORY"
+        elif any(w in title.lower() for w in ["election", "midterm", "congress", "senate", "house", "democrat", "republican"]):
+            cat_badge = "🇺🇸 US MIDTERM ELECTION BREAKING WIRE"
+        else:
+            cat_badge = f"🌐 {category} GLOBAL WIRE"
+        
+        # Live Asset Price & Trade Data Details
+        trade_data_lines = []
+        try:
+            from real_market_feed import market_feed
+            for asset in (affected[:3] if affected else ["BTC", "GOLD"]):
+                sym_k = asset.lower().replace("/usdt", "").replace("/usd", "").strip()
+                t_info = market_feed.get_ticker(sym_k)
+                if t_info and t_info.get("price_spot"):
+                    p = t_info.get("price_spot")
+                    chg = t_info.get("chg_spot_24h", 0)
+                    chg_str = f"+{chg:.2f}% 🟢" if chg >= 0 else f"{chg:.2f}% 🔴"
+                    trade_data_lines.append(f"  • <b>{asset}:</b> <code>${p:,.2f}</code> ({chg_str})")
+        except Exception:
+            pass
         
         msg = (
             f"📰 <b>BREAKING NEWS ALERT • {source}</b>\n"
             f"🏷 <i>{cat_badge}</i>\n"
             f"━━━━━━━━━━━━━━━━━━━━\n"
             f"<b>{title}</b>\n\n"
-            f"📊 <b>Sentiment:</b> {sent_icon}\n"
+            f"📊 <b>Sentiment:</b> {sent_icon}  |  <b>Impact Conviction:</b> <code>{impact}/100</code>\n"
         )
+        if affected and any(a not in ("MARKET / CATALYST", "MARKET") for a in affected):
+            msg += f"🎯 <b>Assets on Radar:</b> <code>{', '.join(affected[:4])}</code>\n"
+        if trade_data_lines:
+            msg += "\n💹 <b>LIVE TRADE DATA & BENCHMARKS:</b>\n" + "\n".join(trade_data_lines) + "\n"
         if ai_insight:
-            msg += f"🧠 <b>AI Catalyst Insight:</b> <i>{ai_insight}</i>\n"
+            msg += f"\n🧠 <b>AI Catalyst & Market Analysis:</b>\n<i>{ai_insight}</i>\n"
         if link:
-            msg += f"\n🔗 <a href='{link}'>Read Full Article</a>\n"
+            msg += f"\n🔗 <a href='{link}'>Read Official Wire / Report</a>\n"
             
-        msg += f"\n⚡ <i>TheSmartMag 24/7 Intelligence Wire</i>\n👉 <a href=\"https://trade.thesmartmag.com/overview#pricing\"><b>Trade Breaking News Live &gt;&gt;</b></a>"
+        msg += f"\n⚡ <i>TheSmartMag 24/7 Intelligence Wire</i>\n👉 <a href=\"https://trade.thesmartmag.com/overview#pricing\"><b>Trade Breaking Catalysts Live &gt;&gt;</b></a>"
         return self.send_message(msg)
 
     def broadcast_indian_market_digest(self, indices: Dict[str, Any], top_headlines: List[Dict[str, Any]], options: Optional[Dict[str, Any]] = None, top_stocks: Optional[List[Dict[str, Any]]] = None, enforce_market_hours: bool = False) -> bool:
