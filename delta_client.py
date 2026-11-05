@@ -68,8 +68,36 @@ class DeltaClient:
 
     # ── Auth & request ──────────────────────────────────────────────────────
 
+    def _sync_server_time(self) -> None:
+        """Calibrates server time offset either via test request or server date."""
+        try:
+            # We can detect exact server time by making a light request and reading the server response
+            test_ts = int(time.time())
+            sig = hmac.new(self.api_secret.encode("utf-8"), f"GET{test_ts}/v2/orders".encode("utf-8"), hashlib.sha256).hexdigest()
+            resp = self.session.get(f"{BASE_URL}/v2/orders?limit=1", headers={"api-key": self.api_key, "signature": sig, "timestamp": str(test_ts), "Content-Type": "application/json"}, timeout=5)
+            if resp.status_code == 401 and "expired_signature" in resp.text:
+                ctx = resp.json().get("error", {}).get("context", {})
+                req_t = ctx.get("request_time")
+                srv_t = ctx.get("server_time")
+                if req_t and srv_t:
+                    self._time_offset = float(srv_t - req_t)
+                    self._last_sync_time = time.time()
+                    log.info("Delta exact server time calibrated via expired_signature: offset=%.2fs", self._time_offset)
+                    return
+            elif resp.status_code == 200:
+                self._time_offset = 0.0
+                self._last_sync_time = time.time()
+                return
+        except Exception as exc:
+            log.warning("Could not calibrate Delta server time: %s", exc)
+
     def _sign(self, method: str, endpoint: str, body: str = "") -> dict:
-        timestamp = str(int(time.time()))
+        if not hasattr(self, "_time_offset"):
+            self._time_offset = 0.0
+            self._last_sync_time = 0.0
+        if (time.time() - getattr(self, "_last_sync_time", 0.0)) > 300:
+            self._sync_server_time()
+        timestamp = str(int(time.time() + getattr(self, "_time_offset", 0.0)))
         payload = method.upper() + timestamp + endpoint + body
         sig = hmac.new(
             self.api_secret.encode("utf-8"),
