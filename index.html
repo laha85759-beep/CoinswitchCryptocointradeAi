@@ -554,6 +554,25 @@
             
             <!-- 3D Floating Indicative Coin Badges Overlay -->
             <div class="floating-3d-nodes-overlay" id="floatingNodesOverlay"></div>
+            <!-- Live 3D Order Flow & Liquidity Inflow/Outflow HUD -->
+            <div class="orderflow-hud-strip">
+              <div class="of-stat-item" style="color:#00f090;">
+                <span>🟢 INFLOW:</span>
+                <span id="of-total-inflow">+$824.3M</span>
+                <span style="font-size:9px; color:rgba(0,240,144,0.7);">(BTC, ETH, XAU, SOL)</span>
+              </div>
+              <div style="width:1px; height:14px; background:rgba(0,212,255,0.3);"></div>
+              <div class="of-stat-item" style="color:#ff3366;">
+                <span>🔴 OUTFLOW:</span>
+                <span id="of-total-outflow">-$24.9M</span>
+                <span style="font-size:9px; color:rgba(255,51,102,0.7);">(DOGE, GOAT, SKL)</span>
+              </div>
+              <div style="width:1px; height:14px; background:rgba(0,212,255,0.3);"></div>
+              <div class="of-stat-item" style="color:#00d4ff;">
+                <span>⚡ NET DELTA:</span>
+                <span id="of-net-delta">+0.24 (BULL ABSORPTION)</span>
+              </div>
+            </div>
             
             <div class="nc-brain-hud-label" id="agent3dStatus" onclick="toggleGlobeFullscreen()">
               <span class="pulse-dot"></span> 3D QUANTUM GLOBE • CLICK TO EXPAND FULLSCREEN ↗
@@ -5245,6 +5264,7 @@
     </div>
   </div>
 
+  <script defer src="orderflow_3d_engine.js?v=2026-of3d"></script>
   <script defer src="universe_3d_engine.js?v=3d-2026"></script>
   <script defer src="agent_3d_workforce.js?v=20261026-live2"></script>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>

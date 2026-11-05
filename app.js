@@ -6520,6 +6520,11 @@ function initAgent3dCore() {
   particles3d = new THREE.Points(particleGeo, particleMat);
   scene3d.add(particles3d);
 
+  // Attach 3D Order Flow Particles Engine
+  if (window.OrderFlow3D && window.OrderFlow3D.attachToGlobeScene) {
+    window.OrderFlow3D.attachToGlobeScene(scene3d);
+  }
+
   // 5. Render 3D Floating Indicative Coin Badges with Dual Spot & Futures Display
   render3DGlobeBadges();
 
@@ -6546,6 +6551,9 @@ function initAgent3dCore() {
     }
     if (particles3d) {
       particles3d.rotation.y += 0.0025;
+    }
+    if (window.OrderFlow3D && window.OrderFlow3D.updateParticles) {
+      window.OrderFlow3D.updateParticles(elapsedTime);
     }
 
     // Update 3D Floating Badges positions
@@ -6602,6 +6610,9 @@ function render3DGlobeBadges() {
         <div class="coin-badge-line">
           <span class="coin-badge-name">${node.name}</span>
           <span class="coin-badge-price" id="${node.spotId}">${node.defaultSpot || '--'}</span>
+          ${(node.id === 'btc' || node.id === 'gold' || node.id === 'eth' || node.id === 'wif' || node.id === 'sol') ? 
+            `<span class="flow-in-pill">INFLOW &uarr;</span>` : 
+            `<span class="flow-out-pill">OUTFLOW &darr;</span>`}
         </div>
         <div class="coin-badge-line">
           <span class="lbl">${node.tag || 'FUT'}:</span>
