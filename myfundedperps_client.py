@@ -30,14 +30,14 @@ class MyFundedPerpsClient:
         self,
         api_key: str,
         account_id: Optional[str] = None,
-        daily_loss_limit_usd: float = 75.0,
-        total_loss_limit_usd: float = 75.0,
+        daily_loss_limit_usd: Optional[float] = None,
+        total_loss_limit_usd: Optional[float] = None,
         timeout: int = 10,
     ):
         self.api_key = api_key.strip()
         self.account_id = account_id.strip() if account_id else None
-        self.daily_loss_limit_usd = float(daily_loss_limit_usd)
-        self.total_loss_limit_usd = float(total_loss_limit_usd)
+        self.daily_loss_limit_usd = float(daily_loss_limit_usd) if daily_loss_limit_usd is not None else None
+        self.total_loss_limit_usd = float(total_loss_limit_usd) if total_loss_limit_usd is not None else None
         self.timeout = timeout
         self._session = requests.Session()
         self._session.headers.update({
@@ -134,19 +134,24 @@ class MyFundedPerpsClient:
         equity = float(risk.get("equity", current_bal) or current_bal)
         unrealized_pnl = float(risk.get("unrealized_pnl", 0.0) or 0.0)
 
+        # Dynamic calculation: Default to 5% daily loss and 10% total max drawdown for the account size
+        default_max_total_loss = starting_bal * 0.10  # e.g., $10,000 for $100k account
+        default_max_daily_loss = starting_bal * 0.05  # e.g., $5,000 for $100k account
+
+        effective_total_limit = self.total_loss_limit_usd if self.total_loss_limit_usd is not None else default_max_total_loss
+        effective_daily_limit = self.daily_loss_limit_usd if self.daily_loss_limit_usd is not None else default_max_daily_loss
+
         # 1. Total loss calculation
-        total_loss = starting_bal - equity
-        total_loss_remaining = max(0.0, self.total_loss_limit_usd - total_loss)
+        total_loss = max(0.0, starting_bal - equity)
+        total_loss_remaining = max(0.0, effective_total_limit - total_loss)
 
-        # 2. Daily loss calculation from risk snapshot or starting balance
-        daily_loss_floor = float(risk.get("daily_loss_floor", starting_bal - 75.0) or (starting_bal - 75.0))
-        daily_loss_room_broker = float(risk.get("daily_loss_room", 75.0) or 75.0)
-        
-        # User constraint: hardcap $75 daily loss
-        user_daily_loss_remaining = min(self.daily_loss_limit_usd, daily_loss_room_broker)
+        # 2. Daily loss calculation
+        daily_loss_room_broker = float(risk.get("daily_loss_room") or effective_daily_limit)
+        user_daily_loss_remaining = min(effective_daily_limit, daily_loss_room_broker)
 
-        # If loss breaches $75 limit or less than $10 buffer remains:
-        safe = (total_loss_remaining > 10.0) and (user_daily_loss_remaining > 10.0)
+        # Safe to trade if remaining loss headroom > 1% of account size or > $25
+        safe_buffer = max(25.0, starting_bal * 0.005)
+        safe = (total_loss_remaining > safe_buffer) and (user_daily_loss_remaining > safe_buffer)
         
         status = {
             "safe_to_trade": safe,
@@ -266,8 +271,10 @@ class MyFundedPerpsClient:
         }
         if client_order_id:
             payload["client_order_id"] = client_order_id[:64]
+        if not expected_price or expected_price <= 0:
+            expected_price = self.get_ticker_price(clean_sym)
         if expected_price and expected_price > 0:
-            payload["expected_price"] = expected_price
+            payload["expected_price"] = round(expected_price, 4 if expected_price > 1 else 6)
 
         # Server-side TP and SL
         if take_profit_price and take_profit_price > 0:
