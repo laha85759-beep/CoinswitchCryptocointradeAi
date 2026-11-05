@@ -193,13 +193,21 @@ class DeltaClient:
 
     def get_product_info(self, symbol: str) -> dict | None:
         self._build_product_cache()
-        base = symbol.split("/")[0].upper()
+        sym_upper = symbol.upper()
+        if sym_upper in self._product_cache:
+            return self._product_cache[sym_upper]
+        base = symbol.split("/")[0].upper().replace("USDT", "")
         delta_sym = f"{base}USD"
+        # Support US stock perpetuals (e.g. NVDAXUSD, TSLAXUSD, MSFTBUSD, AMDBUSD)
+        for stock_cand in (f"{base}XUSD", f"{base}BUSD", f"{base}USD"):
+            if stock_cand in self._product_cache:
+                p = self._product_cache[stock_cand]
+                if p.get("contract_type") == "perpetual_futures":
+                    return p
         for key, product in self._product_cache.items():
             if key == delta_sym or key == delta_sym + "T" or key == symbol.upper().replace("/", ""):
                 if product.get("contract_type") == "perpetual_futures":
                     return product
-        # Fallback to direct key
         p = self._product_cache.get(delta_sym)
         if p is None:
             p = self._product_cache.get(symbol.replace("/", "").upper())
@@ -404,6 +412,7 @@ class DeltaClient:
         stop_loss_price: float | None = None,
         take_profit_price: float | None = None,
         leverage: int = 20,
+        reduce_only: bool = False,
     ) -> dict:
         """
         Place a buy or sell order on Delta Exchange India with optional atomic TP/SL bracket attachment and leverage setting.
@@ -432,6 +441,8 @@ class DeltaClient:
             "side": side.lower(),
             "order_type": "limit_order" if order_type.lower() == "limit" else "market_order",
         }
+        if reduce_only:
+            body["reduce_only"] = True
         if price is not None and order_type.lower() == "limit":
             formatted_price = self.round_to_tick(price, tick_size)
             body["limit_price"] = str(formatted_price)

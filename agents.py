@@ -703,15 +703,17 @@ class ExecutionAgent:
             usdt_avail = float(self.client.get_usdt_balance())
             inr_avail = float(self.client.get_inr_balance())
 
-            if usdt_avail >= 0.01:
-                position_usdt = max(usdt_avail, float(approval["position_size_usd"])) * 0.95  # 5% buffer for fee & rounding
-            elif inr_avail >= 5.0:
-                position_usdt = max((inr_avail / 88.0), float(approval["position_size_usd"])) * 0.95
+            # Sizing strictly capped by available free cash balance
+            if usdt_avail >= 0.50:
+                position_usdt = min(usdt_avail * 0.95, float(approval.get("position_size_usd", usdt_avail)))
+            elif inr_avail >= 10.0:
+                inr_in_usdt = (inr_avail / 90.0) * 0.95
+                position_usdt = min(inr_in_usdt, float(approval.get("position_size_usd", inr_in_usdt)))
             else:
-                total_cs_usdt = usdt_avail + (inr_avail / 88.0)
-                if total_cs_usdt <= 0.01:
-                    return execution_result(symbol, "rejected", "no_available_capacity", signal, approval)
-                position_usdt = total_cs_usdt * 0.95
+                total_cs_usdt = (usdt_avail + (inr_avail / 90.0)) * 0.95
+                if total_cs_usdt < 0.10:
+                    return execution_result(symbol, "rejected", "insufficient_available_balance", signal, approval)
+                position_usdt = total_cs_usdt
         except Exception as exc:
             log.debug("CoinSwitch balance check notice: %s", exc)
             position_usdt = float(approval["position_size_usd"])

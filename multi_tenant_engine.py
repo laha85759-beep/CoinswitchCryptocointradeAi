@@ -554,7 +554,7 @@ def monitor_and_manage_all_user_trades(global_cfg: dict = None) -> dict:
                     if keys.get("has_delta"):
                         dc = DeltaClient(keys["delta_key"], keys["delta_secret"])
                         close_side = "sell" if is_long else "buy"
-                        dc.place_order(symbol=symbol, side=close_side, order_type="market", quantity=qty)
+                        dc.place_order(symbol=symbol, side=close_side, order_type="market", quantity=qty, reduce_only=True)
                 except Exception as ex_err:
                     log.error("Delta auto-close failed for User #%s: %s", user_id, ex_err)
 
@@ -577,6 +577,19 @@ def monitor_and_manage_all_user_trades(global_cfg: dict = None) -> dict:
                     _mfp.place_order(symbol=clean_base, side=close_side, size=qty, leverage=5, order_type="market")
                 except Exception as ex_err:
                     log.error("MFP auto-close failed for User #%s: %s", user_id, ex_err)
+
+            elif exchange == "coinbase":
+                try:
+                    import os
+                    from coinbase_client import CoinbaseClient
+                    cb_key = os.environ.get("COINBASE_API_KEY", "")
+                    cb_sec = os.environ.get("COINBASE_PRIVATE_KEY", "")
+                    if cb_key and cb_sec:
+                        cb = CoinbaseClient(cb_key, cb_sec)
+                        cb_prod = f"{clean_base}-USD"
+                        cb.create_market_order(product_id=cb_prod, side="SELL" if is_long else "BUY", base_size=str(qty))
+                except Exception as ex_err:
+                    log.error("Coinbase auto-close failed for User #%s: %s", user_id, ex_err)
 
             elif exchange == "mt5":
                 # Primary: Dispatch CLOSE command to EC2 Cloud MT5 Bridge Queue
