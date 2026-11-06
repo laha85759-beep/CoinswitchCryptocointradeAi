@@ -526,11 +526,36 @@ def get_terminal_data():
             except Exception as mfp_err:
                 log.warning("MFP balance query notice: %s", mfp_err)
 
+        # ── Fetch Live Coinbase Balance from platform.db ──
+        coinbase_inr = 0.0
+        coinbase_usdc = 0.0
+        try:
+            from database import xor_decrypt
+            from coinbase_client import CoinbaseClient
+            import sqlite3
+            plat_db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'platform.db')
+            if os.path.exists(plat_db_path):
+                c_conn = sqlite3.connect(plat_db_path)
+                c_cur = c_conn.cursor()
+                c_cur.execute('SELECT api_key_enc, api_secret_enc FROM ccxt_exchange_keys WHERE exchange_id = ? AND is_active = 1 LIMIT 1', ('coinbase',))
+                cb_row = c_cur.fetchone()
+                c_conn.close()
+                if cb_row and cb_row[0] and cb_row[1]:
+                    cb_key = xor_decrypt(cb_row[0])
+                    cb_pem = xor_decrypt(cb_row[1])
+                    cb_inst = CoinbaseClient(key_name=cb_key, private_key_raw=cb_pem)
+                    cb_bals = cb_inst.get_balances()
+                    coinbase_inr = float(cb_bals.get('INR', 0.0) or 0.0)
+                    coinbase_usdc = float(cb_bals.get('USDC', 0.0) or 0.0)
+        except Exception as cb_err:
+            log.warning('Coinbase balance query notice: %s', cb_err)
+
         # NO fake fallback balances — always display REAL exchange equity so the
         # terminal reflects truth (empty wallet = 0.00, never a made-up number).
         inr_in_usdt = cs_portfolio_inr / 88.0 if cs_portfolio_inr > 0 else 0.0
-        # REAL total capital — sum of Delta balance, CoinSwitch portfolio, and MFP balance
-        total_real_capital = round(cs_usdt + inr_in_usdt + delta_usdt + mfp_usd, 2)
+        cb_inr_in_usdt = coinbase_inr / 88.0 if coinbase_inr > 0 else 0.0
+        # REAL total capital — sum of Delta balance, CoinSwitch portfolio, Coinbase INR/USDC, and MFP balance
+        total_real_capital = round(cs_usdt + inr_in_usdt + delta_usdt + mfp_usd + coinbase_usdc + cb_inr_in_usdt, 2)
 
         # ── Fetch ALL Tickers Once (Massive speedup)
         cs_tickers = {}
@@ -1234,6 +1259,8 @@ def get_terminal_data():
                 "cs_usdt": round(cs_usdt, 4),
                 "cs_inr": round(cs_inr, 2),
                 "delta_usdt": round(delta_usdt, 2),
+                "coinbase_inr": round(coinbase_inr, 2),
+                "coinbase_usdc": round(coinbase_usdc, 2),
                 "mfp_usdt": round(mfp_usd, 2),
                 "mfp_equity": round(mfp_usd, 2),
                 "mfp_loss_room": round(mfp_loss_room, 2),
