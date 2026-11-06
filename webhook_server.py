@@ -413,6 +413,43 @@ LAST_API_CACHE_TIME = 0
 LAST_API_CACHE_DATA = None
 API_CACHE_LOCK = threading.Lock()
 
+
+# -------------------------------------------------------------
+# REAL-TIME CHARTINK RADAR API & BACKGROUND BROADCASTER
+# Dashboard 447734: Atlas downtowon (NSE Intraday & Swing)
+# -------------------------------------------------------------
+from chartink_engine import chartink_engine, _CHARTINK_CACHE
+
+@app.route("/api/chartink-data", methods=["GET"])
+def get_chartink_data():
+    try:
+        # Cache for 45 seconds to respect Chartink rate limits while providing live updates
+        now = time.time()
+        if _CHARTINK_CACHE.get("timestamp") and (now - _CHARTINK_CACHE.get("timestamp", 0)) < 45.0:
+            return jsonify(_CHARTINK_CACHE)
+        data = chartink_engine.fetch_all_dashboard_scanners()
+        return jsonify(data)
+    except Exception as exc:
+        log.warning("Chartink fetch error: %s", exc)
+        return jsonify(_CHARTINK_CACHE)
+
+def _chartink_background_worker():
+    """Polls Chartink dashboard every 60 seconds and broadcasts verified alerts."""
+    time.sleep(15) # Wait for server boot
+    while True:
+        try:
+            chartink_engine.fetch_all_dashboard_scanners()
+        except Exception as e:
+            log.warning("Chartink background cycle error: %s", e)
+        time.sleep(60)
+
+try:
+    _ci_thread = threading.Thread(target=_chartink_background_worker, daemon=True, name="ChartinkRadarWorker")
+    _ci_thread.start()
+    log.info("Chartink Real-Time Radar 24/7 worker started (polling Dashboard #447734)")
+except Exception as th_err:
+    log.warning("Failed to start Chartink worker thread: %s", th_err)
+
 @app.route("/api/terminal-data", methods=["GET"])
 def get_terminal_data():
     global LAST_API_CACHE_TIME, LAST_API_CACHE_DATA
