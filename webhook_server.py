@@ -295,6 +295,14 @@ def serve_dashboard():
 # standalone page URL. Each URL serves the same SPA shell; the client router reads
 # window.location.pathname and renders ONLY that page's specific functionality.
 # NOTE: /admin and /superadmin are dedicated portal pages served further below
+
+@app.route("/swarm-desk", methods=["GET"])
+@app.route("/swarm_desk", methods=["GET"])
+def serve_swarm_desk():
+    response = send_from_directory(os.path.dirname(os.path.abspath(__file__)), "swarm_desk.html")
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return response
+
 PAGE_ROUTES = ("overview", "terminal", "india", "news", "chart", "rwa",
                "partners", "trades", "signals", "trader", "blog", "copytrade")
 

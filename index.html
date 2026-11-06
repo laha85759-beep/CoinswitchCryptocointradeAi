@@ -527,140 +527,18 @@
 
     <!-- ══════════ VIEW 1: SUPERBRAIN NEURAL DASHBOARD ══════════ -->
     <div id="view-terminal" class="nc-view-pane tsm-view-section">
-
-      <!-- THREE-COLUMN NEURAL CORE COCKPIT (MATCHES APPROVED IMAGE) -->
-      <div class="nc-cockpit-grid" style="display:flex; flex-direction:column; width:100%; gap:18px;">
-
-        <!-- CENTER STAGE: PURE 3D HOLOGRAPHIC GLOBE WITH ORBITING ASSET NODES & HUD -->
-        <div class="nc-brain-center-stage" style="width:100%; min-height:540px;">
-          <!-- Fullscreen Floating Controls -->
-          <div class="globe-fs-controls">
-            <button class="globe-fs-btn" id="toggleGlobeFullscreenBtn" onclick="toggleGlobeFullscreen()" title="Toggle Fullscreen 3D Globe">
-              <span id="globeFsIcon">⛶</span> <span id="globeFsText">FULLSCREEN GLOBE</span>
-            </button>
-            <button class="globe-fs-btn" onclick="openJarvisModal()" style="border-color:rgba(0,240,144,0.45); color:#00f090;" title="Launch Holographic Jarvis Center">
-              <span>🧠</span> <span>JARVIS CORE</span>
-            </button>
+      <!-- REAL-TIME MULTI-AGENT SWARM DESK TERMINAL -->
+      <div style="width:100%; display:flex; flex-direction:column; gap:10px; margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; background:#111823; border:1px solid #1f2a3a; padding:8px 14px; border-radius:6px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#2fe0a8; box-shadow:0 0 8px #2fe0a8;"></span>
+            <span style="font-family:'Chakra Petch',sans-serif; font-weight:600; font-size:12px; letter-spacing:0.12em; color:#d9e2f0; text-transform:uppercase;">SWARM DESK 2.0 LIVE TERMINAL</span>
           </div>
-
-          <div class="nc-brain-container" id="agent3dContainer" title="Click to toggle Fullscreen 3D Globe View">
-            <!-- Surrounding HUD Telemetry Chips -->
-            <div class="hud-chip top-left" id="hud-synapse-rate">⚡ SYNAPSE: 1,420/s</div>
-            <div class="hud-chip top-right" id="hud-consensus-val">🧠 CONSENSUS: 99.4% (4/5)</div>
-            <div class="hud-chip bottom-left" id="hud-sentiment-val">🟢 SENTIMENT: BULLISH (+68%)</div>
-            <div class="hud-chip bottom-right" id="hud-latency-val">⚡ LATENCY: 24ms • LIVE</div>
-            
-            <canvas id="agent3dCanvas"></canvas>
-            
-            <!-- 3D Floating Indicative Coin Badges Overlay -->
-            <div class="floating-3d-nodes-overlay" id="floatingNodesOverlay"></div>
-            <!-- Live 3D Order Flow & Liquidity Inflow/Outflow HUD -->
-            <div class="orderflow-hud-strip">
-              <div class="of-stat-item" style="color:#00f090;">
-                <span>🟢 INFLOW:</span>
-                <span id="of-total-inflow">+$824.3M</span>
-                <span style="font-size:9px; color:rgba(0,240,144,0.7);">(BTC, ETH, XAU, SOL)</span>
-              </div>
-              <div style="width:1px; height:14px; background:rgba(0,212,255,0.3);"></div>
-              <div class="of-stat-item" style="color:#ff3366;">
-                <span>🔴 OUTFLOW:</span>
-                <span id="of-total-outflow">-$24.9M</span>
-                <span style="font-size:9px; color:rgba(255,51,102,0.7);">(DOGE, GOAT, SKL)</span>
-              </div>
-              <div style="width:1px; height:14px; background:rgba(0,212,255,0.3);"></div>
-              <div class="of-stat-item" style="color:#00d4ff;">
-                <span>⚡ NET DELTA:</span>
-                <span id="of-net-delta">+0.24 (BULL ABSORPTION)</span>
-              </div>
-            </div>
-            
-            <div class="nc-brain-hud-label" id="agent3dStatus" onclick="toggleGlobeFullscreen()">
-              <span class="pulse-dot"></span> 3D QUANTUM GLOBE • CLICK TO EXPAND FULLSCREEN ↗
-            </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <a href="/swarm-desk" target="_blank" style="font-family:'JetBrains Mono',monospace; font-size:10px; color:#35d4ff; text-decoration:none; padding:3px 8px; border:1px solid rgba(53,212,255,0.4); border-radius:4px; background:rgba(53,212,255,0.08);">OPEN FULLSCREEN &#8599;</a>
           </div>
         </div>
-
-        <!-- CENTER BOTTOM HUD: REAL-TIME QUANT ORDER FLOW GRAPHICS -->
-        <div class="order-flow-container" id="orderFlowGraphicsBox">
-          <div class="order-flow-header">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span class="tsm-live-dot" style="width:8px; height:8px; background:#00d4ff; border-radius:50%; box-shadow:0 0 10px #00d4ff;"></span>
-              <strong style="color:#00d4ff; font-size:12px; letter-spacing:1px;">INSTITUTIONAL QUANT ORDER FLOW TELEMETRY</strong>
-              <span style="color:#64748b; font-size:10px;">(Depth Velocity & High-Frequency Takers)</span>
-            </div>
-            <div style="display:flex; gap:16px; font-size:11px; font-family:var(--font-mono, monospace);">
-              <span style="color:#00f090;">BUY FLOW: <b id="flowBuyRatio">64.2%</b></span>
-              <span style="color:#f43f5e;">SELL FLOW: <b id="flowSellRatio">35.8%</b></span>
-              <span style="color:#fbbf24;">NET DELTA: <b id="flowNetDelta">+1,420 BTC</b></span>
-            </div>
-          </div>
-          <!-- Kinetic Order Flow Stream (Auto-updating animated stream) -->
-          <div class="order-flow-stream" id="orderFlowStream">
-            <div class="flow-ticket buy"><span>🟢 BUY</span> <b>BTCUSDT</b> <span>12.45 BTC</span> <span>$67,340</span> <span style="font-size:9px; color:#64748b;">AGGR TAKER</span></div>
-            <div class="flow-ticket buy"><span>🟢 BUY</span> <b>ETHUSDT</b> <span>84.20 ETH</span> <span>$3,248</span> <span style="font-size:9px; color:#64748b;">DELTA IND</span></div>
-            <div class="flow-ticket sell"><span>🔴 SELL</span> <b>SOLUSDT</b> <span>410.0 SOL</span> <span>$142.10</span> <span style="font-size:9px; color:#64748b;">MFP PROP</span></div>
-            <div class="flow-ticket buy"><span>🟢 BUY</span> <b>NIFTY 50</b> <span>75 LOTS</span> <span>₹23,280</span> <span style="font-size:9px; color:#64748b;">SMART MONEY</span></div>
-            <div class="flow-ticket buy"><span>🟢 BUY</span> <b>XAUUSD</b> <span>35.0 OZ</span> <span>$2,642.5</span> <span style="font-size:9px; color:#64748b;">INSTITUTION</span></div>
-          </div>
-        </div>
-
-      </div>
-
-<!-- SECONDARY HUD: LIVE POSITIONS & SIGNALS ACCORDION -->
-      <div class="nc-positions-bar full-width" style="margin-top:18px; width:100%;">
-        <div class="tsm-panel" style="width:100%;">
-          <div class="tsm-panel-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-            <div class="tsm-panel-title" style="font-family:var(--font-orb); font-size:13px; font-weight:800; color:#00f090; letter-spacing:1px;">
-              💼 LIVE EXECUTED TRADES &amp; ACTIVE POSITIONS (<span id="activePositionsCount">0</span>)
-            </div>
-            <div style="display:flex; gap:10px; align-items:center;">
-              <span class="tsm-badge-cyan" id="pos-table-badge" style="background:rgba(0,212,255,0.15); border:1px solid #00d4ff; color:#00d4ff; padding:3px 8px; border-radius:4px; font-size:10px; font-weight:700;">LIVE EXECUTING</span>
-              <span style="font-size:10px; color:#94a3b8; font-family:var(--font-mono);">MFP ($100K) • CS • DELTA</span>
-            </div>
-          </div>
-          <div class="tsm-table-wrap open-positions-scroll-wrap" style="overflow-x:auto; overflow-y:auto; max-height:420px; width:100%;">
-            <table class="tsm-table" style="width:100%; border-collapse:collapse; font-size:11px; font-family:var(--font-mono);">
-              <thead id="openTradesThead">
-                <tr id="openTradesHeaderRow" style="border-bottom:1px solid rgba(255,255,255,0.1); color:#94a3b8; text-align:left;">
-                  <th style="padding:8px;">EXCHANGE</th>
-                  <th style="padding:8px;">SYMBOL</th>
-                  <th style="padding:8px;">SIDE</th>
-                  <th style="padding:8px;">QTY / LOT SIZE</th>
-                  <th style="padding:8px;">LEVERAGE</th>
-                  <th style="padding:8px;">NOTIONAL (USD)</th>
-                  <th style="padding:8px;">ENTRY</th>
-                  <th style="padding:8px;">MARK</th>
-                  <th style="padding:8px;">RUNNING P&amp;L</th>
-                  <th style="padding:8px;">RISK BUFFER / SL</th>
-                  <th style="padding:8px;">TAKE PROFIT</th>
-                </tr>
-              </thead>
-              <tbody id="open-trades-tbody">
-                <tr><td colspan="11" style="text-align:center; padding:16px; color:#64748b;">Loading live exchange positions with risk management lot sizes...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="tsm-panel" style="flex:1;">
-          <div class="tsm-panel-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-            <div class="tsm-panel-title" style="font-family:var(--font-orb); font-size:12px; font-weight:800; color:#00d4ff; letter-spacing:1px;">
-              🧠 QUANT AI CONSENSUS SIGNALS
-            </div>
-            <span class="tsm-live-indicator" style="display:flex; align-items:center; gap:5px; font-size:10px; color:#00f090;">
-              <span class="tsm-live-dot" style="width:6px; height:6px; background:#00f090; border-radius:50%; box-shadow:0 0 8px #00f090;"></span> LIVE
-            </span>
-          </div>
-          <div class="tsm-signals-stream" id="signals-container" style="display:flex; flex-direction:column; gap:8px; max-height:280px; overflow-y:auto;">
-            <div class="tsm-signal-card" style="background:rgba(255,255,255,0.02); border:1px solid rgba(0,212,255,0.2); border-radius:6px; padding:10px;">
-              <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                <span style="font-weight:700; color:#fff;">BTC/USDT</span>
-                <span style="background:rgba(0,240,144,0.15); color:#00f090; font-size:9.5px; padding:2px 6px; border-radius:3px; font-weight:800;">LONG 95%</span>
-              </div>
-              <div style="font-size:10.5px; color:#94a3b8;">Multi-Model AI Confluence • Trailing stop active</div>
-            </div>
-          </div>
-        </div>
+        <iframe src="/swarm_desk.html" style="width:100%; min-height:1150px; height:1200px; border:1px solid #1f2a3a; border-radius:6px; background:#0b0f17;" title="Swarm Desk Mission Control Terminal"></iframe>
       </div>
     </div>
 
