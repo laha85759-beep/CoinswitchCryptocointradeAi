@@ -123,3 +123,48 @@ class CoinbaseClient:
         if r.status_code == 200:
             return r.json()
         return None
+
+    def check_futures_enabled(self) -> bool:
+        """Checks whether the Coinbase API credentials have Futures/CFM or INTX trading active."""
+        try:
+            r = self._request("GET", "/api/v3/brokerage/cfm/balance_summary")
+            if r.status_code == 200 and r.json().get("balance_summary") is not None:
+                return True
+        except Exception:
+            pass
+        return False
+
+    def execute_smart_order(self, symbol: str, side: str, quote_size: str = None, base_size: str = None):
+        """
+        Executes Futures if enabled on Coinbase account; otherwise executes Spot with limit-crossing execution.
+        """
+        is_futures = self.check_futures_enabled()
+        prod_id = symbol.replace("/", "-").upper()
+        if is_futures:
+            # Route to Coinbase Financial Markets (CFM) Futures product
+            fut_prod = f"{prod_id}-C" if not prod_id.endswith("-C") else prod_id
+            return self.create_market_order(product_id=fut_prod, side=side, base_size=base_size)
+        else:
+            # Fallback to Spot: if INR pair, use market-crossing limit to comply with limit-only orderbook
+            if "-INR" in prod_id:
+                p_info = self.get_product(prod_id) or {}
+                mkt_p = float(p_info.get("price", 0) or 0)
+                if mkt_p > 0:
+                    limit_p = round(mkt_p * 1.002, 2) if side.upper() == "BUY" else round(mkt_p * 0.998, 2)
+                    path = "/api/v3/brokerage/orders"
+                    import secrets
+                    payload = {
+                        "client_order_id": secrets.token_hex(16),
+                        "product_id": prod_id,
+                        "side": side.upper(),
+                        "order_configuration": {
+                            "limit_limit_gtc": {
+                                "base_size": str(base_size),
+                                "limit_price": str(limit_p),
+                                "post_only": False
+                            }
+                        }
+                    }
+                    r = self._request("POST", path, json_data=payload)
+                    return r.json()
+            return self.create_market_order(product_id=prod_id, side=side, quote_size=quote_size, base_size=base_size)
