@@ -76,9 +76,11 @@ class CoinbaseClient:
         accounts = self.get_accounts()
         balances = {}
         for acc in accounts:
-            val = float(acc.get("available_balance", {}).get("value", 0))
-            if val > 0:
-                balances[acc.get("currency")] = val
+            avail = float(acc.get("available_balance", {}).get("value", 0) or 0)
+            hold = float(acc.get("hold", {}).get("value", 0) or 0)
+            total = avail + hold
+            if total > 0:
+                balances[acc.get("currency")] = total
         return balances
 
     def preview_order(self, product_id: str, side: str, quote_size: str = None, base_size: str = None):

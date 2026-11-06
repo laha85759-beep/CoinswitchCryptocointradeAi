@@ -722,6 +722,7 @@ def get_terminal_data():
                     log.warning("Notice loading backup trades: %s", be)
             existing_delta_syms = {str(p.get("symbol", "")).upper() for p in open_delta}
             existing_cs_syms = {str(p.get("symbol", "")).upper() for p in open_cs}
+            open_coinbase = []
             for t in db_trades:
                 sym_up = str(t.get("symbol", "")).upper()
                 ex = str(t.get("exchange", "")).lower()
@@ -731,6 +732,8 @@ def get_terminal_data():
                 elif ex in ("coinswitch", "cs") and sym_up not in existing_cs_syms:
                     open_cs.append(t)
                     existing_cs_syms.add(sym_up)
+                elif ex == "coinbase":
+                    open_coinbase.append(t)
         except Exception as db_trade_err:
             log.warning("Notice querying database user_trades in terminal-data: %s", db_trade_err)
 
@@ -1274,11 +1277,13 @@ def get_terminal_data():
             "open_positions": {
                 "coinswitch": open_cs,
                 "delta": open_delta,
+                "coinbase": open_coinbase if 'open_coinbase' in locals() else [],
                 "mfp": open_mfp,
                 "cs_count": len(open_cs),
                 "delta_count": len(open_delta),
+                "cb_count": len(open_coinbase) if 'open_coinbase' in locals() else 0,
                 "mfp_count": len(open_mfp),
-                "total_count": len(open_cs) + len(open_delta) + len(open_mfp)
+                "total_count": len(open_cs) + len(open_delta) + len(open_mfp) + (len(open_coinbase) if 'open_coinbase' in locals() else 0)
             },
             "open_orders": open_orders,
             "performance": {
