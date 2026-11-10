@@ -18,6 +18,7 @@
           y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
       })(window, document, "clarity", "script", "z6vb5hbxiv");
   </script>
+  <link rel="stylesheet" href="/medusa_theme.css?v=20261110">
 </head>
 <body class="adm-body">
   <!-- Top Bar -->
@@ -89,6 +90,178 @@
 
     <!-- Main Workspace -->
     <main class="adm-main">
+
+        <!-- ══════════ MEDUSA-01 & YC SECOND BRAIN CYBERNETIC COCKPIT (VIDEO 1 & 2) ══════════ -->
+        <div class="medusa-brain-hud">
+          <!-- Top Telemetry Flight Ribbon -->
+          <div class="medusa-telemetry-bar">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span class="medusa-tag-badge medusa-tag-orange">YC BRAIN // V3.8</span>
+              <span class="medusa-tag-badge medusa-tag-cyan">MEDUSA-01 DOME</span>
+              <span class="medusa-tag-badge medusa-tag-lime">LIVE COCKPIT</span>
+            </div>
+            <div class="telemetry-metrics">
+              <span>LAYERS: <span class="telemetry-metric-val">3</span></span>
+              <span>OPERATIONS: <span class="telemetry-metric-val">3</span></span>
+              <span>NODES: <span class="telemetry-metric-val" id="medusaNodeCount">41,260</span></span>
+              <span>LINKS: <span class="telemetry-metric-val">1,262</span></span>
+              <span id="medusaYawVal" style="color: var(--neon-cyan);">YAW 0°</span>
+              <span id="medusaFpsVal" style="color: var(--neon-lime); font-weight: bold;">60 FPS</span>
+            </div>
+          </div>
+
+          <!-- Dual Visualizer Stage -->
+          <div class="medusa-stage">
+            <canvas id="medusaVisualizerCanvas" class="medusa-canvas"></canvas>
+            <div class="cyber-scanlines"></div>
+
+            <div class="medusa-stage-controls">
+              <button class="medusa-btn active" id="btnModeMedusa" onclick="window.medusaEngine && window.medusaEngine.setMode('medusa')">
+                <span>⚡</span> MEDUSA-01 DOME
+              </button>
+              <button class="medusa-btn medusa-btn-orange" id="btnModeYc" onclick="window.medusaEngine && window.medusaEngine.setMode('yc_brain')">
+                <span>🧠</span> YC SECOND BRAIN
+              </button>
+            </div>
+
+            <div class="medusa-stage-overlay-left">
+              <div class="medusa-cmd-prompt">
+                <span class="prompt-arrow">&gt;</span>
+                <span class="prompt-text">PostToolUse &rarr; brain.py lint [GHOST PROTOCOL V3 ACTIVE &bull; 0 SYNTAX ERRORS]</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 8-Deck Tactical Micro-HUD Grid (Video 1 & 2 Blueprint) -->
+          <div class="medusa-tactical-grid">
+            <!-- 01 RAW / EXCHANGES -->
+            <div class="medusa-card-deck">
+              <div>
+                <div class="card-deck-header">
+                  <span class="card-deck-idx">01 EXCHANGES</span>
+                  <span class="card-deck-badge live">ONLINE</span>
+                </div>
+                <div class="card-deck-title">Coinbase &bull; Delta</div>
+                <div class="card-deck-sub">CoinSwitch Spot Active</div>
+              </div>
+              <div class="card-deck-metric" id="deckMetricExchanges">3 <span class="unit">NODES</span></div>
+            </div>
+
+            <!-- 02 STRATEGY / PP SUPERTREND -->
+            <div class="medusa-card-deck">
+              <div>
+                <div class="card-deck-header">
+                  <span class="card-deck-idx">02 STRATEGY</span>
+                  <span class="card-deck-badge live">P=2 / ATR=3</span>
+                </div>
+                <div class="card-deck-title">PP SuperTrend</div>
+                <div class="card-deck-sub">PineScript v5 &bull; 15m/1h</div>
+              </div>
+              <div class="card-deck-metric" style="color: var(--neon-lime);">BUY <span class="unit">SIGNAL</span></div>
+            </div>
+
+            <!-- 03 LINT / RISK SAFEGUARD -->
+            <div class="medusa-card-deck">
+              <div>
+                <div class="card-deck-header">
+                  <span class="card-deck-idx">03 LINT &bull; RISK</span>
+                  <span class="card-deck-badge live">NO LOSS</span>
+                </div>
+                <div class="card-deck-title">Trailing Ratchet</div>
+                <div class="card-deck-sub">60-70% Cap Locked</div>
+              </div>
+              <div class="card-deck-metric" style="color: var(--neon-orange);">$0.00 <span class="unit">RISK</span></div>
+            </div>
+
+            <!-- 04 LINK TOPOLOGY -->
+            <div class="medusa-card-deck">
+              <div>
+                <div class="card-deck-header">
+                  <span class="card-deck-idx">04 TOPOLOGY</span>
+                  <span class="card-deck-badge">1262 LINKS</span>
+                </div>
+                <div class="card-deck-title">Neural Routing</div>
+                <div class="card-deck-sub">Direct Execution Path</div>
+              </div>
+              <div style="margin-top: 6px;">
+                <canvas id="sparklineTopology" class="micro-sparkline-canvas"></canvas>
+              </div>
+            </div>
+
+            <!-- 05 ACTIVE USERS 1ST -->
+            <div class="medusa-card-deck">
+              <div>
+                <div class="card-deck-header">
+                  <span class="card-deck-idx">05 DISPATCH</span>
+                  <span class="card-deck-badge live">1ST PRIORITY</span>
+                </div>
+                <div class="card-deck-title">Active Traders</div>
+                <div class="card-deck-sub">Signal Broadcast Loop</div>
+              </div>
+              <div class="card-deck-metric" id="deckMetricUsers" style="color: var(--neon-cyan);">-- <span class="unit">ACCOUNTS</span></div>
+            </div>
+
+            <!-- 06 HOOKS / TELEGRAM -->
+            <div class="medusa-card-deck">
+              <div>
+                <div class="card-deck-header">
+                  <span class="card-deck-idx">06 TELEGRAM</span>
+                  <span class="card-deck-badge live">VERIFIED</span>
+                </div>
+                <div class="card-deck-title">Real Report Sync</div>
+                <div class="card-deck-sub">No Duplicate Messages</div>
+              </div>
+              <div class="audio-wave-visualizer">
+                <div class="audio-bar" style="animation-delay: 0.1s;"></div>
+                <div class="audio-bar" style="animation-delay: 0.3s;"></div>
+                <div class="audio-bar" style="animation-delay: 0.15s;"></div>
+                <div class="audio-bar" style="animation-delay: 0.4s;"></div>
+                <div class="audio-bar" style="animation-delay: 0.2s;"></div>
+                <div class="audio-bar" style="animation-delay: 0.35s;"></div>
+                <div class="audio-bar" style="animation-delay: 0.05s;"></div>
+                <div class="audio-bar" style="animation-delay: 0.25s;"></div>
+              </div>
+            </div>
+
+            <!-- 07 VAULT MATRIX -->
+            <div class="medusa-card-deck">
+              <div>
+                <div class="card-deck-header">
+                  <span class="card-deck-idx">07 VAULT MATRIX</span>
+                  <span class="card-deck-badge">HEALTH</span>
+                </div>
+                <div class="card-deck-title">Cluster Status</div>
+                <div class="card-deck-sub">8 Shards &bull; 0 Errors</div>
+              </div>
+              <div class="pixel-matrix-grid">
+                <div class="pixel-cell active-cyan"></div>
+                <div class="pixel-cell active-cyan"></div>
+                <div class="pixel-cell active-orange"></div>
+                <div class="pixel-cell active-lime"></div>
+                <div class="pixel-cell active-cyan"></div>
+                <div class="pixel-cell active-purple"></div>
+                <div class="pixel-cell active-lime"></div>
+                <div class="pixel-cell active-cyan"></div>
+              </div>
+            </div>
+
+            <!-- 08 LIVE PNL / SPARKLINE -->
+            <div class="medusa-card-deck">
+              <div>
+                <div class="card-deck-header">
+                  <span class="card-deck-idx">08 TELEMETRY</span>
+                  <span class="card-deck-badge live">REAL-TIME</span>
+                </div>
+                <div class="card-deck-title">Equity Velocity</div>
+                <div class="card-deck-sub">Live Market Flow</div>
+              </div>
+              <div style="margin-top: 6px;">
+                <canvas id="sparklinePnl" class="micro-sparkline-canvas"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
       <!-- TAB 1: API KEY MANAGEMENT -->
       <section class="adm-tab-content active" id="tab-apikeys">
         <div class="adm-section-header">
@@ -478,5 +651,6 @@
   </div>
 
   <script src="/admin.js?v=20260923-2130"></script>
+  <script src="/neural_medusa_visualizer.js?v=20261110"></script>
 </body>
 </html>

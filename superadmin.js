@@ -782,3 +782,44 @@ function escapeHtml(str) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
+
+
+// ══════════════════════════════════════════════════════════════════════════
+// MEDUSA-01 & YC SECOND BRAIN INITIALIZATION HOOK
+// ══════════════════════════════════════════════════════════════════════════
+function initMedusaVisualizer() {
+  const canvas = document.getElementById('medusaVisualizerCanvas');
+  if (!canvas || !window.NeuralMedusaEngine) return;
+  
+  window.medusaEngine = new window.NeuralMedusaEngine('medusaVisualizerCanvas', { mode: 'medusa' });
+
+  // Render micro sparklines for Deck 04 and 08
+  if (window.renderMiniSparkline) {
+    const topologyData = [12, 19, 15, 25, 22, 30, 28, 35, 42, 38, 48, 52];
+    window.renderMiniSparkline('sparklineTopology', topologyData, '#00f0ff');
+
+    const pnlData = [100, 102, 101, 105, 108, 107, 112, 118, 115, 122, 125];
+    window.renderMiniSparkline('sparklinePnl', pnlData, '#00e676');
+  }
+
+  // Hook live metric updates if possible
+  try {
+    fetch('/api/terminal-data')
+      .then(res => res.json())
+      .then(data => {
+        if (!data) return;
+        const usersEl = document.getElementById('deckMetricUsers');
+        if (usersEl && data.active_users_count !== undefined) {
+          usersEl.innerHTML = `${data.active_users_count} <span class="unit">ACCOUNTS</span>`;
+        }
+      })
+      .catch(() => {});
+  } catch(e) {}
+}
+
+// Auto-run if DOM is already loaded or attach listener
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initMedusaVisualizer);
+} else {
+  setTimeout(initMedusaVisualizer, 100);
+}
