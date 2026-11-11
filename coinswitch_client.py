@@ -253,8 +253,11 @@ class CoinSwitchClient:
 
     def get_usdt_balance(self) -> float:
         # Try c2c2 first (USDT exchange), fallback to c2c1, then unfiltered
-        for ex in ("c2c2", "c2c1", None):
-            portfolio = self.get_portfolio(exchange=ex)
+        for ex in (None, "c2c2", "c2c1"):
+            try:
+                portfolio = self.get_portfolio(exchange=ex)
+            except Exception:
+                portfolio = []
             for item in portfolio:
                 currency = item.get("currency", "").upper()
                 if currency == "USDT":
@@ -269,8 +272,11 @@ class CoinSwitchClient:
     def get_inr_balance(self) -> float:
         """Get INR balance from CoinSwitch portfolio."""
         # Try c2c1 first (INR exchange), then unfiltered
-        for ex in ("c2c1", "c2c2", None):
-            portfolio = self.get_portfolio(exchange=ex)
+        for ex in (None, "c2c1", "c2c2"):
+            try:
+                portfolio = self.get_portfolio(exchange=ex)
+            except Exception:
+                portfolio = []
             for item in portfolio:
                 currency = item.get("currency", "").upper()
                 if currency == "INR":
